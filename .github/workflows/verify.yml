@@ -111,6 +111,11 @@ jobs:
         with:
           fetch-depth: 0
       - run: bash scripts/dev/install-toolchain.sh
+      - name: Keep installed tool dependencies outside analyzed project source
+        run: |
+          tool_root="$(mktemp -d "$RUNNER_TEMP/purpuragenda-tools.XXXXXX")"
+          mv .toolchain "$tool_root/toolchain"
+          ln -s "$tool_root/toolchain" .toolchain
       - name: Export pinned JDK for extraction
         run: |
           source scripts/dev/toolchain-env.sh

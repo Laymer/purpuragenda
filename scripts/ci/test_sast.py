@@ -58,6 +58,13 @@ class SastTest(unittest.TestCase):
                 self.assertFalse(self.check()['passed'])
                 self.assertEqual(1, self.check()['highOrCritical'])
 
+    def test_safe_blocking_counts_identify_only_public_rules_without_source_messages(self):
+        self.finding('9.8')
+        self.document['runs'][0]['results'] *= 2
+        self.assertEqual({'java/synthetic-security': 2}, self.check()['blockingRules'])
+        self.finding('6.9')
+        self.assertEqual({}, self.check()['blockingRules'])
+
     def test_unclassified_invalid_or_suppressed_findings_fail(self):
         for score in (None, True, 'NaN', 'Infinity', '-1', '11', 'invalid'):
             self.finding(score)
@@ -127,6 +134,20 @@ class SastTest(unittest.TestCase):
         changed = json.loads(config.read_text()); changed['paths-ignore'] = ['**']
         config.write_text(json.dumps(changed))
         with self.assertRaises(ValueError): GATE.configuration(self.root, self.pin)
+
+    def test_tool_dependencies_are_relocated_before_extraction_without_ignoring_project_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / '.github/workflows').mkdir(parents=True)
+            (root / '.github/codeql').mkdir()
+            shutil.copyfile(ROOT / '.github/codeql/config.yml', root / '.github/codeql/config.yml')
+            workflow = (ROOT / '.github/workflows/verify.yml').read_text()
+            (root / '.github/workflows/verify.yml').write_text(workflow)
+            GATE.configuration(root, self.pin)
+            altered = workflow.replace('mv .toolchain "$tool_root/toolchain"', ':')
+            (root / '.github/workflows/verify.yml').write_text(altered)
+            with self.assertRaisesRegex(ValueError, 'tool dependencies'):
+                GATE.configuration(root, self.pin)
 
     def test_bundle_checksum_size_and_transport_failures(self):
         data = b'synthetic bundle'

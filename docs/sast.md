@@ -14,7 +14,7 @@ bundle into an owned temporary directory, checks exact bytes/hash and supplies t
 verified local tar.zst to the official action. No floating query packs are fetched;
 the pinned bundle supplies default plus security-extended queries.
 
-The pinned JDK is exported before initialization. Java clean test-compile forces
+Installed tool dependencies are relocated into an owned runner-temporary directory before initialization; a checkout symlink preserves the pinned development paths. This keeps downloaded Node documentation/tool internals outside project extraction without excluding any tracked project source. The pinned JDK is exported before initialization. Java clean test-compile forces
 actual main/test compilation under CodeQL tracing, without test-skip flags. This
 phase does not certify tests: the independent mandatory build still runs actual
 PostgreSQL/Angular/unit/architecture categories. Interpreted extraction uses CodeQL's

@@ -38,6 +38,10 @@ def configuration(root, pin):
     require(len(cells) == 3 and dict(cells) == {name: value['buildMode'] for name, value in pin['bundles'].items()}
             and set(dict(cells)) == set(LANGUAGES), 'SAST language matrix must be complete')
     require('fail-fast: false' in block, 'All SAST languages must finish')
+    relocation = 'mv .toolchain "$tool_root/toolchain"'
+    require(relocation in block and 'ln -s "$tool_root/toolchain" .toolchain' in block and
+            block.index(relocation) < block.index('github/codeql-action/init@'),
+            'Installed tool dependencies must remain outside analyzed project source')
     for action in ('init', 'analyze'):
         require('github/codeql-action/' + action + '@' + pin['actionCommit'] in block, 'Unpinned CodeQL action')
     require('upload-database: false' in block and 'debug: false' in block,
@@ -136,7 +140,7 @@ def sarif(document, language, root, expected, version):
             'Source snippets must not be retained')
     results = run.get('results')
     require(isinstance(results, list), 'Missing SAST results')
-    high = 0
+    high = 0; blocking_rules = {}
     for result in results:
         require(not result.get('suppressions'), 'SAST result suppression is forbidden')
         reference = result.get('rule', {})
@@ -158,9 +162,12 @@ def sarif(document, language, root, expected, version):
         number = float(score)
         require(math.isfinite(number) and 0 <= number <= 10, 'Invalid SAST security severity')
         high += number >= 7.0
+        if number >= 7.0:
+            require(re.fullmatch(r'[a-z][a-z0-9_./-]{1,128}', identifier), 'Invalid public rule identifier')
+            blocking_rules[identifier] = blocking_rules.get(identifier, 0) + 1
     return {'schemaVersion': 1, 'tool': 'CodeQL', 'version': version, 'language': language,
             'sources': len(expected), 'rules': len(rules), 'findings': len(results),
-            'highOrCritical': high, 'passed': high == 0}
+            'highOrCritical': high, 'blockingRules': blocking_rules, 'passed': high == 0}
 
 
 def captured_sources(root, database, expected):
