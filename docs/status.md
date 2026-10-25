@@ -97,3 +97,15 @@ Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and s
 P48 integrated merged P01/concurrency15ba8b4, preserving its validator/tests, delivery dependency document and workflow documentation suite. Integrated verification passed 15 ledger tests, 23 delivery-policy tests and the full 108-domain/three-architecture build with unchanged coverage and no skips.
 
 Coordinator applied live ruleset25814212; initial readback exposed GitHub-added required_reviewers=[] and require_extra_approval_for_unattributed_changes=true. Both are now explicit in managed configuration. A regression verifies provider defaults and refusal to relax the extra-approval requirement. Worker made no live settings changes.
+
+## P40 coverage foundation evidence
+
+Implemented inherited JaCoCo instrumentation/report/check for all Maven modules with independent backend production-module thresholds: domain/application 95% lines and 90% branches, adapters/bootstrap 90% lines and branches. One append-only execution file per module combines unit/integration forks without summing duplicate counters. The shared post-build validator rejects missing reports/counters and omitted source files; it also requires complete Angular coverage-final JSON once handwritten frontend sources exist. Generated exclusions require individual generator-manifest entries and version provenance.
+
+`bash scripts/ci/verify-build.sh` passed locally on 2026-10-25: 108 domain tests, three architecture tests, zero failures/errors/skips; domain 276/277 lines (99.64%) and 478/489 branches (97.75%). The final full build included all 23 new synthetic gate tests, including zero-branch report edge cases. Negative cases include below-boundary line/branch thresholds, per-module masking, omitted production sources, missing reports/counters, invalid counters, Angular map truncation and generated-manifest path traversal. `git diff --check` passed. Final exact-head CI remains required.
+
+Limits: application/adapters/bootstrap are empty scaffolds, and Angular is not yet adopted on this branch; no application or Angular coverage result is claimed. Real PostgreSQL, external acceptance-process coverage merging, browser, load, security and recovery suites remain their owning tasks. Full-project P40 completion remains pending.
+
+P01 concurrency prerequisite merged at 15ba8b4 and was integrated without history rewriting. Its delivery dependency map, validator and test suite are preserved. Integrated local checks passed: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` ran 38 tests (15 ledger + 23 coverage); documentation validation, whitespace and the full implemented build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Remote exact-head CI remains required.
+
+P48 integrated P40 foundationbb7d4cf and replaced Python discovery entry points with a tested runner that rejects empty, skipped, failed and expected-failure suites. Guarded root suite runs 15 ledger plus 23 coverage tests; delivery-policy runs 25 tests. Live protection readback passed after explicitly preserving provider defaults.

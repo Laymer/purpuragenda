@@ -43,7 +43,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
-| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Draft PR; https://github.com/Laymer/purpuragenda/pull/10; coverage foundation in separate worktree; final acceptance pending |
+| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; coverage foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
@@ -55,7 +55,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage PR10 and P48 protection PR8 are being authored in separate worktrees; P48 claim is recorded here and P40 claim remains in its branch until integration.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection PR8 is active. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
@@ -67,9 +67,9 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p48, 2026-10-25T08:09:44Z.
 - Current task: P48/merge-protection; branch: task/p48-merge-protection; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/8.
-- Last pushed implementation commit: d4ab289; uncommitted changes: integration of merged P01/concurrency 15ba8b4 and reconciled handoff.
-- What works: P01–P06 and P01/concurrency merged. P48 tested implementation is pushed; coordinator applied live protection; default-field reconciliation pending. What remains: exact-head CI, reviewed live configuration and coordinator merge; P40/final publication pending.
+- Last pushed implementation commit: d4ab289; uncommitted changes: tested integration of P01 at15ba8b4/P40 atbb7d4cf and guarded Python suite runner.
+- What works: P01–P06 and P01/concurrency merged. P48 tested implementation is pushed; coordinator applied live protection; readback passed with explicit provider defaults. What remains: exact-head CI, reviewed live configuration and coordinator merge; P40/final publication pending.
 - Decisions: preserve independent category jobs, existing deletion/non-fast-forward restrictions, required-check pins and stronger managed rules; no settings application by worker.
-- Verification: integrated 15 ledger + 24 delivery-policy tests and full build passed (108 domain + three architecture, no skips, 99.64% lines / 97.75% branches); whitespace passed. Exact-head CI and live-protection readback remain required.
+- Verification: integrated 15 ledger + 23 coverage + 25 delivery-policy tests and full build passed (108 domain + three architecture, no skips, 99.64% lines / 97.75% branches); whitespace passed. Read-only live protection check passed; exact-head CI remains required.
 - Next concrete action: run documentation/delivery-policy suites, full build and commit policy; push integrated head for coordinator review.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P01/concurrency15ba8b4 already merged; P40 PR10 separate.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P01/concurrency15ba8b4 already merged; P40 foundation bb7d4cf already merged.
