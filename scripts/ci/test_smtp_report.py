@@ -21,6 +21,11 @@ class SmtpReportTest(unittest.TestCase):
                         + '<testcase/>' * cases + '</testsuite>')
         return path
 
+    def test_build_requires_smtp_report_unconditionally(self):
+        build=(Path(__file__).resolve().parents[2]/'scripts/ci/verify-build.sh').read_text()
+        self.assertIn('\npython3 scripts/ci/check-smtp-report.py\n',build)
+        self.assertNotIn('check-smtp-report.py ||',build)
+
     def test_missing_incomplete_phantom_skipped_and_unrelated_suites_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
