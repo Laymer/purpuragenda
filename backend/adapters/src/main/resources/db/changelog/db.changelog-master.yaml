@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-core
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 001-core.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 002-seeds
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 002-seeds.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 003-operations
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 003-operations.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 004-zoom-regex
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 004-zoom-regex.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 005-contact-and-invariants
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 005-contact-and-invariants.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 006-delivery-fencing
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 006-delivery-fencing.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 007-required-invariants
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 007-required-invariants.sql
+            relativeToChangelogFile: true
+            splitStatements: false
