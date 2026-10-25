@@ -52,12 +52,14 @@ class NotificationQueueDatabaseTest {
 
     @Test void committedClaimCanBeRenewedAndCompletedByAnotherInstanceExactlyOnce() {
         UUID id = job(booking, "CUSTOMER");
+        sql("UPDATE notification_job SET due_at=to_timestamp(0) WHERE id=?", id);
         Lease lease = queue.claim().orElseThrow(); assertTrue(id.equals(lease.id()));
         assertEquals(1, count("SELECT count(*) FROM notification_job WHERE state='LEASED' AND attempts=1"));
         var restarted = new PostgresNotificationQueue(source, false);
         assertTrue(restarted.renew(lease)); assertTrue(restarted.sent(lease));
         assertFalse(queue.sent(lease)); assertFalse(queue.failed(lease)); assertFalse(queue.renew(lease));
         assertEquals(1, attempts());
+        assertEquals(1, count("SELECT count(*) FROM notification_job WHERE state='SENT' AND due_at=to_timestamp(0)"));
         assertEquals(1, count("SELECT count(*) FROM notification_job WHERE state='SENT' AND encrypted_envelope IS NULL AND lease_token IS NULL AND lease_until IS NULL AND safe_error IS NULL"));
         assertEquals(1, count("SELECT count(*) FROM delivery_attempt WHERE success AND safe_code IS NULL AND lease_token IS NOT NULL"));
     }

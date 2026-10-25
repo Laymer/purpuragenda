@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue-foundation9c3faff; independently reviewed; SMTP/auth delivery next slice |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Draft PR; https://github.com/Laymer/purpuragenda/pull/19; queue-foundation2c6fce4 initial CI green; SMTP/auth delivery pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:07:51Z.
-- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: pending.
-- Last pushed implementation commit: none yet; local reviewed implementation9c3faff; uncommitted changes: queue port/JDBC implementation, ten real database tests, unit/report guards and evidence before first checkpoint.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:31:09Z.
+- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/19.
+- Last pushed implementation commit: 2c6fce4 (reviewed implementation9c3faff plus prerequisites); uncommitted changes: original-due preservation regression and final PR/CI evidence before tested checkpoint.
 - What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
-- What remains: minimal queue port/JDBC leases/retries and mandatory real PostgreSQL concurrency tests; SMTP/auth envelopes later P14 slice.
+- What remains: final checkpoint exact-head rerun and coordinator merge; SMTP/auth envelopes later P14 slice.
 - Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
-- Verification: test-compile all7modules passed;101rootPython passed; unchanged full build passes6Angular/108domain/2application/11security/2image/1storage then fails mandatory PostgreSQL startup (Docker unavailable), zero skips; no adapter/integrity coverage claim. Application3/3lines no branches.
-- Next concrete action: verify integrated P08 core compilation/inventory, push draft and require exact-head real PostgreSQL CI.
+- Verification: initial exact-head CI40180605912 at2c6fce4 all7jobs passed;10queue+11migration+11core realPG cases,46adapter+6application+108domain+3architecture tests, zero skips. Coverage adapter202/205lines151/166branches; app32/33lines48/48branches; Angular100%;124rootPython+31policy and472package advisory scan passed. Local full command fails Docker as required; real CI supplies integrity evidence.
+- Next concrete action: push tested final checkpoint and require exact-head real PostgreSQL CI/coordinator merge.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 transaction-core6c1f96f merged and integrated; booking/policy persistence owned separately; P43 dependencies2c896ff integrated.
