@@ -7,7 +7,7 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.*;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -105,6 +105,31 @@ class NotificationQueueDatabaseTest {
         }
         assertEquals(1, count("SELECT count(*) FROM notification_job WHERE state='LEASED'"));
         assertEquals(19, count("SELECT count(*) FROM notification_job WHERE state='QUEUED'"));
+    }
+
+    @Test void claimRechecksAGroupCommittedAfterItsCandidateWasSelected() {
+        UUID first=job(booking,"CUSTOMER"), second=job(booking,"CUSTOMER");
+        sql("UPDATE notification_job SET due_at=to_timestamp(0) WHERE id=?",first);
+        var interleaved=new AtomicBoolean(); var winner=new AtomicReference<Lease>();
+        var orchestrated=(DataSource)Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{DataSource.class},
+            (proxy,method,arguments)->{
+                var connection=source.getConnection();
+                return Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{Connection.class},
+                    (wrapped,operation,values)->{
+                        if(operation.getName().equals("prepareStatement") && values[0] instanceof String statement
+                                && statement.contains("pg_try_advisory_xact_lock") && interleaved.compareAndSet(false,true)) {
+                            // A is row-locked in the outer transaction. Independent B skips A,
+                            // claims the same audience and commits before outer A takes its group lock.
+                            winner.set(queue.claim().orElseThrow());
+                        }
+                        return operation.invoke(connection,values);
+                    });
+            });
+        assertTrue(new PostgresNotificationQueue(orchestrated,false).claim().isEmpty());
+        assertTrue(interleaved.get()); assertTrue(second.equals(winner.get().id()));
+        assertEquals(1,count("SELECT count(*) FROM notification_job WHERE state='LEASED'"));
+        assertEquals(1,count("SELECT count(*) FROM notification_job WHERE state='QUEUED'"));
+        assertEquals(0,attempts());
     }
 
     @Test void differentAudiencesAndBookingsProgressWithoutGlobalSerialization() {

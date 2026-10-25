@@ -32,6 +32,14 @@ jobs:
             frontend/coverage/coverage-final.json
           if-no-files-found: error
           retention-days: 14
+      - name: Retain backend coverage counters
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-coverage-counts
+          path: backend/*/target/site/jacoco/jacoco.xml
+          if-no-files-found: error
+          retention-days: 14
   delivery-policy:
     runs-on: ubuntu-24.04
     steps:

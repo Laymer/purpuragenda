@@ -11,13 +11,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; core PR18 at6c1f96f; final exact-head CI40182468535 passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; availability merged https://github.com/Laymer/purpuragenda/pull/24 at8d2ecf6 with12 green checks; expiry/quota/creation remain |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation merged https://github.com/Laymer/purpuragenda/pull/19 at e917ee3; SMTP/auth delivery slice active separately |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation PR19 e917ee3 and deterministic correction PR23 6afe0e1 merged; SMTP delivery remains pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T10:08:48Z.
-- Current task: P49/wsl-preflight; branch: task/p49-wsl-preflight; base: main; PR URL: pending.
-- Last pushed implementation commit: none; uncommitted changes: preflight,16 native synthetic cases, safe report gate, mandatory CI and development runbook ready for review.
+- Agent and UTC checkpoint: Codex, 2026-10-25T10:17:04Z.
+- Current task: P49/wsl-preflight; branch: task/p49-wsl-preflight; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/25.
+- Last pushed implementation commit: bcab6c1; uncommitted changes: current-main6afe0e1/8d2ecf6 metadata reconciliation; source unchanged.
 - What works: P49 Mac bootstrap PR22 merged4233afd with actual host readiness; P43 SAST PR21 merged0454505 with12 green checks.
 - What remains: read-only Windows preflight for explicit Ubuntu24.04/WSL2 and local Docker Desktop, synthetic native PowerShell tests and development instructions; actual Windows/WSL acceptance remains pending.
 - Decisions: preserve Kali/default distribution and all data; no automatic install, unregister, version conversion or Docker mutation. Native CI certifies the preflight tests, not a real WSL installation.
-- Verification:163 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally, so no native test or actual WSL passing claim. Native Windows CI and independent review remain required.
-- Next concrete action: publish draft for actual native PowerShell CI and independent review, integrate current main before merge.
+- Verification:165 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally, so no native test or actual WSL passing claim. Independent agent review approved preflight/cases/report safety; native Windows CI remains required.
+- Next concrete action: require actual native PowerShell CI and all implemented categories before merge.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, P02/P49Mac/P43 foundations merged.
