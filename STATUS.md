@@ -15,9 +15,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; public availability slice; creation, quotas and expiry remain |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation merged https://github.com/Laymer/purpuragenda/pull/19 at e917ee3; SMTP/auth delivery pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation merged https://github.com/Laymer/purpuragenda/pull/19 at e917ee3; SMTP/auth delivery slice active separately |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,13 +46,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation PR13 8f5ed62 and dependency foundation https://github.com/Laymer/purpuragenda/pull/17 at2c896ff merged; remaining scans pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret PR13 and dependency PR17 merged at 2c896ff; SAST/full SBOM/container/config acceptance pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 atf3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; macos-bootstrap slice; other runbooks and real host acceptance pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -62,14 +62,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P09/availability: agent=Codex-p09; branch=task/p09-availability; base=main; handoff=docs/handoffs/p09-availability.md
+- P49/macos-bootstrap: agent=Codex; branch=task/p49-mac-bootstrap; base=main; handoff=docs/handoffs/p49-mac-bootstrap.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p08, 2026-10-25T09:46:02Z.
-- Current task: P08/persistence; branch: task/p08-persistence; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/20.
-- Last pushed implementation commit: 1bdc191; uncommitted changes: validate intake and configured meeting hosts/IDs before writing; rejected and operator-approved custom-host regressions.
-- What works: transaction-core PR18 merged6c1f96f; all exact-head CI40179409004 categories passed, including11 transaction+11 migration PostgreSQL cases. What remains: final intake/meeting write regressions exact-head CI, independent final review and coordinator merge; no P09/quota/financial/contact/configuration use cases in this slice.
-- Decisions: framework-free inward views, adapter-only JSON, domain-validated reconstruction including private Meeting.parse, immutable existing snapshots, captured-time occupancy release and derived pending ceilings. Preserve applied migrations.
-- Verification: core108domain+4application+35adapter+3architecture+6Angular passed without skips; domain276/277lines478/489branches, application29/30lines48/48branches, adapters126/129lines91/94branches. Targeted108 domain+4 application+15 adapter unit tests and125 root+31 delivery Python tests passed; complete live OSV scan475 resolved packages with zero known vulnerabilities; test compilation, docs/inventory and whitespace passed; initial actual-container CI40181865475 at1bdc191 passed every implemented category; final regression rerun pending.
-- Next concrete action: checkpoint tested implementation, integrate latest main including mandatory dependency scans, push draft for real PostgreSQL/coverage CI.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, core prerequisite merged. Same DataSource identity and transaction-bound JDBC are mandatory.
+- Agent and UTC checkpoint: Codex, 2026-10-25T09:59:28Z.
+- Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/22.
+- Last pushed implementation commit: c6a7e9a; uncommitted changes: actual host-readiness evidence and malformed-status privacy regression.
+- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2; P08core6c1f96f, P43dependency2c896ff and P14queuee917ee3 and P08persistence98c7535 integrated.
+- What remains: tested pinned Tailscale installer/readiness bootstrap and clear host runbook, independent review/CI. Public ingress, live deployment and real Mac acceptance remain manual later.
+- Decisions: prefer local bootstrap on Mac rather than SSHcredentials; preserve existing apps/state/volumes; never print tailnet identity/auth JSON/URLs/tokens; stop with nonzero pending status for interactive Mac/tailnet approval.
+- Verification: 18 synthetic bootstrap tests and Bash syntax pass; independent agent review approved; SSH read-only confirms actual target15.7.8/x86_64, DockerDesktop installed, Tailscale absent, native administrator authorization needed; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native Intel CI40181989864 macos-bootstrap passed actual checksum/signature/Gatekeeper and AppleScript compilation. All46 adapter tests passed but branch coverage89% blocked aggregate; queue owner investigating. Staged reviewed immutable files over authenticated SSH; actual --check returned TAILSCALE_NOT_INSTALLED. SSH native authorization returned -60007; local Terminal bootstrap installed Tailscale. Strict/deep app signature verified and corrected inline team requirement passed on actual host. Corrected immutable bootstrap c6a7e9a then returned HOST_PREREQUISITES_READY on the actual owner host: signed pinned client Running/Online and explicit local Docker Linux/x86_64 with at least2CPU/4GiB. Native expanded-app CI40182843893 passed. No app deployment or public exposure.
+- Next concrete action: require final exact-head CI and independent review, reconcile shared queue fix, and merge this host-prerequisite slice.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; runtime/SMTP/ingress activation outside this slice.

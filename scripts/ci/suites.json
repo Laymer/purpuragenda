@@ -125,6 +125,11 @@
       "owner": "P47",
       "state": "planned",
       "job": null
+    },
+    "macos-bootstrap": {
+      "owner": "P49",
+      "state": "implemented",
+      "job": "macos-bootstrap"
     }
   }
 }
