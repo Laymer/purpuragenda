@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @org.junit.jupiter.api.parallel.ResourceLock("postgres-migration-fixture")
 class AdminRecoveryDatabaseTest {
     @TempDir Path temporary;AdminMfaDatabaseTest f;PostgresAdminRecovery store;PrivateAdminRecovery recovery;
-    final List<char[]> codes=new ArrayList<>();final Binding binding=binding(1,2);
+    final List<char[]> codes=new ArrayList<>();final Binding binding=binding(1,2);long initialVersion;
     @BeforeAll static void start() { AdminMfaDatabaseTest.start(); }
     @AfterAll static void stop() { AdminMfaDatabaseTest.stop(); }
     static Binding binding(int browser,int request) { byte[] b=new byte[32],r=new byte[32];Arrays.fill(b,(byte)browser);Arrays.fill(r,(byte)request);return new Binding(b,r); }
@@ -29,12 +29,13 @@ class AdminRecoveryDatabaseTest {
     @BeforeEach void prepare() throws Exception {
         f=new AdminMfaDatabaseTest();f.temporary=temporary;f.prepare();
         try(var result=f.mfa.enroll("owner@example.test",password(),f.code(f.now().getEpochSecond()/30)).orElseThrow()) { result.codes().forEach(code->codes.add(code.value())); }
+        initialVersion=f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class);
         store=new PostgresAdminRecovery(f.source,f.secrets);recovery=workflow(store);
     }
     @AfterEach void cleanup() { codes.forEach(value->Arrays.fill(value,'\0'));f.cleanup(); }
     PrivateAdminRecovery workflow(PostgresAdminRecovery target) { return new PrivateAdminRecovery(target,new Argon2PasswordHash(),new AdminCrypto()); }
     Reenrollment begin() { return recovery.begin("owner@example.test",password(),codes.getFirst().clone(),binding).orElseThrow(); }
-    long version() { return f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class); }
+    long version() { return f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class)-initialVersion; }
     long consumed() { return f.jdbc.queryForObject("SELECT count(*) FROM admin_recovery_code WHERE consumed_at IS NOT NULL",Long.class); }
     void sessions() {
         f.jdbc.update("INSERT INTO spring_session VALUES (?,?,0,0,900,9999999999999,(SELECT id::text FROM admin_user))",UUID.randomUUID().toString(),UUID.randomUUID().toString());
@@ -69,7 +70,7 @@ class AdminRecoveryDatabaseTest {
         assertTrue(recovery.begin("owner@example.test","synthetic wrong password phrase".toCharArray(),codes.getFirst().clone(),binding).isEmpty());
         try(var wrong=new AdminCrypto().recoveryCode()) { assertTrue(recovery.begin("owner@example.test",password(),wrong.value(),binding).isEmpty()); }
         f.jdbc.update("UPDATE admin_user SET enabled=false");assertTrue(recovery.begin("owner@example.test",password(),codes.getFirst().clone(),binding).isEmpty());
-        assertEquals(0,consumed());assertEquals(0,version());assertEquals(0,f.count("admin_reenrollment_grant"));assertTrue(f.enrolled());
+        assertEquals(0,consumed());assertEquals(1,version());assertEquals(0,f.count("admin_reenrollment_grant"));assertTrue(f.enrolled());
     }
     @Test void reenrollmentConsumesGrantRevokesOldCodesAndStillRequiresFreshMfa() throws Exception {
         try(var value=begin()) {
@@ -144,8 +145,11 @@ class AdminRecoveryDatabaseTest {
         try(var value=begin()) {
             String code=f.freshCode();f.jdbc.update("UPDATE admin_user SET enabled=false");assertTrue(finish(value,binding,code).isEmpty());
             f.jdbc.update("UPDATE admin_user SET enabled=true,security_version=security_version+1");assertTrue(finish(value,binding,code).isEmpty());
-            f.jdbc.update("UPDATE admin_user SET security_version=security_version-1");f.jdbc.update("UPDATE admin_reenrollment_grant SET revoked_at=clock_timestamp()");
-            assertTrue(finish(value,binding,code).isEmpty());assertTrue(recovery.begin("owner@example.test",password(),codes.getFirst().clone(),binding).isEmpty());
+            f.fixture.denied("23514","UPDATE admin_user SET security_version=security_version-1");
+            try(var next=recovery.begin("owner@example.test",password(),codes.get(1).clone(),binding).orElseThrow()) {
+                f.jdbc.update("UPDATE admin_reenrollment_grant SET revoked_at=clock_timestamp() WHERE revoked_at IS NULL");
+                assertTrue(finish(next,binding,f.freshCode()).isEmpty());assertTrue(recovery.begin("owner@example.test",password(),codes.get(1).clone(),binding).isEmpty());
+            }
         }
     }
     @Test void contextsCannotEscapeOrCrossThreadsAndDirectUnprovenWritesFailClosed() throws Exception {
@@ -166,16 +170,19 @@ class AdminRecoveryDatabaseTest {
             String original=f.jdbc.queryForObject("SELECT totp_secret FROM admin_user",String.class);
             for(String invalid:List.of("invalid",f.secrets.encrypt(Base64.getEncoder().encodeToString(new byte[19])))) {
                 f.jdbc.update("UPDATE admin_user SET totp_secret=?",invalid);
+                // Simulate matching-epoch storage corruption to exercise decryption failure separately from revocation.
+                f.jdbc.update("UPDATE admin_reenrollment_grant SET security_version=(SELECT security_version FROM admin_user)");
                 var failure=assertThrows(IllegalStateException.class,()->finish(value,binding,"invalid"));assertEquals("ADMIN_RECOVERY_UNAVAILABLE",failure.getMessage());assertNull(failure.getCause());
             }
             f.jdbc.update("UPDATE admin_user SET totp_secret=?",original);
+            f.jdbc.update("UPDATE admin_reenrollment_grant SET security_version=(SELECT security_version FROM admin_user)");long expectedVersion=version();
             List<String> hashes=new ArrayList<>();for(int i=0;i<10;i++)hashes.add(String.format("%064x",i));
             for(List<String> invalid:List.of(List.<String>of(),Collections.nCopies(10,"a".repeat(64)),new ArrayList<>(hashes))) {
                 if(invalid instanceof ArrayList<String>)invalid.set(0,"invalid");
                 assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{try(var secret=admin.prove(value.token().hash(),binding).orElseThrow()) { admin.reenroll(7,invalid); }return null;}));
             }
             assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{try(var secret=admin.prove(value.token().hash(),binding).orElseThrow()) { admin.reenroll(-1,hashes); }return null;}));
-            assertFalse(f.enrolled());assertEquals(1,version());assertEquals(10,f.count("admin_recovery_code"));
+            assertFalse(f.enrolled());assertEquals(expectedVersion,version());assertEquals(10,f.count("admin_recovery_code"));
         }
     }
     @Test void additiveMigrationPreservesExistingAdminHistoryAndRejectsWrongPurposeOrLifetime() {

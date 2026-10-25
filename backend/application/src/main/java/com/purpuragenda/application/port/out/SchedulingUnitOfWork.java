@@ -86,7 +86,7 @@ public interface SchedulingUnitOfWork {
         }
     }
     final class Failure extends RuntimeException {
-        public enum Kind { RETRY_LATER, STORAGE_FAILURE }
+        public enum Kind { RETRY_LATER, STORAGE_FAILURE, AUTHENTICATION_REQUIRED, FORBIDDEN, MAINTENANCE }
         private final Kind kind;
         public Failure(Kind kind) { super(Objects.requireNonNull(kind).name()); this.kind=kind; }
         public Kind kind() { return kind; }

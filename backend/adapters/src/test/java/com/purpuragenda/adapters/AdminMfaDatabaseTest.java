@@ -138,6 +138,7 @@ class AdminMfaDatabaseTest {
         assertEquals(1,clocks.get());assertThrows(IllegalStateException.class,()->escaped.get().now());assertThrows(IllegalStateException.class,()->escaped.get().credential());
         assertThrows(IllegalStateException.class,()->escaped.get().initialEnrollment());
         assertThrows(IllegalStateException.class,()->escaped.get().acceptStep(7));assertThrows(IllegalStateException.class,()->escaped.get().enroll(7,List.of()));
+        assertThrows(IllegalStateException.class,()->escaped.get().issueAuthenticationProof("a".repeat(64),new com.purpuragenda.application.port.out.SessionStore.ProofBinding("b".repeat(64),"c".repeat(64))));
     }
     @Test void auditFailureRollsBackEnrollmentAndErasesIssuedCodeBuffers() throws Exception {
         try(Connection connection=fixture.connection(MigrationTest.MIGRATOR)) {

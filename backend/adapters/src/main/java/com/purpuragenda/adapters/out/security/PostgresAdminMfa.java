@@ -1,6 +1,7 @@
 package com.purpuragenda.adapters.out.security;
 
 import com.purpuragenda.application.port.out.AdminMfaUnitOfWork;
+import com.purpuragenda.application.port.out.SessionStore.ProofBinding;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
@@ -59,7 +60,7 @@ public final class PostgresAdminMfa implements AdminMfaUnitOfWork {
         private final Credential credential;
         private final boolean initial;
         private final Thread owner=Thread.currentThread();
-        private boolean active=true;
+        private boolean active=true,authenticated,proofIssued;
         Context(Connection connection,Instant captured,Credential credential,boolean initial) { this.connection=connection;this.captured=captured;this.credential=credential;this.initial=initial; }
         private void check() { if(!active || owner!=Thread.currentThread())throw new IllegalStateException("ADMIN_MFA_CONTEXT_CLOSED"); }
         @Override public Instant now() { check();return captured; }
@@ -77,6 +78,16 @@ public final class PostgresAdminMfa implements AdminMfaUnitOfWork {
         @Override public void acceptStep(long step) {
             check();if(credential==null || !credential.enrolled())throw unavailable();
             update(step,"UPDATE admin_user SET last_totp_step=? WHERE id=? AND enrolled AND last_totp_step<?");audit("ADMIN_MFA_VERIFIED");
+            authenticated=true;
+        }
+        @Override public Instant issueAuthenticationProof(String hash,ProofBinding binding) {
+            check();if(!authenticated || proofIssued || !hash.matches("[a-f0-9]{64}"))throw unavailable();
+            Instant expiry=captured.plusSeconds(60);
+            try(var insert=connection.prepareStatement("INSERT INTO admin_authentication_proof(id,admin_id,token_hash,purpose,browser_hash,request_hash,security_version,issued_at,expires_at) SELECT ?,id,?,'ADMIN_AUTHENTICATION',?,?,security_version,?,? FROM admin_user WHERE id=? AND enabled AND enrolled")) {
+                insert.setObject(1,UUID.randomUUID());insert.setString(2,hash);insert.setString(3,binding.browserHash());insert.setString(4,binding.requestHash());
+                insert.setTimestamp(5,Timestamp.from(captured));insert.setTimestamp(6,Timestamp.from(expiry));insert.setObject(7,credential.id());
+                if(insert.executeUpdate()!=1)throw unavailable();proofIssued=true;return expiry;
+            } catch(SQLException failure) { throw unavailable(); }
         }
         private void update(long step,String sql) {
             if(step<0 || step<=credential.acceptedStep())throw unavailable();

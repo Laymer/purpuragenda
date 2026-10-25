@@ -19,6 +19,7 @@ OWNERS = {
     'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49', 'windows-preflight': 'P49',
 }
 ACTIVATION = {
+    'persistence': 'compose.yaml',
     'windows-preflight': 'scripts/ops/preflight-wsl.ps1',
     'postgres-migrations': 'backend/adapters/src/main/resources/db/changelog/db.changelog-master.yaml',
     'angular': 'frontend/package.json',

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 def validate(root):
     suites = [('MigrationTest', 11)]
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresScheduling.java').is_file():
-        suites.append(('TransactionCoreTest', 11))
+        suites.append(('TransactionCoreTest', 12))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresBookingStore.java').is_file():
         suites.append(('BookingPersistenceTest', 10))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresPrivateAdmin.java').is_file():
@@ -33,6 +33,10 @@ def validate(root):
         suites.append(('GuestRecoveryDatabaseTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminRecovery.java').is_file():
         suites.append(('AdminRecoveryDatabaseTest', 13))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSessions.java').is_file():
+        suites.append(('SessionDatabaseTest', 30))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBooking.java').is_file():
+        suites.append(('CustomerCreationPostgresTest', 43))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
@@ -43,9 +47,9 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
-            raise ValueError('Incomplete or failed guest access/recovery cases')
+            raise ValueError('Incomplete or failed authority cases')
 
     if (root / 'backend/bootstrap/src/main/java/com/purpuragenda/bootstrap/Purpuragenda.java').is_file():
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'

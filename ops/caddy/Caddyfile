@@ -1,0 +1,48 @@
+{
+  admin off
+  auto_https off
+  persist_config off
+  log {
+    output discard
+  }
+}
+
+(backend) {
+  reverse_proxy backend:8081 {
+    header_up -Forwarded
+    header_up -X-Forwarded-For
+    header_up -X-Forwarded-Host
+    header_up -X-Forwarded-Proto
+    header_up X-Purpuragenda-Client-IP {remote_host}
+  }
+}
+
+http://:8080 {
+  encode zstd gzip
+  header {
+    Referrer-Policy no-referrer
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  }
+  handle /healthz {
+    rewrite * /actuator/health/readiness
+    import backend
+  }
+  handle /api/* {
+    import backend
+  }
+  handle /actuator/* {
+    respond 404
+  }
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+}
+
+http://:8025 {
+  reverse_proxy mailpit:8025
+}

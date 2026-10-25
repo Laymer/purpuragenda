@@ -25,9 +25,14 @@ public final class DatabaseReadiness implements HealthIndicator {
             // Parse the currently required application columns without reading any customer rows.
             try(var shape=statement.executeQuery("""
                 SELECT b.expiry_ceiling,o.released_at,n.lease_token,q.customer_id,
-                  g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at
+                  g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at,
+                  s.id,s.token_hash,s.browser_hash,s.csrf_hash,s.kind,s.grant_id,s.customer_id,s.account_id,s.admin_id,
+                  s.admin_security_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
+                  a.id,a.admin_id,a.token_hash,a.purpose,a.browser_hash,a.request_hash,a.security_version,
+                  a.issued_at,a.expires_at,a.consumed_at,a.revoked_at
                 FROM booking b,booking_occupancy o,notification_job n,request_charge q,
-                  access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c LIMIT 0
+                  access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c,
+                  app_session s,admin_authentication_proof a LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c

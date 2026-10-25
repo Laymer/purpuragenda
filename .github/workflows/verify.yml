@@ -206,9 +206,24 @@ jobs:
           path: ${{ steps.wsl-tests.outputs.receipt }}
           if-no-files-found: error
           retention-days: 14
+  persistence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Require isolated real Compose persistence and proxy evidence
+        run: python3 scripts/ci/verify-compose.py
+      - name: Retain sanitized exact-revision persistence receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: compose-persistence
+          path: artifacts/compose/persistence.json
+          if-no-files-found: error
+          retention-days: 14
   verify:
     if: always()
-    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, sast, macos-bootstrap, windows-preflight]
+    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, sast, macos-bootstrap, windows-preflight, persistence]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
