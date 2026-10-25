@@ -86,6 +86,11 @@ class CustomerCreationPostgresTest {
         assertEquals(Failure.Kind.FORBIDDEN,failure(()->create(session,"another",request(3,9))).kind());
         assertEquals(1,count("booking"));assertEquals(1,count("request_charge"));assertEquals(1,count("outbox_event"));
     }
+    @Test void aStoredSuccessForAnotherBookingCannotEscapeTheBoundManagementScope() {
+        var session=guest("synthetic@example.test");var request=request(2,9);assertTrue(create(session,"original",request).success());
+        jdbc.update("UPDATE idempotency_record SET receipt=jsonb_set(receipt,'{entityId}',to_jsonb(?::text))",UUID.randomUUID().toString());
+        assertEquals(Failure.Kind.FORBIDDEN,failure(()->create(session,"original",request)).kind());assertEquals(1,count("booking"));
+    }
     @ParameterizedTest @ValueSource(strings={"session","parent","child"})
     void revokedAuthorityIsCheckedBeforeSuccessfulReceiptReplay(String target) {
         var session=guest("synthetic@example.test");var request=request(2,9);assertTrue(create(session,"original",request).success());
@@ -154,6 +159,13 @@ class CustomerCreationPostgresTest {
         assertEquals(0,count("booking"));assertEquals(0,count("idempotency_record"));assertNull(f.value("SELECT consumed_at FROM access_grant"));
     }
     @Test void existingAccountAuthorityUsesStableAccountScopeWithoutConsumingAGrant() {
+        var account=account();var reference=account.binding();Receipt first=command.create(reference,"first",request(2,9));
+        assertTrue(first.success());assertTrue(command.create(reference,"second",request(3,9)).success());
+        assertEquals(account.customer(),load(first.entityId()).customerId());assertEquals(0,count("access_grant"));assertEquals(2,count("request_charge"));
+        assertEquals(account.id()+"/CREATE_BOOKING/-",f.value("SELECT scope FROM idempotency_record LIMIT 1"));assertEquals("ACCOUNT",f.value("SELECT actor_kind FROM audit_event LIMIT 1"));
+    }
+    record Account(SessionBinding binding,UUID customer,UUID id) { }
+    Account account() {
         // Database fixture for an already authenticated account; P18 separately owns enrollment/session exchange.
         UUID customer=UUID.randomUUID(),account=UUID.randomUUID(),id=UUID.randomUUID();String browser="a".repeat(64);
         jdbc.update("INSERT INTO customer_identity VALUES(?,'account@example.test',clock_timestamp())",customer);
@@ -162,10 +174,58 @@ class CustomerCreationPostgresTest {
             INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,customer_id,account_id,issued_at,last_seen_at,absolute_expires_at,authenticated_at)
             SELECT ?,?,?,?,'ACCOUNT',?,?,t,t,t+interval '12 hours',t FROM (SELECT clock_timestamp() t) captured
             """,id,Secrets.hash("synthetic-account-token"),browser,Secrets.hash("synthetic-account-csrf"),customer,account);
-        var reference=new SessionBinding(id,browser);Receipt first=command.create(reference,"first",request(2,9));
-        assertTrue(first.success());assertTrue(command.create(reference,"second",request(3,9)).success());
-        assertEquals(customer,load(first.entityId()).customerId());assertEquals(0,count("access_grant"));assertEquals(2,count("request_charge"));
-        assertEquals(account+"/CREATE_BOOKING/-",f.value("SELECT scope FROM idempotency_record LIMIT 1"));assertEquals("ACCOUNT",f.value("SELECT actor_kind FROM audit_event LIMIT 1"));
+        return new Account(new SessionBinding(id,browser),customer,account);
+    }
+    @ParameterizedTest @ValueSource(longs={-1,0,1})
+    void accountAbsoluteExpiryRejectsEqualityEvenWithRecentActivity(long micros) {
+        var account=account();var request=request(3,9);Receipt created=command.create(account.binding(),"boundary",request);
+        Instant expires=jdbc.queryForObject("SELECT absolute_expires_at FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),account.binding().sessionId());
+        jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(expires.minusSeconds(1)),account.binding().sessionId());
+        var fixed=new CustomerBooking(new PostgresCustomerBooking(clock(expires.plusNanos(micros*1000),new AtomicInteger())),"local-v1");
+        if(micros<0)assertEquals(created,fixed.create(account.binding(),"boundary",request));
+        else assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,failure(()->fixed.create(account.binding(),"boundary",request)).kind());
+        assertEquals(1,count("booking"));
+    }
+    @Test void credentialsIssuedAfterCapturedTimeCannotAuthorizeCommands() {
+        var session=guest("synthetic@example.test");var request=request(3,9);var account=account();
+        for(SessionBinding reference:List.of(binding(session),account.binding())) {
+            Instant issued=jdbc.queryForObject("SELECT issued_at FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),reference.sessionId());
+            var fixed=new CustomerBooking(new PostgresCustomerBooking(clock(issued.minusNanos(1000),new AtomicInteger())),"local-v1");
+            assertEquals(reference.equals(account.binding())?Failure.Kind.AUTHENTICATION_REQUIRED:Failure.Kind.FORBIDDEN,
+                    failure(()->fixed.create(reference,"future",request)).kind());
+        }
+        assertEquals(0,count("booking"));assertEquals(0,count("idempotency_record"));
+    }
+    @Test void sessionCannotBorrowAnotherBrowsersValidCreationGrant() {
+        var session=guest("synthetic@example.test");String other="0".repeat(64);
+        jdbc.update("UPDATE app_session SET browser_hash=? WHERE id=?",other,session.reference().id());
+        assertEquals(Failure.Kind.FORBIDDEN,failure(()->command.create(new SessionBinding(session.reference().id(),other),"borrowed",request(3,9))).kind());
+        assertEquals(0,count("booking"));assertNull(f.value("SELECT consumed_at FROM access_grant"));
+    }
+    @ParameterizedTest @ValueSource(strings={"owner","origin","version","old","unsaved"})
+    void grantAndEffectsCannotBeBoundToAnythingExceptThisNewCustomerBooking(String invalid) {
+        var first=guest("synthetic@example.test");Booking previous=invalid.equals("old")?load(create(first,"original",request(3,9)).entityId()):null;
+        var session=previous==null?first:guest("synthetic@example.test");UUID other=invalid.equals("owner")?guest("other@example.test").customerId():session.customerId();
+        int before=count("booking");var request=request(4,9);
+        var key=new Command(binding(session),"invalid-binding",CommandKey.fingerprint(List.of(invalid)));
+        assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->adapter.create(key,tx->{
+            var snapshot=new Booking.Snapshot(tx.services().getFirst(),tx.policy(),request.intake(),tx.customer().verifiedEmail(),"UTC","local-v1");
+            Booking value=previous==null?Booking.pending(UUID.randomUUID(),"B-"+UUID.randomUUID(),other,snapshot,
+                    invalid.equals("origin")?Booking.Origin.ADMINISTRATOR:Booking.Origin.CUSTOMER,tx.now(),request.start()):previous;
+            if(previous==null && !invalid.equals("unsaved"))tx.save(value);
+            if(invalid.equals("version")){value=value.reschedule(tx.now(),value.start(),false);tx.save(value);}
+            tx.bindCreation(value);throw new AssertionError("Invalid creation cannot bind authority");
+        })).kind());
+        assertEquals(before,count("booking"));assertNull(f.value("SELECT consumed_at FROM access_grant WHERE id=?",session.grantId()));
+    }
+    @Test void duplicateBindingWithinOneAttemptRollsBackItsFirstConsumptionAndCharge() {
+        var session=guest("synthetic@example.test");var request=request(3,9);
+        assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->adapter.create(new Command(binding(session),"duplicate",CommandKey.fingerprint(List.of("duplicate"))),tx->{
+            var snapshot=new Booking.Snapshot(tx.services().getFirst(),tx.policy(),request.intake(),tx.customer().verifiedEmail(),"UTC","local-v1");
+            Booking value=Booking.pending(UUID.randomUUID(),"B-"+UUID.randomUUID(),tx.customer().id(),snapshot,Booking.Origin.CUSTOMER,tx.now(),request.start());
+            tx.save(value);assertTrue(tx.chargeCreated(value));tx.bindCreation(value);tx.bindCreation(value);throw new AssertionError("Duplicate binding cannot succeed");
+        })).kind());
+        assertEquals(0,count("booking"));assertEquals(0,count("request_charge"));assertEquals(1,count("access_grant"));assertNull(f.value("SELECT consumed_at FROM access_grant"));
     }
     @ParameterizedTest @ValueSource(strings={"access_grant","request_charge","audit_event","outbox_event"})
     void storageFailureRollsBackBookingChargeAuthorityAndEveryEffect(String table) {
@@ -186,6 +246,7 @@ class CustomerCreationPostgresTest {
         assertEquals(1,count("audit_event"));assertEquals(1,count("outbox_event"));assertEquals(0,count("request_charge"));assertNull(f.value("SELECT consumed_at FROM access_grant"));
         assertEquals(Code.SERVICE_CHANGED,create(session,"stale",stale).code());assertEquals(1,count("outbox_event"));
         assertTrue(create(session,"fresh-review",original).success());assertEquals(1,count("request_charge"));
+        assertEquals(Failure.Kind.FORBIDDEN,failure(()->create(session,"stale",stale)).kind());
     }
     @Test void unknownFailureAlsoRollsBackEarlierExpiryAndDoesNotLeaveAReceipt() {
         UUID due=f.database.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());var session=guest("synthetic@example.test");
