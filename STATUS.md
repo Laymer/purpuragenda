@@ -10,7 +10,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; dd482e3 review only; SQL not adopted |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; real PostgreSQL11-case acceptance passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,14 +46,14 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | In progress; dependency foundation; secret slice merged https://github.com/Laymer/purpuragenda/pull/13 at8f5ed62; SAST/container/config remain pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Draft PR; https://github.com/Laymer/purpuragenda/pull/17; dependency foundation; secret slice merged PR13 at8f5ed62; final P43 pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; final release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 atf3a4841; release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
+| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 scanning foundation is active. Full P40 application-wide acceptance and P48 release publication remain pending.
 
@@ -65,11 +65,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:33:29Z.
-- Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for this slice; uncommitted changes: tested dependency foundation before first commit.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:53:01Z.
+- Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/17.
+- Last pushed implementation commit: a9259e1; uncommitted changes: reviewed npm manifest correspondence fix and current-main integration.
 - What works: P43 secret-scanning slice merged8f5ed62. What remains: pinned dependency scanner, validated transitive SBOM, fail-closed advisory scan and tests; SAST/container/config later slices.
 - Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
-- Verification: 89 root tests passed (18 new dependency cases); real end-to-end public OSV canary and complete20package scan passed with zero project findings. Official scanner digest and CycloneDX artifact provenance verified; final integrated suites/CI pending.
-- Next concrete action: verify official OSV/CycloneDX provenance and report shape, then implement tests/gate.
+- Verification: integrated105 root+31 policy tests, contracts/docs/inventory/secret scan/live protection passed. Live OSV canary and all44 resolved packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);108domain+11security+2image parser passed; no DB-suite passing claim.
+- Next concrete action: run integrated suites and dependency scan; record local Docker limitation; push exact head and require CI/independent approval.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.

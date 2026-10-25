@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -19,12 +20,16 @@ def load(name, path):
 
 GATE = load('dependency_gate', 'scripts/ci/check-dependencies.py')
 INSTALL = load('security_install', 'scripts/dev/install-security-tools.py')
+ARTIFACT = load('artifact_gate', 'scripts/ci/artifact_paths.py')
+SECRETS = load('secrets_gate', 'scripts/ci/check-secrets.py')
 
 
 class DependencyGateTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(); self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
+        external = tempfile.TemporaryDirectory(); self.addCleanup(external.cleanup)
+        self.outside = Path(external.name)
         (self.root / 'domain').mkdir()
         (self.root / 'pom.xml').write_text('''<project xmlns="http://maven.apache.org/POM/4.0.0">
           <groupId>com.synthetic</groupId><artifactId>booking</artifactId><version>1.0</version>
@@ -84,16 +89,40 @@ class DependencyGateTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'purl'): GATE.sbom(changed, self.root)
 
     def test_npm_lock_covers_scoped_and_nested_versions(self):
-        lock = {'lockfileVersion': 3, 'packages': {'': {'name': 'app'},
+        manifest = {'name': 'app', 'version': '1.0.0', 'dependencies': {'@synthetic/library': '1.0.0'}}
+        lock = {'name': 'app', 'version': '1.0.0', 'lockfileVersion': 3, 'packages': {'': manifest,
                 'node_modules/@synthetic/library': {'version': '1.0.0'},
                 'node_modules/parent/node_modules/nested': {'version': '2.0.0'}}}
         self.assertEqual({('npm', '@synthetic/library', '1.0.0'), ('npm', 'nested', '2.0.0')},
-                         GATE.npm_packages(lock))
+                         GATE.npm_packages(lock, manifest))
 
     def test_npm_missing_versions_empty_inventory_and_links_fail(self):
         for packages in ({}, {'node_modules/a': {}}, {'node_modules/a': {'link': True}}, {'elsewhere': {}}):
             with self.subTest(packages=packages), self.assertRaises(ValueError):
-                GATE.npm_packages({'lockfileVersion': 3, 'packages': packages})
+                GATE.npm_packages({'name': 'app', 'version': '1.0.0', 'lockfileVersion': 3,
+                    'packages': {'': {'name': 'app', 'version': '1.0.0'}, **packages}},
+                    {'name': 'app', 'version': '1.0.0'})
+
+    def test_npm_source_omission_stale_versions_and_root_identity_fail(self):
+        manifest = {'name': 'app', 'version': '1.0.0', 'dependencies': {'direct': '2.0.0'},
+                    'devDependencies': {'testing': '3.0.0'}, 'optionalDependencies': {'optional': '4.0.0'}}
+        lock = {'name': 'app', 'version': '1.0.0', 'lockfileVersion': 3, 'packages': {'': copy.deepcopy(manifest),
+                'node_modules/direct': {'version': '2.0.0'}, 'node_modules/testing': {'version': '3.0.0'},
+                'node_modules/optional': {'version': '4.0.0'}}}
+        self.assertEqual(3, len(GATE.npm_packages(lock, manifest)))
+        changed = copy.deepcopy(lock); del changed['packages']['']['dependencies']['direct']
+        with self.assertRaisesRegex(ValueError, 'source declarations'): GATE.npm_packages(changed, manifest)
+        changed = copy.deepcopy(lock); del changed['packages']['node_modules/direct']
+        with self.assertRaisesRegex(ValueError, 'resolved dependency'): GATE.npm_packages(changed, manifest)
+        changed = copy.deepcopy(lock); changed['packages']['node_modules/direct']['version'] = '2.0.1'
+        with self.assertRaisesRegex(ValueError, 'resolved dependency'): GATE.npm_packages(changed, manifest)
+        for key in ('name', 'version'):
+            changed = copy.deepcopy(lock); changed[key] = 'stale'
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'identity'):
+                GATE.npm_packages(changed, manifest)
+        ranged = copy.deepcopy(manifest); ranged['dependencies']['direct'] = '^2.0.0'
+        changed = copy.deepcopy(lock); changed['packages'][''] = ranged
+        with self.assertRaisesRegex(ValueError, 'exact pinned'): GATE.npm_packages(changed, ranged)
 
     def test_complete_clean_and_vulnerable_reports(self):
         self.assertEqual([], GATE.osv_report(self.report(), self.expected, 0))
@@ -147,6 +176,7 @@ class DependencyGateTest(unittest.TestCase):
             'osv-scanner': {'version': '2.7.0', 'binarySha256': INSTALL.digest(binary.read_bytes())},
             'cyclonedx-maven': {'version': '2.9.3'}}))
         def invoke(command):
+            self.assertEqual(str(self.root / 'pom.xml'), command[command.index('-f') + 1])
             directory = next(value.split('=', 1)[1] for value in command if value.startswith('-DoutputDirectory='))
             Path(directory, 'bom.json').write_text(json.dumps(self.document))
             return subprocess.CompletedProcess(command, 0)
@@ -177,6 +207,44 @@ class DependencyGateTest(unittest.TestCase):
         pin = {'format': 'executable', 'binarySha256': INSTALL.digest(data)}
         self.assertEqual(data, INSTALL.materialize(data, pin))
         with self.assertRaisesRegex(ValueError, 'checksum'): INSTALL.materialize(data + b'bad', pin)
+
+    def test_both_scanners_reject_artifact_ancestor_symlink_before_cleanup(self):
+        outside = self.outside; security = outside / 'security'; security.mkdir(parents=True)
+        for name in ('dependencies.json', 'secrets.json'):
+            (security / name).write_text('synthetic-private-outside-marker')
+        (self.root / 'artifacts').symlink_to(outside, target_is_directory=True)
+        with self.assertRaises((ValueError, OSError)): GATE.run(self.root)
+        with self.assertRaises((ValueError, OSError)):
+            SECRETS.run(self.root, self.root / 'missing-tool', {}, self.root / 'artifacts/security/secrets.json')
+        for name in ('dependencies.json', 'secrets.json'):
+            self.assertEqual('synthetic-private-outside-marker', (security / name).read_text())
+        with self.assertRaises((ValueError, OSError)):
+            ARTIFACT.write_artifact(self.root, self.root / 'artifacts/security/new.json', 'outside write')
+        self.assertFalse((security / 'new.json').exists())
+
+    def test_final_receipt_symlink_is_rejected_for_remove_and_write(self):
+        sentinel = self.outside / 'outside.json'; sentinel.write_text('preserve outside')
+        target = self.root / 'artifacts/security/receipt.json'; target.parent.mkdir(parents=True)
+        target.symlink_to(sentinel)
+        for operation in (lambda: ARTIFACT.remove_artifact(self.root, target),
+                          lambda: ARTIFACT.write_artifact(self.root, target, 'replacement')):
+            with self.assertRaises(ValueError): operation()
+            self.assertTrue(target.is_symlink())
+            self.assertEqual('preserve outside', sentinel.read_text())
+
+    def test_anchored_artifact_writes_create_and_replace_without_truncating_hardlinks(self):
+        target = self.root / 'artifacts/security/receipt.json'
+        ARTIFACT.remove_artifact(self.root, target)
+        ARTIFACT.write_artifact(self.root, target, 'first')
+        outside = self.outside / 'outside.json'; os.link(target, outside)
+        ARTIFACT.write_artifact(self.root, target, 'second')
+        self.assertEqual('first', outside.read_text())
+        self.assertEqual('second', target.read_text())
+        ARTIFACT.remove_artifact(self.root, target)
+        self.assertFalse(target.exists())
+        self.assertEqual('first', outside.read_text())
+        with self.assertRaises(ValueError):
+            ARTIFACT.write_artifact(self.root, self.root / '../escape.json', 'forbidden')
 
     def test_official_tools_and_transitive_scope_are_pinned(self):
         lock = json.loads((ROOT / 'ops/security-tools.lock.json').read_text())

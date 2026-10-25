@@ -29,8 +29,8 @@ metadata before persisting the minimal valid Java CycloneDX1.6 inventory. This
 artifact identifies dependency components, not final images or every build tool.
 
 OSV receives that SBOM and frontend/package-lock.json when frontend/package.json
-exists. Missing frontend locks, unversioned entries and missing package results
-fail. Explicit empty scanner configuration prevents repository suppressions;
+exists. Missing frontend locks, manifest/lock root mismatch, omitted direct declarations,
+stale pinned versions, unversioned entries and missing package results fail. Explicit empty scanner configuration prevents repository suppressions;
 all-packages/all-vulns and exact resolved-package correspondence prevent a clean
 subset from certifying the build. A known vulnerable Log4j metadata canary proves
 live advisory detection before project scanning; no vulnerable code is installed.
@@ -41,7 +41,10 @@ Only validated package coordinates/advisory IDs and counts reach
 artifacts/security/dependencies.json. The sanitized Java inventory is
 artifacts/security/java.cdx.json. CI retains these two safe artifacts for14days;
 missing artifacts fail, while dependency findings leave a reviewed failure receipt.
-Tool/feed failures never leave stale passing evidence.
+Tool/feed failures never leave stale passing evidence. Both secret/dependency receipt
+cleanup and writes use anchored directory handles with no-follow checks: ancestor
+and final-file symlinks are rejected, and atomic replacement preserves external
+hard-link contents.
 
 Official behavior references:
 https://google.github.io/osv-scanner/usage/scan-source

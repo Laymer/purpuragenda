@@ -62,3 +62,11 @@ missing or mismatched receipts fail. An explicit bypass list is always checked
 directly. Read-only CI cannot mint administrator evidence, and receives no privileged
 secret. The receipt attests to the administrator readback at that immutable version;
 independent review protects the committed evidence from fabricated replacement.
+
+## Mandatory suite inventory
+
+`scripts/ci/suites.json` maps the approved automated categories to their owner task, implementation state and prerequisite job. Multiple categories may share a job (for example Java, architecture and coverage). Add the applicable implemented category atomically with its implementation; never delete a category to turn a failing suite green. PostgreSQL migrations and Angular have source-activation checks so their introduction cannot leave the corresponding categories planned.
+
+The aggregate now checks that workflow jobs, explicit needs and exact successful results match all implemented categories. Required jobs cannot use job-level conditions/continue-on-error, path filters cannot exempt documentation PRs, and skipped/cancelled/missing/extra results fail. The workflow uses a deliberately simple single-line needs shape; changing it requires updating the validator and regression tests together.
+
+Run `python3 scripts/ci/check-suites.py` for the active graph and `python3 scripts/ci/check-suites.py --release` before release publication. The latter currently fails because planned automated categories remain. Passing current gates is not full release readiness or owner acceptance. P48 final publication must invoke this release guard only after every required category exists; manual P50 launch gates remain separate. Independent review still checks that each job actually runs its stated suites and that tests are meaningful.

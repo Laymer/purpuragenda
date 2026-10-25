@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
+from artifact_paths import remove_artifact, write_artifact
 
 ROOT = Path(__file__).resolve().parents[2]
 NS = {'m': 'http://maven.apache.org/POM/4.0.0'}
@@ -86,10 +87,26 @@ def sbom(document, root):
     return sanitized, packages
 
 
-def npm_packages(lock):
+def npm_packages(lock, manifest):
     require(isinstance(lock, dict), 'Invalid npm lock')
     require(lock.get('lockfileVersion') in (2, 3) and isinstance(lock.get('packages'), dict),
             'Missing complete npm lock inventory')
+    require(isinstance(manifest, dict), 'Missing npm source manifest')
+    package_root = lock['packages'].get('', {})
+    require(isinstance(package_root, dict), 'Invalid npm lock root')
+    for key in ('name', 'version'):
+        require(isinstance(manifest.get(key), str) and manifest[key] and
+                lock.get(key) == manifest[key] == package_root.get(key), 'Stale npm root identity')
+    for kind in ('dependencies', 'devDependencies', 'optionalDependencies'):
+        declared = manifest.get(kind, {})
+        require(isinstance(declared, dict) and package_root.get(kind, {}) == declared,
+                'npm lock omits or changes source declarations')
+        for name, version in declared.items():
+            require(isinstance(version, str) and re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?', version),
+                    'Direct npm dependencies must use exact pinned versions')
+            resolved = lock['packages'].get('node_modules/' + name, {})
+            require(isinstance(resolved, dict) and resolved.get('version') == version,
+                    'npm lock omits or changes a direct resolved dependency')
     result = set()
     for path, item in lock['packages'].items():
         require(isinstance(item, dict), 'Invalid npm lock package')
@@ -152,19 +169,19 @@ def scan(binary, inputs, expected, scratch):
 
 
 def run(root):
-    output = root / 'artifacts/security'; output.mkdir(parents=True, exist_ok=True)
+    output = root / 'artifacts/security'
     for name in ('dependencies.json', 'java.cdx.json'):
-        (output / name).unlink(missing_ok=True)
+        remove_artifact(root, output / name)
     lock = json.loads((root / 'ops/security-tools.lock.json').read_text())
     pin = lock['osv-scanner']; binary = root / '.cache/security/osv-scanner'
     require(binary.is_file() and os.access(binary, os.X_OK), 'Required OSV scanner is unavailable')
     require(hashlib.sha256(binary.read_bytes()).hexdigest() == pin['binarySha256'], 'OSV binary checksum mismatch')
     version = subprocess.check_output([str(binary), '--version'], stderr=subprocess.DEVNULL,
-                                      timeout=15, text=True).splitlines()[0]
-    require(version == 'osv-scanner version: ' + pin['version'], 'OSV version mismatch')
+                                      timeout=15, text=True).splitlines()
+    require(version and version[0] == 'osv-scanner version: ' + pin['version'], 'OSV version mismatch')
     with tempfile.TemporaryDirectory(prefix='purpuragenda-dependencies-') as temporary:
         scratch = Path(temporary)
-        command = [str(root / 'mvnw'), '--batch-mode', '--no-transfer-progress',
+        command = [str(root / 'mvnw'), '--batch-mode', '--no-transfer-progress', '-f', str(root / 'pom.xml'),
                    'org.cyclonedx:cyclonedx-maven-plugin:' + lock['cyclonedx-maven']['version'] + ':makeAggregateBom',
                    '-DincludeTestScope=true', '-DoutputFormat=json', '-DschemaVersion=1.6',
                    '-DoutputReactorProjects=false', '-DskipAttach=true', '-DoutputDirectory=' + str(scratch)]
@@ -178,7 +195,7 @@ def run(root):
         if (frontend / 'package.json').exists():
             require((frontend / 'package-lock.json').is_file(), 'Frontend source requires npm lock')
             npm = json.loads((frontend / 'package-lock.json').read_text())
-            expected |= npm_packages(npm)
+            expected |= npm_packages(npm, json.loads((frontend / 'package.json').read_text()))
             copied = scratch / 'package-lock.json'; copied.write_text(json.dumps(npm)); inputs.append(copied)
         canary = scratch / 'canary.cdx.json'
         canary.write_text(json.dumps({'bomFormat': 'CycloneDX', 'specVersion': '1.6', 'version': 1,
@@ -187,10 +204,10 @@ def run(root):
         require(scan(binary, [canary], {('Maven', 'org.apache.logging.log4j:log4j-core', '2.14.1')}, scratch),
                 'Live advisory detection canary failed')
         issues = scan(binary, inputs, expected, scratch)
-        (output / 'java.cdx.json').write_text(json.dumps(clean, indent=2) + '\n')
+        write_artifact(root, output / 'java.cdx.json', json.dumps(clean, indent=2) + '\n')
         summary = {'schemaVersion': 1, 'scanner': 'osv-scanner', 'version': pin['version'],
                    'packages': len(expected), 'findings': issues, 'passed': not issues}
-        (output / 'dependencies.json').write_text(json.dumps(summary, indent=2) + '\n')
+        write_artifact(root, output / 'dependencies.json', json.dumps(summary, indent=2) + '\n')
         require(not issues, 'Known dependency vulnerabilities block this revision')
     return summary
 
