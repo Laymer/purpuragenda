@@ -18,9 +18,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
-| P15 — Complete guest email proof, scoped management access and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/40 redemption and production011integration implemented; native350Java/6Angular/198Python and allcoverage pass; current-head hostedCI/review pending; recovery issuance/session integration follow |
+| P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption/production011 merged https://github.com/Laymer/purpuragenda/pull/40 at765cbf5; recovery issuance/session integration follow |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; bootstrap PR27 and MFA PR29 merged; recovery-isolation PR33 merged79dff5a; persisted recovery/reenrollment https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; P17 public/session and P45 operator integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; session/proof persistence claimed by Codex-worker-b on task/p17-session-proofs; HTTP protections and cleanup remain |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P15/email-redemption: agent=Codex-worker-a; branch=task/p15-email-redemption; base=main; handoff=docs/handoffs/p15-email-redemption.md
+- P17/session-proofs: agent=Codex-worker-b; branch=task/p17-session-proofs; base=main; handoff=docs/handoffs/p17-session-proofs.md
 - P09/authorized-context: agent=Codex-coordinator; branch=task/p09-authorized-context; base=main; handoff=docs/handoffs/p09-authorized-context.md
 
 ## Active handoff

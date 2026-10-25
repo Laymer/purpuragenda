@@ -19,7 +19,10 @@ public final class PostgresGuestAccess implements GuestAccessStore {
             catch(SQLException | RuntimeException error) { try { c.rollback(); } catch(SQLException ignored) { } throw error; }
         } catch(SQLException | RuntimeException error) { throw new IllegalStateException("GUEST_ACCESS_UNAVAILABLE"); }
     }
-    private static Optional<Grant> redeem(Connection c,Redemption request) throws SQLException {
+    @FunctionalInterface interface BeforeProofTime { void lockSession() throws SQLException; }
+    static Optional<Grant> redeem(Connection c,Redemption request) throws SQLException { return redeem(c,request,()->{}); }
+    /** Joins a caller's session lock before capturing time, without opening or committing a transaction. */
+    static Optional<Grant> redeem(Connection c,Redemption request,BeforeProofTime beforeTime) throws SQLException {
         String hash=Secrets.hash(request.token()); UUID lockedBooking=null,customer=null; String deliveryEmail=null;
         // Discover only the lock target first. Booking precedes challenge to match contact-change lock order.
         if(request.purpose()==Kind.MANAGE) {
@@ -41,7 +44,7 @@ public final class PostgresGuestAccess implements GuestAccessStore {
                 var value=r.getTimestamp(7); consumed=value==null?null:value.toInstant();
             }
         }
-        Instant now;
+        beforeTime.lockSession();Instant now;
         try(var q=c.createStatement();var r=q.executeQuery("SELECT clock_timestamp()")) { r.next(); now=r.getTimestamp(1).toInstant(); }
         if(consumed!=null || !now.isBefore(expiry) || !request.purpose().name().equals(purpose)) return Optional.empty();
         if(request.purpose()==Kind.CREATE) {

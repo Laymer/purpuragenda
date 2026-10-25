@@ -1,8 +1,9 @@
 # Private atomic MFA foundation
 
-P16/atomic-mfa adds private application factor workflows. There is no HTTP/CLI,
-public registration, session issuance or reusable authorization receipt. P17 must
-supply sessions, throttles and CSRF before exposing an authentication flow. P16
+P16/atomic-mfa adds private application factor workflows. P17's persistent
+purpose-bound authentication proof and atomic session exchange are described in
+[sessions.md](sessions.md); the standalone boolean factor result does not authorize
+a session. Public HTTP, throttles and CSRF enforcement are required before exposing an authentication flow. P16
 recovery redemption/forced reenrollment is described in admin-recovery.md.
 
 Password-proven provisioning returns a private copy of the encrypted-at-rest TOTP
@@ -31,7 +32,7 @@ a future private owner interface, close values promptly and never log/serialize
 these objects into general artifacts. Managed-runtime copies cannot be promised
 erased. No real owner secret or credentials are provisioned by implementation/tests.
 
-Eleven real PostgreSQL cases cover independent blocked enrollment/auth races,
+Twelve real PostgreSQL cases cover independent blocked enrollment/auth races,
 monotonic replay, wrong factors/states, initial recovery hashing, audit rollback,
 one captured DB time, context lifetime/thread guards and malformed storage. Their
 own complete report is mandatory; unrelated tests cannot substitute for it.
