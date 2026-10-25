@@ -6,8 +6,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | --- | --- |
 | P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/1; d4f78ac |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
-| P03 — Adopt money, service values, intake validation and reservation intervals | Draft PR; https://github.com/Laymer/purpuragenda/pull/3; P02 merged;  |
-| P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Recovered WIP; depends on P03;  |
+| P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
+| P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Draft PR; https://github.com/Laymer/purpuragenda/pull/4; P03 merged;  |
 | P05 — Complete immutable booking snapshots and state transitions | Recovered WIP; depends on P04;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Recovered WIP; depends on P05;  |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Recovered WIP; depends on P06;  |
@@ -59,11 +59,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T06:30:00Z.
-- Current task: P03; branch: task/p03-domain-values; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/3.
-- Last pushed implementation commit: 7a494919dfbef5fbc52eb505b1168c7e03d3fadf; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p03.
-- What works: P02 local build passed; P02 exact-head CI passed and merged at d0c5978. What remains: inspect exact-head CI/reviews and squash-merge when green.
-- Decisions: retain generic half-open intervals for blackouts; reserve factory always creates exactly 120 elapsed minutes. No scheduling policy/state code adopted yet.
-- Verification: bash scripts/ci/verify-build.sh passed 44 domain tests and three architecture tests; domain 54/55 lines (98.18%) and 91/92 branches (98.91%) exceed 95%/90%. Coverage XML required. git diff --check passed. Corrected fixture failures retained in docs/status.md.
-- Next concrete action: gh pr checks 3; gh pr view 3 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b. stacked PR dependencies: none; P03 rebased onto merged P02 before first push.
+- Agent and UTC checkpoint: Codex, 2026-10-25T06:34:32Z.
+- Current task: P04; branch: task/p04-scheduling; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/4.
+- Last pushed implementation commit: ccc2eb74068a6e3c270ce31fc5434a7fc8febda9; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p04.
+- What works: P03 exact-head CI passed and merge fc3f0fa confirmed. What remains: verify exact-head CI/reviews and squash-merge when green.
+- Decisions: normalize intersecting/adjacent windows without changing start-only semantics; enumerate both DST overlap instants and omit gap times. No application/database scheduling mutations adopted.
+- Verification: bash scripts/ci/verify-build.sh passed 61 domain and three architecture tests, no skips; 139/140 lines (99.29%) and 219/220 branches (99.55%). git diff --check passed. Existing domain gate remains 95% lines / 90% branches.
+- Next concrete action: gh pr checks 4; gh pr view 4 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after rebase onto merged P03.
