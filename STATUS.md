@@ -46,7 +46,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Draft PR; https://github.com/Laymer/purpuragenda/pull/13; secret-scanning foundation only; remaining scanners pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | In progress; dependency foundation; secret slice merged https://github.com/Laymer/purpuragenda/pull/13 at8f5ed62; SAST/container/config remain pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
@@ -61,15 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P43/scanning-foundation: agent=Codex-p43; branch=task/p43-scanning-foundation; base=main; handoff=docs/handoffs/p43-scanning-foundation.md
+- P43/dependency-foundation: agent=Codex-p43; branch=task/p43-dependency-foundation; base=main; handoff=docs/handoffs/p43-dependency-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:29:40Z.
-- Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/13.
-- Last pushed implementation commit: 31183b9; uncommitted changes: integration of standing authorization04282fa.
-- What works: P48 protection, P13 cryptography and P12 contract foundations merged. What remains: exact-head CI and coordinator merge; dependency/SAST/SBOM/container/config remain later P43 slices.
-- Decisions: select a small secret-scanning slice first; no broad ignores or unsanitized scan output.
-- Verification: integrated 71 root +31 delivery-policy tests, full108 domain+11 adapters+3 architecture, contract regeneration and whitespace passed; no skips. Domain99.64%/97.75%, adapters95.89%/100%. Real scanner full history+105tracked files passed, zero findings.
-- Next concrete action: verify integrated suites/contracts/scan, push and require exact-head CI plus independent approval.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate newer main before final review.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:33:29Z.
+- Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: pending creation.
+- Last pushed implementation commit: none for this slice; uncommitted changes: tested dependency foundation before first commit.
+- What works: P43 secret-scanning slice merged8f5ed62. What remains: pinned dependency scanner, validated transitive SBOM, fail-closed advisory scan and tests; SAST/container/config later slices.
+- Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
+- Verification: 89 root tests passed (18 new dependency cases); real end-to-end public OSV canary and complete20package scan passed with zero project findings. Official scanner digest and CycloneDX artifact provenance verified; final integrated suites/CI pending.
+- Next concrete action: verify official OSV/CycloneDX provenance and report shape, then implement tests/gate.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.

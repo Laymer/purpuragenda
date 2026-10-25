@@ -165,3 +165,9 @@ Recorded the owner's standing permission for routine approved implementation, te
 All51 root+31 policy Python tests passed; full build108 domain+11 security+3 architecture passed without failures/errors/skips, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters. Deterministic contract drift, docs and whitespace passed. Independent agent review approved. Exact-head CI remains required.
 
 P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
+
+## P43 dependency foundation evidence
+
+Official OSV-Scanner2.7.0 Linux x64 digest160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b matched both GitHub release metadata and its official SHA256SUMS. CycloneDX Maven2.9.3 was verified against Maven Central metadata and executed to produce20 components/21 graph nodes. Real public-feed canary detected known Log4j findings; complete project20package scan passed with zero vulnerabilities. Outputs retain only sanitized Java coordinates/graph and validated advisory IDs.
+
+89 root tests passed, including18 new dependency/installer regressions for source/graph correspondence, exact scanned package coverage, missing/stale/malformed reports, live canary enforcement and safe receipt failures. Current baseline has no adopted PostgreSQL suite; final integration must run every subsequently merged category and record local Docker limits honestly. SAST, Maven plugin/tool classpaths, full release/frontend/container SBOMs and final P43 acceptance remain pending.
