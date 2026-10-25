@@ -46,30 +46,30 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; coverage foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | In progress; secret-scanning foundation claimed; remaining scanners pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Draft PR; https://github.com/Laymer/purpuragenda/pull/8; protection foundation; final release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; final release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection PR8 is active. Full P40 application-wide acceptance and P48 release publication remain pending.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 scanning foundation is active. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P48/merge-protection: agent=Codex-p48; branch=task/p48-merge-protection; base=main; handoff=docs/handoffs/p48-merge-protection.md
+- P43/scanning-foundation: agent=Codex-p43; branch=task/p43-scanning-foundation; base=main; handoff=docs/handoffs/p43-scanning-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p48, 2026-10-25T08:17:50Z.
-- Current task: P48/merge-protection; branch: task/p48-merge-protection; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/8.
-- Last pushed implementation commit: 79d8482; uncommitted changes: timestamp-normalization fix and regression tests pending commit.
-- What works: P01–P06 and P01/concurrency merged. P48 tested implementation is pushed; coordinator applied ruleset25814212; admin receipt and live readback passed. What remains: exact-head CI, reviewed live configuration and coordinator merge; P40/final publication pending.
-- Decisions: preserve independent category jobs, existing deletion/non-fast-forward restrictions, required-check pins and stronger managed rules; no settings application by worker.
-- Verification: integrated 15 ledger + 23 coverage + 31 delivery-policy tests and full build passed (108 domain + three architecture, no skips, 99.64% lines / 97.75% branches); whitespace passed. Read-only live protection check passed; exact-head CI remains required.
-- Next concrete action: push receipt/regressions, require exact-head CI, independent approval and coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P01/concurrency15ba8b4 already merged; P40 foundation bb7d4cf already merged.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:21:39Z.
+- Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: pending creation.
+- Last pushed implementation commit: none for this slice; uncommitted changes: tested scanner foundation before first commit.
+- What works: P48 protection foundation merged at0c3ae04. What remains: fail-closed pinned secret scanner, tests and mandatory CI; dependency/SAST/SBOM/container/config later slices.
+- Decisions: select a small secret-scanning slice first; no broad ignores or unsanitized scan output.
+- Verification: 58 root tests (38 existing +20 security) and 31 delivery-policy tests passed; full build passed108 domain+3 architecture, no skips; domain99.64% lines/97.75% branches. Real pinned scanner passed full history+70tracked files, zero findings; whitespace passed.
+- Next concrete action: publish draft PR, independent review, integrate latest main and require exact-head CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate newer main before final review.
