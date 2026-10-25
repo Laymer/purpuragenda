@@ -34,7 +34,7 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
                     Instant now=jdbc.queryForObject("SELECT clock_timestamp()",(row,n)->row.getTimestamp(1).toInstant());
                     List<Receipt> existing=jdbc.query("""
                         SELECT fingerprint,receipt->>'code' AS code,receipt->>'entityId' AS entity,
-                          receipt->>'version' AS version,receipt ?& ARRAY['code','entityId','version'] AS complete
+                          receipt->>'version' AS version,jsonb_exists_all(receipt,ARRAY['code','entityId','version']) AS complete
                         FROM idempotency_record WHERE scope=? AND key=?
                         """,(row,n)->decode(row,key),key.scope().storageKey(),key.key());
                     if(!existing.isEmpty()) return existing.getFirst();

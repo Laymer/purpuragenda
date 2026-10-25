@@ -174,4 +174,11 @@ class TransactionCoreTest {
         jdbc.update("DELETE FROM scheduling_resource");
         assertEquals(Failure.Kind.STORAGE_FAILURE,assertThrows(Failure.class,()->unit.execute(key(),tx->ok())).kind());
     }
+    @Test void preparedReceiptLookupKeepsOpaqueKeysSeparateFromSqlOperators() {
+        CommandKey opaque=new CommandKey(key().scope(),"synthetic?&'--",CommandKey.fingerprint(List.of("synthetic")));
+        Receipt expected=new Receipt(Code.OK,UUID.randomUUID(),7);
+        assertEquals(expected,unit.execute(opaque,tx->expected));
+        assertEquals(opaque.key(),jdbc.queryForObject("SELECT key FROM idempotency_record",String.class));
+        assertEquals(expected,unit.execute(opaque,tx->{fail("Stored receipt must replay");return ok();}));
+    }
 }

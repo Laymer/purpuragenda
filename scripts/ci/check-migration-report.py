@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 def validate(root):
     suites = [('MigrationTest', 11)]
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresScheduling.java').is_file():
-        suites.append(('TransactionCoreTest', 10))
+        suites.append(('TransactionCoreTest', 11))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
