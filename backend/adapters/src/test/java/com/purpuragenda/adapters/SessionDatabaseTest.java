@@ -129,6 +129,7 @@ class SessionDatabaseTest {
             assertEquals(value.issuedAt(),value.authenticatedAt());assertEquals(Duration.ofHours(8),Duration.between(value.issuedAt(),value.absoluteExpiresAt()));
             assertTrue(sessions.resolve(browser.token()).isEmpty());assertFalse(sessions.csrf(ref(),browser.csrf()));assertTrue(exchange(sessions,proof).isEmpty());
             assertTrue(sessions.resolve(authenticated.token()).isPresent());assertTrue(sessions.csrf(value.reference(),authenticated.csrf()));
+            assertTrue(sessions.exchangeAdmin(value.reference(),REQUEST,proof.token().value()).isEmpty());assertEquals(2,f.count("app_session"));
             Instant last=f.jdbc.queryForObject("SELECT last_seen_at FROM app_session WHERE id=?",Timestamp.class,value.reference().id()).toInstant();
             assertTrue(at(last.plusSeconds(900),new AtomicInteger()).resolve(authenticated.token()).isEmpty());
         }
@@ -136,10 +137,13 @@ class SessionDatabaseTest {
     @Test void wrongBrowserRequestUnknownProofAndReenrollmentPurposeCannotCreateAdminSession() throws Exception {
         try(var proof=proof();var other=sessions.anonymous()) {
             assertTrue(sessions.exchangeAdmin(other.session().reference(),REQUEST,proof.token().value()).isEmpty());
+            assertTrue(sessions.exchangeAdmin(new SessionReference(UUID.randomUUID(),ref().browserHash()),REQUEST,proof.token().value()).isEmpty());
             assertTrue(sessions.exchangeAdmin(ref(),"b".repeat(64),proof.token().value()).isEmpty());assertTrue(sessions.exchangeAdmin(ref(),REQUEST,null).isEmpty());
             assertTrue(sessions.exchangeAdmin(ref(),REQUEST,"x".repeat(43).toCharArray()).isEmpty());
             f.fixture.denied("23514","UPDATE admin_authentication_proof SET purpose='ADMIN_REENROLLMENT'");
             f.fixture.denied("23514","UPDATE admin_authentication_proof SET expires_at=expires_at+interval '1 microsecond'");
+            f.jdbc.update("UPDATE admin_authentication_proof SET revoked_at=clock_timestamp()");assertTrue(exchange(sessions,proof).isEmpty());
+            assertTrue(sessions.resolve(browser.token()).isPresent());assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM admin_authentication_proof WHERE consumed_at IS NOT NULL",Integer.class));
             assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM app_session WHERE kind='ADMIN'",Integer.class));
         }
         var recovery=new PrivateAdminRecovery(new PostgresAdminRecovery(f.source,f.secrets),new Argon2PasswordHash(),new AdminCrypto());
@@ -147,24 +151,25 @@ class SessionDatabaseTest {
     }
     @Test void proofExpiryIsExclusiveAtExactCapturedMicrosecond() throws Exception {
         try(var proof=proof()) {
+            var early=new AtomicInteger();assertTrue(exchange(at(proof.expiresAt().minusSeconds(60).minusNanos(1000),early),proof).isEmpty());assertEquals(1,early.get());
             for(long micros:new long[]{0,1,-1}) {
                 var reads=new AtomicInteger();var result=exchange(at(proof.expiresAt().plusNanos(micros*1000),reads),proof);
                 assertEquals(micros<0,result.isPresent());result.ifPresent(Issued::close);assertEquals(1,reads.get());
             }
         }
     }
-    void changeCredential(String field) {
+    void changeCredential(String field,Runnable whileChanged) {
         Object original=f.jdbc.queryForObject("SELECT "+field+" FROM admin_user",Object.class);
         Object replacement=field.equals("enabled") || field.equals("enrolled")?false:"synthetic-changed-cipher-or-hash";
-        f.jdbc.update("UPDATE admin_user SET "+field+"=?",replacement);f.jdbc.update("UPDATE admin_user SET "+field+"=?",original);
+        f.jdbc.update("UPDATE admin_user SET "+field+"=?",replacement);whileChanged.run();f.jdbc.update("UPDATE admin_user SET "+field+"=?",original);
     }
     @ParameterizedTest @ValueSource(strings={"enabled","enrolled","totp_secret","password_hash"})
     void credentialChangesCannotResurrectAnEarlierProof(String field) throws Exception {
-        try(var proof=proof()) { long before=f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class);changeCredential(field);assertTrue(exchange(sessions,proof).isEmpty());assertEquals(before+2,f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class)); }
+        try(var proof=proof()) { long before=f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class);changeCredential(field,()->assertTrue(exchange(sessions,proof).isEmpty()));assertTrue(exchange(sessions,proof).isEmpty());assertEquals(before+2,f.jdbc.queryForObject("SELECT security_version FROM admin_user",Long.class)); }
     }
     @ParameterizedTest @ValueSource(strings={"enabled","enrolled","totp_secret","password_hash"})
     void credentialChangesRevokeAlreadyIssuedAdminSessions(String field) throws Exception {
-        try(var proof=proof();var value=exchange(sessions,proof).orElseThrow()) { changeCredential(field);assertTrue(sessions.resolve(value.token()).isEmpty());assertFalse(sessions.csrf(value.session().reference(),value.csrf())); }
+        try(var proof=proof();var value=exchange(sessions,proof).orElseThrow()) { changeCredential(field,()->assertTrue(sessions.resolve(value.token()).isEmpty()));assertTrue(sessions.resolve(value.token()).isEmpty());assertFalse(sessions.csrf(value.session().reference(),value.csrf())); }
     }
     @Test void twentyConcurrentProofConsumptionsIssueExactlyOneSession() throws Exception {
         try(var proof=proof();var pool=Executors.newVirtualThreadPerTaskExecutor()) {
@@ -210,6 +215,13 @@ class SessionDatabaseTest {
             assertTrue(f.jdbc.queryForObject("SELECT s.issued_at=g.issued_at AND c.consumed_at=g.issued_at FROM app_session s JOIN access_grant g ON g.id=s.grant_id JOIN email_challenge c ON c.id=g.challenge_id WHERE s.id=?",Boolean.class,value.session().reference().id()));
         }
     }
+    @Test void guestProofCannotDowngradeAnAdministratorSessionOrConsumeAuthority() throws Exception {
+        var request=guest("synthetic@example.test");
+        try(var proof=proof();var admin=exchange(sessions,proof).orElseThrow()) {
+            assertTrue(sessions.exchangeGuest(admin.session().reference(),request).isEmpty());assertTrue(sessions.resolve(admin.token()).isPresent());
+            assertEquals(0,f.count("access_grant"));assertEquals(0,f.count("customer_identity"));assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM email_challenge WHERE consumed_at IS NOT NULL",Integer.class));
+        }
+    }
     @Test void managementExchangeUsesFreshBrowserAndCurrentContactWithoutTransferringOwnership() throws Exception {
         UUID booking=f.fixture.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());
         UUID owner=f.jdbc.queryForObject("SELECT customer_id FROM booking WHERE id=?",UUID.class,booking);
@@ -225,6 +237,10 @@ class SessionDatabaseTest {
                 assertTrue(f.jdbc.queryForObject("SELECT kind='MANAGE' AND booking_id=? AND customer_id=? FROM access_grant WHERE id=?",Boolean.class,booking,owner,value.session().grantId()));
                 assertTrue(sessions.resolve(other.token()).isEmpty());assertTrue(sessions.resolve(value.token()).isPresent());assertEquals(1,f.count("customer_identity"));assertEquals(0,f.count("customer_account"));
                 assertTrue(sessions.exchangeGuest(value.session().reference(),stale).isEmpty());assertEquals(1,f.count("access_grant"));
+                var renewed=emailProof("current-delivery@example.test",GuestAccessStore.Kind.MANAGE,booking,previous.browserHash());
+                try(var next=sessions.exchangeGuest(value.session().reference(),renewed).orElseThrow()) {
+                    assertEquals(owner,next.session().customerId());assertTrue(sessions.resolve(value.token()).isEmpty());assertTrue(sessions.resolve(next.token()).isPresent());
+                }
             }
         }
     }
