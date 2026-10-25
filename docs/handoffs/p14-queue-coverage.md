@@ -8,4 +8,4 @@
 - Decisions: retain strict90% adapter branches; no production lease policy change; no raw provider/test logs uploaded.
 - Verification: initial exact-head CI40182746590 atbc52d5a all7jobs passed, real queue11cases; adapter counters202/205lines151/166branches;125rootPython/docs/inventory/whitespace and compilation passed. Current-main integration/repeated CI remain required; no threshold reduced.
 - Next concrete action: integrate current main including Mac bootstrap, verify all local gates and require repeated exact-head CI before coordinator merge.
-- Recovery: SMTP WIP preserved locally in /tmp/purpuragenda-p14-smtp with its handoff; stacked PR dependencies: queue foundatione917ee3 merged; no SMTP changes adopted here.
+- Recovery: SMTP WIP preserved locally in /tmp/purpuragenda-p14-smtp with its handoff; stacked PR dependencies: queue foundatione917ee3 merged; no SMTP changes adopted here; P08 persistence98c7535 and Mac bootstrap4233afd integrated with all mandatory jobs.
