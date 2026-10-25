@@ -47,7 +47,11 @@ handoff takes the resource first; administrator handoff and recovery take the
 administrator first. This lock order is shared with the P09 command adapter.
 
 Additive migration 012 preserves existing identities and recovery history. New
-PostgreSQL tests cover migration rerun, strict clock boundaries, proof/session
+runtime readiness probes the required session/proof columns through the app role
+without reading private rows or restricted migration metadata. Schema 011 remains
+DOWN until 012 has been applied.
+
+New PostgreSQL tests cover migration rerun, strict clock boundaries, proof/session
 rollback, a 20-way proof race, recovery races, credential epochs, grant revocation
 and token rotation. Their full report is mandatory; compilation alone does not
 certify these scenarios.
