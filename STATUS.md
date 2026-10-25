@@ -11,11 +11,11 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; transaction-core merged https://github.com/Laymer/purpuragenda/pull/18 at6c1f96f; booking/policy persistence pending |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation bc64f01 and Angular shell verified |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue-foundation claimed by Codex-p14; SMTP/auth delivery next slice |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -67,10 +67,10 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:07:51Z.
 - Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: pending.
-- Last pushed implementation commit: none; uncommitted changes: queue port/JDBC implementation, ten real database tests, unit/report guards and evidence before first checkpoint.
+- Last pushed implementation commit: none yet; local reviewed implementation9c3faff; uncommitted changes: queue port/JDBC implementation, ten real database tests, unit/report guards and evidence before first checkpoint.
 - What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
 - What remains: minimal queue port/JDBC leases/retries and mandatory real PostgreSQL concurrency tests; SMTP/auth envelopes later P14 slice.
 - Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
 - Verification: test-compile all7modules passed;101rootPython passed; unchanged full build passes6Angular/108domain/2application/11security/2image/1storage then fails mandatory PostgreSQL startup (Docker unavailable), zero skips; no adapter/integrity coverage claim. Application3/3lines no branches.
-- Next concrete action: independent review, integrate merged P08 core, push draft and require exact-head real PostgreSQL CI.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 owns scheduling separately.
+- Next concrete action: verify integrated P08 core compilation/inventory, push draft and require exact-head real PostgreSQL CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 transaction-core6c1f96f merged and integrated; booking/policy persistence owned separately.
