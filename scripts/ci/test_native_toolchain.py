@@ -81,9 +81,24 @@ class NativeToolchainTest(unittest.TestCase):
         sentinel = self.root / 'sentinel'
         sentinel.write_bytes(b'unchanged')
         archive = self.archive([('p/alias', 'link', '../..'), ('p/alias/sentinel', 'file', b'overwrite')])
-        with self.assertRaises(OSError):
+        with self.assertRaises(installer.InstallError):
             installer.extract(archive, self.stage, 'tar.gz')
         self.assertEqual(b'unchanged', sentinel.read_bytes())
+
+    def test_deferred_links_cannot_create_an_outside_entry_before_rejection(self):
+        outside = self.root / 'outside'
+        outside.mkdir()
+        (outside / 'sentinel').write_bytes(b'unchanged')
+        cases = [[('p/escape', 'link', '../../outside'),
+                  ('p/escape/injected', 'link', 'sentinel')],
+                 [('p/first', 'link', 'later'), ('p/later', 'link', '../../outside'),
+                  ('p/first/injected', 'link', 'sentinel')]]
+        for entries in cases:
+            with self.subTest(entries=entries), tempfile.TemporaryDirectory(dir=self.root) as directory:
+                with self.assertRaises(installer.InstallError):
+                    installer.extract(self.archive(entries), Path(directory), 'tar.gz')
+                self.assertEqual(['sentinel'], sorted(p.name for p in outside.iterdir()))
+                self.assertEqual(b'unchanged', (outside / 'sentinel').read_bytes())
 
     def test_zip_rejects_traversal_and_links(self):
         for name, mode in [('../escape', 0o100644), ('p/link', 0o120777)]:

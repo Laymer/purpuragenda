@@ -103,7 +103,11 @@ def extract(archive, staging, kind):
                 else:
                     raise InstallError('Unsupported archive member')
         for target, linkname in links:
-            if Path(linkname).is_absolute() or '\\' in linkname:
+            # Earlier deferred links can change parent resolution. Validate again
+            # immediately before mkdir/symlink, and reject the referent first.
+            target = member_path(staging, target.relative_to(staging).as_posix())
+            if (Path(linkname).is_absolute() or '\\' in linkname
+                    or not (target.parent / linkname).resolve().is_relative_to(staging.resolve())):
                 raise InstallError('Unsafe archive link')
             target.parent.mkdir(parents=True, exist_ok=True)
             target.symlink_to(linkname)
