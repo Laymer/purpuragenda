@@ -1,6 +1,8 @@
 package com.purpuragenda.adapters.out.postgres;
 
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork;
+import com.purpuragenda.domain.booking.*;
+import com.purpuragenda.domain.scheduling.*;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
@@ -17,13 +19,29 @@ import org.springframework.transaction.support.TransactionTemplate;
 public final class PostgresScheduling implements SchedulingUnitOfWork {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaction;
-    public PostgresScheduling(DataSource source) {
+    private final TransactionTemplate reader;
+    private final PostgresBookingStore store;
+    public PostgresScheduling(DataSource source) { this(source,Set.of("zoom.us")); }
+    public PostgresScheduling(DataSource source,Set<String> meetingHosts) {
         jdbc=new JdbcTemplate(Objects.requireNonNull(source));
-        transaction=new TransactionTemplate(new DataSourceTransactionManager(source));
+        if(meetingHosts==null || meetingHosts.isEmpty()) throw new IllegalArgumentException("MEETING_HOSTS_REQUIRED");
+        store=new PostgresBookingStore(jdbc,Set.copyOf(meetingHosts));
+        DataSourceTransactionManager manager=new DataSourceTransactionManager(source); manager.setEnforceReadOnly(true);
+        transaction=new TransactionTemplate(manager);
         transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transaction.setTimeout(15);
+        reader=new TransactionTemplate(manager);
+        reader.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        reader.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        reader.setReadOnly(true); reader.setTimeout(15);
     }
+    @Override public <T> T read(Function<View,T> work) {
+        Objects.requireNonNull(work);
+        try { return reader.execute(status->work.apply(new ViewState(capture(),status))); }
+        catch(DataAccessException | TransactionException failure) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
+    }
+    private Instant capture() { return jdbc.queryForObject("SELECT clock_timestamp()",(row,n)->row.getTimestamp(1).toInstant()); }
     @Override public Receipt execute(CommandKey key, Function<Transaction,Receipt> work) {
         Objects.requireNonNull(key); Objects.requireNonNull(work);
         for(int attempt=0;;attempt++) {
@@ -31,7 +49,7 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
                 return transaction.execute(status->{
                     jdbc.execute("SET LOCAL lock_timeout='5s'");
                     jdbc.queryForObject("SELECT id FROM scheduling_resource WHERE id=1 FOR UPDATE",Integer.class);
-                    Instant now=jdbc.queryForObject("SELECT clock_timestamp()",(row,n)->row.getTimestamp(1).toInstant());
+                    Instant now=capture();
                     List<Receipt> existing=jdbc.query("""
                         SELECT fingerprint,receipt->>'code' AS code,receipt->>'entityId' AS entity,
                           receipt->>'version' AS version,jsonb_exists_all(receipt,ARRAY['code','entityId','version']) AS complete
@@ -70,12 +88,24 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
             throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
     }
-    private final class Tx implements Transaction {
+    private class ViewState implements View {
         private final Instant now;
-        private final TransactionStatus status;
-        Tx(Instant now,TransactionStatus status) { this.now=now; this.status=status; }
-        public Instant now() { return now; }
+        protected final TransactionStatus status;
+        private final Thread owner=Thread.currentThread();
+        ViewState(Instant now,TransactionStatus status) { this.now=now;this.status=status; }
+        protected void active() { if(Thread.currentThread()!=owner || status.isCompleted()) throw new Failure(Failure.Kind.STORAGE_FAILURE); }
+        public Instant now() { active();return now; }
+        public List<ServiceDefinition> services() { active();return store.services(); }
+        public SchedulingPolicy policy() { active();return store.policy(); }
+        public AvailabilityCalendar calendar() { active();return store.calendar(); }
+        public Optional<Booking> booking(UUID id) { active();return store.booking(id); }
+        public List<Booking> bookings(ReservationInterval interval) { active();return store.bookings(interval); }
+    }
+    private final class Tx extends ViewState implements Transaction {
+        Tx(Instant now,TransactionStatus status) { super(now,status); }
+        public void save(Booking booking) { active();store.save(booking,now()); }
         public Receipt attempt(Supplier<Receipt> mutation) {
+            active();
             Object savepoint=status.createSavepoint();
             try {
                 Receipt receipt=Objects.requireNonNull(mutation.get());
