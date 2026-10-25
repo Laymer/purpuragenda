@@ -11,7 +11,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; transaction core merged https://github.com/Laymer/purpuragenda/pull/18 at 6c1f96f; persistence slice active separately |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,7 +46,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation merged https://github.com/Laymer/purpuragenda/pull/13 at 8f5ed62; other scans pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret PR13 and dependency PR17 merged at 2c896ff; SAST/full SBOM/container/config acceptance pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T09:13:19Z.
+- Agent and UTC checkpoint: Codex, 2026-10-25T09:44:04Z.
 - Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: initial tested bootstrap/pins/runbook ready for checkpoint; native CI next.
-- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2.
+- Last pushed implementation commit: none for this slice; uncommitted changes: native CI, reviewed GUI authorization and metadata integration ready for publication.
+- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2; P08core6c1f96f and P43dependency2c896ff integrated.
 - What remains: tested pinned Tailscale installer/readiness bootstrap and clear host runbook, independent review/CI. Public ingress, live deployment and real Mac acceptance remain manual later.
 - Decisions: prefer local bootstrap on Mac rather than SSHcredentials; preserve existing apps/state/volumes; never print tailnet identity/auth JSON/URLs/tokens; stop with nonzero pending status for interactive Mac/tailnet approval.
-- Verification: 12 synthetic bootstrap tests and Bash syntax pass; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native installation/trust/actual target readiness not executed here.
+- Verification: 15 synthetic bootstrap tests and Bash syntax pass; independent agent review approved; SSH read-only confirms actual target15.7.8/x86_64, DockerDesktop installed, Tailscale absent, native administrator authorization needed; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native CI and actual installation/readiness remain pending; no privileged host changes or public exposure yet.
 - Next concrete action: implement safe macOS bootstrap and synthetic command tests.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; runtime/SMTP/ingress activation outside this slice.

@@ -10,10 +10,12 @@
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <coverage.lines>0.90</coverage.lines>
     <coverage.branches>0.90</coverage.branches>
+    <spring-boot.version>4.1.2</spring-boot.version>
     <junit.version>6.1.3</junit.version>
   </properties>
   <dependencyManagement><dependencies>
     <dependency><groupId>org.junit</groupId><artifactId>junit-bom</artifactId><version>${junit.version}</version><type>pom</type><scope>import</scope></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>${spring-boot.version}</version><type>pom</type><scope>import</scope></dependency>
   </dependencies></dependencyManagement>
   <build><pluginManagement><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version></plugin>

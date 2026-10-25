@@ -49,15 +49,27 @@ verify_package() {
     package_assessed "$1" || { fail TAILSCALE_GATEKEEPER_FAILED; return 1; }
 }
 
+download_package() {
+    /usr/bin/curl -q -fLsS --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 \
+        "$(pin url)" -o "$1" >/dev/null 2>&1 || { fail TAILSCALE_DOWNLOAD_FAILED; return 1; }
+}
+admin_cached() { /usr/bin/sudo -n true >/dev/null 2>&1; }
+sudo_install() { /usr/bin/sudo -n /usr/sbin/installer -pkg "$1" -target / >/dev/null 2>&1; }
+gui_install() {
+    /usr/bin/osascript "$MAC_BOOTSTRAP_ROOT/scripts/ops/install-macos-package.applescript" "$1" >/dev/null 2>&1
+}
+elevated_install() {
+    if admin_cached; then sudo_install "$1"; else gui_install "$1"; fi
+}
+
 install_tailscale() (
     # A private, owned temporary directory is the only tree removed by this script.
     local bootstrap_tmp
     bootstrap_tmp="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/purpuragenda-host.XXXXXX")"
     trap '/bin/rm -rf -- "$bootstrap_tmp"' EXIT
-    /usr/bin/curl -q -fLsS --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 \
-        "$(pin url)" -o "$bootstrap_tmp/tailscale.pkg" >/dev/null 2>&1 || { fail TAILSCALE_DOWNLOAD_FAILED; return 1; }
+    download_package "$bootstrap_tmp/tailscale.pkg" || return 1
     verify_package "$bootstrap_tmp/tailscale.pkg" || return 1
-    /usr/bin/sudo /usr/sbin/installer -pkg "$bootstrap_tmp/tailscale.pkg" -target / >/dev/null 2>&1 || { fail TAILSCALE_INSTALL_FAILED; return 1; }
+    elevated_install "$bootstrap_tmp/tailscale.pkg" || { fail TAILSCALE_INSTALL_FAILED; return 1; }
 )
 
 open_tailscale() { /usr/bin/open -a "$MAC_TAILSCALE_APP" >/dev/null 2>&1; }

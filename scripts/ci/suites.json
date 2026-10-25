@@ -83,8 +83,8 @@
     },
     "dependencies": {
       "owner": "P43",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "dependencies"
     },
     "sbom": {
       "owner": "P43",
@@ -125,6 +125,11 @@
       "owner": "P47",
       "state": "planned",
       "job": null
+    },
+    "macos-bootstrap": {
+      "owner": "P49",
+      "state": "implemented",
+      "job": "macos-bootstrap"
     }
   }
 }

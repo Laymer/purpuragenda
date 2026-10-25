@@ -172,5 +172,39 @@ open_docker() { :; }
             self.assertEqual('synthetic', binary.read_text())
 
 
+    def test_admin_install_uses_cached_authority_or_native_gui_only(self):
+        for cached, expected in ((True, 'CACHED_ADMIN'), (False, 'NATIVE_GUI_ADMIN')):
+            overrides = 'source ' + shlex.quote(str(SCRIPT)) + '\n'
+            overrides += 'admin_cached() { return ' + ('0' if cached else '1') + '; }\n'
+            overrides += 'sudo_install() { printf CACHED_ADMIN; }\ngui_install() { printf NATIVE_GUI_ADMIN; }\n'
+            result = self.run_shell('elevated_install /tmp/synthetic.pkg', overrides)
+            self.assertEqual(0, result.returncode)
+            self.assertEqual(expected, result.stdout)
+        helper = (ROOT / 'scripts/ops/install-macos-package.applescript').read_text()
+        self.assertIn('quoted form of installerPath', helper)
+        self.assertIn('with administrator privileges', helper)
+        self.assertNotIn('password', helper)
+
+    def test_failed_package_verification_never_requests_administrator_installation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            marker = Path(temp) / 'admin-called'
+            overrides = 'source ' + shlex.quote(str(SCRIPT)) + '\n'
+            overrides += 'download_package() { printf synthetic > "$1"; }\nverify_package() { return 1; }\n'
+            overrides += 'elevated_install() { touch ' + shlex.quote(str(marker)) + '; }\n'
+            result = self.run_shell('install_tailscale', overrides)
+            self.assertNotEqual(0, result.returncode)
+            self.assertFalse(marker.exists())
+
+    def test_intel_native_ci_uses_stock_bash_real_verification_and_required_receipt(self):
+        text = (ROOT / '.github/workflows/verify.yml').read_text()
+        self.assertIn('runs-on: macos-15-intel', text)
+        self.assertIn('/bin/bash scripts/ci/verify-macos-package.sh', text)
+        self.assertIn('artifacts/host/macos-package.json', text)
+        helper = (ROOT / 'scripts/ci/verify-macos-package.sh').read_text()
+        self.assertIn('verify_package "$native_package_tmp/tailscale.pkg"', helper)
+        self.assertIn('/usr/bin/osacompile', helper)
+        self.assertNotIn('elevated_install ', helper)
+
+
 if __name__ == '__main__':
     unittest.main()
