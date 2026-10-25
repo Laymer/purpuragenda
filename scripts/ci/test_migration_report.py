@@ -248,6 +248,21 @@ class MigrationReportTest(unittest.TestCase):
                           + '<testcase/>' * 30 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_throttles_and_cleanup_require_complete_boundary_race_rollback_and_lock_order_cases(self):
+        self.write()
+        for adapter, suite, minimum in (('PostgresRateLimits', 'RateLimitDatabaseTest', 16), ('PostgresSecurityCleanup', 'SecurityCleanupDatabaseTest', 18)):
+            source = self.root / f'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/{adapter}.java'
+            source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic adapter')
+            with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+            report = self.report.with_name(f'TEST-com.purpuragenda.adapters.{suite}.xml')
+            for count, cases, nested in ((0,0,''), (minimum-1,minimum-1,''), (minimum,minimum-1,''), (minimum,minimum,'<failure/>'),
+                                         (minimum,minimum,'<error/>'), (minimum,minimum,'<skipped/>')):
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{suite}" tests="{count}">'
+                                  + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+                with self.assertRaises(ValueError): GATE.validate(self.root)
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{suite}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+            GATE.validate(self.root)
+
     def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java'

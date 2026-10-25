@@ -14,11 +14,13 @@ class RuntimeSettingsTest {
     @BeforeEach void prepare() throws Exception {
         Files.write(directory.resolve("totp"),new byte[32]);
         byte[] delivery=new byte[32];Arrays.fill(delivery,(byte)1);Files.write(directory.resolve("delivery"),delivery);
+        byte[] rate=new byte[32];Arrays.fill(rate,(byte)2);Files.write(directory.resolve("rate"),rate);
         Files.writeString(directory.resolve("password"),"synthetic-provider-value\n");
         values=new HashMap<>(Map.of("app.mode","local","app.public-origin","http://localhost:8080",
                 "app.totp-key-file",directory.resolve("totp").toString(),"app.delivery-key-file",directory.resolve("delivery").toString(),
                 "app.totp-key-id","totp-v1","app.delivery-key-id","delivery-v1","app.smtp-host","127.0.0.1",
                 "app.smtp-port","1025","app.mail-from","synthetic@example.test"));
+        values.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-v1"));
     }
     MockEnvironment environment(){var e=new MockEnvironment();values.forEach(e::withProperty);return e;}
     void invalid(String key,String value) {
@@ -72,6 +74,27 @@ class RuntimeSettingsTest {
         Files.createSymbolicLink(directory.resolve("key-link"),directory.resolve("totp"));
         invalid("app.totp-key-file",directory.resolve("key-link").toString());invalid("app.delivery-key-file",directory.resolve("key-link").toString());
         values.remove("app.mode");assertThrows(IllegalArgumentException.class,()->RuntimeSettings.read(environment()));
+    }
+    @Test void throttleKeyIsRequiredDistinctPrivateAndNeverALocalDefaultOutsideLocalModes() throws Exception {
+        assertNotNull(RuntimeSettings.read(environment()).rate());assertEquals("RateKey[REDACTED]",RuntimeSettings.read(environment()).rate().toString());
+        values.remove("app.security.rate-key-file");invalid("app.security.rate-key-id","rate-v1");
+        values.put("app.security.rate-key-file",directory.resolve("rate").toString());
+        values.remove("app.security.rate-key-id");assertThrows(IllegalArgumentException.class,()->RuntimeSettings.read(environment()));
+        values.put("app.security.rate-key-id","rate-v1");
+        invalid("app.security.rate-key-id","totp-v1");invalid("app.security.rate-key-id","delivery-v1");invalid("app.security.rate-key-id","bad id");
+        invalid("app.security.rate-key-file",directory.resolve("totp").toString());invalid("app.security.rate-key-file",directory.resolve("delivery").toString());
+        invalid("app.security.rate-key-file",directory.resolve("missing").toString());
+        Files.write(directory.resolve("short-rate"),new byte[31]);invalid("app.security.rate-key-file",directory.resolve("short-rate").toString());
+        Files.createSymbolicLink(directory.resolve("rate-link"),directory.resolve("rate"));invalid("app.security.rate-key-file",directory.resolve("rate-link").toString());
+        values.put("app.security.rate-key-id","local-rate-v1");assertNotNull(RuntimeSettings.read(environment()));
+        values.putAll(Map.of("app.mode","operational","app.public-origin","https://bookings.example.com",
+                "app.notice-version","reviewed-v1","app.smtp-host","smtp.example.com","app.smtp-security","STARTTLS_REQUIRED",
+                "app.smtp-user","synthetic-operator","app.smtp-password-file",directory.resolve("password").toString()));
+        invalid("app.security.rate-key-id","local-rate-v1");invalid("app.security.rate-key-id","LOCAL-rate");
+        values.put("app.security.rate-key-id","rate-v1");assertNotNull(RuntimeSettings.read(environment()));
+        invalid("app.totp-key-id","local-totp-v1");invalid("app.delivery-key-id","local-delivery-v1");
+        values.put("app.mode","restore");values.put("app.public-origin","http://localhost:8080");
+        assertTrue(RuntimeSettings.read(environment()).suppressed());invalid("app.security.rate-key-id","local-rate-v1");
     }
     @Test void secretFilesPreserveSpacesAndRejectControlsEmptyLargeAndLinkedInput() throws Exception {
         Path secret=directory.resolve("value");Files.writeString(secret," padded synthetic value \r\n");

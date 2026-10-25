@@ -55,3 +55,21 @@ New PostgreSQL tests cover migration rerun, strict clock boundaries, proof/sessi
 rollback, a 20-way proof race, recovery races, credential epochs, grant revocation
 and token rotation. Their full report is mandatory; compilation alone does not
 certify these scenarios.
+
+## Persisted throttles and bounded cleanup
+
+Migration 013 turns `rate_limit_bucket` into scoped fixed-window counters: email cooldown (1 per 60 seconds),
+5 per hour per address, 30 per hour per client network, administrator password/MFA 5 per 15 minutes per
+account and network, and availability 120 per minute per network. Keys are HMAC-SHA256 digests under the
+separate rate key; raw email and addresses are never stored or logged (IPv6 shares one bucket per /64).
+`PostgresRateLimits` upserts and locks buckets one statement at a time in ascending digest order, captures one
+database time after all locks, and admits every charge or none, returning a whole-second ceiling Retry-After.
+Window equality is expired. Administrator attempts are reserved before factor work; success releases a slot
+only while the same window is still current. Storage failure throws a cause-free exception and callers fail closed.
+
+`PostgresSecurityCleanup` and `SecurityCleanup` provide bounded hourly retention (sessions and proofs one hour
+after death, grants and challenges 24 hours, throttle rows one hour after window end). Independent rows use
+SKIP LOCKED. The mixed grant transaction locks scheduling resource, grants (children first), referencing sessions,
+delivery jobs, then challenges; envelopes and challenge references are cleared before challenge deletion, live
+fenced leases and jobs held by workers keep their challenge, and no envelope is ever decrypted. The
+`SecurityMaintenance.tick()` hook is composed but no scheduler or HTTP endpoint invokes it yet.

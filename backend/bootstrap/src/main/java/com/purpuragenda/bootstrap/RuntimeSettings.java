@@ -1,11 +1,13 @@
 package com.purpuragenda.bootstrap;
 
 import com.purpuragenda.adapters.out.email.SmtpDelivery;
+import com.purpuragenda.adapters.out.security.RateKey;
 import com.purpuragenda.adapters.out.security.Secrets;
 import com.purpuragenda.application.port.out.MailDelivery;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.springframework.core.env.Environment;
 
 /** Explicit runtime profiles. Local defaults never authorize operational use. */
@@ -13,9 +15,10 @@ final class RuntimeSettings {
     private final URI origin;
     private final boolean suppressed,local;
     private final Secrets totp,delivery;
+    private final RateKey rate;
     private final MailDelivery mail;
-    private RuntimeSettings(URI origin,boolean suppressed,boolean local,Secrets totp,Secrets delivery,MailDelivery mail) {
-        this.origin=origin;this.suppressed=suppressed;this.local=local;this.totp=totp;this.delivery=delivery;this.mail=mail;
+    private RuntimeSettings(URI origin,boolean suppressed,boolean local,Secrets totp,Secrets delivery,RateKey rate,MailDelivery mail) {
+        this.origin=origin;this.suppressed=suppressed;this.local=local;this.totp=totp;this.delivery=delivery;this.rate=rate;this.mail=mail;
     }
     static RuntimeSettings read(Environment environment) {
         try {
@@ -39,7 +42,13 @@ final class RuntimeSettings {
             Path deliveryFile=Path.of(environment.getRequiredProperty("app.delivery-key-file"));
             String totpId=environment.getRequiredProperty("app.totp-key-id"),deliveryId=environment.getRequiredProperty("app.delivery-key-id");
             if(Files.isSymbolicLink(totpFile) || Files.isSymbolicLink(deliveryFile) || totpId.equals(deliveryId) || Files.mismatch(totpFile,deliveryFile)==-1) throw new IllegalArgumentException();
-            var totp=new Secrets(totpFile,totpId);var delivery=new Secrets(deliveryFile,deliveryId);
+            Path rateFile=Path.of(environment.getRequiredProperty("app.security.rate-key-file"));
+            String rateId=environment.getRequiredProperty("app.security.rate-key-id");
+            // The throttle HMAC key is a third, independent secret; local development identifiers never reach non-local modes.
+            if(Files.isSymbolicLink(rateFile) || rateId.equals(totpId) || rateId.equals(deliveryId)
+                    || Files.mismatch(rateFile,totpFile)==-1 || Files.mismatch(rateFile,deliveryFile)==-1
+                    || !local && Stream.of(totpId,deliveryId,rateId).anyMatch(id->id.toLowerCase(java.util.Locale.ROOT).startsWith("local-"))) throw new IllegalArgumentException();
+            var totp=new Secrets(totpFile,totpId);var delivery=new Secrets(deliveryFile,deliveryId);var rate=new RateKey(rateFile,rateId);
             MailDelivery mail;
             if(suppressed) mail=SmtpDelivery.restore();
             else {
@@ -56,13 +65,14 @@ final class RuntimeSettings {
                             ()->DatabaseConfiguration.secret(passwordFile).toCharArray());
                 }
             }
-            return new RuntimeSettings(origin,suppressed,local,totp,delivery,mail);
+            return new RuntimeSettings(origin,suppressed,local,totp,delivery,rate,mail);
         } catch(Exception invalid) { throw new IllegalArgumentException("INVALID_RUNTIME_CONFIGURATION"); }
     }
     URI origin() { return origin; }
     boolean suppressed() { return suppressed; }
     Secrets totp() { return totp; }
     Secrets delivery() { return delivery; }
+    RateKey rate() { return rate; }
     MailDelivery mail() { return mail; }
     Set<String> meetingHosts() { return local?Set.of("zoom.us","meetings.example.invalid"):Set.of("zoom.us"); }
     @Override public String toString() { return "RuntimeSettings[configuration=REDACTED]"; }
