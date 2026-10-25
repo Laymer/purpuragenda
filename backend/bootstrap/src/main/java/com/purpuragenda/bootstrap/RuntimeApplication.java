@@ -30,6 +30,10 @@ public class RuntimeApplication {
     @Bean PrivateAdminMfa adminMfa(DataSource source,RuntimeSettings settings) {
         return new PrivateAdminMfa(new PostgresAdminMfa(source,settings.totp()),new Argon2PasswordHash(),new AdminCrypto());
     }
+    @Bean PrivateAdminRecovery adminRecovery(DataSource source,RuntimeSettings settings) {
+        return new PrivateAdminRecovery(new PostgresAdminRecovery(source,settings.totp()),new Argon2PasswordHash(),new AdminCrypto());
+    }
+    @Bean GuestAccessStore guestAccess(DataSource source) { return new PostgresGuestAccess(source); }
     @Bean NotificationQueue notificationQueue(DataSource source,RuntimeSettings settings) { return new PostgresNotificationQueue(source,settings.suppressed()); }
     @Bean AuthDeliveryStore authDeliveryStore(DataSource source,RuntimeSettings settings) {
         return new PostgresAuthDeliveryStore(source,settings.delivery(),settings.origin(),settings.suppressed());

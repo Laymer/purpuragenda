@@ -84,6 +84,9 @@ class RuntimeDatabaseTest {
             assertEquals(404,get(port(context),"/actuator/env").statusCode());
             assertEquals(404,get(port(context),"/api/v1/admin/register").statusCode());
             assertNotNull(context.getBean(PrivateAdminBootstrap.class));assertNotNull(context.getBean(PrivateAdminMfa.class));
+            assertNotNull(context.getBean(PrivateAdminRecovery.class));
+            assertTrue(context.getBean(GuestAccessStore.class).redeem(new GuestAccessStore.Redemption(
+                    "A".repeat(43),GuestAccessStore.Kind.CREATE,"b".repeat(64))).isEmpty());
             assertEquals(AuthDeliveryWorker.Outcome.IDLE,context.getBean(AuthDeliveryWorker.class).tick());
             assertNotNull(context.getBean(SchedulingUnitOfWork.class).read(view->view.policy()));
             sql("UPDATE operation_control SET maintenance=true WHERE id=1");

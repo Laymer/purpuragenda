@@ -3,7 +3,7 @@
 P16/atomic-mfa adds private application factor workflows. There is no HTTP/CLI,
 public registration, session issuance or reusable authorization receipt. P17 must
 supply sessions, throttles and CSRF before exposing an authentication flow. P16
-recovery redemption/forced reenrollment remains a separate required slice.
+recovery redemption/forced reenrollment is described in admin-recovery.md.
 
 Password-proven provisioning returns a private copy of the encrypted-at-rest TOTP
 secret only for an enabled, unenrolled administrator with no recovery rows or immutable enrollment audit history. Provisioning does not enroll
@@ -11,7 +11,8 @@ or authenticate. Ordinary enrollment has the same initial-bootstrap-only guard a
 the accepted step, enables MFA and inserts exactly10 SHA256 recovery-code hashes
 atomically. The random256-bit/43-character URL-safe plaintext codes are returned
 once in a redacted, closeable value. No plaintext code enters database/audit rows.
-These initial recovery codes cannot yet be redeemed in this slice.
+These initial recovery codes can be redeemed only through the restricted private
+recovery workflow; they never authorize ordinary administrator access.
 
 Authentication requires enrolled+enabled state, the password and a TOTP step newer
 than the last accepted step. Existing P13 verification retains30-second steps and
