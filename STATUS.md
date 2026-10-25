@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; handoff ancestor integrity follow-up; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4 |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4; handoff-integrity follow-up https://github.com/Laymer/purpuragenda/pull/37 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue PR19/23 and SMTP PR30 merged; auth persistence https://github.com/Laymer/purpuragenda/pull/32 merged21de569; worker and queued-expiry sweep remain |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; bootstrap PR27 and MFA PR29 merged; recovery-isolation foundation https://github.com/Laymer/purpuragenda/pull/33 merged79dff5a; persisted recovery/reenrollment remains |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,18 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P14/auth-worker: agent=Codex-p14; branch=task/p14-auth-worker; base=main; handoff=docs/handoffs/p14-auth-worker.md
-
-- P01/handoff-integrity: agent=Codex-coordinator; branch=task/p01-handoff-integrity; base=main; handoff=docs/handoffs/p01-handoff-integrity.md
+None.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T12:49:49Z.
-- Current task: P14/auth-worker; branch: task/p14-auth-worker; base: main; PR URL: pending.
-- Last pushed implementation commit: none; uncommitted changes: AUTH-only worker/claim, bounded sweep, terminal erasure, heartbeat and tests ready for draft.
-- What works: P14 persistence/queue/SMTP foundations merged; auth preparation and fenced callbacks pass real PostgreSQL CI.
-- What remains: exact-head real SMTP/PostgreSQL CI, per-module coverage and independent review.
-- Decisions: AUTH-only worker; no public/auth redemption or operational wiring; no P36 jobs; send outside transactions and retain durable retry policy.
-- Verification: supplemental host108domain+52application tests pass (7worker), adapter test compilation,4 worker-report tests/docs/inventory/whitespace pass. macOS lacks pinned Linux toolchain/Docker and Python3.9 is incompatible with full suites; real Linux CI required.
-- Next concrete action: agree port design with coordinator/reviewer, implement worker/sweep and meaningful tests, publish draft for exact-head CI.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p14-auth-worker; stacked PR dependencies: P14 foundations merged; P08 correction009 independent.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T13:04:12Z.
+- Current task: P01/handoff-integrity; branch: task/p01-handoff-integrity; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/37.
+- Last pushed implementation commit: fa618f0 (P14, merged526290f) and078214e (handoff guard); uncommitted changes: tested current-main merge and final ledger/evidence pending checkpoint publication.
+- What works: P08 correction PR35 merged5909901 and P14 worker PR36 merged526290f after exact-head independent review and all13checks. Claimed handoff ancestry links are rejected before the claimed file is opened.
+- What remains: P15 guest proof/redemption, P16 persisted recovery/reenrollment and P17 access protections; P09 creation remains. P14 operational key/profile/runner composition remains P45; booking event expansion/reminders remain P36. No active implementation owners remain.
+- Decisions: preserve applied001–008 plus additive009; recovery010 remains reserved; leave P50 PR31 paused; no deployment or liveSMTP. Static claimed-handoff link validation is not a race-proof guarantee for all document reads.
+- Verification: PR36 exactfa618f0 CI40195543498 all13green,10realPG/SMTP worker cases,108domain/52application/142adapters/3architecture without skips;183rootPython/31policy and allcoverage gates pass.19local ledger cases/docs/inventory/whitespace pass. Current checkpoint requires fresh combined CI and independent review; local platform limits remain recorded.
+- Next concrete action: claim P15/email-proof and P16/recovery-persistence as independent slices, serializing schema changes with010 reserved for recovery; keep public flows behind P17 protections before booking creation/HTTP integration.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; clean implementation worktrees/tmp/purpuragenda-p08-deferred-booking and/tmp/purpuragenda-p14-auth-worker; coordinator/tmp/purpuragenda-handoff-integrity; stacked PR dependencies: none, both application prerequisite slices merged.

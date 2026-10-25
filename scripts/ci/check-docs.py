@@ -56,7 +56,11 @@ def validate_claims(root, ledger):
             errors.append(f'invalid handoff path: {task}')
             continue
         path = root / relative
-        if not path.is_file() or path.is_symlink():
+        # Check lexical prefixes before opening the file: a regular leaf may sit
+        # below a linked docs/handoffs directory outside the checkout.
+        linked = any(root.joinpath(*relative.parts[:index]).is_symlink()
+                     for index in range(1, len(relative.parts) + 1))
+        if linked or not path.is_file():
             errors.append(f'missing handoff: {task}')
             continue
         text = path.read_text()
