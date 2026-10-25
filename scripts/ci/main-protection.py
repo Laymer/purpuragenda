@@ -35,6 +35,42 @@ def discrepancies(actual, expected):
     return errors
 
 
+def prevent_weakening(current, expected):
+    """Refuse any removal or relaxation of an existing managed requirement."""
+    if current.get('conditions') != expected['conditions']:
+        raise ValueError('Changed branch selection requires manual reconciliation')
+    desired_rules = {rule['type']: rule.get('parameters', {}) for rule in expected['rules']}
+    for rule in current.get('rules', []):
+        if rule['type'] not in desired_rules:
+            raise ValueError('Unexpected managed rules require review before replacement')
+        desired = desired_rules[rule['type']]
+        for key, value in rule.get('parameters', {}).items():
+            replacement = desired.get(key)
+            if key == 'required_status_checks':
+                for check in value:
+                    if not any(candidate.get('context') == check['context'] and
+                               (check.get('integration_id') is None or
+                                candidate.get('integration_id') == check['integration_id'])
+                               for candidate in replacement or []):
+                        raise ValueError('Existing required checks must be preserved')
+                    if set(check) - {'context', 'integration_id'}:
+                        raise ValueError('Unknown required-check settings require review')
+            elif key == 'allowed_merge_methods':
+                if not set(replacement or []).issubset(value):
+                    raise ValueError('Existing merge restrictions must be preserved')
+            elif key == 'do_not_enforce_on_create':
+                if not value and replacement is not False:
+                    raise ValueError('Checks must remain required for branch creation')
+            elif isinstance(value, bool):
+                if value and replacement is not True:
+                    raise ValueError('Existing enabled requirements must be preserved')
+            elif isinstance(value, int):
+                if not isinstance(replacement, int) or replacement < value:
+                    raise ValueError('Existing numeric requirements must be preserved')
+            elif value and replacement != value:
+                raise ValueError('Changed managed parameters require manual reconciliation')
+
+
 def reconcile(api, expected, apply=False):
     endpoint = 'repos/' + REPOSITORY + '/rulesets'
     # The API supports at most 100 rulesets per page; do not silently miss later pages.
@@ -59,15 +95,7 @@ def reconcile(api, expected, apply=False):
         if apply:
             # Never replace an unexpectedly strengthened ruleset with weaker configuration.
             current = api('GET', endpoint + '/' + str(rule_id))
-            known_types = {rule['type'] for rule in expected['rules']}
-            if any(rule['type'] not in known_types for rule in current.get('rules', [])):
-                raise ValueError('Unexpected managed rules require review before replacement')
-            current_rules = {rule['type']: rule for rule in current.get('rules', [])}
-            prior_pr = current_rules.get('pull_request', {}).get('parameters', {})
-            if prior_pr.get('required_approving_review_count', 0) > 0 or any(
-                    prior_pr.get(key, False) for key in
-                    ('require_code_owner_review', 'require_last_push_approval')):
-                raise ValueError('Stronger review requirements require manual reconciliation')
+            prevent_weakening(current, expected)
             api('PUT', endpoint + '/' + str(rule_id), expected)
     actual = api('GET', endpoint + '/' + str(rule_id))
     return discrepancies(actual, expected)

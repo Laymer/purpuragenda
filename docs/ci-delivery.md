@@ -33,8 +33,9 @@ review, an authorized coordinator applies them with
 The command needs GitHub CLI authentication with repository administration access
 to apply. Its default mode only reads metadata. The script changes only its named
 managed ruleset and preserves the existing `nodelete` ruleset and other rulesets.
-Unexpected extra managed rules or stronger review requirements require manual
-reconciliation. API failures fail closed without echoing provider output.
+Existing required checks, their source-app pins, strict checks, merge restrictions
+and stronger managed parameters cannot be relaxed automatically; unexpected settings
+require manual reconciliation. API failures fail closed without echoing provider output.
 
 The foundation PR's live-protection check will fail until the reviewed configuration
 is applied. This is deliberate: do not remove or conditionally skip the check to

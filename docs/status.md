@@ -79,3 +79,11 @@ P07 head dd482e3 are grandfathered; all later commits require test-source change
 Semantic test relevance still requires independent review.
 
 P48 foundation published as draft PR8 at 74aa161; follow-up adds an ineffective-API-write readback regression. Live rules remain unapplied by this worker.
+
+P48 independent review found that explicit application could remove extra required
+checks despite preserving stronger review counts. The guard now preserves each
+existing required check and source-app pin, strict checks, branch-creation checks,
+merge restrictions and stronger/unknown managed parameters before writing. Added
+eight negative API subcases and a positive unpinned-to-pinned strengthening case.
+
+After the review fix, 23 delivery-policy tests and the full 108-domain/three-architecture build passed with no skips; domain coverage remains 99.64% lines/97.75% branches.

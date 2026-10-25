@@ -213,6 +213,45 @@ class ProtectionTest(unittest.TestCase):
             protection.reconcile(self.api, self.expected, apply=True)
         self.assertEqual({'GET'}, {call[0] for call in self.calls})
 
+    def test_apply_preserves_checks_pins_strictness_and_other_requirements(self):
+        cases = []
+        changed = copy.deepcopy(self.expected)
+        changed['rules'][-1]['parameters']['required_status_checks'].append(
+            {'context': 'extra-security', 'integration_id': 15368})
+        cases.append((changed, self.expected))
+        changed = copy.deepcopy(self.expected)
+        changed['rules'][-1]['parameters']['required_status_checks'][0]['integration_id'] = 123
+        cases.append((changed, self.expected))
+        weakened = copy.deepcopy(self.expected)
+        weakened['rules'][-1]['parameters']['strict_required_status_checks_policy'] = False
+        cases.append((self.expected, weakened))
+        weakened = copy.deepcopy(self.expected)
+        weakened['rules'][-1]['parameters']['do_not_enforce_on_create'] = True
+        cases.append((self.expected, weakened))
+        weakened = copy.deepcopy(self.expected)
+        weakened['rules'][2]['parameters']['allowed_merge_methods'].append('merge')
+        cases.append((self.expected, weakened))
+        changed = copy.deepcopy(self.expected)
+        changed['rules'][2]['parameters']['require_code_owner_review'] = True
+        cases.append((changed, self.expected))
+        changed = copy.deepcopy(self.expected)
+        changed['rules'][2]['parameters']['new_provider_requirement'] = ['required']
+        cases.append((changed, self.expected))
+        changed = copy.deepcopy(self.expected)
+        changed['conditions']['ref_name']['include'].append('refs/heads/release')
+        cases.append((changed, self.expected))
+        for current, desired in cases:
+            with self.subTest(current=current, desired=desired):
+                self.managed = dict(copy.deepcopy(current), id=25)
+                self.calls = []
+                with self.assertRaises(ValueError):
+                    protection.reconcile(self.api, desired, apply=True)
+                self.assertEqual({'GET'}, {call[0] for call in self.calls})
+
+    def test_apply_can_strengthen_an_unpinned_required_check(self):
+        del self.managed['rules'][-1]['parameters']['required_status_checks'][0]['integration_id']
+        self.assertEqual([], protection.reconcile(self.api, self.expected, apply=True))
+
     def test_unexpected_stronger_rules_not_overwritten(self):
         self.managed['rules'].append({'type': 'required_signatures'})
         with self.assertRaises(ValueError):
