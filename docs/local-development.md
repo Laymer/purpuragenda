@@ -1,10 +1,11 @@
 # Local Compose checkpoint
 
-This slice packages the current application foundation. Full booking/admin HTTP and UI, automatic authentication-mail ticks, private `admin-setup`, two-backend tests and operational/restore profiles remain unfinished. Do not interpret startup as full v1 acceptance.
+This slice packages the current application foundation. Full booking/admin HTTP and UI, automatic authentication-mail ticks, two-backend tests and operational/restore profiles remain unfinished. Do not interpret startup as full v1 acceptance.
 
 ```sh
 ./scripts/dev/local.sh up
 ./scripts/dev/local.sh smoke
+./scripts/dev/local.sh admin-setup
 ```
 
 `up` discovers the existing Docker Desktop installation, starts it when needed, preserves existing private files, builds pinned images and waits for readiness. Application: `http://localhost:8080`; captured Mailpit mail: `http://localhost:8025`. Initialized checkouts also support `docker compose up --build --wait`. The extra `local.sh init` command prepares files without starting Docker.
@@ -26,3 +27,9 @@ caffeinate -is python3 scripts/ci/verify-compose.py
 The new mandatory persistence job builds actual images, creates a unique project/network/secret directory, checks real startup and repeated migration, service and Mailpit persistence, maintenance readiness, and spoofed proxy headers. The small test-only header observer is never packaged in the app jar. Its receipt records execution location, revision and dirty state; incomplete, stale or dirty evidence fails. Both isolated volumes and matching private temporary state are retained. Run this gate from a clean commit; Linux CI calls the Python script directly.
 
 The first isolated run exposed Docker's null IPAM entries; a unit regression now covers them. A complete corrected fresh-stack run, current-main integration, all-category checks and independent exact-head review remain required before merging this checkpoint. Automatic AUTH delivery and private operator enrollment are separate follow-ups.
+
+## Private administrator setup
+
+`./scripts/dev/local.sh admin-setup` runs the existing private bootstrap and MFA use cases in a one-shot `operator` container (profile `operator`, private network only, no ports, only the application-role, TOTP and delivery key secrets). It refuses unless your stdin and stdout are terminals. The container prompts for the email, then the password twice without echo (15-128 characters), prints the authenticator key and `otpauth` URI to that terminal only, asks for a current six-digit code and prints ten one-time recovery codes once. Nothing is accepted through arguments, environment variables or files, and nothing secret is logged or written to artifacts. There is no public registration and no bypass.
+
+It creates the single administrator only when none exists (including disabled or historical rows); otherwise it changes nothing. If five codes are rejected the administrator remains unenrolled and a repeat run refuses; the existing recovery workflow, not this command, is the continuation path. Application login over HTTP remains P17/P22 work.

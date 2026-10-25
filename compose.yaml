@@ -6,6 +6,23 @@ x-runtime: &runtime
   security_opt: [no-new-privileges:true]
   stop_grace_period: 35s
   logging: {driver: none}
+x-application-environment: &application-environment
+  APP_DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
+  APP_DATABASE_USER: purpuragenda_app
+  APP_DATABASE_PASSWORD_FILE: /run/secrets/app_password
+  APP_MODE: local
+  APP_PUBLIC_ORIGIN: http://localhost:8080
+  APP_NOTICE_VERSION: local-synthetic-v1
+  APP_TOTP_KEY_FILE: /run/secrets/totp_key
+  APP_TOTP_KEY_ID: local-totp-v1
+  APP_DELIVERY_KEY_FILE: /run/secrets/delivery_key
+  APP_DELIVERY_KEY_ID: local-delivery-v1
+  APP_SECURITY_RATE_KEY_FILE: /run/secrets/rate_key
+  APP_SECURITY_RATE_KEY_ID: local-rate-v1
+  APP_SECURITY_TRUSTED_PROXY_PEERS: ${PURPURAGENDA_PROXY_ADDRESS:-172.30.78.2}
+  APP_SMTP_HOST: mailpit
+  APP_SMTP_PORT: "1025"
+  APP_MAIL_FROM: ${PURPURAGENDA_MAIL_FROM:-hello@medinavie.com}
 services:
   postgres:
     <<: *runtime
@@ -49,23 +66,8 @@ services:
     image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
     build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: backend}
     environment:
+      <<: *application-environment
       SERVER_ADDRESS: 0.0.0.0
-      APP_DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
-      APP_DATABASE_USER: purpuragenda_app
-      APP_DATABASE_PASSWORD_FILE: /run/secrets/app_password
-      APP_MODE: local
-      APP_PUBLIC_ORIGIN: http://localhost:8080
-      APP_NOTICE_VERSION: local-synthetic-v1
-      APP_TOTP_KEY_FILE: /run/secrets/totp_key
-      APP_TOTP_KEY_ID: local-totp-v1
-      APP_DELIVERY_KEY_FILE: /run/secrets/delivery_key
-      APP_DELIVERY_KEY_ID: local-delivery-v1
-      APP_SECURITY_RATE_KEY_FILE: /run/secrets/rate_key
-      APP_SECURITY_RATE_KEY_ID: local-rate-v1
-      APP_SECURITY_TRUSTED_PROXY_PEERS: ${PURPURAGENDA_PROXY_ADDRESS:-172.30.78.2}
-      APP_SMTP_HOST: mailpit
-      APP_SMTP_PORT: "1025"
-      APP_MAIL_FROM: ${PURPURAGENDA_MAIL_FROM:-hello@medinavie.com}
     secrets: [app_password, totp_key, delivery_key, rate_key]
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -74,6 +76,22 @@ services:
     restart: unless-stopped
     mem_limit: 768m
     cpus: 1.0
+  operator:
+    # Private one-shot administrator enrollment: `local.sh admin-setup` runs it with a TTY. No ports, mail or proxy network.
+    <<: *runtime
+    image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: backend}
+    command: [admin-setup]
+    environment: *application-environment
+    secrets: [app_password, totp_key, delivery_key]
+    stdin_open: true
+    tty: true
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [private]
+    healthcheck: {disable: true}
+    mem_limit: 768m
+    profiles: [operator]
   web:
     <<: *runtime
     image: purpuragenda-web:${PURPURAGENDA_IMAGE_TAG:-local}
