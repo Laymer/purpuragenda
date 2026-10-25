@@ -239,13 +239,28 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic session adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.SessionDatabaseTest.xml')
-        for count, cases, nested in ((0,0,''), (28,28,''), (29,28,''), (30,29,''),
-                                     (29,29,'<failure/>'), (29,29,'<error/>'), (29,29,'<skipped/>')):
+        for count, cases, nested in ((0,0,''), (29,29,''), (30,29,''), (31,30,''),
+                                     (30,30,'<failure/>'), (30,30,'<error/>'), (30,30,'<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="29">'
-                          + '<testcase/>' * 29 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="30">'
+                          + '<testcase/>' * 30 + '</testsuite>')
+        GATE.validate(self.root)
+
+    def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic management recovery lookup')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.GuestRecoveryDatabaseTest.xml')
+        for count, cases, nested in ((0,0,''), (5,5,''), (6,5,''), (7,6,''),
+                                     (6,6,'<failure/>'), (6,6,'<error/>'), (6,6,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.GuestRecoveryDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestRecoveryDatabaseTest" tests="6">'
+                          + '<testcase/>' * 6 + '</testsuite>')
         GATE.validate(self.root)
 
 
