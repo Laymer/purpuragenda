@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Draft PR; https://github.com/Laymer/purpuragenda/pull/19; queue-foundation2c6fce4 initial CI green; SMTP/auth delivery pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue coverage corrective slice; queue foundation PR19 e917ee3 merged; SMTP WIP separate |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P14/queue-foundation: agent=Codex-p14; branch=task/p14-queue-foundation; base=main; handoff=docs/handoffs/p14-queue-foundation.md
+- P14/queue-coverage: agent=Codex-p14; branch=task/p14-queue-coverage; base=main; handoff=docs/handoffs/p14-queue-coverage.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:31:09Z.
-- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/19.
-- Last pushed implementation commit: 2c6fce4 (reviewed implementation9c3faff plus prerequisites); uncommitted changes: original-due preservation regression and final PR/CI evidence before tested checkpoint.
-- What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
-- What remains: final checkpoint exact-head rerun and coordinator merge; SMTP/auth envelopes later P14 slice.
-- Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
-- Verification: initial exact-head CI40180605912 at2c6fce4 all7jobs passed;10queue+11migration+11core realPG cases,46adapter+6application+108domain+3architecture tests, zero skips. Coverage adapter202/205lines151/166branches; app32/33lines48/48branches; Angular100%;124rootPython+31policy and472package advisory scan passed. Local full command fails Docker as required; real CI supplies integrity evidence.
-- Next concrete action: push tested final checkpoint and require exact-head real PostgreSQL CI/coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 transaction-core6c1f96f merged and integrated; booking/policy persistence owned separately; P43 dependencies2c896ff integrated.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:53:12Z.
+- Current task: P14/queue-coverage; branch: task/p14-queue-coverage; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: deterministic group recheck regression,11-case report guard, safe XML receipts and evidence before initial checkpoint.
+- What works: queue PR19 mergede917ee3; initial queue CI passed but unrelated Mac22 rerun exposed nondeterministic89% branch coverage.
+- What remains: deterministic group-recheck interleaving, safe per-module JaCoCo diagnostics and actual repeated CI proof.
+- Decisions: retain strict90% adapter branches; no production lease policy change; no raw provider/test logs uploaded.
+- Verification:125rootPython/docs/inventory/whitespace and all-module test-compile passed; actual PostgreSQL coverage remains CI-only; no threshold reduced.
+- Next concrete action: add real two-connection interleaving regression and counter-only XML receipt upload, compile and publish small corrective PR.
+- Recovery: SMTP WIP preserved locally in /tmp/purpuragenda-p14-smtp with its handoff; stacked PR dependencies: queue foundatione917ee3 merged; no SMTP changes adopted here.
