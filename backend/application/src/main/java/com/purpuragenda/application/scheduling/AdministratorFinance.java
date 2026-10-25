@@ -19,7 +19,46 @@ import static com.purpuragenda.domain.DomainFailure.require;
 public final class AdministratorFinance {
     private static final Set<Booking.State> NO_LIVE_HOLD=EnumSet.of(Booking.State.CANCELLED,Booking.State.REJECTED,Booking.State.EXPIRED);
     private final FinanceUnitOfWork unit;
-    public AdministratorFinance(FinanceUnitOfWork unit) { this.unit=Objects.requireNonNull(unit); }
+    private final Set<String> meetingHosts;
+    /** Allowed participant-meeting domains; a nonresolving synthetic domain belongs only in local-mode configuration. */
+    public AdministratorFinance(FinanceUnitOfWork unit,Set<String> meetingHosts) {
+        this.unit=Objects.requireNonNull(unit);
+        require(meetingHosts!=null && !meetingHosts.isEmpty(),"INVALID_MEETING");this.meetingHosts=Set.copyOf(meetingHosts);
+    }
+
+    /** Version the administrator reviewed and the participant URL; never logged. */
+    public record Confirmation(long expectedVersion,String meetingUrl) {
+        public Confirmation {
+            require(expectedVersion>0 && meetingUrl!=null,"INVALID_CONFIRMATION");
+        }
+        @Override public String toString() { return "Confirmation[REDACTED]"; }
+    }
+
+    /** Manual approval needs a live hold and a unique validated meeting; it asserts nothing about payment. */
+    public Receipt approve(SessionBinding session,UUID bookingId,String key,Confirmation request) {
+        return confirm(session,bookingId,key,request,Operation.APPROVE_BOOKING,Booking.ConfirmationBasis.MANUAL_APPROVAL);
+    }
+    /** Confirmation by external payment additionally needs net sufficient matching-currency funds and no refund due. */
+    public Receipt confirmExternalPayment(SessionBinding session,UUID bookingId,String key,Confirmation request) {
+        return confirm(session,bookingId,key,request,Operation.CONFIRM_BOOKING,Booking.ConfirmationBasis.EXTERNAL_PAYMENT);
+    }
+    private Receipt confirm(SessionBinding session,UUID bookingId,String key,Confirmation request,Operation operation,Booking.ConfirmationBasis basis) {
+        Objects.requireNonNull(request);
+        String fingerprint=CommandKey.fingerprint(List.of(Long.toString(request.expectedVersion()),request.meetingUrl()));
+        return unit.execute(new Command(session,bookingId,operation,key,fingerprint),
+                tx -> SchedulingCommands.within(tx,() -> {
+                    Booking booking=tx.authorizedBooking();
+                    require(booking.version()==request.expectedVersion(),"STALE_VERSION");
+                    require(booking.state()==Booking.State.PENDING_CONFIRMATION,"INVALID_TRANSITION");
+                    if(basis==Booking.ConfirmationBasis.EXTERNAL_PAYMENT)
+                        require(tx.ledger().summary(booking.snapshot().service().price()).status()==PaymentLedger.Status.PAID_EXTERNAL,"PAYMENT_INSUFFICIENT");
+                    Meeting meeting=Meeting.parse(request.meetingUrl(),meetingHosts);
+                    require(!tx.meetingInUse(meeting,booking.id()),"MEETING_IN_USE");
+                    Booking confirmed=booking.approve(tx.now(),meeting,basis);
+                    tx.save(confirmed);tx.confirmedEffects(booking,confirmed);
+                    return new Receipt(Code.OK,confirmed.id(),confirmed.version());
+                }));
+    }
 
     /** Actual money in its own currency; the amount is never converted and has no service-price ceiling. */
     public record ReceiptRequest(Money amount,String method,String reference,Instant verifiedAt) {

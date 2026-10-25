@@ -33,7 +33,12 @@ public final class PostgresFinance implements FinanceUnitOfWork {
             // Resource lock is already held. Authority is established, then locked, before any receipt can be observed.
             UUID admin=authorize(command.session(),now);
             var key=new CommandKey(new Scope(admin,command.operation().name(),command.bookingId()),command.key(),command.fingerprint());
-            return new PostgresScheduling.Resolved(key,Function.identity(),tx -> {
+            // A stored success for a booking command must name the booking it was issued for.
+            return new PostgresScheduling.Resolved(key,stored -> {
+                if(stored.success() && command.operation()!=Operation.RECORD_RECEIPT && !command.bookingId().equals(stored.entityId()))
+                    throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                return stored;
+            },tx -> {
                 FinanceState state=new FinanceState(tx,admin,command);
                 Receipt receipt=Objects.requireNonNull(work.apply(state));
                 state.verifyEffects(receipt);
@@ -82,6 +87,17 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                 return new PaymentLedger(entries,obligations);
             } catch(RuntimeException invalid) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
         }
+        public boolean meetingInUse(Meeting meeting,UUID booking) {
+            return jdbc.queryForObject("SELECT count(*) FROM booking WHERE meeting_id=? AND id<>?",Integer.class,meeting.meetingId(),booking)>0;
+        }
+        public void confirmedEffects(Booking original,Booking confirmed) {
+            Booking.ConfirmationBasis basis=operation==Operation.APPROVE_BOOKING?Booking.ConfirmationBasis.MANUAL_APPROVAL:Booking.ConfirmationBasis.EXTERNAL_PAYMENT;
+            if(baseline==null || operation==Operation.RECORD_RECEIPT || effects++>0 || !baseline.equals(original) || confirmed.state()!=Booking.State.CONFIRMED
+                    || confirmed.confirmationBasis()!=basis || confirmed.version()!=original.version()+1
+                    || !tx.booking(bookingId).filter(confirmed::equals).isPresent())throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            event("booking-confirmed",basis==Booking.ConfirmationBasis.MANUAL_APPROVAL?"APPROVED":"CONFIRMED_EXTERNAL_PAYMENT",confirmed.id(),confirmed.version(),
+                    "{\"basis\":\""+basis+"\"}");
+        }
         public boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference) {
             return jdbc.queryForObject("SELECT count(*) FROM payment_entry WHERE kind=? AND method=? AND reference=?",Integer.class,kind.name(),method,reference)>0;
         }
@@ -90,7 +106,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                     || !receipt.bookingId().equals(bookingId))throw new Failure(Failure.Kind.STORAGE_FAILURE);
             insert(receipt);
             if(late)jdbc.update("INSERT INTO refund_obligation(receipt_id,due_minor,reason) VALUES(?,?,'LATE_RECEIPT')",receipt.id(),receipt.amount().minor());
-            event(late?"payment-reconciliation":"payment-recorded",late?"PAYMENT_RECONCILIATION_REQUIRED":"PAYMENT_RECORDED",receipt.id(),
+            event(late?"payment-reconciliation":"payment-recorded",late?"PAYMENT_RECONCILIATION_REQUIRED":"PAYMENT_RECORDED",receipt.id(),baseline.version(),
                     "{\"currency\":\""+receipt.amount().currency()+"\",\"amountMinor\":"+receipt.amount().minor()+"}");
         }
         private void insert(PaymentLedger.Entry entry) {
@@ -99,8 +115,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                     Timestamp.from(entry.verifiedAt()),entry.receiptId());
         }
         /** Audit and outbox share one deterministic id; the booking version stays that of the locked row. */
-        private void event(String prefix,String type,UUID subject,String metadata) {
-            long version=baseline.version();
+        private void event(String prefix,String type,UUID subject,long version,String metadata) {
             UUID event=UUID.nameUUIDFromBytes((prefix+"/"+bookingId+"/"+subject).getBytes(StandardCharsets.UTF_8));
             jdbc.update("INSERT INTO audit_event(id,booking_id,actor_id,actor_kind,type,occurred_at,version,metadata) VALUES(?,?,?,'ADMIN',?,?,?,?::jsonb)",
                     event,bookingId,admin,type,Timestamp.from(now()),version,metadata);
@@ -112,7 +127,9 @@ public final class PostgresFinance implements FinanceUnitOfWork {
             if(!receipt.success()) { if(effects!=0)throw new Failure(Failure.Kind.STORAGE_FAILURE);return; }
             if(baseline==null || effects!=1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
             Booking stored=tx.booking(bookingId).orElseThrow(() -> new Failure(Failure.Kind.STORAGE_FAILURE));
-            if(stored.version()!=baseline.version() || receipt.version()!=baseline.version())throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            long expected=operation==Operation.RECORD_RECEIPT?baseline.version():baseline.version()+1;
+            if(stored.version()!=expected || receipt.version()!=expected
+                    || (operation!=Operation.RECORD_RECEIPT && !bookingId.equals(receipt.entityId())))throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
     }
     private static Failure unauthenticated() { return PersistedSession.unauthenticated(); }
