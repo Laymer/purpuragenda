@@ -40,3 +40,6 @@ test-results/
 *.dump
 *.key
 !**/src/test/resources/**
+
+# Python policy-test bytecode
+**/__pycache__/

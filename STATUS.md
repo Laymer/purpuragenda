@@ -51,19 +51,23 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; depends on P44; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; depends on P45; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; depends on P46; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Not started; depends on P47;  |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | In progress; foundation slice claimed by p48_protection; branch task/p48-merge-protection; release publication remains pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; depends on P48;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
+## Active task claims
+
+- P48/merge-protection: agent=Codex-p48; branch=task/p48-merge-protection; base=main; handoff=docs/handoffs/p48-merge-protection.md
+
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T07:01:22Z.
-- Current task: P06; branch: task/p06-payment-ledger; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/6.
-- Last pushed implementation commit: 9cf267c28a2a9b101fa81a45c687c672e50c6645; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p06.
-- What works: P05 exact-head CI passed and merge 1470d88 confirmed. What remains: verify exact-head CI/reviews and squash-merge when green.
-- Decisions: price bounds apply to service prices; actual external receipt amounts remain independent. One ledger represents one booking. Outstanding refund takes precedence, fully returned late money must not hide retained paid funds.
-- Verification: bash scripts/ci/verify-build.sh passed 108 domain and three architecture tests, no skips; 276/277 lines (99.64%) and 478/489 branches (97.75%). Docker unavailable in both sandboxed and approved checks. Existing gate remains 95% lines / 90% branches.
-- Next concrete action: gh pr checks 6; gh pr view 6 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after rebasing onto merged P05.
+- Agent and UTC checkpoint: p48_protection, 2026-10-25T08:02:39Z.
+- Current task: P48 merge-protection foundation; branch: task/p48-merge-protection; base: main; PR URL: pending creation.
+- Last pushed implementation commit: 8d7f62d (base); uncommitted changes: tested P48 foundation pending first commit.
+- What works: P01–P06 merged per coordinator reconciliation. What remains: tested protection configuration and per-commit test-change CI.
+- Decisions: no live protection changes by this worker; coordinator applies reviewed settings. Existing deletion/non-fast-forward restrictions preserved.
+- Verification: 20 delivery-policy tests passed; full build passed 108 domain + three architecture tests, no skips; domain coverage 99.64% lines / 97.75% branches; git diff --check passed. Live rules remain unapplied.
+- Next concrete action: independent review, commit/push draft PR, coordinator applies reviewed protection and reconciles current main.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none.

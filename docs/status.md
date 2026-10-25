@@ -57,3 +57,23 @@ Adopted the append-only external-payment ledger and repaired three prototype def
 `bash scripts/ci/verify-build.sh` passed 108 domain tests plus three architecture tests with no failures/errors/skips. Coverage: 276/277 lines (99.64%), 478/489 branches (97.75%), above unchanged 95%/90% gates. Synthetic tests cover partial/multiple currencies, refund balances, late receipts and retained nonrefundable money, zero-price facts, malformed entries/obligations, duplicate keys/IDs, delimiter collisions, immutable collections, cross-booking rejection, actual amounts above service-price bounds and overflow. No P06 test failures occurred. Durable financial idempotency, global reference uniqueness and reconciliation commands remain later application/database tasks.
 
 Fresh operational dependency check: `docker version` exited 1 both inside and outside the sandbox; Docker client 28.5.2 exists but cannot connect to unix:///var/run/docker.sock. No local Docker/Testcontainers or Compose passing claim follows from unit-test evidence. CI may provide independent PostgreSQL evidence once the suite is adopted. P05 exact-head CI passed and merge 1470d88 was confirmed.
+
+## P48 merge-protection foundation evidence
+
+Implemented a managed main ruleset, default-read-only API checker/application command,
+per-commit test-source gate and mandatory delivery-policy CI job. The worker did not
+apply live rules. Existing nodelete rules remain untouched; live enforcement is a
+coordinator action after review. P48 publication and final inventory remain unfinished.
+
+`python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py' -v` passed 20 tests.
+`bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests,
+zero skips, domain 276/277 lines (99.64%) and 478/489 branches (97.75%).
+`git diff --check` passed. No PostgreSQL, browser, load, security or restore suite
+was added or certified. An ignored local toolchain symlink supplies pinned tools.
+
+The initial negative rename test exposed an unchanged-rename loophole, fixed with
+rename-aware old/new content comparison. The initial pagination fixture matched
+`page=1` inside `per_page=100`, looped, and was interrupted; matching the final page
+query fixed the test. Both corrected cases pass. Historical commits through exact
+P07 head dd482e3 are grandfathered; all later commits require test-source changes.
+Semantic test relevance still requires independent review.
