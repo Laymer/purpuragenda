@@ -74,6 +74,16 @@ class FrontendReportsTest(unittest.TestCase):
         self.assertTrue((self.root / 'frontend/src/main.ts').is_file())
         CHECK.cleanup(self.root)  # Absent artifacts are safe.
 
+    def test_cleanup_unlinks_nested_symlink_without_touching_outside_bytes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            outside = Path(temp)
+            sentinel = outside / 'sentinel'
+            sentinel.write_text('synthetic outside bytes')
+            (self.root / 'frontend/dist/external').symlink_to(outside, target_is_directory=True)
+            CHECK.cleanup(self.root)
+            self.assertEqual('synthetic outside bytes', sentinel.read_text())
+            self.assertFalse((self.root / 'frontend/dist').exists())
+
     def test_cleanup_refuses_symlinked_frontend_or_artifact_without_outside_deletion(self):
         for parent in (True, False):
             with self.subTest(parent=parent), tempfile.TemporaryDirectory() as temp:

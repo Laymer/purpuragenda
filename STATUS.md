@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | In progress; contract foundation merged PR11 bc64f01; shell implementation0a7c9b2; independently reviewed |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/16; contract foundation merged bc64f01; shell013ae2c; exact-head CI pending |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:31:35Z.
-- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: pending.
-- Last pushed implementation commit: none; uncommitted changes: shell implementation/tests/configuration/lock and evidence before first checkpoint.
+- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:47:55Z.
+- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/16.
+- Last pushed implementation commit: 013ae2c; uncommitted changes: final PR handoff, nested-symlink cleanup regression and pinned Angular report upload.
 - What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
-- What remains: Angular shell, typed SDK compile/HTTP proof, strict npm install/test/build and sanitized required reports.
+- What remains: final exact-head CI and coordinator merge; P07 now makes real PostgreSQL verification mandatory.
 - Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
-- Verification: full build fresh npmci,6 Angular tests,108 domain+11 security+3 architecture,63 strict root Python passed; Angular22/22 lines30/30 branches; bundle307.50kB.
-- Next concrete action: commit independently reviewed/tested checkpoint, integrate main8f5ed62 secrets and run all gates.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; integrate P43 and P07 when merged.
+- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and87 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed.
+- Next concrete action: run available local checks, integrate P48 inventory when merged, push tested handoff and require actual-container CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory integration pending.
