@@ -3,5 +3,8 @@
   <parent><groupId>com.purpuragenda</groupId><artifactId>purpuragenda</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../../pom.xml</relativePath></parent>
   <artifactId>application</artifactId>
   <properties><coverage.lines>0.95</coverage.lines></properties>
-  <dependencies><dependency><groupId>com.purpuragenda</groupId><artifactId>domain</artifactId><version>${project.version}</version></dependency></dependencies>
+  <dependencies><dependency><groupId>com.purpuragenda</groupId><artifactId>domain</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><scope>test</scope></dependency>
+  </dependencies>
 </project>

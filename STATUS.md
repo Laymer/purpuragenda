@@ -15,9 +15,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/16; contract foundation merged bc64f01; shell013ae2c; exact-head CI pending |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue-foundation claimed by Codex-p14; SMTP/auth delivery next slice |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P12/angular-shell: agent=Codex-p12-shell; branch=task/p12-angular-shell; base=main; handoff=docs/handoffs/p12-angular-shell.md
+- P14/queue-foundation: agent=Codex-p14; branch=task/p14-queue-foundation; base=main; handoff=docs/handoffs/p14-queue-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:49:57Z.
-- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/16.
-- Last pushed implementation commit: 013ae2c; uncommitted changes: final integrated evidence before publication; P48 inventory and pinned Angular receipt upload included.
-- What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
-- What remains: final exact-head CI and coordinator merge; P07 now makes real PostgreSQL verification mandatory.
-- Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
-- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and99 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed; final scan covered145 tracked files plus full history, zero findings; suite inventory passed.
-- Next concrete action: push final integrated checkpoint and require exact-head actual-container CI plus coordinator review/merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory f3a4841 integrated; Angular activated as implemented jobbuild.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:07:51Z.
+- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: queue port/JDBC implementation, ten real database tests, unit/report guards and evidence before first checkpoint.
+- What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
+- What remains: minimal queue port/JDBC leases/retries and mandatory real PostgreSQL concurrency tests; SMTP/auth envelopes later P14 slice.
+- Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
+- Verification: test-compile all7modules passed;101rootPython passed; unchanged full build passes6Angular/108domain/2application/11security/2image/1storage then fails mandatory PostgreSQL startup (Docker unavailable), zero skips; no adapter/integrity coverage claim. Application3/3lines no branches.
+- Next concrete action: independent review, integrate merged P08 core, push draft and require exact-head real PostgreSQL CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 owns scheduling separately.
