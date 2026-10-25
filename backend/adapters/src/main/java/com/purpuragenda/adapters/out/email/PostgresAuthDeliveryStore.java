@@ -42,6 +42,37 @@ public final class PostgresAuthDeliveryStore implements AuthDeliveryStore {
             return new Receipt(challenge,job,expires);
         });
     }
+    @Override public int eraseExpired() {
+        return transaction(c->{
+            boolean blocked=suppressed || suppression(c);
+            var jobs=new ArrayList<UUID>();
+            try(var query=c.prepareStatement("""
+                SELECT j.id FROM notification_job j LEFT JOIN email_challenge e ON e.id=j.challenge_id
+                WHERE j.template='AUTH' AND j.encrypted_envelope IS NOT NULL
+                  AND (j.state<>'LEASED' OR j.lease_until<=clock_timestamp() OR j.lease_until IS NULL OR j.lease_token IS NULL)
+                  AND (? OR e.id IS NULL OR e.consumed_at IS NOT NULL OR e.expires_at<=clock_timestamp()
+                    OR j.state IN ('SENT','SUPPRESSED','FAILED') OR j.audience<>'CUSTOMER')
+                ORDER BY j.id FOR UPDATE OF j SKIP LOCKED LIMIT 100
+                """)) {
+                query.setBoolean(1,blocked);
+                try(var r=query.executeQuery()) { while(r.next()) jobs.add(r.getObject(1,UUID.class)); }
+            }
+            // Locks precede authoritative expiry decisions; never steal a still-live fenced lease.
+            Instant now=now(c); int erased=0;
+            for(UUID id:jobs) try(var query=c.prepareStatement("""
+                UPDATE notification_job j SET state=CASE WHEN j.state IN ('SENT','FAILED','SUPPRESSED') THEN j.state ELSE 'SUPPRESSED' END,encrypted_envelope=NULL,
+                  lease_token=NULL,lease_until=NULL,safe_error=CASE WHEN j.state IN ('SENT','FAILED','SUPPRESSED') THEN j.safe_error ELSE ? END
+                WHERE j.id=? AND (j.state<>'LEASED' OR j.lease_until<=? OR j.lease_until IS NULL OR j.lease_token IS NULL)
+                  AND (? OR j.state IN ('SENT','SUPPRESSED','FAILED') OR j.audience<>'CUSTOMER' OR NOT EXISTS
+                    (SELECT 1 FROM email_challenge e WHERE e.id=j.challenge_id AND e.consumed_at IS NULL AND e.expires_at>?))
+                """)) {
+                query.setString(1,blocked?"DELIVERY_SUPPRESSED":"AUTH_DELIVERY_EXPIRED"); query.setObject(2,id);
+                query.setTimestamp(3,Timestamp.from(now)); query.setBoolean(4,blocked); query.setTimestamp(5,Timestamp.from(now));
+                erased+=query.executeUpdate();
+            }
+            return erased;
+        });
+    }
     @Override public Optional<MailDelivery.Message> prepare(Lease lease) {
         Objects.requireNonNull(lease);
         return transaction(c->{

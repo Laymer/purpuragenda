@@ -13,6 +13,8 @@ public interface NotificationQueue {
         @Override public String toString() { return "NotificationLease[id=" + id + ", token=REDACTED]"; }
     }
     Optional<Lease> claim();
+    /** AUTH-only selection and expired-lease reclamation; never mutates booking-template jobs. */
+    Optional<Lease> claimAuth();
     boolean renew(Lease lease);
     boolean sent(Lease lease);
     boolean failed(Lease lease);
