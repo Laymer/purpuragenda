@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -10,7 +11,7 @@ DESTINATION = ROOT / 'frontend/src/app/shared/generated'
 
 
 def contents(directory):
-    if not directory.is_dir():
+    if directory.is_symlink() or not directory.is_dir():
         raise ValueError('Missing generated SDK directory')
     result = {}
     for file in directory.rglob('*'):
@@ -37,6 +38,37 @@ def generate(destination):
                    cwd=ROOT, check=True)
 
 
+def replace_generated(fresh, destination, root):
+    # Validate every output before touching the last known committed SDK.
+    contents(fresh)
+    root = root.resolve()
+    try:
+        relative = destination.relative_to(root)
+    except ValueError:
+        raise ValueError('Generated destination must stay inside the repository') from None
+    if '..' in relative.parts or not relative.parts:
+        raise ValueError('Invalid generated destination')
+    current = root
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError('Generated destination ancestors must not be symlinks')
+    if not destination.resolve().is_relative_to(root):
+        raise ValueError('Generated destination escapes repository')
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.sdk-replacement-', dir=destination.parent) as temp:
+        staged, backup = Path(temp) / 'new', Path(temp) / 'old'
+        shutil.copytree(fresh, staged)
+        if destination.exists():
+            destination.rename(backup)
+        try:
+            staged.rename(destination)
+        except OSError:
+            if backup.exists():
+                backup.rename(destination)
+            raise
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--write', action='store_true', help='generate the reviewed SDK for committing')
@@ -44,13 +76,10 @@ def main():
     try:
         if args.write:
             # Generate fresh first; never leave obsolete files after a contract deletion.
-            import shutil
             with tempfile.TemporaryDirectory(prefix='purpuragenda-contract-') as temp:
                 fresh = Path(temp) / 'generated'
                 generate(fresh)
-                if DESTINATION.exists():
-                    shutil.rmtree(DESTINATION)
-                shutil.copytree(fresh, DESTINATION)
+                replace_generated(fresh, DESTINATION, ROOT)
         else:
             with tempfile.TemporaryDirectory(prefix='purpuragenda-contract-') as temp:
                 fresh = Path(temp) / 'generated'

@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | In progress; P12/contract-foundation claimed by Codex; dependencies in docs/delivery.md;  |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/11; contract foundation only; shell pending; dependencies in docs/delivery.md;  |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Recovered WIP; dependencies in docs/delivery.md;  |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -66,11 +66,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex, 2026-10-25T08:12:00Z.
-- Current task: P12/contract-foundation; branch: task/p12-contract-foundation; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: contract, generated SDK, CI and tests ready for initial draft.
+- Current task: P12/contract-foundation; branch: task/p12-contract-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/11.
+- Last pushed implementation commit: 81890e8 initial tested slice; uncommitted changes: contract, generated SDK, CI and tests ready for initial draft.
 - What works: P01 coordination and P40 coverage foundations merged; P48 live main rules active, verifier integration pending.
 - What remains: reviewed public contract seed, deterministic generated Angular SDK and contract tests; Angular shell is next P12 slice.
 - Decisions: adopt only current public service/availability seam, not recovered monolithic contract or feature implementations.
-- Verification: 46 Python tests, full108+3 build, coverage99.64%/97.75%, two deterministic generations and whitespace passed; independent review/CI pending.
+- Verification: 50 Python tests, full108+3 build, coverage99.64%/97.75%, two deterministic generations and whitespace passed; independent re-review approved after safe replacement fixes; exact-head prerequisite-integrated CI pending.
 - Next concrete action: finish prerequisite integration, then implement contract generation and tests.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P48 foundation merge required before review.
