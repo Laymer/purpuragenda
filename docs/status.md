@@ -148,6 +148,12 @@ Initial sandbox build stopped at an unavailable write to the Maven cache; approv
 
 P13 delivery checkpoint: integrated P48 at0c3ae04 preserving its strict runners, live protection receipt and31 policy tests. Strict ledger/coverage38 tests, policy31 tests, commit policy and read-only live protection passed; integrated full build retained108+10+3 tests and95.89%/100% adapter coverage. Draft PR12 created; coordinator independently approved security code and millisecond-boundary fix. Added a further regression proving the loaded JCE key remains stable after its file is replaced/removed; final full rerun passed108 domain+11 adapter+3 architecture tests,38 ledger/coverage tests, zero skips; adapter coverage remains70/73 lines52/52 branches.
 
+## P01 standing authorization evidence
+
+Recorded the owner's standing permission for routine approved implementation, tests, dependency downloads, GitHub configuration, task PRs/reviews/pushes/green merges. Tool controls remain binding; deployment, DNS/ingress activation, purchases and live customer communication retain separate manual decisions. Agent instruction validation now requires durable decision/delivery references; a new negative regression checks both files.
+
+All51 root+31 policy Python tests passed; full build108 domain+11 security+3 architecture passed without failures/errors/skips, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters. Deterministic contract drift, docs and whitespace passed. Independent agent review approved. Exact-head CI remains required.
+
 ## P07 review checkpoint
 
 P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
@@ -165,3 +171,5 @@ P07 integrated P48 protection and P13 cryptography from main34836ed. Preserved b
 P07 first actual-container CI40176534341 at eb28055 failed at MigrationTest bootstrap in0.139s before SQL; domain108/security11 and documentation/delivery checks passed. Added controlled phase/exception-class diagnostics and mandatory Docker server/API/pinned-image preflight; no arbitrary provider message logging or weakened dependency gate. Integrated P12 contract foundationbc64f01 and its mandatory contract category.
 
 P07 bootstrap root cause reproduced offline: Testcontainers2.0.5 parses a combined `postgres:18.6-bookworm@sha256:...` string as repository `postgres:18.6-bookworm`, incompatible with PostgreSQLContainer. Use digest-only `postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc`, preserving the exact immutable image. Two pure parser regression tests pass; the real fresh-schema test requires server_version_num180006 and fsync=on (overriding Testcontainers' fsync-off default). Added a dedicated required MigrationTest report gate so unrelated adapter tests cannot mask an absent/incomplete suite; three synthetic report tests pass. Root Python suite now53 tests; test compilation passes. Actual-container CI after this correction remains pending.
+
+P07 integrated standing authorization main04282fa, preserving current owner launch choices and instructions. Targeted parser test invocation initially stopped at strict domain/empty-scaffold selector checks; rerun includes actual domain suites and permits only empty scaffolds to have no selected tests. No CI threshold or suite gate was weakened.

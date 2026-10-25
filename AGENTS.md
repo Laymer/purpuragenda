@@ -25,3 +25,7 @@ The approved version 1 scope is an English, single-practitioner booking applicat
 - Squash-merge green PRs only after required checks/reviews pass and findings are resolved. Never bypass blockers. Mark Merged only after reconciling GitHub merge state. Deployment and purchases remain manual.
 
 Follow docs/delivery.md for approved task dependencies and parallel ownership. Every new commit includes a meaningful relevant automated test addition/update; consolidate handoff-only checkpoints. Require 90% line/branch coverage per production module and Angular, retaining 95% lines for domain/application. Independent agent review and all implemented CI categories are mandatory before coordinator squash merge.
+
+## Standing owner authorization
+
+The owner grants the routine permissions necessary to implement the approved plan; see the 2026-10-25 standing authorization in docs/decisions.md. Continue authorized development, tests, dependency downloads, GitHub configuration, task PRs, independent reviews and green merges without repeated conversational confirmation. Tool-enforced permissions remain binding. Deployment, DNS/ingress activation, purchases and live customer communication remain manual release decisions.

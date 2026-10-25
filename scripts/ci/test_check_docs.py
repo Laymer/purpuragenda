@@ -15,7 +15,7 @@ class LedgerTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         for name in ('AGENTS.md', 'CLAUDE.md'):
-            (self.root / name).write_text('Read STATUS.md and docs/status.md.\n')
+            (self.root / name).write_text('Read STATUS.md, docs/status.md, docs/decisions.md and docs/delivery.md.\n')
         (self.root / 'docs/handoffs').mkdir(parents=True)
         for name in ('implementation-plan.md', 'decisions.md', 'status.md', 'delivery.md'):
             (self.root / 'docs' / name).write_text('Synthetic evidence\n')
@@ -110,6 +110,18 @@ class LedgerTest(unittest.TestCase):
     def test_required_documents(self):
         (self.root / 'docs/decisions.md').unlink()
         self.assertTrue(self.validate())
+
+
+    def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):
+        for name in ('AGENTS.md', 'CLAUDE.md'):
+            path = self.root / name
+            original = path.read_text()
+            for reference in ('docs/decisions.md', 'docs/delivery.md'):
+                with self.subTest(name=name, reference=reference):
+                    path.write_text(original.replace(reference, ''))
+                    self.assertTrue(any(name + ' must reference ' + reference in error
+                                        for error in self.validate()))
+            path.write_text(original)
 
 
 if __name__ == '__main__':
