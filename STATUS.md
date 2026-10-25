@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; standing-authorization slice; prior coordination merged https://github.com/Laymer/purpuragenda/pull/9 at 15ba8b4 |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell assigned to separate worker |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell in separate worker |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,31 +46,30 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Draft PR; https://github.com/Laymer/purpuragenda/pull/13; secret-scanning foundation only; remaining scanners pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; final release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage and P48 protection foundations are merged; final application coverage and release publication remain pending. P07 migrations and P13 crypto are active in their separate task branches.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 scanning foundation is active. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P01/standing-authorization: agent=Codex; branch=task/p01-standing-authorization; base=main; handoff=docs/handoffs/p01-standing-authorization.md
+- P43/scanning-foundation: agent=Codex-p43; branch=task/p43-scanning-foundation; base=main; handoff=docs/handoffs/p43-scanning-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T08:29:00Z.
-- Current task: P01/standing-authorization; branch: task/p01-standing-authorization; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: reviewed authorization instructions/validator/test ready for initial publication.
-- What works: P01/P40/P48 foundations, P13 crypto and P12 contracts merged; separate workers own migrations, Angular shell and secret scan.
-- What remains: persist user authorization in agent instructions/decisions and test authority references, run required checks/review/PR CI.
-- Decisions: routine implementation permissions are standing authorization; sandbox prompts remain app controls; release/deployment/purchases remain separate manual owner decisions.
-- Verification: 51 root +31 policy Python tests,108 domain+11 security+3 architecture build, coverage99.64%/97.75% domain and95.89%/100% adapters, contract drift and whitespace passed; independent agent approved.
-- Next concrete action: update instructions and validator with regression tests.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:29:40Z.
+- Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/13.
+- Last pushed implementation commit: 31183b9; uncommitted changes: integration of standing authorization04282fa.
+- What works: P48 protection, P13 cryptography and P12 contract foundations merged. What remains: exact-head CI and coordinator merge; dependency/SAST/SBOM/container/config remain later P43 slices.
+- Decisions: select a small secret-scanning slice first; no broad ignores or unsanitized scan output.
+- Verification: integrated 71 root +31 delivery-policy tests, full108 domain+11 adapters+3 architecture, contract regeneration and whitespace passed; no skips. Domain99.64%/97.75%, adapters95.89%/100%. Real scanner full history+105tracked files passed, zero findings.
+- Next concrete action: verify integrated suites/contracts/scan, push and require exact-head CI plus independent approval.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate newer main before final review.
