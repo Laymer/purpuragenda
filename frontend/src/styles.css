@@ -1,0 +1,20 @@
+@import '@angular/material/prebuilt-themes/magenta-violet.css';
+
+:root { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #30263b; background: #fbf9f5; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #68458c; text-underline-offset: 4px; }
+a:focus-visible { outline: 3px solid #68458c; outline-offset: 4px; }
+.site-header { height: auto; min-height: 80px; padding: 24px clamp(20px, 5vw, 64px); background: transparent; }
+.brand { font-size: 1.6rem; font-weight: 650; letter-spacing: -.04em; text-decoration: none; color: #30263b; }
+.brand span { color: #68458c; }
+.skip-link { position: absolute; left: 12px; top: -80px; background: white; padding: 14px; z-index: 10; }
+.skip-link:focus { top: 12px; }
+main { min-height: 72vh; }
+.welcome { max-width: 1000px; margin: auto; padding: clamp(36px, 8vw, 100px) 24px; }
+h1 { max-width: 740px; font-size: clamp(2.7rem, 6vw, 5rem); font-weight: 500; line-height: 1.08; letter-spacing: -.05em; }
+p { line-height: 1.65; }
+.eyebrow { color: #68458c; text-transform: uppercase; font-size: .8rem; letter-spacing: .14em; }
+.business-zone, footer { color: #605568; font-size: .9rem; }
+footer { border-top: 1px solid #e3dde6; padding: 28px clamp(20px, 5vw, 64px); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

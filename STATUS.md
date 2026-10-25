@@ -10,12 +10,12 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; real PostgreSQL11-case acceptance passed |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell in separate worker |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -55,7 +55,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 scanning foundation is active. Full P40 application-wide acceptance and P48 release publication remain pending.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
@@ -65,11 +65,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:53:01Z.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:02:02Z.
 - Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/17.
-- Last pushed implementation commit: a9259e1; uncommitted changes: reviewed npm manifest correspondence fix and current-main integration.
-- What works: P43 secret-scanning slice merged8f5ed62. What remains: pinned dependency scanner, validated transitive SBOM, fail-closed advisory scan and tests; SAST/container/config later slices.
+- Last pushed implementation commit: a9259e1; local integration f1ac0e6; uncommitted changes: P12 Angularc1151b2 integration, final evidence pending.
+- What works: reviewed dependency/secret gates and P12 Angular/P07 migrations integrated. What remains: exact-head CI with real PostgreSQL and coordinator merge; SAST/tool classpaths/full release SBOM/container/config remain later P43 slices.
 - Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
-- Verification: integrated105 root+31 policy tests, contracts/docs/inventory/secret scan/live protection passed. Live OSV canary and all44 resolved packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);108domain+11security+2image parser passed; no DB-suite passing claim.
+- Verification: integrated121 root+31 policy tests, docs/inventory/whitespace/contracts/live protection passed; real OSV canary and all468 Java/npm packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);6 Angular/build/100% coverage,108domain+11security+2image parser passed; no DB-suite passing claim. Safe full-history/150tracked-file secret scan passed; independent artifact/npm fixes approved.
 - Next concrete action: run integrated suites and dependency scan; record local Docker limitation; push exact head and require CI/independent approval.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.
