@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Draft PR; https://github.com/Laymer/purpuragenda/pull/19; queue-foundation2c6fce4 initial CI green; SMTP/auth delivery pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,7 +46,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Draft PR; https://github.com/Laymer/purpuragenda/pull/17; dependency foundation; secret slice merged PR13 at8f5ed62; final P43 pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation PR13 8f5ed62 and dependency foundation https://github.com/Laymer/purpuragenda/pull/17 at2c896ff merged; remaining scans pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
@@ -61,15 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P43/dependency-foundation: agent=Codex-p43; branch=task/p43-dependency-foundation; base=main; handoff=docs/handoffs/p43-dependency-foundation.md
+- P14/queue-foundation: agent=Codex-p14; branch=task/p14-queue-foundation; base=main; handoff=docs/handoffs/p14-queue-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:16:46Z.
-- Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/17.
-- Last pushed implementation commit: 6d05b84; uncommitted changes: P08 transaction core6c1f96f integration and refreshed verification pending.
-- What works: reviewed dependency/secret gates and P12 Angular/P07 migrations integrated. What remains: exact-head CI with real PostgreSQL and coordinator merge; SAST/tool classpaths/full release SBOM/container/config remain later P43 slices.
-- Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
-- Verification: integrated122 root+31 policy tests, docs/inventory/whitespace/contracts/live protection passed; real OSV canary and all472 Java/npm packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);6 Angular/build/100% coverage,108domain+4application+11security+2image parser passed; no DB-suite passing claim. Safe full-history/155tracked-file secret scan passed; independent artifact/npm fixes approved.
-- Next concrete action: run integrated suites and dependency scan; record local Docker limitation; push exact head and require CI/independent approval.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:31:09Z.
+- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/19.
+- Last pushed implementation commit: 2c6fce4 (reviewed implementation9c3faff plus prerequisites); uncommitted changes: original-due preservation regression and final PR/CI evidence before tested checkpoint.
+- What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
+- What remains: final checkpoint exact-head rerun and coordinator merge; SMTP/auth envelopes later P14 slice.
+- Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
+- Verification: initial exact-head CI40180605912 at2c6fce4 all7jobs passed;10queue+11migration+11core realPG cases,46adapter+6application+108domain+3architecture tests, zero skips. Coverage adapter202/205lines151/166branches; app32/33lines48/48branches; Angular100%;124rootPython+31policy and472package advisory scan passed. Local full command fails Docker as required; real CI supplies integrity evidence.
+- Next concrete action: push tested final checkpoint and require exact-head real PostgreSQL CI/coordinator merge.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 transaction-core6c1f96f merged and integrated; booking/policy persistence owned separately; P43 dependencies2c896ff integrated.
