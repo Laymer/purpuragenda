@@ -1,4 +1,5 @@
 """Local exposure and incomplete/stale persistence receipts cannot pass verification."""
+import base64
 import copy
 import importlib.util
 import re
@@ -160,7 +161,7 @@ class ComposeGateTest(unittest.TestCase):
 
 class OperatorSessionTest(unittest.TestCase):
     def test_totp_matches_rfc6238_sha1_vectors(self):
-        key = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ'  # ASCII "12345678901234567890"
+        key = base64.b32encode(b'12345678901234567890').decode()  # RFC 6238 appendix B key
         for moment, expected in [(59, '287082'), (1111111109, '081804'), (1234567890, '005924')]:
             self.assertEqual(expected, OPERATOR.totp(key, moment))
 
