@@ -1,0 +1,288 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Purpuragenda version 1",
+    "version": "0.1.0",
+    "description": "Public catalog contract foundation. Availability is advisory and dates use the selected IANA display zone. Remaining v1 endpoints are added with their owning tasks. Online checkout is excluded."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/services": {
+      "get": {
+        "operationId": "listServices",
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Service"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe business or transport problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/availability": {
+      "get": {
+        "operationId": "availability",
+        "tags": [
+          "Catalog"
+        ],
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "displayZone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe business or transport problem",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "description": "Inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Revalidate all availability during booking mutations."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Service": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "priceMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "EUR"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "durationMinutes",
+          "priceMinor",
+          "currency",
+          "active"
+        ]
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "refreshAvailability": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "code",
+          "correlationId",
+          "retryable",
+          "refreshAvailability"
+        ]
+      },
+      "Slot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reservedEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "displayLocalTime": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "startInstant",
+          "sessionEndInstant",
+          "reservedEndInstant",
+          "businessDate",
+          "displayLocalTime",
+          "offset"
+        ]
+      },
+      "Availability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "enum": [
+              "Europe/Brussels"
+            ]
+          },
+          "displayZone": {
+            "type": "string"
+          },
+          "horizonInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "policyVersion": {
+            "type": "integer"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          },
+          "restrictions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "serverNow",
+          "businessZone",
+          "displayZone",
+          "horizonInstant",
+          "policyVersion",
+          "slots",
+          "restrictions"
+        ]
+      }
+    }
+  }
+}

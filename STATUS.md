@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; dependencies in docs/delivery.md;  |
+| P12 — Establish contract generation, the Angular application shell and typed API access | In progress; P12/contract-foundation claimed by Codex; dependencies in docs/delivery.md;  |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Recovered WIP; dependencies in docs/delivery.md;  |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -43,7 +43,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
-| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Draft PR; https://github.com/Laymer/purpuragenda/pull/10; coverage-foundation only; final application-wide acceptance pending |
+| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
@@ -61,15 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P40/coverage-foundation: agent=Codex-p40; branch=task/p40-coverage-foundation; base=main; handoff=docs/handoffs/p40-coverage-foundation.md
+- P12/contract-foundation: agent=Codex; branch=task/p12-contract-foundation; base=main; handoff=docs/handoffs/p12-contract-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p40, 2026-10-25T08:09:27Z.
-- Current task: P40/coverage-foundation; branch: task/p40-coverage-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/10.
-- Last pushed implementation commit: 39b271d; uncommitted changes: merge origin/main at 15ba8b4, reconciled ledger and evidence before merge commit.
-- What works: P01 concurrency merged at 15ba8b4, original P01–P06 merged. P40 core independently approved by coordinator. What remains: exact-head remote CI; final P40 application-wide acceptance remains pending.
-- Decisions: domain/application 95% lines, other backend/Angular 90% lines, all 90% branches; no aggregate masking. Preserve P01 delivery dependencies and concurrent claim validation.
-- Verification: prior full build passed 108 domain + 3 architecture + 23 coverage-gate tests, zero skips; 276/277 domain lines and 478/489 branches. Integrated python discovery passed 38 tests (15 ledger + 23 coverage), documentation and full build passed with 108 domain + 3 architecture tests, zero skips.
-- Next concrete action: push merge commit and request coordinator exact-head CI check.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, P01 prerequisite merged.
+- Agent and UTC checkpoint: Codex, 2026-10-25T08:12:00Z.
+- Current task: P12/contract-foundation; branch: task/p12-contract-foundation; base: main; PR URL: pending.
+- Last pushed implementation commit: none for this slice; uncommitted changes: contract, generated SDK, CI and tests ready for initial draft.
+- What works: P01 coordination and P40 coverage foundations merged; P48 live main rules active, verifier integration pending.
+- What remains: reviewed public contract seed, deterministic generated Angular SDK and contract tests; Angular shell is next P12 slice.
+- Decisions: adopt only current public service/availability seam, not recovered monolithic contract or feature implementations.
+- Verification: 46 Python tests, full108+3 build, coverage99.64%/97.75%, two deterministic generations and whitespace passed; independent review/CI pending.
+- Next concrete action: finish prerequisite integration, then implement contract generation and tests.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P48 foundation merge required before review.
