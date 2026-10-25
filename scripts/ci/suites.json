@@ -113,8 +113,8 @@
     },
     "persistence": {
       "owner": "P45",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "persistence"
     },
     "backup": {
       "owner": "P46",

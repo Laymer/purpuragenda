@@ -1,6 +1,7 @@
 # Local Compose initialization and persistence checkpoint
 
 - Agent and UTC checkpoint: Codex-worker-c, 2026-10-25T17:08:49Z.
+- Takeover: Claude-coordinator claimed this task after the Codex freeze; merged origin/main 1748cf5 append-only.
 - Current task: P45/local-compose; branch: task/p45-local-compose; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/48. Starting revision6b4544e; remote main has advanced to bcc9fec and is not yet integrated.
 - Last pushed implementation commit: 70a1b875c74c54d903cd2d8138326fcce292442b; uncommitted changes: none, clean and pushed. Final private-key length regression and non-leaking assertions are included. Predecessor PR42 exactea712c6 merged6b4544e. Owner requested wrap-up for Claude Code handoff; no further feature expansion.
 - What works: actual local.sh up and its smoke passed on the preserved local database after diagnosed initialization repair; postgres/backend/web/mailpit are healthy, migrate exited0. Ports8080/8025 bind loopback. Private files and all named volumes are preserved. Docker Desktop discovered without system configuration changes. Sender defaulthello@medinavie.com still routes only to Mailpit; tests use synthetic addresses.

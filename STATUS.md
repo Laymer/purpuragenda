@@ -48,7 +48,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; SAST merged https://github.com/Laymer/purpuragenda/pull/21 at0454505 with12 green checks; secret/dependency foundations merged; full SBOM/container/config pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
-| P45 — Build and verify hardened local, test, operational and restore Compose profiles | Draft PR; executable bootstrap https://github.com/Laymer/purpuragenda/pull/42 merged6b4544e; local Compose https://github.com/Laymer/purpuragenda/pull/48 at70a1b875 frozen, startup/smoke and211Python pass; fresh persistence/current-main/full gates/review pending; operator/two-backend/operational/restore remain |
+| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; Claude takeover after Codex freeze; executable bootstrap https://github.com/Laymer/purpuragenda/pull/42 merged6b4544e; local Compose https://github.com/Laymer/purpuragenda/pull/48 at70a1b875 frozen, startup/smoke and211Python pass; fresh persistence/current-main/full gates/review pending; operator/two-backend/operational/restore remain |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-None.
+- P45/local-compose: agent=Claude-coordinator; branch=task/p45-local-compose; base=main; handoff=docs/handoffs/p45-local-compose.md
 
 ## Active handoff
 

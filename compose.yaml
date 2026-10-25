@@ -1,0 +1,123 @@
+name: purpuragenda-local
+x-runtime: &runtime
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 35s
+  logging: {driver: none}
+services:
+  postgres:
+    <<: *runtime
+    image: purpuragenda-postgres:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: postgres}
+    user: "999:999"
+    environment:
+      POSTGRES_DB: purpuragenda
+      POSTGRES_USER: purpuragenda_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/18/docker
+    secrets: [postgres_password, migrator_password, app_password]
+    volumes:
+      - database:/var/lib/postgresql
+    tmpfs: [/tmp, "/var/run/postgresql:uid=999,gid=999,mode=0775"]
+    networks: [private]
+    healthcheck:
+      test: [CMD, /usr/local/bin/purpuragenda-db-health]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+  migrate:
+    <<: *runtime
+    image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: backend}
+    command: [migrate]
+    environment:
+      APP_DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
+      APP_DATABASE_USER: purpuragenda_migrator
+      APP_DATABASE_PASSWORD_FILE: /run/secrets/migrator_password
+    secrets: [migrator_password]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [private]
+    healthcheck: {disable: true}
+    mem_limit: 768m
+  backend:
+    <<: *runtime
+    image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: backend}
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      APP_DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
+      APP_DATABASE_USER: purpuragenda_app
+      APP_DATABASE_PASSWORD_FILE: /run/secrets/app_password
+      APP_MODE: local
+      APP_PUBLIC_ORIGIN: http://localhost:8080
+      APP_NOTICE_VERSION: local-synthetic-v1
+      APP_TOTP_KEY_FILE: /run/secrets/totp_key
+      APP_TOTP_KEY_ID: local-totp-v1
+      APP_DELIVERY_KEY_FILE: /run/secrets/delivery_key
+      APP_DELIVERY_KEY_ID: local-delivery-v1
+      APP_SECURITY_RATE_KEY_FILE: /run/secrets/rate_key
+      APP_SECURITY_RATE_KEY_ID: local-rate-v1
+      APP_SECURITY_TRUSTED_PROXY_PEERS: ${PURPURAGENDA_PROXY_ADDRESS:-172.30.78.2}
+      APP_SMTP_HOST: mailpit
+      APP_SMTP_PORT: "1025"
+      APP_MAIL_FROM: ${PURPURAGENDA_MAIL_FROM:-hello@medinavie.com}
+    secrets: [app_password, totp_key, delivery_key, rate_key]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      mailpit: {condition: service_healthy}
+    networks: [private, proxy]
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
+  web:
+    <<: *runtime
+    image: purpuragenda-web:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: web}
+    depends_on: {backend: {condition: service_healthy}}
+    networks:
+      proxy: {ipv4_address: "${PURPURAGENDA_PROXY_ADDRESS:-172.30.78.2}"}
+      mail: {}
+      edge: {}
+    ports: ["127.0.0.1:8080:8080", "127.0.0.1:8025:8025"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    restart: unless-stopped
+    mem_limit: 192m
+  mailpit:
+    <<: *runtime
+    image: purpuragenda-mailpit:${PURPURAGENDA_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/application.Dockerfile, target: mailpit}
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "0"
+      MP_QUIET: "true"
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_SMTP_DISABLE_RDNS: "true"
+      MP_ALLOWED_HOSTS: localhost,127.0.0.1,mailpit
+    networks: [private, mail]
+    volumes: [mailbox:/data]
+    restart: unless-stopped
+    mem_limit: 128m
+networks:
+  private: {internal: true}
+  mail: {internal: true}
+  proxy:
+    internal: true
+    ipam: {config: [{subnet: "${PURPURAGENDA_PROXY_SUBNET:-172.30.78.0/28}", ip_range: "${PURPURAGENDA_PROXY_POOL:-172.30.78.8/29}"}]}
+  edge: {}
+volumes:
+  database: {}
+  mailbox: {}
+  caddy_data: {}
+  caddy_config: {}
+secrets:
+  postgres_password: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/postgres-password"}
+  migrator_password: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/migrator-password"}
+  app_password: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/app-password"}
+  totp_key: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/totp-key"}
+  delivery_key: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/delivery-key"}
+  rate_key: {file: "${PURPURAGENDA_SECRET_DIR:-./.secrets}/rate-key"}
