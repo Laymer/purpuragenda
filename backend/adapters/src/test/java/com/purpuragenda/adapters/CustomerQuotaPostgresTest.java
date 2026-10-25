@@ -50,6 +50,8 @@ class CustomerQuotaPostgresTest {
                 expires==null?null:Timestamp.from(expires),confirmed?null:Timestamp.from(created.plusSeconds(86400)),meeting,confirmed?"https://zoom.us/j/"+meeting:null,confirmed?"MANUAL_APPROVAL":null,confirmed);
         f.jdbc.update("INSERT INTO booking_snapshot VALUES(?,?::jsonb)",id,MigrationTest.snapshot());
         f.jdbc.update("INSERT INTO booking_occupancy VALUES(?,1,tstzrange(?,?,'[)'),NULL)",id,Timestamp.from(start),Timestamp.from(start.plusSeconds(7200)));
+        // Validate this immutable NEW event before another boundary moves its current occupancy.
+        f.jdbc.execute("SET CONSTRAINTS ALL IMMEDIATE");f.jdbc.execute("SET CONSTRAINTS ALL DEFERRED");
         assertTrue(created.isBefore(tx.now()));return id;
     }
     void badShape(Booking b,UUID customer,LocalDate day) {
@@ -106,8 +108,10 @@ class CustomerQuotaPostgresTest {
             for(String state:List.of("COMPLETED","NO_SHOW")){f.jdbc.update("UPDATE booking SET state=? WHERE id=?",state,id);assertEquals(0,tx.quota(f.customer).active());}
             assertEquals(0,tx.quota(f.customer).active());
             boundaryBooking(tx,false,tx.now().plusSeconds(270000),tx.now().minusSeconds(3600),tx.now().plusNanos(1000));
+            boundaryBooking(tx,false,tx.now().plusSeconds(280800),tx.now().minusSeconds(3600),tx.now().minusNanos(1000));
             assertEquals(1,tx.quota(f.customer).active());return ok();
         });
+        assertEquals(4,f.count("booking"));
     }
     @Test void unknownIdentityUnsavedStaleBookingAndCorruptCountersFailClosed() {
         assertThrows(Failure.class,()->f.unit.execute(f.key(),tx->{tx.quota(UUID.randomUUID());return ok();}));
