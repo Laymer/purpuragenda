@@ -3,6 +3,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location('check_docs', Path(__file__).with_name('check-docs.py'))
 CHECK = importlib.util.module_from_spec(SPEC)
@@ -106,6 +107,27 @@ class LedgerTest(unittest.TestCase):
         path.unlink()
         path.symlink_to(self.root / 'docs/status.md')
         self.assertTrue(any('missing handoff' in e for e in self.validate()))
+
+    def test_symlinked_handoff_ancestors_are_rejected_without_reading_target(self):
+        for ancestor in ('docs', 'docs/handoffs'):
+            with self.subTest(ancestor=ancestor), tempfile.TemporaryDirectory() as outside:
+                source = self.root / ancestor
+                destination = Path(outside) / source.name
+                source.rename(destination)
+                source.symlink_to(destination, target_is_directory=True)
+                try:
+                    original_read = Path.read_text
+                    def guarded_read(path, *args, **kwargs):
+                        if path == self.root / 'docs/handoffs/p01.md':
+                            raise AssertionError('Linked handoff must not be opened')
+                        return original_read(path, *args, **kwargs)
+                    with patch.object(Path, 'read_text', guarded_read):
+                        errors = self.validate()
+                    self.assertTrue(any('missing handoff' in error for error in errors))
+                    self.assertEqual(self.handoff, (destination / ('handoffs/p01.md' if ancestor == 'docs' else 'p01.md')).read_text())
+                finally:
+                    source.unlink()
+                    destination.rename(source)
 
     def test_handoff_mismatches(self):
         path = self.root / 'docs/handoffs/p01.md'
