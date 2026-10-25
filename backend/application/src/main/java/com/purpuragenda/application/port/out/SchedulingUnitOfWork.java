@@ -38,7 +38,7 @@ public interface SchedulingUnitOfWork {
     /** Additive names preserve existing persisted receipts. Only explicit business codes may commit reclamation. */
     enum Code {
         OK(false), IDEMPOTENCY_KEY_REUSED(false), SLOT_UNAVAILABLE(true),
-        SERVICE_UNAVAILABLE(true), SERVICE_CHANGED(true), POLICY_CHANGED(true), NOTICE_CHANGED(true), INVALID_BIRTH_DATE(true),
+        SERVICE_UNAVAILABLE(true), SERVICE_CHANGED(true), POLICY_CHANGED(true), NOTICE_CHANGED(true), INVALID_BIRTH_DATE(true), STALE_VERSION(true),
         START_NOT_FUTURE(true), START_NOT_AVAILABLE(true), MINIMUM_NOTICE(true), OUTSIDE_HORIZON(true),
         DAILY_CAPACITY_REACHED(true), ACTIVE_LIMIT_REACHED(true), REQUEST_LIMIT_REACHED(true), HARD_BLACKOUT(true),
         IMPOSSIBLE_PENDING_HOLD(true), BLACKOUT_OVERRIDE_REQUIRED(true),

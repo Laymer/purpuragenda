@@ -1,6 +1,7 @@
 # Customer cancellation and rescheduling application commands
 
 - Agent and UTC checkpoint: Codex-worker-a, 2026-10-25T17:00:15Z.
+- Takeover: Claude-coordinator claimed this task after the Codex freeze; merged origin/main 658ea9b append-only.
 - Current task: P10/customer-changes; branch: task/p10-customer-changes; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/47.
 - Last pushed implementation commit:9f97ad742015c9d306b33de5100b5ff56d01942d; base9ac2f8d is merged P15 PR44; uncommitted changes: STATUS.md, this handoff and docs/status.md contain final publication/native evidence for the coordinator handoff; no source changes.
 - What works: typed customer cancellation/rescheduling application commands pass full native/hosted gates and independent exact9f97ad7 review in draft PR47. P15 PR44 confirmed merged9ac2f8d at2026-10-25T16:39:40Z after exact20a7120 approval, CI40212269656 all required categories and native393Java/6Angular/201Python with all coverage gates.
