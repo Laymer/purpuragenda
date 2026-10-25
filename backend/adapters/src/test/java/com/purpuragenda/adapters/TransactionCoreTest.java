@@ -151,6 +151,18 @@ class TransactionCoreTest {
         function("57014");
         assertEquals(Failure.Kind.RETRY_LATER,assertThrows(Failure.class,()->unit.execute(key(),tx->{jdbc.queryForObject("SELECT synthetic_failure()",Integer.class);return ok();})).kind());
     }
+    @Test void deadlockInsideAttemptRetainsItsSqlStateAndRetriesTheWholeTransaction() {
+        function("40P01"); AtomicInteger attempts=new AtomicInteger();
+        unit.execute(key(),tx->{
+            jdbc.update("INSERT INTO progress VALUES(1)");
+            return tx.attempt(()->{
+                jdbc.update("INSERT INTO progress VALUES(2)");
+                if(attempts.incrementAndGet()<3) jdbc.queryForObject("SELECT synthetic_failure()",Integer.class);
+                return ok();
+            });
+        });
+        assertEquals(3,attempts.get()); assertEquals(2,count("progress")); assertEquals(1,count("idempotency_record"));
+    }
     @Test void corruptStoredReceiptsAndMissingResourceCannotBeCertified() {
         CommandKey key=key(); unit.execute(key,tx->ok());
         for(String document:List.of("{}","{\"code\":\"OTHER\",\"entityId\":null,\"version\":0}","{\"code\":\"OK\",\"entityId\":\"invalid\",\"version\":1}","{\"code\":\"OK\",\"entityId\":null,\"version\":-1}")) {

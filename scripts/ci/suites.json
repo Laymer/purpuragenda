@@ -58,8 +58,8 @@
     },
     "angular": {
       "owner": "P12",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "build"
     },
     "browser-matrix": {
       "owner": "P39",
