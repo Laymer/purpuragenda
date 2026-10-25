@@ -19,7 +19,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; bootstrap PR27 and MFA PR29 merged; recovery-isolation foundation https://github.com/Laymer/purpuragenda/pull/33 merged79dff5a; persisted recovery/reenrollment claimed by Codex-worker-b on task/p16-recovery-persistence |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; bootstrap PR27 and MFA PR29 merged; recovery-isolation foundation https://github.com/Laymer/purpuragenda/pull/33 merged79dff5a; persisted recovery/reenrollment draft https://github.com/Laymer/purpuragenda/pull/41; owner Codex-worker-b; full public/operator integration remains |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -52,7 +52,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Windows preflight PR25 merged7d7f19e; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; actual WSL/full runbooks pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Draft PR; native-toolchain https://github.com/Laymer/purpuragenda/pull/38; Windows preflight PR25 merged7d7f19e; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; actual WSL/full runbooks pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress unprovisioned, no existing public Linux server; registrar Squarespace confirmed read-only, Google Domains nameservers; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -62,16 +62,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P16/recovery-persistence: agent=Codex-worker-b; branch=task/p16-recovery-persistence; base=main; handoff=docs/handoffs/p16-recovery-persistence.md
-- P09/command-context: agent=Codex-coordinator; branch=task/p09-command-context; base=main; handoff=docs/handoffs/p09-command-context.md
+- P09/authorized-context: agent=Codex-coordinator; branch=task/p09-authorized-context; base=main; handoff=docs/handoffs/p09-authorized-context.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T13:47:49Z.
-- Current task: P09/command-context; branch: task/p09-command-context; base: main; PR URL: not yet created.
-- Last pushed implementation commit: none for this slice; base00cdd57; uncommitted changes: tested command failure boundary and evidence ready for publication.
-- What works: GitHub confirms handoff PR37 merged00cdd57; root started clean. Docker Desktop server29.6.2 is reachable on this Mac.
-- What remains: full local v1. Worker A owns P15/email-redemption, worker B P16/recovery-persistence, worker C P49/native-toolchain in isolated worktrees with their own claimed ledgers. Coordinator owns the P09 command boundary, integration and review rotation.
-- Decisions: preserve recovery6f9405b and existing worktrees; reserve010 for P16 and011 for P15. Keep P50 PR31 paused. Local-only application acceptance is separate from deployment, live SMTP, purchases and genuine external acceptance.
-- Verification: full native build passed108domain/57application/147adapters/3architecture,6Angular and185Python; allcoverage gates pass. Contract drift,31policy cases, live protection/docs/inventory/whitespace pass. Exact-head hosted categories pending.
-- Next concrete action: publish command boundary draft and obtain exact-head review/CI; then integrate typed grant authority after P15.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; coordinator root checkout and worker worktrees/private/tmp/purpuragenda-p15-guest-access,/private/tmp/purpuragenda-p16-recovery-persistence,/private/tmp/purpuragenda-p49-native-toolchain; stacked PR dependencies: none for this command failure slice.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T13:54:23Z.
+- Current task: P09/authorized-context; branch: task/p09-authorized-context; base: main; PR URL: not yet created.
+- Last pushed implementation commit:7906cfc mergedb776269 in PR39; uncommitted changes: new task claim and merged-slice reconciliation; authority design pending P15/P17 interface agreement.
+- What works: GitHub confirms PR39 mergedb776269 at13:51:18Z after independent exact7906cfc approval and all13checks. Full pinned native build passed315Java/6Angular/185Python tests with allcoverage gates; contract/policy/protection passed.
+- What remains: full localv1; P15 email grants, P16 recovery, P49 native tools and P45 composition have separate owners. Current internal mutation runner does not authorize public access.
+- Decisions: authorization must be rechecked inside the locked PostgreSQL transaction before any stored idempotency receipt is returned. Original consumedCREATE grant can reach only its derived exact-bookingMANAGE scope. Reserve010P16/011P15; preserve pausedP50PR31 and all existing worktrees/data.
+- Verification: PR39CI40199288716 all13checks passed, independently reviewed. New typed authority slice has no implementation/test result yet. No local milestone completion or deployment claim.
+- Next concrete action: agree P17 persisted session authority reference, then implement typed command preauthorization and atomic grant effects with realPG tests after prerequisite migrations merge.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; currentrootcheckout and workerworktrees/private/tmp/purpuragenda-p15-guest-access,/private/tmp/purpuragenda-p16-recovery-persistence,/private/tmp/purpuragenda-p49-native-toolchain; stacked PR dependencies: P15grant schema011 and P17session authority remain prerequisites for public command authorization.
