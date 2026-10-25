@@ -183,6 +183,28 @@ class ProtectionTest(unittest.TestCase):
         altered['name'] = 'changed-reviewed-config'
         self.assertFalse(protection.valid_receipt(actual, altered, receipt))
 
+    def test_equivalent_aware_timestamp_offsets_match_but_changed_instants_fail(self):
+        actual, receipt = self.public_response_and_receipt()
+        actual['updated_at'] = '2026-10-25T08:09:39.282Z'
+        receipt['updated_at'] = '2026-10-25T09:09:39.282+01:00'
+        self.assertEqual([], protection.discrepancies(actual, self.expected, receipt))
+        actual['updated_at'] = '2026-10-25T08:09:39.283Z'
+        self.assertFalse(protection.valid_receipt(actual, self.expected, receipt))
+
+    def test_naive_malformed_or_missing_version_timestamps_fail_closed(self):
+        for invalid in (None, '', 'invalid', '2026-10-25', '2026-10-25T08:00:00'):
+            with self.subTest(timestamp=invalid):
+                actual, receipt = self.public_response_and_receipt()
+                actual['updated_at'] = invalid
+                self.assertFalse(protection.valid_receipt(actual, self.expected, receipt))
+                actual, receipt = self.public_response_and_receipt()
+                receipt['updated_at'] = invalid
+                self.assertFalse(protection.valid_receipt(actual, self.expected, receipt))
+                actual['bypass_actors'] = []
+                actual['updated_at'] = invalid
+                with self.assertRaises(ValueError):
+                    protection.receipt_for(actual, self.expected)
+
     def test_receipt_does_not_override_visible_bypass_or_missing_version(self):
         actual, receipt = self.public_response_and_receipt()
         actual['bypass_actors'] = [{'actor_id': 5}]

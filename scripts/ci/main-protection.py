@@ -2,6 +2,7 @@
 """Check or apply only the managed main-branch ruleset, preserving other rulesets."""
 import argparse
 import hashlib
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
@@ -27,19 +28,31 @@ def config_hash(expected):
     return hashlib.sha256(canonical).hexdigest()
 
 
+def version_time(value):
+    if not isinstance(value, str):
+        raise ValueError('Ruleset version requires an aware ISO timestamp')
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError('Ruleset version requires an explicit UTC offset')
+    return parsed.astimezone(timezone.utc)
+
+
 def receipt_for(actual, expected):
     if actual.get('bypass_actors') != [] or not actual.get('id') or not actual.get('updated_at'):
         raise ValueError('Administrator no-bypass readback and version metadata required')
-    return {'ruleset_id': actual['id'], 'updated_at': actual['updated_at'],
+    return {'ruleset_id': actual['id'], 'updated_at': version_time(actual['updated_at']).isoformat().replace('+00:00', 'Z'),
             'config_sha256': config_hash(expected), 'verified_bypass_actors': []}
 
 
 def valid_receipt(actual, expected, receipt):
-    return bool(receipt and actual.get('id') and actual.get('updated_at') and
-                receipt.get('ruleset_id') == actual['id'] and
-                receipt.get('updated_at') == actual['updated_at'] and
-                receipt.get('config_sha256') == config_hash(expected) and
-                receipt.get('verified_bypass_actors') == [])
+    try:
+        return bool(receipt and actual.get('id') and
+                    receipt.get('ruleset_id') == actual['id'] and
+                    version_time(receipt.get('updated_at')) == version_time(actual.get('updated_at')) and
+                    receipt.get('config_sha256') == config_hash(expected) and
+                    receipt.get('verified_bypass_actors') == [])
+    except (ValueError, TypeError):
+        return False
 
 
 def discrepancies(actual, expected, receipt=None):

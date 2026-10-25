@@ -55,8 +55,9 @@ successful full administrator readback. The coordinator reviews and commits this
 non-secret receipt with a relevant regression test.
 
 When bypass actors are omitted, CI requires the reviewed receipt to match the
-actual ruleset ID, exact `updated_at`, canonical configuration SHA256 and verified
-empty bypass list. Any settings edit changes the version and invalidates evidence;
+actual ruleset ID, exact aware `updated_at` instant, canonical configuration SHA256 and verified
+empty bypass list. Equivalent offset spellings normalize to UTC; missing, naive or malformed timestamps fail.
+Any settings edit changes the version and invalidates evidence;
 missing or mismatched receipts fail. An explicit bypass list is always checked
 directly. Read-only CI cannot mint administrator evidence, and receives no privileged
 secret. The receipt attests to the administrator readback at that immutable version;
