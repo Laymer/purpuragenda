@@ -42,7 +42,9 @@ public interface SchedulingUnitOfWork {
         START_NOT_FUTURE(true), START_NOT_AVAILABLE(true), MINIMUM_NOTICE(true), OUTSIDE_HORIZON(true),
         DAILY_CAPACITY_REACHED(true), ACTIVE_LIMIT_REACHED(true), REQUEST_LIMIT_REACHED(true), HARD_BLACKOUT(true),
         IMPOSSIBLE_PENDING_HOLD(true), BLACKOUT_OVERRIDE_REQUIRED(true),
-        INVALID_TRANSITION(true), HOLD_EXPIRED(true), CUTOFF_PASSED(true), SESSION_NOT_STARTED(true), MEETING_REQUIRED(true);
+        INVALID_TRANSITION(true), HOLD_EXPIRED(true), CUTOFF_PASSED(true), SESSION_NOT_STARTED(true), MEETING_REQUIRED(true),
+        INVALID_PAYMENT(true), DUPLICATE_PAYMENT(true), INVALID_REFUND(true), REFUND_EXCEEDS_RECEIPT(true),
+        INVALID_MEETING(true), MEETING_IN_USE(true), PAYMENT_INSUFFICIENT(true);
         private final boolean businessFailure;
         Code(boolean businessFailure) { this.businessFailure=businessFailure; }
         public boolean businessFailure() { return businessFailure; }
@@ -86,7 +88,7 @@ public interface SchedulingUnitOfWork {
         }
     }
     final class Failure extends RuntimeException {
-        public enum Kind { RETRY_LATER, STORAGE_FAILURE, AUTHENTICATION_REQUIRED, FORBIDDEN, MAINTENANCE }
+        public enum Kind { RETRY_LATER, STORAGE_FAILURE, AUTHENTICATION_REQUIRED, FORBIDDEN, MAINTENANCE, FRESH_AUTHENTICATION_REQUIRED, NOT_FOUND }
         private final Kind kind;
         public Failure(Kind kind) { super(Objects.requireNonNull(kind).name()); this.kind=kind; }
         public Kind kind() { return kind; }
