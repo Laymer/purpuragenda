@@ -30,7 +30,7 @@ frontend/dist/
 frontend/.angular/
 frontend/coverage/
 .cache/
-.toolchain/
+.toolchain
 .secrets/
 .env.local
 .env.operational
