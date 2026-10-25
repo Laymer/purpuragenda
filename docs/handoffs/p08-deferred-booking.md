@@ -1,0 +1,8 @@
+- Agent and UTC checkpoint: Codex-p08, 2026-10-25T12:49:42Z.
+- Current task: P08/deferred-booking-integrity; branch: task/p08-deferred-booking; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: additive009, eight real PostgreSQL regressions, mandatory-report guard and evidence ready for first publication.
+- What works: prior P08 storage/transaction slices merged. What remains: additive009 current-final-row deferred validation and real PostgreSQL regressions/CI/review.
+- Decisions: preserve applied001–008 bytes and every007 invariant;010 reserved recovery; no recovery/session/API scope.
+- Verification:11 synthetic mandatory-report checks, docs/inventory/whitespace pass; eight real PostgreSQL cases authored, not locally executed. Local macOS/Python3.9/Linux-only toolchain and absentDocker limits remain; actual CI required.
+- Next concrete action: add009 and same-transaction multi-save/final-invalid/upgrade tests; publish draft for actual Linux CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p08-deferred-booking; stacked PR dependencies: none, prior auth foundations merged.

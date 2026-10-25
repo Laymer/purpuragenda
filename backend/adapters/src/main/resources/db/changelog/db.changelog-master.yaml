@@ -63,3 +63,11 @@ databaseChangeLog:
             path: 008-request-charge-invariants.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 009-deferred-booking-invariants
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 009-deferred-booking-invariants.sql
+            relativeToChangelogFile: true
+            splitStatements: false

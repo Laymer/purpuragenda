@@ -21,6 +21,8 @@ def validate(root):
         suites.append(('CustomerQuotaPostgresTest', 10))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminMfa.java').is_file():
         suites.append(('AdminMfaDatabaseTest', 12))
+    if (root / 'backend/adapters/src/main/resources/db/changelog/009-deferred-booking-invariants.sql').is_file():
+        suites.append(('DeferredBookingIntegrityTest', 8))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
