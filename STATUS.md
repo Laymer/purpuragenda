@@ -16,7 +16,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; dependencies in docs/delivery.md;  |
-| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Recovered WIP; dependencies in docs/delivery.md;  |
+| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | In progress; crypto claimed by Codex-p13; base bb7d4cf |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -60,6 +60,8 @@ Delivery prerequisites and concurrent task lanes are specified in docs/delivery.
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
+
+- P13/crypto: agent=Codex-p13; branch=task/p13-crypto; base=main; handoff=docs/handoffs/p13-crypto.md
 
 - P40/coverage-foundation: agent=Codex-p40; branch=task/p40-coverage-foundation; base=main; handoff=docs/handoffs/p40-coverage-foundation.md
 
