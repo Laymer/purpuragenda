@@ -15,6 +15,7 @@ class LedgerTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        (self.root / 'prompt.txt').write_text('Synthetic continuation handoff; reconcile the ledger before work.\n')
         for name in ('AGENTS.md', 'CLAUDE.md'):
             (self.root / name).write_text('Read STATUS.md, docs/status.md, docs/decisions.md and docs/delivery.md.\n')
         (self.root / 'docs/handoffs').mkdir(parents=True)
@@ -151,6 +152,45 @@ class LedgerTest(unittest.TestCase):
     def test_required_documents(self):
         (self.root / 'docs/decisions.md').unlink()
         self.assertTrue(self.validate())
+
+    def test_handoff_prompt_missing_empty_or_directory_fails(self):
+        path = self.root / 'prompt.txt'
+        for text in ('', ' \n\t'):
+            path.write_text(text)
+            self.assertIn('missing or empty required document: prompt.txt', self.validate())
+        path.unlink()
+        self.assertIn('missing or empty required document: prompt.txt', self.validate())
+        path.mkdir()
+        self.assertIn('missing or empty required document: prompt.txt', self.validate())
+
+    def test_handoff_prompt_symlink_never_reads_external_contents(self):
+        path = self.root / 'prompt.txt'
+        path.unlink()
+        with tempfile.TemporaryDirectory() as outside:
+            target = Path(outside) / 'private.txt'
+            target.write_text('Synthetic external file must remain unread and unchanged.')
+            path.symlink_to(target)
+            original_read = Path.read_text
+            def guarded_read(candidate, *args, **kwargs):
+                if candidate in (path, target):
+                    raise AssertionError('External prompt target must not be read')
+                return original_read(candidate, *args, **kwargs)
+            with patch.object(Path, 'read_text', guarded_read):
+                self.assertIn('handoff prompt must be a regular repository file: prompt.txt', self.validate())
+            self.assertEqual('Synthetic external file must remain unread and unchanged.', target.read_text())
+            target.unlink()
+            self.assertIn('handoff prompt must be a regular repository file: prompt.txt', self.validate())
+
+    def test_frozen_drafts_survive_claim_release_without_claiming_completion(self):
+        ledger = self.ledger.replace(self.claim, 'None.').replace(
+            '| P10 — Task | Not started |',
+            '| P10 — Task | Draft PR; https://github.com/Laymer/purpuragenda/pull/47; '
+            'frozen checkpoint, integration pending |').replace(
+            '| P45 — Task | Not started |',
+            '| P45 — Task | Draft PR; https://github.com/Laymer/purpuragenda/pull/48; '
+            'frozen checkpoint, fresh persistence pending |')
+        self.assertEqual([], self.validate(ledger))
+        self.assertTrue((self.root / 'docs/handoffs/p01.md').is_file())
 
 
     def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):

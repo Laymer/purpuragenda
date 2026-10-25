@@ -1,0 +1,629 @@
+You are taking over implementation of Purpuragenda. Work in the existing repository
+/Users/laymer/Devel/repos/purpuragenda (GitHub: Laymer/purpuragenda). Complete the
+approved version 1 LOCAL application, including its automated verification. This
+is an instruction to implement and verify the remaining work, not merely propose
+another plan. Continue within the standing owner authorization. Keep the owner
+informed of concrete progress and limitations, and do not repeatedly ask for
+routine development permission.
+
+HANDOFF SNAPSHOT — 2026-10-25 UTC
+
+The owner asked Codex to stop new feature development, preserve its checkpoints,
+and commit this extensive prompt.txt on main for use in Claude Code. That wrap-up
+does not change the ultimate local-v1 goal. The implementation baseline for this
+handoff is main bcc9fecc18f8b6a7b5cc6197ab34f5414cd02302. The handoff itself is a subsequent documentation
+and validation commit; obtain its actual commit using git log rather than
+expecting a file to contain its own commit hash. Reconcile the current checkout,
+remote main, PRs and worktrees before acting: this snapshot can become historical.
+When this file is read from main, the authoring handoff has already been merged;
+resume the unfinished application tasks, rather than creating another handoff.
+
+The application is NOT feature complete. Scheduling/domain/persistence/security
+foundations are substantial and tested. Most business HTTP endpoints, almost all
+workflow UI, accounts, finance orchestration, administration, privacy, calendar
+exports, full notifications, backup/restore and final acceptance remain. An
+unmerged Compose draft starts a shell/health application locally; that does not
+mean the customer or administrator journeys work end to end.
+
+1. REQUIRED READING AND AUTHORITY
+
+Read these files before changing anything:
+- AGENTS.md and CLAUDE.md: implementation and delivery rules.
+- STATUS.md: the SINGLE task-status authority, all P01–P50 rows and active handoff.
+- docs/implementation-plan.md: complete approved business rules, D01–D13,
+  P01–P18 defaults, API/security/UX/operations requirements and T01–T23 scenarios.
+- docs/decisions.md: approved decisions and 2026-10-25 standing authorization.
+- docs/delivery.md: dependencies, parallel ownership, PR and verification rules.
+- docs/status.md: detailed chronological evidence. Earlier failures, obsolete
+  checkpoints and prior partial successes remain historical, not current passes.
+- docs/handoffs/: exact per-slice recovery and continuation records.
+
+The user explicitly authorized one coordinator and up to three worker agents in
+separate worktrees. Use them if available, with one owner per claimed task and an
+independent reviewer. Release/reassign the frozen Codex claims explicitly. No
+Codex worker is continuing feature work after this handoff. Claim an existing
+task in STATUS.md before changing its code. Never silently overlap ownership.
+
+Standing authorization includes dependency/tool downloads, isolated worktrees,
+implementation/tests, required GitHub configuration, draft task PRs, independent
+reviews, pushes and green squash merges. Tool/organization restrictions remain
+binding. Deployment, DNS/public ingress activation, purchases and live customer
+communication remain separate manual release decisions. Do not bypass checks.
+
+Owner inputs that must be preserved:
+- Project sender/contact: hello@medinavie.com.
+- Domain: medinavie.com, acquired through Google Workspace (Squarespace), as
+  confirmed by the owner. This is not evidence that SMTP/DNS is configured.
+- Intended eventual host: Intel i9 MacBook Pro, macOS Sequoia 15.7.8, existing
+  Docker Desktop. A local bootstrap is preferred. Future public ingress would
+  reach the laptop through Tailscale; customers should not need Tailscale.
+- Tailscale is not yet installed/configured; no public ingress server exists.
+  The owner's Linux computer is a proposed encrypted off-host backup destination.
+- Zoom and SMTP exist according to the owner, but usable settings/entitlement
+  evidence are pending. Local implementation must work without those settings.
+
+2. FINISH LINE AND EXCLUSIONS
+
+Deliver every approved v1 customer, optional-account, administrator, finance,
+privacy, notification and calendar workflow against real PostgreSQL through a
+locally runnable Docker Compose stack on this Mac. English UI, one practitioner,
+one owner administrator, purple-accented Angular Material design.
+
+Required final command contracts:
+  ./scripts/dev/local.sh up
+  ./scripts/dev/local.sh admin-setup
+  ./scripts/dev/local.sh smoke
+  ./verify.sh all
+
+Currently local.sh exists ONLY on draft PR48; init/up/smoke are implemented there.
+admin-setup is absent. Root verify.sh is absent on the merged baseline. Implement
+them; do not report these desired commands as already available on main.
+
+up must discover Docker Desktop, initialize ONLY missing private secrets, build
+images, start Compose, wait for readiness and report app/Mailpit URLs. Initialized
+environments must also support docker compose up --build --wait. Use PostgreSQL,
+a separate migration job, backend/workers, Caddy serving Angular and Mailpit.
+Publish only loopback 8080 (app) and 8025 (Mailpit) locally. Preserve named volumes.
+Separate migration/application roles and independent versioned encryption/HMAC
+keys; health checks, graceful shutdown, nonroot hardened runtime containers, no
+Docker socket access. Seed services, schedules and explicitly synthetic demo data
+idempotently without replacing records or regenerating existing secrets.
+
+admin-setup must invoke the private operator workflow with a real password and
+TOTP enrollment. Test that workflow with synthetic credentials. Never add a test
+authentication bypass or public administrator registration.
+
+Safe local substitutes:
+- Actual SMTP delivery goes ONLY to Mailpit with durable queues/retries.
+- Manual meeting demos may use a nonresolving synthetic domain allowed only in
+  local mode. No Zoom API or automatic meeting creation is needed.
+- Clearly label synthetic notices and retention fixtures. Synthetic erasure
+  policies apply only to explicitly created demo/test datasets.
+- Backup tests use a separate encrypted local repository and isolated restore
+  stack. Local success does not prove off-host backup or key recovery.
+- Operational configuration rejects local-only defaults and test controls.
+
+Hosting/deployment, live SMTP, DNS/ingress, supplier purchases, legal approval,
+real-device/calendar acceptance, off-host backup verification and registry
+publication remain separately tracked release work. Do not mark entire P46,
+P47, P49 or P50 complete just because their local slices pass. Online checkout,
+automatic Zoom provisioning, multiple practitioners, two-way calendar sync,
+recurring/group bookings and the other explicit v1 exclusions are not missing
+v1 implementation; do not add them.
+
+3. MERGED IMPLEMENTATION AND EXACT RECOVERY REFERENCES
+
+Reconcile GitHub merge state; these records describe confirmed merges:
+- P09 expected-conflict transaction runner: PR39, merge b776269d1f5ee86ece7fbc5d2278ecdfc4dda811.
+- P49 native Intel Mac/pinned Python toolchain: PR38, merge 6616575bbdb27d1f846f65202f46a18d9415dcba.
+- P16 persisted recovery/revocation/reenrollment: PR41, merge 0cbfc88788122e8f99267affbbe34229ca20cd90.
+- P15 stable identity/scoped guest redemption: PR40, merge 765cbf53cf0bdb1097d864bff070aa35f0f5f83a.
+- P09 application creation and late cross-midnight availability: PR43,
+  merge 39001ae9846f99b3668381e55b4629204f87693d.
+- P45 executable bootstrap/runtime configuration: PR42,
+  merge 6b4544e20f4ebed7891abf220c9101d3bf32ee4f.
+- P15 exact-reference management recovery: PR44,
+  merge 9ac2f8db03e7c7c148e27926c2742223deba55a7.
+- P17 sessions/atomic MFA proof handoff: PR45,
+  merge a6a62fadf12e4540eb60e1c4c3961fcdd7738514 at 16:59:54Z.
+- P09 concrete atomic customer creation: PR46, merge bcc9fecc18f8b6a7b5cc6197ab34f5414cd02302;
+  exact final reviewed head 102445ff3a55e79a9fd70da40d15e3d211e0c15f.
+
+Earlier merged foundations include pure scheduling/booking/money domain,
+PostgreSQL constraints/roles/seeds, SchedulingUnitOfWork, availability/expiry/
+quotas, cryptography, durable AUTH delivery queue/SMTP worker, private admin
+bootstrap/MFA, OpenAPI generation, Angular shell, architecture/coverage/contract/
+secret/dependency/SAST gates and managed main protection. STATUS.md has the
+individual task and PR references. Do not infer complete HTTP/UI from these.
+
+Migration allocation is SERIALIZED. Existing migrations 001–012 are applied
+history. 010 belongs to persisted admin recovery, 011 guest access grants, and
+012 sessions/authentication proofs. Never edit an applied migration to fix it;
+allocate the next additive migration only after reconciling all branches.
+
+Security and transaction foundations now implemented:
+- SchedulingCommands preserves expiry reclamation when an expected business
+  failure rolls attempted mutation back to a savepoint. Unexpected failures
+  roll back the entire transaction. Expected failures have typed receipts.
+- Resource lock, one captured authoritative DB time, persisted authority before
+  idempotency lookup, expiry reclamation, attempted mutation/effects/receipt.
+- P09 PostgresCustomerBooking derives guest/account authority from persisted
+  rows; never trust a caller customer ID, actor type or admin boolean. Lock order
+  is resource -> grant/account -> session -> booking/customer-related rows.
+- CREATE binding, immutable snapshots, booking, 120-minute occupancy, immutable
+  request charge, audit REQUESTED and outbox effects commit atomically. Valid
+  money facts remain separate. Expected conflicts keep unused authority and
+  reclaimed expiry effects; injected storage failures roll everything back.
+- The original CREATE grant remains 30 minutes/one use. Successful creation
+  derives exact-booking MANAGE, capped at original CREATE issued_at +2 hours.
+  The session retains its original CREATE grant ID. Consumed CREATE permits only
+  replay of its bound successful creation while required authority remains live.
+  It cannot create another booking or return another booking's receipt.
+- Separate fresh CREATE grants for the same stable verified identity have
+  separate idempotency scopes. Quotas still share the stable identity. Account
+  creation uses persisted account scope; account enrollment is NOT implemented.
+- Session expiry/revocation/browser ownership are rechecked under locks before
+  receipt replay. GREATEST protects last_seen_at from concurrent touch rollback.
+- Failure kinds include AUTHENTICATION_REQUIRED, FORBIDDEN, MAINTENANCE,
+  RETRY_LATER and STORAGE_FAILURE; HTTP must map safe codes without raw errors.
+- Availability explicitly checks occupancy extending two hours after the last
+  requested Brussels business date so late cross-midnight overlap is not missed.
+- Management recovery uses exact public reference + normalized current contact,
+  generic success and final contact recheck on redemption. Terminal booking
+  recovery is allowed; no account/history authority or ownership transfer follows.
+- Actual email proof redemption creates stable identity and scoped grants.
+  CREATE is browser-bound; MANAGE is exact-booking/current-contact-bound. Session
+  exchange consumes proof, grants authority and rotates session atomically.
+- Admin factor acceptance creates a hashed 60-second purpose/browser/request-
+  bound proof INSIDE its locked transaction. A separate exchange consumes it
+  once under admin lock, enabled/enrolled checks and monotonic security epoch.
+  The old standalone boolean authentication result must NEVER mint a session.
+- Credential changes advance security_version; accepted TOTP step changes alone
+  do not. Recovery revokes sessions/proofs and allows reenrollment only, followed
+  by fresh MFA for ordinary administrator access.
+- Session bearer/CSRF values are hashed; secret arrays are redacted/closeable and
+  consumed buffers cleared. SessionReference(id,browserHash) is internal metadata,
+  not client-supplied authorization. Browser binding survives session rotation.
+- Lifetimes: admin 15m idle/8h absolute, account 30m/12h, guest/anonymous 30m/2h.
+  Equality is expired. Recovery and admin-proof lifetimes are independently enforced.
+- Bootstrap separates migrate/runtime and checks readiness using app-role column
+  probes, including schema012. Schema009/011 must remain DOWN;012 is UP. Preserve
+  the tested single-connection pool behavior. No business HTTP or automatic AUTH
+  scheduling is supplied by this bootstrap slice.
+
+4. FROZEN OPEN DRAFTS — DO NOT LOSE OR BLINDLY MERGE THEM
+
+A. PR47: https://github.com/Laymer/purpuragenda/pull/47
+   Branch task/p10-customer-changes
+   Exact head 9f97ad742015c9d306b33de5100b5ff56d01942d
+   Worktree /private/tmp/purpuragenda-p10-customer-changes
+   Base 9ac2f8db03e7c7c148e27926c2742223deba55a7 (main has advanced).
+
+This is application/port work ONLY: BookingChangesUnitOfWork and
+CustomerBookingChanges cancellation/rescheduling. It preserves original snapshot
+cutoff/expiry, version checks, immutable snapshots/money/request charges. Changed
+target uses current reviewed policy/calendar, excludes self from occupancy/daily/
+active counts, never reapplies submission quota and never charges again. Failed
+move preserves the original booking. An unchanged target deliberately checks
+version/state/original cutoff, ignores stale reviewed policy and returns the
+unchanged version without save/effects. Shared enum addition: STALE_VERSION.
+
+22 new application cases; full native 415 Java (108 domain,104 application,
+187 adapters,13 bootstrap,3 architecture),6 Angular,201 Python, all coverage;
+CI40213969308 all required checks green and independent coordinator review of
+exact9f97ad7 passed. This is old-base evidence. Integrate CURRENT main append-only,
+resolve changes carefully, then rerun every implemented category and independent
+review before merging. Concrete authorization/storage/effects adapter, HTTP and
+administrator outcomes are NOT implemented. Do not infer end-to-end changes.
+
+The worktree has only three uncommitted metadata files: STATUS.md,
+docs/handoffs/p10-customer-changes.md and docs/status.md, with final publication/
+evidence. No uncommitted source. These records are consolidated into the main
+handoff; compare and preserve them before any checkout/stash/merge. Do not erase
+them silently. Sanitized initial fixture failures remain in
+artifacts/p10-failure/initial-application.json.
+
+B. PR48: https://github.com/Laymer/purpuragenda/pull/48
+   Branch task/p45-local-compose
+   Exact head 70a1b875c74c54d903cd2d8138326fcce292442b
+   Worktree /private/tmp/purpuragenda-p45-local-compose (clean/pushed).
+   Base 6b4544e20f4ebed7891abf220c9101d3bf32ee4f; current main NOT integrated.
+
+An explicitly UNVERIFIED draft, about865 handwritten changed lines, no generated
+files. Local initializer, pinned images, Compose/Caddy, loopback ports, durable
+volumes, separate roles and private files, hardening, test persistence runner and
+CI category activation are implemented. Actual local up and smoke passed after
+diagnosed repairs. Final211 strict Python tests pass;31 delivery-policy cases
+passed on the preceding source checkpoint; observer javac/docs/inventory/diff
+checks pass. Full backend/Angular/contract/security verification and independent
+review have NOT run for this slice. Do not reuse PR42 results as PR48 acceptance.
+
+Fresh isolated persistence/proxy verification failed BEFORE startup because
+Docker network IPAM may be null. Parser regression is fixed, but the complete
+fresh initialization/restart/SMTP/proxy-spoof test has NOT been rerun. Its failed
+artifacts/compose/persistence.json is not a passing receipt. Resume by merging
+current main append-only and, from a clean committed revision, running:
+  source scripts/dev/toolchain-env.sh
+  caffeinate -is python3 scripts/ci/verify-compose.py
+Then run all implemented categories, resolve findings, obtain exact-head review.
+
+Concrete Compose lessons already diagnosed:
+- Add the entire Docker Desktop bin directory to PATH, not just an absolute CLI;
+  the credential helper must also be discoverable.
+- Corrected tmpfs YAML and Caddy multiline syntax have regressions.
+- Docker Desktop individually bind-mounted the initial PG init script with
+  unusable execution permissions. It is now packaged executable into the pinned
+  PostgreSQL image; readiness requires final TCP listener and both DB roles.
+  Missing roles in an existing empty partial database were repaired privately
+  once, without replacing secrets/volumes. Fresh init acceptance still required.
+- The official Caddy binary's file capabilities prevented execution with nonroot
+  cap_drop:ALL. The runtime image removes those capabilities because8080/8025
+  are unprivileged. Actual local startup/smoke now passes with hardening retained.
+- Initializer uses ignored .secrets, parent0700, container-readable leaf0444,
+  rejects malformed/reused/link-aliased secrets and creates missing values only.
+  Separate TOTP/delivery/rate32-byte keys and version IDs; never regenerate them.
+- hello@medinavie.com is the default sender/contact; SMTP remains Mailpit:1025
+  local capture. Tests use synthetic email overrides. Restore mode suppresses mail.
+- Runtime provider logging is disabled; no request/secret/provider bodies in logs.
+
+Retained healthy running project purpuragenda-local: postgres/backend/web/mailpit
+healthy, migrate exited0. Caddy publishes127.0.0.1:8080 and127.0.0.1:8025.
+Named volumes: purpuragenda-local_database, purpuragenda-local_mailbox,
+purpuragenda-local_caddy_data, purpuragenda-local_caddy_config. Matching private
+.secrets live in the PR48 worktree. Preserve them. Stopped diagnostic container
+and volume p45-init-diagnostic-3b3d7f83 are retained. Failed isolated project
+p45-22cc448e7cb4 has retained private state described in its handoff; never print
+its contents. The local stack runs draft code, not the final merged revision.
+
+admin-setup, automatic AUTH worker ticks, two actual backend processes, operational
+and restore profiles, demo-complete UI and final full local acceptance remain.
+Do not activate live SMTP or claim deployment while completing these.
+
+C. PR31: https://github.com/Laymer/purpuragenda/pull/31
+   Branch task/p50-release-inputs, head3c21b424c2fd84caa089a82a5cf9995b93ee9833.
+   Paused draft owner/release inputs. Reconcile read-only before editing; do not
+   silently resume external provisioning, overwrite owner records or merge stale
+   gates. Required local progress is independent of unresolved release purchases.
+
+5. RECOVERY, WORKTREES AND HOST ENVIRONMENT
+
+Preserve origin/recovery/2026-10-25-prototype at6f9405b. It is unverified recovered
+prototype code, useful selectively, never a wholesale source of trusted behavior.
+The remote recovery ref exists; do not assume an identically named local branch.
+Preserve all existing worktrees, branches, stashes and volumes. Never run
+docker compose down -v. Do not clean another agent's directory or delete ignored
+private files. Inspect git status in each relevant tree before changing it.
+
+Important additional preserved trees:
+- /private/tmp/purpuragenda-p17-session-proofs atf9dec94 (PR45 source; clean).
+- /private/tmp/purpuragenda-p16-recovery-persistence at131de820 (PR41 source).
+- /private/tmp/purpuragenda-p15-guest-access at20a71200 (PR44 source; clean).
+- /private/tmp/purpuragenda-p45-bootstrap atea712c68 (PR42 source; clean).
+- /private/tmp/purpuragenda-p49-native-toolchain at7b181896 (PR38 source).
+- Earlier auth-handoff, handoff-integrity, deferred-booking, AUTH delivery/worker
+  and recovery worktrees also remain; use git worktree list --porcelain.
+- Root P09 handoff stash and other earlier autostashes remain. P17 autostash
+  a5264e97dd2df742b3251c49e58f3876b8a9d5d5 must not be dropped.
+
+Shared verified native tools are at
+/private/tmp/purpuragenda-p49-native-toolchain/.toolchain, with ignored .toolchain
+symlinks in development trees. Do not replace or delete this shared tree while
+another process uses it. Approved versions include JDK25.0.5+8, Maven3.9.16,
+Node24.22.1 and Python3.12.15; authoritative pins/checksums are in the repository.
+Linux CI pins remain preserved. Installer verifies Intel Mac archives too.
+
+Docker CLI is /Applications/Docker.app/Contents/Resources/bin/docker; engine29.6.2
+was healthy at handoff. Source scripts/dev/toolchain-env.sh before direct tools:
+it supplies pinned versions, Docker discovery and canonical macOS TMPDIR. System
+Python lacks needed shutil.rmtree(dir_fd) support and noncanonical temp paths can
+break safe artifact tests; do not diagnose those as application failures.
+
+Use temporary caffeinate -is around long native verification. Earlier host sleep
+for1066seconds caused a real test timeout; Docker Desktop also explicitly stopped
+earlier and was restored without reinstalling or changing volumes/configuration.
+These interruptions were diagnosed, not accepted through blind retry. Temporary
+caffeinate changes no permanent host power settings. Laptop production uptime,
+sleep/reboot behavior and real Tailscale setup remain P49/P50 acceptance work.
+
+6. FIRST ACTIONS AFTER RECONCILIATION
+
+Run read-only reconciliation (do not print credentials or container environments):
+  cd /Users/laymer/Devel/repos/purpuragenda
+  git status --short --branch
+  git fetch origin
+  git log -8 --oneline
+  git worktree list --porcelain
+  git stash list
+  gh pr list --repo Laymer/purpuragenda --state open
+Read PR47/48/31 exact heads/checks/reviews and STATUS.md; examine each working tree.
+The GitHub connector could read but returned403 on writes in the Codex session;
+authenticated gh CLI was the authorized working fallback. Never expose tokens.
+
+Recommended immediate sequence:
+1) Reassign/claim the frozen work explicitly. Finish PR48 fresh initialization,
+   restart/upgrade/persistence and private proxy tests; integrate current main and
+   every required category before merge. Add the private real-MFA admin-setup and
+   durable worker composition as separate coherent tested slices afterward.
+2) Integrate/reverify/review PR47 against current main and merge only green. Then
+   implement the real customer change adapter using existing persisted authority,
+   expected-failure receipts and atomic booking/occupancy/effects. Add rollback,
+   ownership, stale-version, expiry/cutoff and concurrency tests. Outcomes follow.
+3) Complete P17 HTTP security and distributed throttles/cleanup before exposing
+   credential or protected mutation APIs. Build P19 public HTTP in a coordinated
+   slice and the shared frontend access layer, then P20/P23/P24/P25 workflows.
+4) Dispatch eligible remaining dependencies in parallel, not in giant phase
+   barriers. Serialize migrations, shared transaction interfaces, OpenAPI/client
+   generation, root frontend routes and CI changes. Rotate an independent reviewer
+   while the other workers implement. Finish every approved workflow and gate.
+
+7. NEXT SECURITY/HTTP DESIGN (AGREED, NOT IMPLEMENTED)
+
+P17 should be split into session/origin/CSRF foundation, persisted throttles and
+bounded cleanup, then protected authentication endpoints. Do not expose login
+or email issuance before distributed limits and CSRF/origin checks are effective.
+
+- Persisted CSRF is digest-only, so reload needs a safe reissue path. Proposed
+  exact-origin POST /session/bootstrap creates anonymous authority or rotates
+  only CSRF for a current live session. GET /session returns safe role/deadlines;
+  CSRF-protected POST /session/logout revokes and clears the cookie. These are
+  route intentions under the versioned API, not existing implemented endpoints.
+- Unsafe API requests require exact configured Origin, live persisted session
+  and X-CSRF-Token; reject null/multiple origins and cross-site Fetch Metadata.
+  Do not derive canonical origin from forwarded headers. Private replies are
+  no-store, with safe problem codes/correlation identifiers, never raw errors.
+- Operational cookie: __Host-purpuragenda, Secure, HttpOnly, SameSite=Lax, Path=/,
+  no Domain. Use a distinct local HTTP cookie. Rotate after authentication and
+  privilege changes with new CSRF. Keep tokens/intake in memory only.
+- Normal MFA proof can stay server-internal: generate random request binding,
+  run factor transaction, consume proof in the same HTTP handler. Recovery spans
+  requests and needs persisted request/browser binding; reenrollment must never
+  yield ordinary admin authority. Email-fragment GET stays inert, removes the
+  fragment and requires explicit CSRF-protected POST redemption.
+- Lock order: admin -> proof -> previous session for admin exchange; scheduling
+  resource -> P15 booking/challenge locks -> previous session for guest exchange.
+  Capture time at the prescribed locked boundary. Session-only touches/logout
+  must never later acquire grant/admin locks. Preliminary HTTP checks cannot
+  replace mutation-time persisted-authority rechecks before receipt lookup.
+- rate_limit_bucket uses sorted multi-bucket locks and one DB time. Email60s
+  cooldown,5/hour/address,30/hour/IP; admin5failed attempts/15m/account+IP;
+  availability120/min/IP. Atomic Retry-After; use scoped HMAC identifiers, no raw
+  email/IP logs/storage. Reserve concurrent admin attempts before factor work;
+  successful release may decrement only the same window, not a reset window.
+- Separate rate HMAC key and version: APP_SECURITY_RATE_KEY_FILE and
+  APP_SECURITY_RATE_KEY_ID. Do not reuse TOTP/delivery keys. Local initializer
+  supplies local-rate-v1; operational mode rejects local defaults.
+- Session cleanup can commit session-only work separately. Mixed grant cleanup
+  must acquire resource -> grants -> referencing sessions, delete children before
+  parents, and respect challenge FKs. Delivery lock order is job -> challenge;
+  clear encrypted envelopes/references before challenge deletion, never steal
+  live fenced leases or decrypt expired envelopes. Avoid lock-order inversions.
+
+Proxy contract agreed with Compose:
+- Caddy overwrites X-Purpuragenda-Client-IP from its socket remote_host, strips
+  inbound Forwarded/X-Forwarded-For/X-Forwarded-Host, and reaches backend through
+  a dedicated private proxy network with an explicit address.
+- APP_SECURITY_TRUSTED_PROXY_PEERS is an exact literal IP allowlist, default
+  empty (no DNS/broad CIDR trust). Trust the header only from a matching socket
+  peer, validate one literal client IP, otherwise use socket peer. Origin always
+  compares configured app.public-origin. Retain header-spoof integration tests.
+
+8. REMAINING FEATURE DELIVERY
+
+The full specification, not this abbreviated queue, controls behavior:
+- P09: compose atomic creation through secure HTTP and finish API acceptance.
+- P10: concrete atomic cancellation/rescheduling adapter, customer HTTP, outcomes.
+- P11: administrator creation, explicit reasoned overrides, current configuration
+  conflict assessment; never allow overlapping reservations even for admin.
+- P18 -> P26: optional explicit account enrollment, immutable login identity,
+  separate profile/history, safe session recovery. No automatic account creation
+  from guest proof and no accidental history access from management grants.
+- P19: public services/availability. Explicitly map application records into
+  OpenAPI wire types; existing availability field names differ. Regenerate typed
+  clients incrementally; no unchecked record serialization or contract drift.
+- Shared frontend layer BEFORE parallel feature UI: session/CSRF lifecycle,
+  idempotency keys retained on uncertain responses, If-Match, retry/Retry-After,
+  safe error codes, expiry recovery. Lazy routes and separate admin components.
+- P20 -> P24/P25: protected create/view/cancel/reschedule, verification before
+  intake, review of authoritative service/policy versions, allowed actions,
+  deadlines/payment projections, conflict recovery and management screens.
+- P23: service/time selection with visible IANA display zone, correct Brussels
+  business rules and both repeated DST offsets; availability remains advisory.
+- P21 -> P29: independent external receipt, manual approval, confirmation,
+  refunds/reconciliation commands/APIs and finance UI. A valid payment fact must
+  stay committed even if confirmation fails. Manual approval leaves payment
+  status unchanged. Refunds cannot exceed received balance; no currency inference.
+- P22 -> P27: administrator booking/configuration APIs with versions, real MFA,
+  daily/weekly agenda, pending queue, detail/meeting/approval workflows.
+- P28/P30: manual creation, reasons/explicit overrides, outcomes, service editing,
+  creation/archiving, truthful history/conflict handling.
+- P31/P32: weekly schedules, replacement/add/closed date exceptions, blackouts,
+  policy edits, future conflicts, notes/audit, customer search, reconciliation,
+  failed-notification follow-up and safe retries.
+- P33: verified new delivery contact, old-contact notice, no transfer of stable
+  ownership, login identity, quotas or history. No lost-mailbox auto-merging.
+- P34 -> P35: authorized exports, audited corrections, reviewed erasure/
+  anonymization and encrypted restore-safe tombstones. No automatic history
+  deletion; apply synthetic retention only to explicit demo/test data until real
+  reviewed policies are supplied. Never retain old plaintext in audit logs.
+- P36: both customer and owner notification audiences, distinct revisions,
+  reminders48h/2h with60m/15m grace, suppress stale/superseded/expired jobs,
+  retries1m/5m/30m/2h/6h/12h then failed queue. Use durable outbox/leased jobs,
+  send outside booking transactions, stable Message-ID and honest crash-after-
+  SMTP duplicate semantics. No intake/private notes in emails.
+- P37: authorized private ICS and explicit safe Google Calendar action. Actual
+  service duration (not120m reservation), stable distinct audienceUIDs, proper
+  CRLF/UTF8/octet folding/escaping, SEQUENCE/cancellation revisions, no tokens or
+  intake. Real Apple/iPhone/Google behavior stays manual acceptance.
+- P43/P45: finish image/SBOM/config scans, isolated test stack with two real
+  backend processes, safe operational/restore profiles, initialization/restart/
+  upgrade/durable work. Never expose test clocks operationally.
+- P46: encrypted local backup automation every15m, separate keys/repository,
+  retention24h/all +7daily/4weekly/3monthly, age warning30m/critical45m and failure
+  tests. Genuine off-host delivery/key recovery remains separately pending.
+- P47 after tombstones: isolated fresh restore, block SMTP, revoke credentials,
+  replay tombstones, expiry/integrity/quota/payment/idempotency reconciliation,
+  suppress historical mail and deliberately release only reviewed current work.
+  Record timings/data loss/exceptions; target RPO<=1h/RTO<=4h conditionally.
+- P38/P39/P40/P41/P42/P44/P48/P49: complete acceptance/coverage/browser/performance/
+  load/security/aggregate/runbook gates below. Add tests with each feature;
+  final-stage tasks close coverage gaps, not defer testing until the end.
+
+9. NONNEGOTIABLE BUSINESS AND ARCHITECTURE INVARIANTS
+
+- Domain depends only on the JDK. Application only on domain and its own ports.
+  Frameworks, JDBC/SMTP/calendar/HTTP in adapters; bootstrap composes them.
+- Every scheduling/configuration/confirming mutation shares SchedulingUnitOfWork,
+  resource lock, captured DB time and real PostgreSQL transaction. No network
+  operation under booking locks. DB exclusion constraint protects half-open
+  120-elapsed-minute occupancy independently of application validation.
+- Services start as Karmic reading30m/EUR15 and Transit reading60m/EUR30, but both
+  reserve120m. Starts09:00–20:00 permit19:30; reservation may cross closing/breaks.
+  Blackouts prohibit intersection with the full reservation. Adjacent ranges fit.
+- Brussels civil dates for business/submission/day quotas; Instant for elapsed
+  time. Inclusive24h notice/change cutoffs, calendar-month horizon with month-end
+  clamp and prescribed DST handling. Test expiry equality and +/- boundaries.
+- Three successful customer submissions per normalized verified identity per
+  Brussels date by default; cancellation/rejection/expiry never refund the charge.
+  Failed validation, replay and rescheduling do not charge. Admin creation does
+  not charge customer submission quota. Active/day rules remain distinct.
+- Pending occupies capacity, expiry=min(created+24h,start-1h) by default. Reclaim
+  synchronously; expiry equality is expired. Completed/no-show preserve full
+  occupancy and daily count. Terminal bookings never revive.
+- Preserve immutable service/intake/policy/contact/display-zone snapshots.
+  Rescheduling keeps service/state/snapshots/payment and cannot extend pending
+  expiry. Failed rescheduling leaves original range and facts untouched.
+- Manual approval requires live hold and validated unique participant meeting
+  URL; does not imply payment. Valid money persists independently of booking
+  state/confirmation. Late receipts create reconciliation, not occupancy.
+- Admin overrides need explicit rules/reason, including named hard blackouts;
+  overlap is NEVER overridable. Version failures and unowned/unknown404 behavior
+  must remain consistent. Public reference alone never grants authorization.
+- No personal data, tokens, cookies, passwords, TOTP secrets, private keys,
+  arbitrary provider errors or intake in logs/artifacts. Use synthetic fixtures
+  and sanitized count-only receipts. No persistent browser intake/token storage.
+
+10. VERIFICATION, DELIVERY LOOP AND HONEST EVIDENCE
+
+Each coherent PR normally changes200–800 handwritten lines; split broad tasks
+and identify generated clients/lockfiles separately. Every meaningful new commit
+must include a relevant test addition/update (including handoff/docs). A merge
+may inherit substantive tests through its first-parent diff; if not, add a real
+relevant regression rather than weakening the policy. Never rewrite published
+history; merge current main append-only. No force pushes or bypass merges.
+
+For each slice: implement positive/boundary/authorization/rollback/failure tests;
+run targeted checks then EVERY implemented category; get independent review of
+the exact current head; fix findings with tests; integrate current main; rerun
+required checks/review integration; squash-merge only green/current/reviewed head;
+confirm GitHub merge state before marking its ledger slice Merged. Parent tasks
+remain partial until all their acceptance is complete. Keep STATUS.md and
+docs/status.md updated with UTC time, branch/base/PR/head, local changes, exact
+commands/results/limits, recovery/stacked dependencies and next concrete action.
+
+Useful existing commands (source pinned environment first):
+  source scripts/dev/toolchain-env.sh
+  caffeinate -is bash scripts/ci/verify-build.sh
+  python3 scripts/ci/check-contract.py
+  python3 scripts/ci/run-python-tests.py --start scripts/ci/tests
+  python3 scripts/ci/check-commit-tests.py --base origin/main --head HEAD
+  python3 scripts/ci/main-protection.py
+  python3 scripts/ci/check-docs.py
+  python3 scripts/ci/check-suites.py
+  git diff --check
+
+verify-build runs frontend tests/build, clean Maven verify, mandatory actual
+PostgreSQL report checks, strict Python cases and complete per-module coverage.
+Hosted Verify also runs secrets/dependencies/three CodeQL languages, native Mac
+package checks and native Windows preflight; required aggregate verify rejects
+anything not successful. No documentation-only bypass. Preserve required main
+protection, no bypass actors, current-base policy and squash-only PR flow.
+
+scripts/ci/suites.json distinguishes implemented mandatory checks from planned
+ones. Activate a category atomically when executable; missing dependencies,
+missing reports, unimplemented suites at final acceptance, failed/skipped/
+cancelled checks and stale evidence FAIL. Existing component20-way races do not
+satisfy planned two-process HTTP race acceptance. Java SBOM dependency evidence
+does not complete all image/SBOM/provenance scans.
+
+Implement verify.sh all to run supported local checks and validate exact-revision
+hosted receipts for platform-specific or dedicated-capacity checks. Receipt must
+identify execution location. Never describe hosted Windows/security evidence as
+local execution or old-head reports as current evidence. Final merged revision
+requires fresh aggregate evidence, not only passing predecessor PRs.
+
+Required quantitative/acceptance gates:
+- Domain/application >=95% lines, >=90% branches. Every other production module
+  and Angular >=90% lines AND branches. Complete source reporting; no aggregate
+  hiding, threshold reduction or unreviewed exclusions.
+- Production PostgreSQL migrations/upgrades/seed reruns. Two actual backend
+  processes, independent connections/barriers,20-way overlap/daily/active/
+  submission/idempotency races. Test rollback and zero integrity breaches.
+- Brussels DST/month ends/leap/horizon, inclusive cutoffs, expiry equality,
+  immutable snapshots, atomic failed moves, independent payment/refund limits,
+  nonoverridable overlap. Token/proof/MFA replay, browser/purpose/request binding,
+  recovery isolation, epoch/revocation races, session rotation, CSRF and ownership.
+- Actual workflows across Chromium, Firefox, WebKit, stable Chrome and stable
+  Edge x390x844/768x1024/1440x900 (15cells). Automated keyboard/focus checks and
+  zero serious/critical axe findings; manual keyboard/device acceptance tracked.
+- Nine cold-phone runs,4xCPU/1.6Mbps down/750Kbps up/150ms RTT: p75LCP<=2.5s,
+  CLS<=0.1, local feedbackp95<=100ms. Old prototype CLS0.1564 is a failure.
+-20users,2-minute warmup plus5 measured minutes: availabilityp95<500ms,
+  mutationsp95<1s, unexpected5xx<1%,zero integrity breaches. Isolate dedicated
+  capacity, serialize heavy browser/load jobs and keep identities/artifacts apart.
+- All planned secret/dependency/SBOM/SAST/container/config scans and authenticated/
+  unauthenticated ZAP; zero unresolved high/critical findings. No blanket auth/
+  integrity exceptions. Any allowed exception must follow approved time-bound rules.
+- Encrypted backup, isolated restore, credential revocation, tombstone replay,
+  reconciliation, historical-email suppression and exercised failure runbooks.
+- All automatable T01–T23 from docs/implementation-plan.md and final demonstrations
+  against the final merged revision. T24 future checkout is outside executable v1.
+
+Latest native/hosted evidence at handoff:
+- PR45 f9dec94:426Java/6Angular/202Python, coverage domain276/277lines478/489branches;
+  application370/371339/340; adapters904/915756/830; bootstrap91/9392/92;
+  Angular22/2230/30. Hosted40213766937 all13checks. Thirty actual session cases.
+- PR46 final102445f: 470Java (108domain,85application,261adapters,13bootstrap,
+  3architecture),6Angular,203Python; all coverage passed: domain276/277lines
+  478/489branches, application370/371339/340, adapters995/1006831/914,
+  bootstrap91/9392/92, Angular22/2230/30. CI40215138889 all13checks and exact
+  independent workerB review passed.43actual creation cases plus12transaction
+  core cases. Creation races use two adapter instances/independent connections,
+  not two HTTP/backend processes. Account authority test uses an explicitly
+  described persisted fixture, not a production authentication bypass.
+- PR47 exact9f97ad7: native/hosted green on old base as described above.
+- PR48 exact70a1b875: limited Python/actual local up/smoke evidence only; fresh
+  persistence and full integration/CI/review remain outstanding.
+- Handoff commit: its own full verification and independent review must pass
+  before merge. Consult the PR/checks for the commit containing this file; their
+  results are recorded after publication. This text is not its own test receipt.
+
+Failures are preserved separately, including artifacts/p09-atomic-failure/
+native-coverage.xml (804/910branches before deterministic coverage cases),
+artifacts/p17-failure/ (fixture SQL column, native734/818branch coverage, readiness
+before012), P10 initial fixtures and Compose persistence failure. Never count
+failed reports as passes. Later deterministic regressions corrected the actual
+gaps; no coverage/integrity threshold was reduced.
+
+Local logs, if still available, include /private/tmp/p09-final-main-native.log,
+/private/tmp/p09-final-main-policy.log, /private/tmp/p17-current-main-native.log,
+/private/tmp/p10-full-native.log and /private/tmp/p45-compose-up-final-diagnostic.log.
+They are supporting historical evidence, not a substitute for fresh clean-head
+checks. Keep logs sanitized and do not publish private .secrets or mail payloads.
+
+11. DONE MEANS ALL OF THE FOLLOWING
+
+A clean checkout initializes and starts on this Mac; all approved workflows use
+real backend/PostgreSQL with no core mocks; real private administrator enrollment
+works; service/schedule/demo initialization and restart/upgrade preserve records
+and secrets; durable work resumes without duplicate seeds; every automatable
+scenario and quantitative gate passes on final merged revision; local encrypted
+backup/restore/failures pass; exact commands and sanitized evidence are recorded;
+all implementation findings are resolved. External legal/supplier/hosting/manual
+acceptance remains explicitly pending, with no claim of deployment readiness.
+
+Do not stop after a partial demo or another high-level plan. Progress through
+the remaining coherent tested slices, maintaining truthful status, until the
+approved full local functionality is complete or a concrete external dependency
+actually prevents further useful implementation. Ask only for missing necessary
+owner inputs after using available repository context; continue independent work
+while optional answers are pending.
