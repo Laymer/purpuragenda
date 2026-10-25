@@ -16,7 +16,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; dependencies in docs/delivery.md;  |
-| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | In progress; crypto implementation9acb191; draft creation pending |
+| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Draft PR; https://github.com/Laymer/purpuragenda/pull/12; implementation9acb191; P48 integrated; exact-head CI pending |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p13, 2026-10-25T08:20:22Z.
-- Current task: P13/crypto; branch: task/p13-crypto; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none; uncommitted changes: P13 implementation in isolated worktree.
+- Agent and UTC checkpoint: Codex-p13, 2026-10-25T08:22:07Z.
+- Current task: P13/crypto; branch: task/p13-crypto; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/12.
+- Last pushed implementation commit: ca51dd5; uncommitted changes: final draft handoff and key-file replacement regression, to be included in this tested checkpoint.
 - What works: P40 foundation merged bb7d4cf; Maven Central POM provenance verified for BC1.86 and OTP1.0.0.
-- What remains: implement, test, independent review and exact-head CI.
+- What remains: exact-head remote CI and coordinator merge; coordinator reviewed implementation and millisecond-boundary fix.
 - Decisions: bounded AES256-GCM key/envelope handling; OTP RFC vectors; Argon2id fixed parameters; no authentication flows in P13.
-- Verification: full build passed108 domain+10 adapter+3 architecture tests; domain276/277 lines478/489 branches; adapters70/73 lines52/52 branches;23 coverage and38 ledger/coverage regressions passed. Initial sandbox cache write failed; approved rerun passed. Coordinator millisecond-overflow finding fixed with boundary regression.
-- Next concrete action: commit tested implementation, integrate merged P48 foundation and run all exact-head gates.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P40 merged, integrate P48 before final CI.
+- Verification: full build passed108 domain+11 adapter+3 architecture tests including key-file replacement regression; domain276/277 lines478/489 branches; adapters70/73 lines52/52 branches;23 coverage and38 ledger/coverage regressions passed. Initial sandbox cache write failed; approved rerun passed. Coordinator millisecond-overflow finding fixed with boundary regression.
+- Next concrete action: push final checkpoint and request coordinator exact-head CI/merge.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P40 bb7d4cf and P48 0c3ae04 merged and integrated.

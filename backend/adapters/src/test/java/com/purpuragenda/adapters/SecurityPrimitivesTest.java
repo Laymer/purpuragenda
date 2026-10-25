@@ -59,6 +59,16 @@ class SecurityPrimitivesTest {
         safeFailure("DECRYPTION_FAILED", () -> differentId.decrypt(envelope.replace(prefix, "totp-v1:")));
     }
 
+    @Test void loadedKeyIsStableAfterTheMountedFileChanges() throws Exception {
+        var encryption = secrets("stable", (byte) 5);
+        String plaintext = "Synthetic stable content";
+        String envelope = encryption.encrypt(plaintext);
+        Files.write(directory.resolve("stable.key"), new byte[32]);
+        Files.delete(directory.resolve("stable.key"));
+        assertTrue(MessageDigest.isEqual(plaintext.getBytes(StandardCharsets.UTF_8),
+                encryption.decrypt(envelope).getBytes(StandardCharsets.UTF_8)));
+    }
+
     @Test void malformedOrOversizedEnvelopesFailSafely() throws Exception {
         var encryption = secrets("test", (byte) 0);
         for (String envelope : new String[]{null, "", "test", "other:AA==", "test:!", "test:",
