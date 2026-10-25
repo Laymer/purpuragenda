@@ -165,6 +165,13 @@ class AdminBookingTest {
         assertThrows(NullPointerException.class,()->admin.create(session,"key",null));
     }
 
+    @Test void commandsRejectBlankKeysAndMalformedFingerprintsBeforeAnyTransaction() {
+        String fingerprint="a".repeat(64);
+        assertThrows(DomainFailure.class,()->new Command(session," ",fingerprint));
+        assertThrows(DomainFailure.class,()->new Command(session,"key","short"));
+        assertThrows(NullPointerException.class,()->new Command(null,"key",fingerprint));
+    }
+
     static class Fixture extends PublicSchedulingTest.Fixture implements AdminBookingUnitOfWork,Creation {
         Booking created;Command command;RuntimeException effectFailure;SchedulingRules.Override override;String requestedEmail;
         final Customer identity=new Customer(UUID.randomUUID(),"customer@example.test");
