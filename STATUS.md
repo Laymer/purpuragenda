@@ -46,7 +46,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Draft PR; https://github.com/Laymer/purpuragenda/pull/17; dependency foundation; secret slice merged PR13 at8f5ed62; final P43 pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | In progress; SAST foundation; dependency scan merged https://github.com/Laymer/purpuragenda/pull/17 at2c896ff; complete P43 pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
@@ -61,15 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P43/dependency-foundation: agent=Codex-p43; branch=task/p43-dependency-foundation; base=main; handoff=docs/handoffs/p43-dependency-foundation.md
+- P43/sast-foundation: agent=Codex-p43; branch=task/p43-sast-foundation; base=main; handoff=docs/handoffs/p43-sast-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:16:46Z.
-- Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/17.
-- Last pushed implementation commit: 6d05b84; uncommitted changes: P08 transaction core6c1f96f integration and refreshed verification pending.
-- What works: reviewed dependency/secret gates and P12 Angular/P07 migrations integrated. What remains: exact-head CI with real PostgreSQL and coordinator merge; SAST/tool classpaths/full release SBOM/container/config remain later P43 slices.
-- Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
-- Verification: integrated122 root+31 policy tests, docs/inventory/whitespace/contracts/live protection passed; real OSV canary and all472 Java/npm packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);6 Angular/build/100% coverage,108domain+4application+11security+2image parser passed; no DB-suite passing claim. Safe full-history/155tracked-file secret scan passed; independent artifact/npm fixes approved.
-- Next concrete action: run integrated suites and dependency scan; record local Docker limitation; push exact head and require CI/independent approval.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:28:57Z.
+- Current task: P43/sast-foundation; branch: task/p43-sast-foundation; base: main; PR URL: pending creation.
+- Last pushed implementation commit: none for this slice; uncommitted changes: task claim.
+- What works: dependency PR17 merged2c896ff with real PostgreSQL and472-package OSV CI. What remains: pinned three-language CodeQL and fail-closed SARIF gate; final SBOM/container/config remain pending.
+- Decisions: fixed mandatory Java/Python/JS-TS matrix, manual Java test-compile, no broad exclusions or high/critical waivers; raw SARIF only official Code Scanning.
+- Verification: design provenance verified against official action/bundle metadata; implementation pending.
+- Next concrete action: implement pinned bundles, SARIF/source guard and synthetic tests.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; preserve newer P49/P14 category integration before final review.
