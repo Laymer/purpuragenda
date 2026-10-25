@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/16; contract foundation merged bc64f01; shell013ae2c; exact-head CI pending |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -52,7 +52,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; macos-bootstrap slice; other runbooks and real host acceptance pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P12/angular-shell: agent=Codex-p12-shell; branch=task/p12-angular-shell; base=main; handoff=docs/handoffs/p12-angular-shell.md
+- P49/macos-bootstrap: agent=Codex; branch=task/p49-mac-bootstrap; base=main; handoff=docs/handoffs/p49-mac-bootstrap.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:49:57Z.
-- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/16.
-- Last pushed implementation commit: 013ae2c; uncommitted changes: final integrated evidence before publication; P48 inventory and pinned Angular receipt upload included.
-- What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
-- What remains: final exact-head CI and coordinator merge; P07 now makes real PostgreSQL verification mandatory.
-- Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
-- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and99 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed; final scan covered145 tracked files plus full history, zero findings; suite inventory passed.
-- Next concrete action: push final integrated checkpoint and require exact-head actual-container CI plus coordinator review/merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory f3a4841 integrated; Angular activated as implemented jobbuild.
+- Agent and UTC checkpoint: Codex, 2026-10-25T09:13:19Z.
+- Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: pending.
+- Last pushed implementation commit: none for this slice; uncommitted changes: initial tested bootstrap/pins/runbook ready for checkpoint; native CI next.
+- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2.
+- What remains: tested pinned Tailscale installer/readiness bootstrap and clear host runbook, independent review/CI. Public ingress, live deployment and real Mac acceptance remain manual later.
+- Decisions: prefer local bootstrap on Mac rather than SSHcredentials; preserve existing apps/state/volumes; never print tailnet identity/auth JSON/URLs/tokens; stop with nonzero pending status for interactive Mac/tailnet approval.
+- Verification: 12 synthetic bootstrap tests and Bash syntax pass; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native installation/trust/actual target readiness not executed here.
+- Next concrete action: implement safe macOS bootstrap and synthetic command tests.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; runtime/SMTP/ingress activation outside this slice.

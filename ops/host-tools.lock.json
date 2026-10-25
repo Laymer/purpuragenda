@@ -1,0 +1,15 @@
+{
+  "tailscale": {
+    "version": "1.104.2",
+    "url": "https://pkgs.tailscale.com/stable/Tailscale-1.104.2-macos.pkg",
+    "sha256": "1724d2e021d3c5f817f427f628260c013531a528f1258a7d477735d198b11f55",
+    "teamId": "W5364U7YZB",
+    "installerSigner": "Developer ID Installer: Tailscale Inc. (W5364U7YZB)",
+    "provenance": [
+      "https://pkgs.tailscale.com/stable/",
+      "https://pkgs.tailscale.com/stable/Tailscale-1.104.2-macos.pkg.sha256",
+      "https://tailscale.com/docs/install/mac",
+      "https://tailscale.com/docs/concepts/macos-sysext"
+    ]
+  }
+}
