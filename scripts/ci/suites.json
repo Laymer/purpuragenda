@@ -93,8 +93,8 @@
     },
     "sast": {
       "owner": "P43",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "sast"
     },
     "containers": {
       "owner": "P43",

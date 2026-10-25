@@ -96,6 +96,75 @@ jobs:
             artifacts/security/java.cdx.json
           if-no-files-found: error
           retention-days: 14
+  sast:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: python
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+    env:
+      LANGUAGE: ${{ matrix.language }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - run: bash scripts/dev/install-toolchain.sh
+      - name: Keep installed tool dependencies outside analyzed project source
+        run: |
+          tool_root="$(mktemp -d "$RUNNER_TEMP/purpuragenda-tools.XXXXXX")"
+          mv .toolchain "$tool_root/toolchain"
+          ln -s "$tool_root/toolchain" .toolchain
+      - name: Export pinned JDK for extraction
+        run: |
+          source scripts/dev/toolchain-env.sh
+          printf 'JAVA_HOME=%s\n' "$JAVA_HOME" >> "$GITHUB_ENV"
+          printf '%s\n' "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+      - name: Verify source scope and pinned CodeQL bundle
+        id: codeql-bundle
+        run: python3 scripts/ci/check-sast.py --language "$LANGUAGE" --prepare
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        id: codeql
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          tools: ${{ steps.codeql-bundle.outputs.bundle }}
+          config-file: .github/codeql/config.yml
+          debug: false
+      - name: Build traced Java sources or validate interpreted source scope
+        run: |
+          source scripts/dev/toolchain-env.sh
+          python3 scripts/ci/check-sast.py --language "$LANGUAGE" --compile
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        id: codeql-analysis
+        with:
+          category: purpuragenda/${{ matrix.language }}
+          output: ${{ runner.temp }}/codeql-sarif
+          upload: always
+          upload-database: false
+          wait-for-processing: true
+      - name: Require complete sources and no high or critical findings
+        if: always()
+        env:
+          CODEQL_DATABASES: ${{ steps.codeql-analysis.outputs.db-locations }}
+        run: python3 scripts/ci/check-sast.py --language "$LANGUAGE" --tool "${{ steps.codeql.outputs.codeql-path }}" --sarif-dir "${{ runner.temp }}/codeql-sarif"
+      - name: Retain count-only SAST receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sast-counts-${{ matrix.language }}
+          path: artifacts/security/sast-${{ matrix.language }}.json
+          if-no-files-found: error
+          retention-days: 14
   macos-bootstrap:
     runs-on: macos-15-intel
     steps:
@@ -111,7 +180,7 @@ jobs:
           retention-days: 14
   verify:
     if: always()
-    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, macos-bootstrap]
+    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, sast, macos-bootstrap]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
