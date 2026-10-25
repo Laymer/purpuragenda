@@ -1,9 +1,9 @@
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:21:39Z.
-- Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for this slice; uncommitted changes: tested scanner foundation before first commit.
-- What works: P48 protection foundation merged at0c3ae04. What remains: fail-closed pinned secret scanner, tests and mandatory CI; dependency/SAST/SBOM/container/config later slices.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:29:40Z.
+- Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/13.
+- Last pushed implementation commit: 3b681e3; uncommitted changes: integration of merged P12/P13 and reconciled scan handoff.
+- What works: P48 protection, P13 cryptography and P12 contract foundations merged. What remains: exact-head CI and coordinator merge; dependency/SAST/SBOM/container/config remain later P43 slices.
 - Decisions: select a small secret-scanning slice first; no broad ignores or unsanitized scan output.
-- Verification: 58 root tests (38 existing +20 security) and 31 delivery-policy tests passed; full build passed108 domain+3 architecture, no skips; domain99.64% lines/97.75% branches. Real pinned scanner passed full history+70tracked files, zero findings; whitespace passed.
-- Next concrete action: publish draft PR, independent review, integrate latest main and require exact-head CI.
+- Verification: integrated 70 root +31 delivery-policy tests, full108 domain+11 adapters+3 architecture, contract regeneration and whitespace passed; no skips. Domain99.64%/97.75%, adapters95.89%/100%. Real scanner full history+110tracked files passed, zero findings.
+- Next concrete action: verify integrated suites/contracts/scan, push and require exact-head CI plus independent approval.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate newer main before final review.

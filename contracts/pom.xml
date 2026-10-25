@@ -1,0 +1,19 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.purpuragenda</groupId><artifactId>contracts</artifactId><version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <generated.output>${project.basedir}/../frontend/src/app/shared/generated</generated.output>
+  </properties>
+  <build><plugins>
+    <plugin><groupId>org.openapitools</groupId><artifactId>openapi-generator-maven-plugin</artifactId><version>7.26.0</version>
+      <executions><execution><goals><goal>generate</goal></goals><configuration>
+        <inputSpec>${project.basedir}/openapi.yaml</inputSpec>
+        <generatorName>typescript-angular</generatorName><output>${generated.output}</output>
+        <skipValidateSpec>false</skipValidateSpec><strictSpec>true</strictSpec>
+        <configOptions><ngVersion>22.2.3</ngVersion><providedIn>root</providedIn><hideGenerationTimestamp>true</hideGenerationTimestamp><stringEnums>true</stringEnums></configOptions>
+      </configuration></execution></executions>
+    </plugin>
+  </plugins></build>
+</project>
