@@ -223,6 +223,42 @@ class BookingChangesPostgresTest {
         }
     }
 
+    @Test void credentialsIssuedAfterTheCapturedTimeCannotAuthorizeChanges() {
+        var session=c.guest("synthetic@example.test");UUID guestBooking=createFor(session,"g",3,9);var account=c.account();
+        UUID accountBooking=c.command.create(account.binding(),"a",c.request(4,9)).entityId();
+        for(var target:List.of(Map.entry(bind(session),guestBooking),Map.entry(account.binding(),accountBooking))) {
+            Instant issued=c.jdbc.queryForObject("SELECT issued_at FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),target.getKey().sessionId());
+            var fixed=new CustomerBookingChanges(new PostgresBookingChanges(c.clock(issued.minusNanos(1000),new AtomicInteger())));
+            assertThrows(Failure.class,()->fixed.cancel(target.getKey(),target.getValue(),"future",new CustomerBookingChanges.Cancellation(1)));
+        }
+        assertEquals(0,count("booking WHERE state='CANCELLED'"));
+    }
+
+    @ParameterizedTest @ValueSource(longs={-1,0,1})
+    void accountAbsoluteExpiryRejectsEqualityEvenWithRecentActivity(long micros) {
+        var account=c.account();UUID id=c.command.create(account.binding(),"a",c.request(4,9)).entityId();
+        Instant expires=c.jdbc.queryForObject("SELECT absolute_expires_at FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),account.binding().sessionId());
+        c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(expires.minusSeconds(1)),account.binding().sessionId());
+        var fixed=new CustomerBookingChanges(new PostgresBookingChanges(c.clock(expires.plusNanos(micros*1000),new AtomicInteger())));
+        var request=new CustomerBookingChanges.Cancellation(1);
+        if(micros<0)assertTrue(fixed.cancel(account.binding(),id,"edge",request).success());
+        else assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->fixed.cancel(account.binding(),id,"edge",request)).kind());
+    }
+
+    @Test void sessionCannotBorrowAnotherBrowsersGrantAndDerivedGrantSessionsRequireTheirLiveParent() {
+        var session=c.guest("synthetic@example.test");UUID id=createFor(session,"a",3,9);String other="0".repeat(64);
+        c.jdbc.update("UPDATE app_session SET browser_hash=? WHERE id=?",other,session.reference().id());
+        assertEquals(Failure.Kind.FORBIDDEN,fail(()->cancel(new SessionBinding(session.reference().id(),other),id,"borrowed",1)).kind());
+        c.jdbc.update("UPDATE app_session SET browser_hash=? WHERE id=?",session.reference().browserHash(),session.reference().id());
+        UUID child=c.jdbc.queryForObject("SELECT id FROM access_grant WHERE parent_grant_id=?",UUID.class,session.grantId());
+        c.jdbc.update("UPDATE app_session SET grant_id=? WHERE id=?",child,session.reference().id());
+        assertTrue(cancel(bind(session),id,"derived",1).success());
+        UUID second=createFor(c.guest("synthetic@example.test"),"b",4,9);UUID secondChild=c.jdbc.queryForObject("SELECT id FROM access_grant WHERE booking_id=? AND parent_grant_id IS NOT NULL",UUID.class,second);
+        var next=c.guest("synthetic@example.test");c.jdbc.update("UPDATE app_session SET grant_id=? WHERE id=?",secondChild,next.reference().id());
+        c.jdbc.update("UPDATE access_grant SET revoked_at=clock_timestamp() WHERE id=(SELECT parent_grant_id FROM access_grant WHERE id=?)",secondChild);
+        assertEquals(Failure.Kind.FORBIDDEN,fail(()->cancel(bind(next),second,"revoked-parent",1)).kind());
+    }
+
     @ParameterizedTest @ValueSource(strings={"audit_event","outbox_event","refund_obligation","booking_occupancy"})
     void unexpectedStorageFailureRollsBackTheMutationEffectsReceiptAndEarlierExpiryReclamation(String table) throws Exception {
         var session=c.guest("synthetic@example.test");UUID id=createFor(session,"create",3,9);confirm(id);receipt(id,1500,"synthetic-receipt");
@@ -243,14 +279,16 @@ class BookingChangesPostgresTest {
         assertEquals(0,count("idempotency_record WHERE scope LIKE '%CANCEL_BOOKING%'"));
     }
 
-    @ParameterizedTest @ValueSource(strings={"no-effects","effects-without-save","double-effects","wrong-state","unchanged-start","foreign-receipt","never-authorized","forged-version"})
+    @ParameterizedTest @ValueSource(strings={"no-effects","effects-without-save","double-effects","wrong-state","unchanged-start","foreign-receipt","never-authorized","forged-version","unauthorized-original","forged-original"})
     void everyCommittedVersionChangeMustCarryExactlyItsEffects(String misuse) {
         var session=c.guest("synthetic@example.test");UUID id=createFor(session,"create",3,9);Booking before=c.load(id);
         var command=new BookingChangesUnitOfWork.Command(bind(session),id,BookingChangesUnitOfWork.Operation.CANCEL,"misuse",CommandKey.fingerprint(List.of(misuse)));
         Function<BookingChangesUnitOfWork.Change,Receipt> work=tx->{
             if(misuse.equals("never-authorized"))return new Receipt(Code.OK,id,before.version());
+            if(misuse.equals("unauthorized-original")){tx.cancelledEffects(before,before.cancel(tx.now(),true));return new Receipt(Code.OK,id,before.version()+1);}
             Booking original=tx.authorizedBooking();Booking cancelled=original.cancel(tx.now(),true);
             switch(misuse) {
+                case "forged-original" -> {tx.save(cancelled);tx.cancelledEffects(original.deliveryContact("forged@example.test"),cancelled);}
                 case "no-effects" -> tx.save(cancelled);
                 case "effects-without-save" -> tx.cancelledEffects(original,cancelled);
                 case "double-effects" -> {tx.save(cancelled);tx.cancelledEffects(original,cancelled);tx.cancelledEffects(original,cancelled);}

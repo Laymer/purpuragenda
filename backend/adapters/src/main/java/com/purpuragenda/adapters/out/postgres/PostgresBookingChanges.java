@@ -50,16 +50,15 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
         UUID actor;
         if(initial.kind().equals("GUEST")) actor=manageGrant(initial,binding.browserHash(),bookingId,now);
         else if(initial.kind().equals("ACCOUNT")) {
-            List<UUID> accounts=jdbc.query("SELECT id FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
-                    (r,n)->r.getObject(1,UUID.class),initial.account(),initial.customer());
-            if(accounts.size()!=1)throw denied();actor=accounts.getFirst();
+            actor=jdbc.query("SELECT id FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
+                    (r,n)->r.getObject(1,UUID.class),initial.account(),initial.customer()).stream().findFirst().orElseThrow(PostgresBookingChanges::denied);
         } else throw denied();
         // Lock order: resource -> grant/account -> session -> booking/customer. Recheck after the lock.
         PersistedSession current=PersistedSession.find(jdbc,binding,true);
         if(current==null || !current.validAfterLock(initial,now))throw unauthenticated();
         // Unknown and unowned bookings are indistinguishable from an out-of-scope grant.
         List<UUID> owners=jdbc.query("SELECT customer_id FROM booking WHERE id=? FOR UPDATE",(r,n)->r.getObject(1,UUID.class),bookingId);
-        if(owners.size()!=1 || !owners.getFirst().equals(current.customer()))throw denied();
+        if(!owners.equals(List.of(current.customer())))throw denied();
         // An independent HTTP session touch can occur after the command's captured time. Never move it backwards.
         jdbc.update("UPDATE app_session SET last_seen_at=GREATEST(last_seen_at,?) WHERE id=?",stamp(now),current.id());
         return new Authority(actor,current.customer(),initial.kind().equals("GUEST"));
@@ -70,16 +69,16 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
                 (r,n)->new Grant(r.getObject(1,UUID.class),r.getObject(2,UUID.class),r.getString(3),r.getString(4),r.getObject(5,UUID.class),
                         r.getObject(6,UUID.class),PersistedSession.time(r,"issued_at"),PersistedSession.time(r,"expires_at"),
                         PersistedSession.time(r,"consumed_at"),PersistedSession.time(r,"revoked_at")),session.grant());
-        if(grants.size()!=1)throw denied();Grant grant=grants.getFirst();
-        if(grant.revoked()!=null || grant.issued()==null || grant.issued().isAfter(now) || !Objects.equals(grant.browser(),browser)
-                || !grant.customer().equals(session.customer()) || !bookingId.equals(grant.booking()))throw denied();
+        Grant grant=grants.stream().findFirst().orElseThrow(PostgresBookingChanges::denied);
+        // Grant/session ownership, nonnull issue time and MANAGE never being consumed are database-enforced shape constraints.
+        if(grant.revoked()!=null || grant.issued().isAfter(now) || !grant.browser().equals(browser) || !bookingId.equals(grant.booking()))throw denied();
         if(grant.kind().equals("MANAGE")) {
-            if(grant.consumed()!=null || !now.isBefore(grant.expires()))throw denied();
+            if(!now.isBefore(grant.expires()))throw denied();
             if(grant.parent()!=null && jdbc.query("SELECT id FROM access_grant WHERE id=? AND kind='CREATE' AND revoked_at IS NULL FOR UPDATE",
                     (r,n)->r.getObject(1,UUID.class),grant.parent()).size()!=1)throw denied();
             return grant.id();
         }
-        if(!grant.kind().equals("CREATE") || grant.consumed()==null)throw denied();
+        if(grant.consumed()==null)throw denied();
         List<UUID> children=jdbc.query("""
             SELECT id FROM access_grant WHERE parent_grant_id=? AND kind='MANAGE' AND booking_id=?
               AND customer_id=? AND browser_hash=? AND revoked_at IS NULL AND issued_at<=? AND expires_at>?
@@ -108,7 +107,6 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
         public Receipt attempt(Supplier<Receipt> mutation) { return tx.attempt(mutation); }
         public Booking authorizedBooking() {
             Booking value=tx.booking(bookingId).orElseThrow(() -> new Failure(Failure.Kind.STORAGE_FAILURE));
-            if(!value.customerId().equals(authority.customer()))throw denied();
             baseline=value;return value;
         }
         public void cancelledEffects(Booking original,Booking cancelled) {
@@ -130,9 +128,8 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
         }
         private void transition(Booking original,Booking next,Booking.State state) {
             Objects.requireNonNull(original);Objects.requireNonNull(next);
-            if(baseline==null || effects || !baseline.equals(original) || !next.id().equals(bookingId) || next.state()!=state
-                    || next.version()!=original.version()+1 || !next.customerId().equals(authority.customer())
-                    || !tx.booking(bookingId).filter(next::equals).isPresent())throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            if(baseline==null || effects || !baseline.equals(original) || next.state()!=state
+                    || next.version()!=original.version()+1 || !tx.booking(bookingId).filter(next::equals).isPresent())throw new Failure(Failure.Kind.STORAGE_FAILURE);
             effects=true;
         }
         private void event(String prefix,String type,Booking value,String metadata) {
