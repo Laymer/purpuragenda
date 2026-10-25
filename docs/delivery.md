@@ -1,6 +1,6 @@
 # Remaining v1 delivery
 
-Approved 2026-10-25. STATUS.md alone records advancement. This document records dependencies and acceptance; requirements are not completion evidence. Reconcile GitHub and clean/local work before claiming work. Original P01–P06 are merged; P07 PR #7 is review-only until migration acceptance passes. Preserve recovery 6f9405b and historical branches.
+Approved 2026-10-25. STATUS.md alone records advancement. This document records dependencies and acceptance; requirements are not completion evidence. Reconcile GitHub and clean/local work before claiming work. P01–P08 foundations are merged with recorded acceptance; later parent tasks retain their slice-specific gates. Preserve recovery 6f9405b and historical branches.
 
 ## Ownership and small PRs
 
