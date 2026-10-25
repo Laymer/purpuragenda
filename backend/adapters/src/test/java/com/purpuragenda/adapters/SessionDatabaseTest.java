@@ -109,6 +109,73 @@ class SessionDatabaseTest {
         assertEquals(expiry,f.jdbc.queryForObject("SELECT absolute_expires_at FROM app_session",Timestamp.class).toInstant());
         assertTrue(at(issued.minusNanos(1000),new AtomicInteger()).resolve(browser.token()).isEmpty());
     }
+    @Test void csrfRotationReplacesOnlyTheProofKeepingCookieBindingAndAbsoluteLifetime() {
+        char[] oldCsrf=browser.csrf();String tokenHash=f.jdbc.queryForObject("SELECT token_hash FROM app_session",String.class);
+        Instant absolute=browser.session().absoluteExpiresAt();
+        try(var rotated=sessions.rotateCsrf(browser.token()).orElseThrow()) {
+            assertEquals(ref(),rotated.session().reference());assertEquals(absolute,rotated.session().absoluteExpiresAt());
+            assertEquals("CsrfRotation[REDACTED]",rotated.toString());
+            assertEquals(tokenHash,f.jdbc.queryForObject("SELECT token_hash FROM app_session",String.class));
+            assertEquals(1,f.count("app_session"));assertFalse(sessions.csrf(ref(),oldCsrf));
+            assertTrue(sessions.csrf(ref(),rotated.csrf()));
+            assertTrue(f.jdbc.queryForObject("SELECT csrf_hash=? FROM app_session",Boolean.class,new AdminCrypto().digest(rotated.csrf()).orElseThrow()));
+            assertTrue(sessions.resolve(browser.token()).isPresent());
+        }
+        char[] token=browser.token();sessions.rotateCsrf(token);assertTrue(Arrays.equals(new char[43],token));
+    }
+    @Test void csrfRotationRefusesUnknownMalformedRevokedAndExpiredSessionsAtExactBoundaries() {
+        assertTrue(sessions.rotateCsrf(null).isEmpty());assertTrue(sessions.rotateCsrf(new char[42]).isEmpty());
+        try(var unknown=new AdminCrypto().recoveryCode()) { assertTrue(sessions.rotateCsrf(unknown.value()).isEmpty()); }
+        Instant issued=browser.session().issuedAt();String before=f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class);
+        for(long micros:new long[]{0,1,-1}) {
+            var reads=new AtomicInteger();var result=at(issued.plusSeconds(1800).plusNanos(micros*1000),reads).rotateCsrf(browser.token());
+            assertEquals(micros<0,result.isPresent());assertEquals(1,reads.get());result.ifPresent(r->r.close());
+            f.jdbc.update("UPDATE app_session SET last_seen_at=?",Timestamp.from(issued));
+        }
+        f.jdbc.update("UPDATE app_session SET csrf_hash=?",before);
+        assertTrue(at(issued.minusNanos(1000),new AtomicInteger()).rotateCsrf(browser.token()).isEmpty());
+        assertEquals(before,f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class));
+        assertTrue(sessions.revoke(ref()));assertTrue(sessions.rotateCsrf(browser.token()).isEmpty());
+        assertEquals(before,f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class));
+    }
+    @Test void csrfRotationAndLogoutAcquireNoAdministratorLockAndAbsoluteDeadlineStillWins() throws Exception {
+        try(var proof=proof();var admin=exchange(sessions,proof).orElseThrow();var holder=f.source.getConnection()) {
+            holder.setAutoCommit(false);
+            try(var lock=holder.createStatement()) { lock.execute("SELECT 1 FROM admin_user FOR UPDATE"); }
+            long started=System.nanoTime();
+            try(var rotated=sessions.rotateCsrf(admin.token()).orElseThrow()) { assertTrue(sessions.csrf(admin.session().reference(),rotated.csrf())); }
+            assertTrue(sessions.revoke(admin.session().reference()));
+            assertTrue(Duration.ofNanos(System.nanoTime()-started).compareTo(Duration.ofSeconds(1))<0);
+            holder.rollback();
+            assertTrue(sessions.rotateCsrf(admin.token()).isEmpty());
+        }
+    }
+    @Test void inspectIsReadOnlyLockFreeAndHonorsExactIdleAndAbsoluteBoundaries() throws Exception {
+        Instant issued=browser.session().issuedAt();
+        String csrf=f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class);
+        for(long micros:new long[]{0,1,-1}) {
+            var reads=new AtomicInteger();var found=at(issued.plusSeconds(1800).plusNanos(micros*1000),reads).inspect(browser.token());
+            assertEquals(micros<0,found.isPresent());assertEquals(1,reads.get());
+        }
+        assertEquals(issued,f.jdbc.queryForObject("SELECT last_seen_at FROM app_session",Timestamp.class).toInstant());
+        assertEquals(csrf,f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class));
+        char[] token=browser.token();var snapshot=sessions.inspect(token).orElseThrow();assertTrue(Arrays.equals(new char[43],token));
+        assertEquals(ref(),snapshot.reference());assertEquals(issued,snapshot.lastSeenAt());
+        assertEquals(issued,f.jdbc.queryForObject("SELECT last_seen_at FROM app_session",Timestamp.class).toInstant());
+        assertTrue(sessions.inspect(null).isEmpty());assertTrue(sessions.inspect(new char[42]).isEmpty());
+        try(var unknown=new AdminCrypto().recoveryCode()) { assertTrue(sessions.inspect(unknown.value()).isEmpty()); }
+        try(var holder=f.source.getConnection()) {
+            holder.setAutoCommit(false);
+            try(var lock=holder.createStatement()) { lock.execute("SELECT 1 FROM app_session FOR UPDATE"); }
+            assertTrue(sessions.inspect(browser.token()).isPresent());
+            holder.rollback();
+        }
+        assertTrue(sessions.revoke(ref()));assertTrue(sessions.inspect(browser.token()).isEmpty());
+    }
+    @Test void inspectFailuresAreSafeAndNeverExposeProviderText() {
+        var broken=new PostgresSessions(new DelegatingDataSource(f.source) { @Override public Connection getConnection() throws SQLException { throw new SQLException("synthetic-private-marker"); } });
+        safe(()->broken.inspect(browser.token()));
+    }
     @Test void anonymousLifetimeIsElapsedAcrossTheBrusselsAutumnTransition() {
         Instant now=Instant.parse("2026-10-25T00:30:00Z");var reads=new AtomicInteger();
         try(var value=at(now,reads).anonymous()) { assertEquals(now.plusSeconds(7200),value.session().absoluteExpiresAt());assertEquals(1,reads.get()); }

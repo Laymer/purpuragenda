@@ -121,4 +121,23 @@ class RuntimeSettingsTest {
             assertEquals("APPLICATION_START_FAILED",failure.getMessage());assertNull(failure.getCause());
         }
     }
+    @Test void trustedProxyPeersDefaultEmptyAndAcceptOnlyExactLiteralAddresses() {
+        assertEquals(Set.of(),RuntimeSettings.read(environment()).trustedProxyPeers());
+        values.put("app.security.trusted-proxy-peers","");assertEquals(Set.of(),RuntimeSettings.read(environment()).trustedProxyPeers());
+        values.put("app.security.trusted-proxy-peers","172.20.0.5,::1,172.20.0.5");
+        assertEquals(Set.of("172.20.0.5","0:0:0:0:0:0:0:1"),RuntimeSettings.read(environment()).trustedProxyPeers());
+        for(String bad:List.of(" ","172.20.0.5,","172.20.0.5, 172.20.0.6","caddy","10.0.0.0/8","*","172.20.0.5%eth0","[::1]","300.1.1.1","01.2.3.4",
+                "1.1.1.1,2.2.2.2,3.3.3.3,4.4.4.4,5.5.5.5,6.6.6.6,7.7.7.7,8.8.8.8,9.9.9.9,10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4,10.0.0.5,10.0.0.6,10.0.0.7,10.0.0.8"))
+            invalid("app.security.trusted-proxy-peers",bad);
+    }
+    @Test void canonicalOriginMatchesBrowserSerializationAndCookieNamesFollowTheMode() {
+        values.put("app.public-origin","http://LOCALHOST:80/");values.put("app.mode","test");
+        var local=RuntimeSettings.read(environment());assertEquals("http://localhost",local.canonicalOrigin());assertTrue(local.localCookies());
+        values.put("app.public-origin","http://localhost:8080");assertEquals("http://localhost:8080",RuntimeSettings.read(environment()).canonicalOrigin());
+        values.put("app.mode","restore");assertTrue(RuntimeSettings.read(environment()).localCookies());
+        values.putAll(Map.of("app.mode","operational","app.public-origin","https://Bookings.Example.com:443","app.notice-version","reviewed-v1","app.smtp-host","smtp.example.com",
+                "app.smtp-security","STARTTLS_REQUIRED","app.smtp-user","synthetic-operator","app.smtp-password-file",directory.resolve("password").toString()));
+        var operational=RuntimeSettings.read(environment());assertEquals("https://bookings.example.com",operational.canonicalOrigin());assertFalse(operational.localCookies());
+        values.put("app.public-origin","https://bookings.example.com:8443");assertEquals("https://bookings.example.com:8443",RuntimeSettings.read(environment()).canonicalOrigin());
+    }
 }

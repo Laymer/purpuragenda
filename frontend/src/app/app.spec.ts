@@ -4,7 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { HttpErrorResponse } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { appConfig } from './app.config';
-import { CatalogService, Problem, Service, ServiceCurrencyEnum } from './shared/generated';
+import { CatalogService, Problem, Service, ServiceCurrencyEnum, SessionService, SessionStateRoleEnum } from './shared/generated';
 
 describe('Application shell and typed API boundary', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -63,5 +63,23 @@ describe('Application shell and typed API boundary', () => {
     request.flush(problem,
       { status: 503, statusText: 'Service unavailable' });
     expect(failure?.status).toBe(503); expect(failure?.error.code).toBe('TEMPORARILY_UNAVAILABLE');
+  });
+
+  it('sends the session operations to the same origin with the CSRF header and typed state', () => {
+    const http = TestBed.inject(HttpTestingController); const sessions = TestBed.inject(SessionService);
+    let state: unknown;
+    sessions.bootstrapSession().subscribe(value => state = value);
+    const bootstrap = http.expectOne('/api/v1/session/bootstrap');
+    expect(bootstrap.request.method).toBe('POST'); expect(bootstrap.request.headers.has('X-CSRF-Token')).toBe(false);
+    const csrfToken = 'c'.repeat(43);
+    bootstrap.flush({ role: SessionStateRoleEnum.Anonymous, idleExpiresAt: '2026-10-25T10:30:00Z',
+      absoluteExpiresAt: '2026-10-25T12:00:00Z', csrfToken });
+    expect(state).toMatchObject({ role: 'ANONYMOUS', csrfToken });
+    sessions.getSession().subscribe();
+    expect(http.expectOne('/api/v1/session').request.method).toBe('GET');
+    sessions.logoutSession(csrfToken).subscribe();
+    const logout = http.expectOne('/api/v1/session/logout');
+    expect(logout.request.method).toBe('POST'); expect(logout.request.headers.get('X-CSRF-Token')).toBe(csrfToken);
+    logout.flush(null, { status: 204, statusText: 'No content' });
   });
 });

@@ -1,6 +1,6 @@
 # @
 
-Public catalog contract foundation. Availability is advisory and dates use the selected IANA display zone. Remaining v1 endpoints are added with their owning tasks. Online checkout is excluded.
+Public catalog contract foundation. Availability is advisory and dates use the selected IANA display zone. Remaining v1 endpoints are added with their owning tasks. Online checkout is excluded. Session endpoints require same-origin browser requests: unsafe requests carry the exact configured Origin and a persisted-session CSRF header.
 
 The version of the OpenAPI document: 0.1.0
 

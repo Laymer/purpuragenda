@@ -8,4 +8,5 @@
 - Decisions: fixed windows, digest-only keys, IPv6 /64 buckets, children-before-parents grant cleanup, no decryption during cleanup.
 - Verification: see docs/status.md and the draft PR for native counts and hosted checks.
 - Next concrete action: independent review of the exact PR head, then coordinator merge when all checks are green.
-- Recovery: worktree /private/tmp/purpuragenda-p17-throttles; no stashes created.
+- Recovery note: PR53 HTTP session merged 7523709; no endpoint uses throttles yet.
+- Recovery: worktree /private/tmp/purpuragenda-p17-throttles; no stashes created. stacked PR dependencies: none.

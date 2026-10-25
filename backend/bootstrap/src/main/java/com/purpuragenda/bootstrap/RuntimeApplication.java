@@ -1,5 +1,6 @@
 package com.purpuragenda.bootstrap;
 
+import com.purpuragenda.adapters.in.rest.*;
 import com.purpuragenda.adapters.out.email.*;
 import com.purpuragenda.adapters.out.postgres.PostgresScheduling;
 import com.purpuragenda.adapters.out.postgres.DatabaseReadiness;
@@ -10,6 +11,7 @@ import com.purpuragenda.application.scheduling.PublicScheduling;
 import javax.sql.DataSource;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 
@@ -48,5 +50,15 @@ public class RuntimeApplication {
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }
     @Bean AuthDeliveryWorker authWorker(NotificationQueue queue,AuthDeliveryStore store,MailDelivery mail,RuntimeSettings settings) {
         return new AuthDeliveryWorker(queue,store,mail,settings.suppressed());
+    }
+    @Bean SessionStore sessions(DataSource source) { return new PostgresSessions(source); }
+    @Bean SessionAccess sessionAccess(SessionStore sessions) { return new SessionAccess(sessions); }
+    @Bean SessionCookies sessionCookies(RuntimeSettings settings) { return settings.localCookies()?SessionCookies.local():SessionCookies.operational(); }
+    @Bean SessionController sessionController(SessionAccess access,SessionCookies cookies) { return new SessionController(access,cookies); }
+    @Bean FilterRegistrationBean<ApiGuardFilter> apiGuard(RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        var registration=new FilterRegistrationBean<>(new ApiGuardFilter(settings.canonicalOrigin(),access,cookies,new ClientAddress(settings.trustedProxyPeers())));
+        registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+10);
+        registration.addUrlPatterns("/*");
+        return registration;
     }
 }
