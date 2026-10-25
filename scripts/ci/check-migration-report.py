@@ -19,6 +19,8 @@ def validate(root):
         suites.append(('ExpiryReclamationPostgresTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresQuotaStore.java').is_file():
         suites.append(('CustomerQuotaPostgresTest', 10))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminMfa.java').is_file():
+        suites.append(('AdminMfaDatabaseTest', 10))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
