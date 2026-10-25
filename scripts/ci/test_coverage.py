@@ -42,6 +42,15 @@ class CoverageGateTest(unittest.TestCase):
     def test_empty_scaffolds_have_no_coverage_claim(self):
         self.assertEqual([], GATE.validate(self.root))
 
+    def test_generated_only_sdk_has_no_handwritten_coverage_claim(self):
+        self.write('frontend/src/app/shared/generated/model.ts', 'export interface Model {}')
+        self.write('frontend/src/app/shared/generated/.openapi-generator/FILES', 'model.ts')
+        self.write('frontend/src/app/shared/generated/.openapi-generator/VERSION', '7.26.0')
+        self.assertEqual([], GATE.validate(self.root))
+        self.write('frontend/src/app/handwritten.ts', 'export const value = true;')
+        with self.assertRaisesRegex(ValueError, 'Missing Angular'):
+            GATE.validate(self.root)
+
     def test_domain_at_exact_boundary_passes(self):
         self.java()
         self.assertEqual(["domain LINE: 95/100", "domain BRANCH: 90/100"], GATE.validate(self.root))
