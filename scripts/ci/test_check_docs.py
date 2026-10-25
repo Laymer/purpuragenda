@@ -53,6 +53,25 @@ class LedgerTest(unittest.TestCase):
     def test_no_active_work(self):
         self.assertEqual([], self.validate(self.ledger.replace(self.claim, 'None.')))
 
+    def test_partial_parent_keeps_merged_slice_evidence_after_claim_release(self):
+        # Completing a foundation releases its owner without completing the parent task.
+        for state in ('In progress', 'Recovered WIP'):
+            with self.subTest(state=state):
+                ledger = self.ledger.replace(
+                    '| P01 — Task | In progress |',
+                    '| P01 — Task | ' + state + '; foundation merged '
+                    'https://github.com/Laymer/purpuragenda/pull/32; worker remains |')
+                ledger = ledger.replace(self.claim, 'None.')
+                self.assertEqual([], self.validate(ledger))
+                self.assertTrue((self.root / 'docs/handoffs/p01.md').is_file())
+
+    def test_merged_slice_cannot_keep_a_released_task_claim(self):
+        ledger = self.ledger.replace(
+            '| P01 — Task | In progress |',
+            '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/32 |')
+        self.assertTrue(any('not active in ledger' in error for error in self.validate(ledger)))
+        self.assertEqual([], self.validate(ledger.replace(self.claim, 'None.')))
+
     def test_delivery_document_required(self):
         path = self.root / 'docs/delivery.md'
         path.write_text('')

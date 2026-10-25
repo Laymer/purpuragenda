@@ -12,14 +12,14 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; quotas PR28 merged f72bae2; availability PR24/expiry PR26 merged; creation remains |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24, expiry PR26 and quota https://github.com/Laymer/purpuragenda/pull/28 atf72bae2 merged; creation remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; auth foundation PR32 merged21de569 after review/all13green; SMTP PR30 fc06c21 merged; worker/expiry sweep/redemption remain pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue PR19/23 and SMTP PR30 merged; auth persistence https://github.com/Laymer/purpuragenda/pull/32 merged21de569; worker and queued-expiry sweep remain |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/33; recovery isolation resumed; MFA PR29 d34a735 and bootstrap PR27 202fbc7 merged; recovery persistence pending |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; bootstrap PR27 and MFA PR29 merged; recovery-isolation foundation https://github.com/Laymer/purpuragenda/pull/33 merged79dff5a; persisted recovery/reenrollment remains |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,15 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P16/recovery-isolation: agent=Codex-p16-resume; branch=task/p16-scoped-recovery; base=main; handoff=docs/handoffs/p16-recovery-isolation.md
+None.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:17:51Z.
-- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main 21de569; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
-- Last pushed implementation commit: f230ac1; uncommitted changes: tested auth-foundation merge and reconciled handoff/evidence.
-- What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: fresh exact combined CI after merging auth foundation; no full recovery claim.
-- Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
-- Verification: exactf230ac1 independently approved and CI40188050261 all13green,12MFA realPG/108domain/43application/112adapter/3architecture zero skips and full coverage passing. Fresh auth-integrated CI required; local macOS/Python3.9 limits remain documented.
-- Next concrete action: push auth-integrated merge and require fresh all-category CI/review before coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T11:22:01Z.
+- Current task: P01/auth-handoff; branch: task/p01-auth-handoff; base: main79dff5a; PR URL: https://github.com/Laymer/purpuragenda/pull/34.
+- Last pushed implementation commit: 9ab82cd (PR33, merged79dff5a); uncommitted changes: consolidated ledger/evidence and tested handoff lifecycle pending checkpoint publication.
+- What works: P14 persistence PR32 merged21de569 and P16 isolation PR33 merged79dff5a after independent exact-head review and all13 checks on each. No active implementation owners remain.
+- What remains: P14 worker/queued-expiry sweep, P15 guest redemption, P16 persisted recovery and P17 public access protections; P09 creation still pending. P14/P16 are not complete.
+- Decisions: preserve bounded foundation scope, applied001–008 and009/010 reservations; leave P50 PR31 paused; no deployment or live communication.
+- Verification: combined9ab82cd CI40188274058 passed all13 checks,12auth+12MFA realPG cases,108domain/45application/124adapter/3architecture cases with zero skips; all coverage gates passed.18 local ledger lifecycle cases pass; full local toolchain/Python limits are recorded in docs/status.md. Reconciliation PR requires its own full CI and independent review.
+- Next concrete action: claim P14/auth-worker and implement fenced SMTP delivery plus queued-expiry envelope cleanup as separate reviewed work; coordinate009 before P16 recovery010 and keep public flows behind P17 protections.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; clean implementation worktrees/tmp/purpuragenda-p14-auth-delivery and/tmp/purpuragenda-p16-resume; coordinator worktree/tmp/purpuragenda-auth-handoff; stacked PR dependencies: none, both foundation PRs merged.
