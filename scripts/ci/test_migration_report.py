@@ -192,6 +192,21 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdminRecoveryDatabaseTest" tests="13"/>')
         GATE.validate(self.root)
 
+    def test_sessions_require_atomic_handoff_expiry_rollback_and_revocation_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSessions.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic session adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.SessionDatabaseTest.xml')
+        for count, cases, nested in ((0,0,''), (26,26,''), (27,26,''), (28,27,''),
+                                     (27,27,'<failure/>'), (27,27,'<error/>'), (27,27,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="27">'
+                          + '<testcase/>' * 27 + '</testsuite>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

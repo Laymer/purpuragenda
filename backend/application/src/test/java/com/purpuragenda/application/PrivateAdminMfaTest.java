@@ -20,6 +20,7 @@ class PrivateAdminMfaTest {
         public boolean initialEnrollment() { return initial; }
         public void enroll(long step,List<String> hashes) { assertEquals(10,new HashSet<>(hashes).size());writes++;lastAccepted=step; }
         public void acceptStep(long step) { writes++;lastAccepted=step; }
+        public Instant issueAuthenticationProof(String hash,SessionStore.ProofBinding binding) { assertTrue(writes>0);assertEquals(7,lastAccepted);return now.plusSeconds(60); }
     };
     final AdminMfaUnitOfWork store=new AdminMfaUnitOfWork() {
         public <T>T locked(String email,Function<Admin,T> work) {
@@ -75,6 +76,18 @@ class PrivateAdminMfaTest {
         char[] password=password();assertTrue(mfa.authenticate("owner@example.test",password,"synthetic"));cleared(password);
         assertEquals(6,previous);assertEquals(7,lastAccepted);assertEquals(1,writes);assertTrue(issued.isEmpty());
         credential=null;assertFalse(mfa.authenticate("owner@example.test",password(),"synthetic"));
+    }
+    @Test void sessionProofRequiresBothFactorsAndErasesUnreturnedProofAfterCommitFailure() {
+        var binding=new SessionStore.ProofBinding("a".repeat(64),"b".repeat(64));
+        assertTrue(mfa.authenticateForSession("owner@example.test",password(),"synthetic",binding).isEmpty());enabled();
+        assertTrue(mfa.authenticateForSession("owner@example.test","incorrect password phrase".toCharArray(),"synthetic",binding).isEmpty());
+        nextStep=-1;assertTrue(mfa.authenticateForSession("owner@example.test",password(),"synthetic",binding).isEmpty());nextStep=7;
+        try(var proof=mfa.authenticateForSession("owner@example.test",password(),"synthetic",binding).orElseThrow()) {
+            assertEquals(now.plusSeconds(60),proof.expiresAt());assertSame(issued.getFirst(),proof.token());assertEquals("AdminAuthenticationProof[REDACTED]",proof.toString());
+        }
+        failCommit=true;char[] password=password();assertThrows(IllegalStateException.class,()->mfa.authenticateForSession("owner@example.test",password,"synthetic",binding));
+        cleared(password);issued.forEach(value->cleared(value.value()));failCommit=false;credential=null;
+        assertTrue(mfa.authenticateForSession("owner@example.test",password(),"synthetic",binding).isEmpty());
     }
     @Test void recoveryHistoryBlocksPasswordOnlyProvisioningAndEnrollmentButNotFullFactorVerification() {
         initial=false;char[] password=password();

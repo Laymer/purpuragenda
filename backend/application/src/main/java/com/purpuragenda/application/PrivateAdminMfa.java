@@ -6,7 +6,7 @@ import com.purpuragenda.domain.customer.Input;
 import java.util.*;
 import java.util.function.Function;
 
-/** Private factor workflow only. Never issues a session or reusable authorization capability. */
+/** Private factor workflow. Normal sessions must atomically consume persisted authentication proof. */
 public final class PrivateAdminMfa {
     private final AdminMfaUnitOfWork store;
     private final PasswordHash passwords;
@@ -46,6 +46,18 @@ public final class PrivateAdminMfa {
             long step=step(admin,value.get(),code);if(step<0)return false;
             admin.acceptStep(step);return true;
         });
+    }
+    public Optional<AuthenticationProof> authenticateForSession(String email,char[] password,String code,SessionStore.ProofBinding binding) {
+        List<RecoveryCode> issued=new ArrayList<>();
+        try {
+            return withPassword(email,password,admin->{
+                Objects.requireNonNull(binding);var value=admin.credential();
+                if(value.isEmpty() || !value.get().enrolled() || !passwords.verify(password,value.get().passwordHash()))return Optional.empty();
+                long step=step(admin,value.get(),code);if(step<0)return Optional.empty();
+                admin.acceptStep(step);var token=factors.recoveryCode();issued.add(token);
+                return Optional.of(new AuthenticationProof(token,admin.issueAuthenticationProof(token.hash(),binding)));
+            });
+        } catch(RuntimeException failure) { issued.forEach(RecoveryCode::close);throw failure; }
     }
     private long step(Admin admin,Credential value,String code) {
         byte[] secret=value.secret().bytes();
