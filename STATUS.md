@@ -11,7 +11,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; transaction/idempotency core merged https://github.com/Laymer/purpuragenda/pull/18 at6c1f96f; booking/policy persistence slice pending |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,11 +65,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:02:02Z.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:16:46Z.
 - Current task: P43/dependency-foundation; branch: task/p43-dependency-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/17.
-- Last pushed implementation commit: a9259e1; local integration f1ac0e6; uncommitted changes: P12 Angularc1151b2 integration, final evidence pending.
+- Last pushed implementation commit: 6d05b84; uncommitted changes: P08 transaction core6c1f96f integration and refreshed verification pending.
 - What works: reviewed dependency/secret gates and P12 Angular/P07 migrations integrated. What remains: exact-head CI with real PostgreSQL and coordinator merge; SAST/tool classpaths/full release SBOM/container/config remain later P43 slices.
 - Decisions: use public OSV advisories without live secrets; split dependency from SAST for reviewable scope.
-- Verification: integrated121 root+31 policy tests, docs/inventory/whitespace/contracts/live protection passed; real OSV canary and all468 Java/npm packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);6 Angular/build/100% coverage,108domain+11security+2image parser passed; no DB-suite passing claim. Safe full-history/150tracked-file secret scan passed; independent artifact/npm fixes approved.
+- Verification: integrated122 root+31 policy tests, docs/inventory/whitespace/contracts/live protection passed; real OSV canary and all472 Java/npm packages passed zero findings. Full build failed at POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException (Docker unavailable);6 Angular/build/100% coverage,108domain+4application+11security+2image parser passed; no DB-suite passing claim. Safe full-history/155tracked-file secret scan passed; independent artifact/npm fixes approved.
 - Next concrete action: run integrated suites and dependency scan; record local Docker limitation; push exact head and require CI/independent approval.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate new main before final review.
