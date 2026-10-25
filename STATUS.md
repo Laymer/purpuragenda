@@ -16,7 +16,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/11; contract foundation only; shell pending; dependencies in docs/delivery.md;  |
-| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Recovered WIP; dependencies in docs/delivery.md;  |
+| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -53,7 +53,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
+| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage and P48 protection foundations are merged; final application coverage and release publication remain pending. P07 migrations and P13 crypto are active in their separate task branches.
 
@@ -68,7 +68,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - Agent and UTC checkpoint: Codex, 2026-10-25T08:12:00Z.
 - Current task: P12/contract-foundation; branch: task/p12-contract-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/11.
 - Last pushed implementation commit: 81890e8 initial tested slice; uncommitted changes: P48 integration and approved safety fixes ready for exact-head CI.
-- What works: P01 coordination and P40 coverage foundations merged; P48 PR8 merged0c3ae04; protected live settings verified; per-commit and strict-suite checks active.
+- What works: P01 coordination and P40 coverage foundations merged; P13 crypto PR12 merged34836ed; P48 PR8 merged0c3ae04; protected live settings verified; per-commit and strict-suite checks active.
 - What remains: reviewed public contract seed, deterministic generated Angular SDK and contract tests; Angular shell is next P12 slice.
 - Decisions: adopt only current public service/availability seam, not recovered monolithic contract or feature implementations.
 - Verification: 50 root +31 delivery Python tests, full108+3 build, coverage99.64%/97.75%, two deterministic generations and whitespace passed; independent re-review approved after safe replacement fixes; exact-head prerequisite-integrated CI pending.
