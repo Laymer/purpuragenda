@@ -1,30 +1,130 @@
 {
   "schemaVersion": 1,
   "suites": {
-    "documentation": {"owner": "P01", "state": "implemented", "job": "documentation"},
-    "java": {"owner": "P02", "state": "implemented", "job": "build"},
-    "architecture": {"owner": "P02", "state": "implemented", "job": "build"},
-    "coverage": {"owner": "P40", "state": "implemented", "job": "build"},
-    "delivery-policy": {"owner": "P48", "state": "implemented", "job": "delivery-policy"},
-    "contracts": {"owner": "P12", "state": "implemented", "job": "contracts"},
-    "secrets": {"owner": "P43", "state": "implemented", "job": "secrets"},
-    "postgres-migrations": {"owner": "P07", "state": "planned", "job": null},
-    "postgres-races": {"owner": "P38", "state": "planned", "job": null},
-    "outbox": {"owner": "P14", "state": "planned", "job": null},
-    "api-acceptance": {"owner": "P38", "state": "planned", "job": null},
-    "angular": {"owner": "P12", "state": "planned", "job": null},
-    "browser-matrix": {"owner": "P39", "state": "planned", "job": null},
-    "accessibility": {"owner": "P39", "state": "planned", "job": null},
-    "performance": {"owner": "P41", "state": "planned", "job": null},
-    "load": {"owner": "P42", "state": "planned", "job": null},
-    "dependencies": {"owner": "P43", "state": "planned", "job": null},
-    "sbom": {"owner": "P43", "state": "planned", "job": null},
-    "sast": {"owner": "P43", "state": "planned", "job": null},
-    "containers": {"owner": "P43", "state": "planned", "job": null},
-    "configuration": {"owner": "P43", "state": "planned", "job": null},
-    "zap": {"owner": "P44", "state": "planned", "job": null},
-    "persistence": {"owner": "P45", "state": "planned", "job": null},
-    "backup": {"owner": "P46", "state": "planned", "job": null},
-    "restore": {"owner": "P47", "state": "planned", "job": null}
+    "documentation": {
+      "owner": "P01",
+      "state": "implemented",
+      "job": "documentation"
+    },
+    "java": {
+      "owner": "P02",
+      "state": "implemented",
+      "job": "build"
+    },
+    "architecture": {
+      "owner": "P02",
+      "state": "implemented",
+      "job": "build"
+    },
+    "coverage": {
+      "owner": "P40",
+      "state": "implemented",
+      "job": "build"
+    },
+    "delivery-policy": {
+      "owner": "P48",
+      "state": "implemented",
+      "job": "delivery-policy"
+    },
+    "contracts": {
+      "owner": "P12",
+      "state": "implemented",
+      "job": "contracts"
+    },
+    "secrets": {
+      "owner": "P43",
+      "state": "implemented",
+      "job": "secrets"
+    },
+    "postgres-migrations": {
+      "owner": "P07",
+      "state": "implemented",
+      "job": "build"
+    },
+    "postgres-races": {
+      "owner": "P38",
+      "state": "planned",
+      "job": null
+    },
+    "outbox": {
+      "owner": "P14",
+      "state": "planned",
+      "job": null
+    },
+    "api-acceptance": {
+      "owner": "P38",
+      "state": "planned",
+      "job": null
+    },
+    "angular": {
+      "owner": "P12",
+      "state": "planned",
+      "job": null
+    },
+    "browser-matrix": {
+      "owner": "P39",
+      "state": "planned",
+      "job": null
+    },
+    "accessibility": {
+      "owner": "P39",
+      "state": "planned",
+      "job": null
+    },
+    "performance": {
+      "owner": "P41",
+      "state": "planned",
+      "job": null
+    },
+    "load": {
+      "owner": "P42",
+      "state": "planned",
+      "job": null
+    },
+    "dependencies": {
+      "owner": "P43",
+      "state": "planned",
+      "job": null
+    },
+    "sbom": {
+      "owner": "P43",
+      "state": "planned",
+      "job": null
+    },
+    "sast": {
+      "owner": "P43",
+      "state": "planned",
+      "job": null
+    },
+    "containers": {
+      "owner": "P43",
+      "state": "planned",
+      "job": null
+    },
+    "configuration": {
+      "owner": "P43",
+      "state": "planned",
+      "job": null
+    },
+    "zap": {
+      "owner": "P44",
+      "state": "planned",
+      "job": null
+    },
+    "persistence": {
+      "owner": "P45",
+      "state": "planned",
+      "job": null
+    },
+    "backup": {
+      "owner": "P46",
+      "state": "planned",
+      "job": null
+    },
+    "restore": {
+      "owner": "P47",
+      "state": "planned",
+      "job": null
+    }
   }
 }

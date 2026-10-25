@@ -10,7 +10,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; dd482e3 review only; SQL not adopted |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; real PostgreSQL11-case acceptance passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -71,6 +71,6 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - What works: coverage/protection/secret-scan foundations and crypto/contracts merged.
 - What remains: explicit implemented/planned suite inventory, exact aggregate job matching, release completeness guard and negative tests.
 - Decisions: every implemented category remains mandatory on every PR; planned categories cannot certify a release.
-- Verification: 83 root+31 policy Python tests, full108 domain+11 security+3 architecture build, coverage gates and deterministic contracts passed; independent re-review pending final conditional-form fixes.
+- Verification: Pre-P07 local83 root+31 policy tests and108+11+3 build passed; independent re-review approved. P07 real11-case suite passed CI and mergedff3b33b; inventory activates it; fresh combined exact-head CI required because local Docker is unavailable.
 - Next concrete action: implement fail-closed inventory/workflow/results validation and tests.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P07/P12/P43 workers own separate task PRs.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P08/P12/P43 workers own separate task PRs.
