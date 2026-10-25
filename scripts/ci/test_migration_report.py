@@ -44,11 +44,11 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         core = self.report.with_name('TEST-com.purpuragenda.adapters.TransactionCoreTest.xml')
-        for tests, skipped in ((0, 0), (10, 0), (11, 1)):
+        for tests, skipped in ((0, 0), (11, 0), (12, 1)):
             core.write_text(f'<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="{tests}" skipped="{skipped}"/>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        core.write_text('<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="11"/>')
+        core.write_text('<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="12"/>')
         GATE.validate(self.root)
 
     def test_booking_persistence_requires_real_roundtrip_cases(self):
