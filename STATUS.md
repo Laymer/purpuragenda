@@ -17,9 +17,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundations PR19 e917ee3 and PR23 6afe0e1 merged; SMTP transport claimed; auth worker pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundations PR19 e917ee3 and PR23 6afe0e1 merged; SMTP transport PR30 mergedfc06c21; auth envelope claimed; worker pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/29; atomic MFA; bootstrap PR27 merged202fbc7; recovery pending |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; atomic MFA PR29 mergedd34a735; bootstrap PR27 merged202fbc7; recovery pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P14/smtp-transport: agent=Codex-p14; branch=task/p14-smtp-transport; base=main; handoff=docs/handoffs/p14-smtp-transport.md
+- P14/auth-delivery: agent=Codex-p14; branch=task/p14-auth-delivery; base=main; handoff=docs/handoffs/p14-auth-delivery.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T10:43:20Z.
-- Current task: P14/smtp-transport; branch: task/p14-smtp-transport; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/30.
-- Last pushed implementation commit:72817ac; uncommitted changes: ledger/evidence checkpoint and mandatory-invocation regression only; source published to draft PR30.
-- What works: queue foundation PR19 mergede917ee3, exact real PostgreSQL/coverage CI green.
-- What remains: integrate latest main, strict checks and draft publication; encrypted-auth worker follows separately.
-- Decisions: pure-JDK redacted message/result port; restore zero network; capture only loopback or literal private mailpit; operational required TLS/identity/timeouts/debug-off; no P36 templates.
-- Verification: two Message tests, eight actual SMTP/TLS tests and three report-guard regressions pass; mandatory actual report validates. Full verify-build fails on unavailable Docker/PostgreSQL, without skips. 169 current root Python tests and history/216-file secret scan passed; live dependency gate481 packages zero vulnerabilities. Actual CI coverage and all categories still required.
-- Next concrete action: require exact-head CI and independent review; fix findings before coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P13/P07/P08/P14 queue merged; P43 dependency/SAST, Mac bootstrap and P09 availability gates preserved from current main; queue correction6afe0e1 merged.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T10:54:09Z.
+- Current task: P14/auth-delivery; branch: task/p14-auth-delivery; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: auth store/port, tests, report guard and documentation checkpoint; all currently local, paused at owner request.
+- What works: queue and SMTP foundations merged through PR30 fc06c21.
+- What remains: independent review and actual PostgreSQL/coverage CI; worker and queued-expiry sweep follow separately; integrate latest main quota008 before release.
+- Decisions: fixed15m hashed256-bit tokens; encrypted typed envelope only; explicit purpose/browser/booking binding; no token return; no network or scheduling lock in store.
+- Verification: latest all-module Java test-compile passed; two AuthDeliveryStore scope tests pass in full local run;174 strict root Python tests and three auth-report regressions passed. Full local verify-build fails closed because Docker/PostgreSQL is unavailable.12 realPG tests authored, not certified; no coverage completion claim.
+- Next concrete action: on explicit resume, fetch/integrate main, inspect draft CI and obtain independent review; do not merge this paused WIP.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: queue19/23 and SMTP30 merged.
