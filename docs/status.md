@@ -77,3 +77,11 @@ P01 concurrency prerequisite merged at 15ba8b4 and was integrated without histor
 ## P07 review checkpoint
 
 P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
+
+## P07 implementation checkpoint
+
+Adopted historical SQL changesets 001–006 byte-for-byte from recovery and appended 007. Additive corrections preserve actual-money amounts independently of service pricing, require finite booking times/pending ceilings/confirmation history, validate required snapshot fields and elapsed policy agreement, and prevent deleting or reassigning occupancy rows. Upgrade revalidates existing booking history. Role bootstrap uses separate migration/application credentials, default DML grants and revoked application access to Liquibase metadata.
+
+Exact Liquibase 5.0.4, PostgreSQL JDBC 42.7.14 and Testcontainers 2.0.5 Maven Central POM URLs returned 200 before adoption. `./mvnw --batch-mode --no-transfer-progress -pl backend/adapters -am test-compile` passed with the pinned toolchain. The new MigrationTest covers fresh/upgrade/rerun seeds, rejected inconsistent historical snapshots, immutable facts, real role denials/default grants, overlap/adjacency/state occupancy, finite bounds, snapshot policy/nulls, DST elapsed days and container restart persistence. Resource-only adapters now require reports.
+
+The mandatory full build failed locally inside and outside the sandbox at sanitized POSTGRES_TEST_START_FAILED because Docker has no reachable daemon; 108 domain tests passed before that failure. There is no passing full-build or migration-suite claim. Separate manual SQL checks used an isolated cached PostgreSQL18.6 cluster under /tmp/p07-postgres: migration syntax/seeds and synthetic pending ceiling, null snapshot, overlap, occupancy deletion and DST elapsed-day checks passed. These manual checks do not certify Testcontainers, Compose or the full Java migration suite. Required actual-container CI and independent review remain pending.

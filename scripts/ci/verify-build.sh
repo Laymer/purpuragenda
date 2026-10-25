@@ -17,7 +17,8 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 modules = [Path('quality')]
 modules += [Path('backend') / name for name in ('domain', 'application', 'adapters', 'bootstrap')
-            if list((Path('backend') / name / 'src/main/java').rglob('*.java'))]
+            if (list((Path('backend') / name / 'src/main/java').rglob('*.java'))
+                or list((Path('backend') / name / 'src/test/java').rglob('*Test.java')))]
 for module in modules:
     reports = list((module / 'target/surefire-reports').glob('TEST-*.xml'))
     if not reports:

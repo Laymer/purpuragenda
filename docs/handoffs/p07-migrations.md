@@ -32,9 +32,11 @@ Review the restored files, implement additive fixes and the acceptance suite, th
 
 - Agent and UTC checkpoint: Codex-p07, 2026-10-25T08:13:28Z.
 - Current task: P07/migrations; branch: task/p07-migrations; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/7.
-- Last pushed implementation commit: dd482e3 review checkpoint; uncommitted changes: merging reviewed prerequisites and claiming P07 before SQL adoption.
-- What works: P01 concurrency and P40 coverage foundation merged; P07 existing review findings retained. What remains: additive SQL fixes, real PostgreSQL suite, exact-head CI and independent review.
+- Last pushed implementation commit: dd482e3 review checkpoint; uncommitted changes: P07 migrations, roles, JDBC suite and mandatory-report guard before implementation checkpoint.
+- What works: P01 concurrency and P40 coverage foundation merged; P07 existing review findings retained. What remains: latest-main integration, actual-container CI and independent review.
 - Decisions: preserve recovered changesets 001–006 byte-for-byte; add corrections in 007+, use distinct DDL/DML roles and retain absolute overlap barrier.
 - Verification: 38 Python gate/ledger tests and full build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Docker daemon unavailable, no migration passing claim.
-- Next concrete action: verify prerequisite merge, adopt reviewed SQL and add real PostgreSQL tests.
+- Next concrete action: commit tested implementation checkpoint, integrate latest main, push draft for mandatory real-container CI.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, prerequisites merged; preserve private ignored local state.
+
+P07 current checks: dependency/test compilation and isolated PostgreSQL18.6 manual SQL checks passed; mandatory full build fails locally at POSTGRES_TEST_START_FAILED (Docker daemon unavailable), so no migration-suite passing claim.
