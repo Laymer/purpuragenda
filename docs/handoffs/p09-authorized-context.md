@@ -2,7 +2,7 @@
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T14:30:34Z.
 - Current task: P09/authorized-context; branch: task/p09-authorized-context; base: main; PR URL: not yet created.
-- Last pushed implementation commit: 7906cfc merged b776269 in PR39; uncommitted changes: typed customer creation port/use case, application tests, cross-midnight availability fix and real PostgreSQL regression, plus ledger/evidence.
+- Last pushed implementation commit: 7906cfc merged b776269 in PR39; local checkpoint8f7c03b committed, uncommitted changes: current-main765cbf5 integration and reconciled ledger awaiting publication.
 - What works: PR39, P49 PR38 and P16 PR41 merged after exact-head independent reviews and all 13 checks. P15 PR40 merge confirmed 765cbf5. Native tools and Docker work. Typed creation and next-date availability regressions pass; both PostgreSQL availability cases pass after the reproduced fix.
 - What remains: current-main integration and independent exact-head review/CI; concrete CustomerBookingUnitOfWork session/grant adapter after P17 schema012. No public creation endpoint or atomic-storage acceptance is claimed for the unwired application port.
 - Decisions: derive identity and idempotency scope from locked persisted authority, never caller fields. Preserve immutable snapshots, separate quota charges, expected-failure reclamation and non-overridable overlap. Preserve original CREATE and exact-booking derived MANAGE grants. P50 remains paused; deployment/live SMTP/purchases remain manual.
