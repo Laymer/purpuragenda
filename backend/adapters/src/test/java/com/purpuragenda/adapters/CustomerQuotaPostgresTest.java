@@ -151,7 +151,7 @@ class CustomerQuotaPostgresTest {
     @Test void validUpgradePreservesExistingChargesAndUnchargedHistoricalBookings() {
         legacy();Booking b=create(0,Booking.Origin.CUSTOMER,true,false);create(1,Booking.Origin.CUSTOMER,false,false);
         String snapshot=f.snapshotHash(b.id());f.fixture.migrate(0);f.fixture.migrate(0);
-        assertEquals(9,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(10,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(snapshot,f.snapshotHash(b.id()));assertEquals(2,f.count("booking"));assertEquals(1,quota().requests());
     }
     @Test void upgradeRejectsMalformedHistoricalChargeIdentityDateOriginAndCounters() {
