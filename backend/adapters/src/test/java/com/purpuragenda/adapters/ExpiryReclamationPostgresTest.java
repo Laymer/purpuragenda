@@ -101,12 +101,26 @@ class ExpiryReclamationPostgresTest {
     }
     @Test void receiptCommittedByEarlierResourceLockOwnerIsIncludedWhenExpiryAcquiresLock() throws Exception {
         Booking booking=due();CountDownLatch inserted=new CountDownLatch(1),release=new CountDownLatch(1);
+        var physical=new org.springframework.jdbc.datasource.DriverManagerDataSource(MigrationTest.jdbcUrl,MigrationTest.APP,MigrationTest.appPassword);
+        Properties properties=new Properties();properties.setProperty("currentSchema",f.fixture.schema+",public");
+        properties.setProperty("ApplicationName","p09_expiry_barrier");physical.setConnectionProperties(properties);
+        var expiryUnit=new com.purpuragenda.adapters.out.postgres.PostgresScheduling(physical);
         try(ExecutorService workers=Executors.newFixedThreadPool(2)) {
             Future<Receipt> writer=workers.submit(()->f.unit.execute(f.key(),tx->{receipt(booking,250,"EUR");inserted.countDown();
                 try{assertTrue(release.await(10,TimeUnit.SECONDS));}catch(InterruptedException interrupted){Thread.currentThread().interrupt();throw new AssertionError("SYNTHETIC_INTERRUPTED");}return success();}));
             assertTrue(inserted.await(10,TimeUnit.SECONDS));
-            Future<Integer> expiry=workers.submit(this::reclaim);
-            try {assertThrows(TimeoutException.class,()->expiry.get(100,TimeUnit.MILLISECONDS));}
+            Future<Integer> expiry=workers.submit(()->{
+                int[] count={-1};expiryUnit.execute(f.key(),tx->{count[0]=ExpiryReclamation.reclaim(tx);return success();});return count[0];
+            });
+            try {
+                long deadline=System.nanoTime()+Duration.ofSeconds(3).toNanos();boolean waiting=false;
+                while(System.nanoTime()<deadline) {
+                    if(f.jdbc.queryForObject("SELECT count(*) FROM pg_stat_activity WHERE application_name='p09_expiry_barrier' AND wait_event_type='Lock' AND query LIKE 'SELECT id FROM scheduling_resource%FOR UPDATE'",Integer.class)>0){waiting=true;break;}
+                    Thread.sleep(10);
+                }
+                assertTrue(waiting,"Expiry connection must actually wait on the scheduling resource lock");
+                assertFalse(expiry.isDone());
+            }
             finally {release.countDown();}
             assertTrue(writer.get(10,TimeUnit.SECONDS).success());assertEquals(1,expiry.get(10,TimeUnit.SECONDS));
         }
