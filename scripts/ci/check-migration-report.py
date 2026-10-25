@@ -15,6 +15,8 @@ def validate(root):
 
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java').is_file():
         suites.append(('PublicSchedulingPostgresTest', 1))
+    if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java').is_file():
+        suites.append(('ExpiryReclamationPostgresTest', 6))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')

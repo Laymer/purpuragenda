@@ -12,7 +12,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; availability merged https://github.com/Laymer/purpuragenda/pull/24 at8d2ecf6 with12 green checks; expiry/quota/creation remain |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; availability PR24 merged8d2ecf6; expiry/financial-effects PR26 merged04d982d with12 green checks; quotas/creation remain |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T10:17:04Z.
+- Agent and UTC checkpoint: Codex, 2026-10-25T10:25:30Z.
 - Current task: P49/wsl-preflight; branch: task/p49-wsl-preflight; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/25.
-- Last pushed implementation commit: 3d05af1; uncommitted changes: current-main202fbc7 private-bootstrap reconciliation and actual native18-case evidence.
+- Last pushed implementation commit: 1809140; uncommitted changes: current-main04d982d expiry reconciliation, all prior13 checks green.
 - What works: P49 Mac bootstrap PR22 merged4233afd with actual host readiness; P43 SAST PR21 merged0454505 and P16 private bootstrap202fbc7 each passed12 checks.
 - What remains: read-only Windows preflight for explicit Ubuntu24.04/WSL2 and local Docker Desktop, synthetic native PowerShell tests and development instructions; actual Windows/WSL acceptance remains pending.
 - Decisions: preserve Kali/default distribution and all data; no automatic install, unregister, version conversion or Docker mutation. Native CI certifies the preflight tests, not a real WSL installation.
-- Verification:165 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally; actual Windows CI40184137651 passed the initial16-case suite and report gate. Added two actual child-process cases for argument/exit/stderr and timeout boundaries; actual18-case Windows CI40184316896 passed. Current combined full CI remains pending. No actual WSL acceptance is claimed. Independent agent review approved preflight/cases/report safety; native Windows CI remains required.
+- Verification:167 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally; actual Windows CI40184137651 passed the initial16-case suite and report gate. Added two actual child-process cases for argument/exit/stderr and timeout boundaries; actual18-case Windows CI40184316896 passed. Current202fbc7-based full CI40184505278 passed all13 checks; expiry04d982d integration requires a fresh result. No actual WSL acceptance is claimed. Independent agent review approved preflight/cases/report safety; native Windows CI remains required.
 - Next concrete action: require actual native PowerShell CI and all implemented categories before merge.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, P02/P49Mac/P43 foundations merged.

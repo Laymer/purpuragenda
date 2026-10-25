@@ -104,6 +104,27 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
     private final class Tx extends ViewState implements Transaction {
         Tx(Instant now,TransactionStatus status) { super(now,status); }
         public void save(Booking booking) { active();store.save(booking,now()); }
+        public List<Booking> duePending() { active();return store.duePending(now()); }
+        public void expiryEffects(UUID bookingId,long expiredVersion) {
+            active();
+            Integer count=jdbc.queryForObject("SELECT count(*) FROM booking WHERE id=? AND state='EXPIRED' AND version=?",
+                    Integer.class,bookingId,expiredVersion);
+            if(count==null || count!=1) throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            jdbc.update("""
+                INSERT INTO refund_obligation(receipt_id,due_minor,reason)
+                SELECT id,amount_minor,'EXPIRED' FROM payment_entry WHERE booking_id=? AND kind='RECEIPT'
+                ON CONFLICT(receipt_id) DO NOTHING
+                """,bookingId);
+            UUID event=UUID.nameUUIDFromBytes(("booking-expired/"+bookingId+"/"+expiredVersion).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            jdbc.update("""
+                INSERT INTO audit_event(id,booking_id,actor_kind,type,occurred_at,version)
+                VALUES(?,?,'SYSTEM','EXPIRED',?,?) ON CONFLICT(id) DO NOTHING
+                """,event,bookingId,Timestamp.from(now()),expiredVersion);
+            jdbc.update("""
+                INSERT INTO outbox_event(id,booking_id,type,version,created_at)
+                VALUES(?,?,'EXPIRED',?,?) ON CONFLICT(id) DO NOTHING
+                """,event,bookingId,expiredVersion,Timestamp.from(now()));
+        }
         public Receipt attempt(Supplier<Receipt> mutation) {
             active();
             Object savepoint=status.createSavepoint();
