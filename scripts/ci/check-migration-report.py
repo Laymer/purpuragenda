@@ -26,7 +26,9 @@ def validate(root):
     if (root / 'backend/adapters/src/main/resources/db/changelog/009-deferred-booking-invariants.sql').is_file():
         suites.append(('DeferredBookingIntegrityTest', 8))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java').is_file():
-        suites.append(('GuestAccessDatabaseTest', 13))
+        suites.append(('GuestAccessDatabaseTest', 14))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminRecovery.java').is_file():
+        suites.append(('AdminRecoveryDatabaseTest', 13))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')

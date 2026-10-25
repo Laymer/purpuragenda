@@ -4,12 +4,14 @@ import com.purpuragenda.adapters.out.email.*;
 import com.purpuragenda.adapters.out.security.*;
 import com.purpuragenda.application.port.out.AuthDeliveryStore.*;
 import com.purpuragenda.application.port.out.GuestAccessStore.*;
+import java.lang.reflect.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -27,10 +29,6 @@ class GuestAccessDatabaseTest {
     @AfterAll static void stop() { MigrationTest.stop(); }
     @BeforeEach void setup() throws Exception {
         database.fresh();
-        // Temporary pre-integration execution: production master waits for reserved migration010.
-        try(var c=database.connection(MigrationTest.MIGRATOR)) {
-            MigrationTest.execute(c,Files.readString(Path.of("src/main/resources/db/changelog/011-guest-access-grants.sql")));
-        }
         source=new PGSimpleDataSource(); source.setURL(MigrationTest.jdbcUrl); source.setUser(MigrationTest.APP);
         source.setPassword(MigrationTest.appPassword); source.setCurrentSchema(database.schema+",public");
         access=new PostgresGuestAccess(source); queue=new PostgresNotificationQueue(source,false);
@@ -38,12 +36,12 @@ class GuestAccessDatabaseTest {
         delivery=new PostgresAuthDeliveryStore(source,new Secrets(file,"delivery"),URI.create("https://example.test"),false);
     }
     @AfterEach void cleanup() { database.cleanup(); }
-    record Proof(UUID id,String token) { @Override public String toString() { return "Proof[REDACTED]"; } }
+    record Proof(UUID id,String token,Instant expiresAt) { @Override public String toString() { return "Proof[REDACTED]"; } }
     Proof issue(Purpose purpose,String email,UUID booking) {
         var receipt=delivery.issue(new Issue(email,purpose,booking,purpose==Purpose.CREATE || purpose==Purpose.ACCOUNT?BROWSER:null));
         var lease=queue.claimAuth().orElseThrow(); var message=delivery.prepare(lease).orElseThrow();
         String token=message.text().split("#token=",2)[1].split("&",2)[0]; assertTrue(queue.sent(lease));
-        return new Proof(receipt.challengeId(),token);
+        return new Proof(receipt.challengeId(),token,receipt.expiresAt());
     }
     Proof creation() { return issue(Purpose.CREATE,"synthetic@example.test",null); }
     Optional<Grant> redeem(Proof proof,Kind kind) { return access.redeem(new Redemption(proof.token(),kind,BROWSER)); }
@@ -77,11 +75,41 @@ class GuestAccessDatabaseTest {
         assertEquals(0,count("access_grant")); assertEquals(0,count("customer_identity")); assertNull(value("SELECT consumed_at FROM email_challenge WHERE id=?",proof.id()));
         assertTrue(redeem(proof,Kind.CREATE).isPresent());
     }
-    @Test void expiryEqualityAndConsumedChallengeNeverCreateGrants() {
+    @Test void expiredAndConsumedChallengeNeverCreateGrants() {
         for(String change:List.of("expires_at=clock_timestamp()","consumed_at=clock_timestamp()","expires_at=to_timestamp(0)")) {
             var proof=creation(); sql("UPDATE email_challenge SET "+change+" WHERE id=?",proof.id()); assertTrue(redeem(proof,Kind.CREATE).isEmpty());
         }
         assertEquals(0,count("customer_identity")); assertEquals(0,count("access_grant"));
+    }
+    @Test void capturedExpiryMinusOneMicrosecondSucceedsButEqualityAndAfterFail() {
+        for(long micros:new long[]{-1,0,1}) {
+            var proof=creation(); Instant captured=proof.expiresAt().plusNanos(micros*1000); var reads=new AtomicInteger();
+            var fixed=new PGSimpleDataSource() {
+                @Override public Connection getConnection() throws SQLException {
+                    var connection=source.getConnection();
+                    return proxy(Connection.class,(p,m,a)->{
+                        Object result=invoke(connection,m,a);
+                        if(!m.getName().equals("createStatement"))return result;
+                        var statement=(Statement)result;
+                        return proxy(Statement.class,(sp,sm,sa)->{
+                            Object rows=invoke(statement,sm,sa);
+                            if(!sm.getName().equals("executeQuery") || !"SELECT clock_timestamp()".equals(sa[0]))return rows;
+                            reads.incrementAndGet();
+                            return proxy(ResultSet.class,(rp,rm,ra)->rm.getName().equals("getTimestamp") && Integer.valueOf(1).equals(ra[0])
+                                    ?Timestamp.from(captured):invoke(rows,rm,ra));
+                        });
+                    });
+                }
+            };
+            var result=new PostgresGuestAccess(fixed).redeem(new Redemption(proof.token(),Kind.CREATE,BROWSER));
+            assertEquals(1,reads.get()); assertEquals(micros<0,result.isPresent());
+            result.ifPresent(grant->assertEquals(captured,grant.issuedAt()));
+        }
+        assertEquals(1,count("access_grant"));
+    }
+    static <T>T proxy(Class<T> type,InvocationHandler handler) { return type.cast(Proxy.newProxyInstance(type.getClassLoader(),new Class<?>[]{type},handler)); }
+    static Object invoke(Object target,Method method,Object[] arguments) throws Throwable {
+        try { return method.invoke(target,arguments); } catch(InvocationTargetException failed) { throw failed.getCause(); }
     }
     @Test void normalizedProofReusesStableIdentityWithoutRewritingVerificationOrMergingPlusAddresses() {
         var first=redeem(issue(Purpose.CREATE,"SYNTHETIC@EXAMPLE.TEST",null),Kind.CREATE).orElseThrow();
@@ -167,12 +195,11 @@ class GuestAccessDatabaseTest {
         assertEquals("GuestAccessStore[REDACTED]",access.toString());
     }
     @Test void upgradePreservesButRevokesLegacyUnboundAuthority() throws Exception {
-        database.newSchema(); database.migrate(9); UUID owner=UUID.randomUUID(),legacy=UUID.randomUUID();
+        database.newSchema(); database.migrate(10); UUID owner=UUID.randomUUID(),legacy=UUID.randomUUID();
         sql("INSERT INTO customer_identity VALUES(?,'legacy@example.test',clock_timestamp())",owner);
         sql("INSERT INTO access_grant(id,customer_id,kind,expires_at) VALUES(?,?,'CREATE',clock_timestamp()+interval '30 minutes')",legacy,owner);
-        try(var c=database.connection(MigrationTest.MIGRATOR)) {
-            MigrationTest.execute(c,Files.readString(Path.of("src/main/resources/db/changelog/011-guest-access-grants.sql")));
-        }
+        database.migrate(0); database.migrate(0);
+        assertEquals(11,database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,count("access_grant WHERE revoked_at IS NOT NULL AND issued_at IS NULL AND browser_hash IS NULL"));
         assertEquals(1,count("customer_identity")); database.denied("23514","UPDATE access_grant SET revoked_at=NULL WHERE id=?",legacy);
     }

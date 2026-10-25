@@ -169,13 +169,27 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic guest proof adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.GuestAccessDatabaseTest.xml')
-        for count, cases, nested in ((0,0,''), (12,12,''), (13,12,''), (14,13,''),
-                                     (13,13,'<failure/>'), (13,13,'<error/>'), (13,13,'<skipped/>')):
+        for count, cases, nested in ((0,0,''), (13,13,''), (14,13,''), (15,14,''),
+                                     (14,14,'<failure/>'), (14,14,'<error/>'), (14,14,'<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="13">'
-                          + '<testcase/>' * 13 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="14">'
+                          + '<testcase/>' * 14 + '</testsuite>')
+        GATE.validate(self.root)
+
+
+    def test_recovery_requires_real_atomic_revocation_and_reenrollment_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminRecovery.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic recovery adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdminRecoveryDatabaseTest.xml')
+        for count, status in ((0, {}), (12, {}), (13, {'failures': 1}), (13, {'errors': 1}), (13, {'skipped': 1})):
+            attrs = ' '.join(f'{key}="{value}"' for key, value in status.items())
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdminRecoveryDatabaseTest" tests="{count}" {attrs}/>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdminRecoveryDatabaseTest" tests="13"/>')
         GATE.validate(self.root)
 
 
