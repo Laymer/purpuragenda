@@ -166,6 +166,28 @@ All51 root+31 policy Python tests passed; full build108 domain+11 security+3 arc
 
 P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
 
+## P07 review checkpoint
+
+P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
+
+## P07 implementation checkpoint
+
+Adopted historical SQL changesets 001–006 byte-for-byte from recovery and appended 007. Additive corrections preserve actual-money amounts independently of service pricing, require finite booking times/pending ceilings/confirmation history, validate required snapshot fields and elapsed policy agreement, and prevent deleting or reassigning occupancy rows. Upgrade revalidates existing booking history. Role bootstrap uses separate migration/application credentials, default DML grants and revoked application access to Liquibase metadata.
+
+Exact Liquibase 5.0.4, PostgreSQL JDBC 42.7.14 and Testcontainers 2.0.5 Maven Central POM URLs returned 200 before adoption. `./mvnw --batch-mode --no-transfer-progress -pl backend/adapters -am test-compile` passed with the pinned toolchain. The new MigrationTest covers fresh/upgrade/rerun seeds, rejected inconsistent historical snapshots, immutable facts, real role denials/default grants, overlap/adjacency/state occupancy, finite bounds, snapshot policy/nulls, DST elapsed days and container restart persistence. Resource-only adapters now require reports.
+
+The mandatory full build failed locally inside and outside the sandbox at sanitized POSTGRES_TEST_START_FAILED because Docker has no reachable daemon; 108 domain tests passed before that failure. There is no passing full-build or migration-suite claim. Separate manual SQL checks used an isolated cached PostgreSQL18.6 cluster under /tmp/p07-postgres: migration syntax/seeds and synthetic pending ceiling, null snapshot, overlap, occupancy deletion and DST elapsed-day checks passed. These manual checks do not certify Testcontainers, Compose or the full Java migration suite. Required actual-container CI and independent review remain pending.
+
+P07 integrated P48 protection and P13 cryptography from main34836ed. Preserved both adapter dependency sets and the strict Python test runner. Actual-container CI remains pending.
+
+P07 first actual-container CI40176534341 at eb28055 failed at MigrationTest bootstrap in0.139s before SQL; domain108/security11 and documentation/delivery checks passed. Added controlled phase/exception-class diagnostics and mandatory Docker server/API/pinned-image preflight; no arbitrary provider message logging or weakened dependency gate. Integrated P12 contract foundationbc64f01 and its mandatory contract category.
+
+P07 bootstrap root cause reproduced offline: Testcontainers2.0.5 parses a combined `postgres:18.6-bookworm@sha256:...` string as repository `postgres:18.6-bookworm`, incompatible with PostgreSQLContainer. Use digest-only `postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc`, preserving the exact immutable image. Two pure parser regression tests pass; the real fresh-schema test requires server_version_num180006 and fsync=on (overriding Testcontainers' fsync-off default). Added a dedicated required MigrationTest report gate so unrelated adapter tests cannot mask an absent/incomplete suite; three synthetic report tests pass. Root Python suite now53 tests; test compilation passes. Actual-container CI after this correction remains pending.
+
+P07 integrated standing authorization main04282fa, preserving current owner launch choices and instructions. Targeted parser test invocation initially stopped at strict domain/empty-scaffold selector checks; rerun includes actual domain suites and permits only empty scaffolds to have no selected tests. No CI threshold or suite gate was weakened.
+
+P07 actual-container CI40176952153 at8803d53 ran all11 migration tests,9 passed and2 failed: restart readiness and a later connection setup. Docker can reallocate an ephemeral published port during restart while Testcontainers retains its initial inspect data. The existing restart persistence test now inspects current running state/bindings and reconnects through the fresh endpoint. Added no raw provider diagnostics. Integrated mandatory secret scanning from main8f5ed62. Corrected exact-head container rerun remains required.
+
 ## P12 Angular shell evidence
 
 Implemented only the standalone Material shell, real home/not-found routes, keyboard skip destination, system-font purple theme and typed generatedSDK wiring at same-origin /api/v1. No unavailable booking/account/admin links or startup API request. All exported SDK types compile through the test import. Six Angular tests cover shell navigation/landmarks, SDK HTTP/query/error behavior and bootstrap success/failure.
