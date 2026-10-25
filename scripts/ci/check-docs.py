@@ -111,7 +111,7 @@ def validate(root):
     errors.extend(validate_claims(root, ledger))
     for name in ('AGENTS.md', 'CLAUDE.md'):
         text = (root / name).read_text()
-        for reference in ('STATUS.md', 'docs/status.md'):
+        for reference in ('STATUS.md', 'docs/status.md', 'docs/decisions.md', 'docs/delivery.md'):
             if reference not in text:
                 errors.append(f'{name} must reference {reference}')
     return errors

@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/9; 15ba8b4 concurrency slice; original PR1 d4f78ac |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -67,9 +67,9 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p43, 2026-10-25T08:29:40Z.
 - Current task: P43/scanning-foundation; branch: task/p43-scanning-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/13.
-- Last pushed implementation commit: 3b681e3; uncommitted changes: integration of merged P12/P13 and reconciled scan handoff.
+- Last pushed implementation commit: 31183b9; uncommitted changes: integration of standing authorization04282fa.
 - What works: P48 protection, P13 cryptography and P12 contract foundations merged. What remains: exact-head CI and coordinator merge; dependency/SAST/SBOM/container/config remain later P43 slices.
 - Decisions: select a small secret-scanning slice first; no broad ignores or unsanitized scan output.
-- Verification: integrated 70 root +31 delivery-policy tests, full108 domain+11 adapters+3 architecture, contract regeneration and whitespace passed; no skips. Domain99.64%/97.75%, adapters95.89%/100%. Real scanner full history+110tracked files passed, zero findings.
+- Verification: integrated 71 root +31 delivery-policy tests, full108 domain+11 adapters+3 architecture, contract regeneration and whitespace passed; no skips. Domain99.64%/97.75%, adapters95.89%/100%. Real scanner full history+105tracked files passed, zero findings.
 - Next concrete action: verify integrated suites/contracts/scan, push and require exact-head CI plus independent approval.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; integrate newer main before final review.
