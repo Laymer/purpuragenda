@@ -1,0 +1,11 @@
+# Guest management recovery issuance
+
+- Agent and UTC checkpoint: Codex-worker-a, 2026-10-25T14:30:44Z.
+- Current task: P15/management-recovery; branch: task/p15-management-recovery; base: main; PR URL: not yet created. Starting revision765cbf5.
+- Last pushed implementation commit: fd353562043ab6fe1f0312fe1729241d228e9324, merged765cbf5 through PR40; uncommitted changes: exact recovery lookup/request, browser-aware email copy,4application/6realPG tests, mandatory report guard and evidence.
+- What works: PR40 GitHub merge confirmed at2026-10-25T14:22:40Z; workerB independently approved exactfd35356 and CI40201462721 passed every implemented category. Native350Java/6Angular/198Python,14realPG guest cases and allcoverage gates passed.
+- What remains: complete native and exact-head hosted checks plus independent final review of recovery implementation; no public endpoint before P17 sessions/CSRF/origin/throttles. Full P15 requires integration with P09 booking grant consumption and P17 session rotation.
+- Decisions: accept an exact public booking reference plus normalized current delivery address; return no matching identifier or history. Matching requests enqueue encrypted MANAGE delivery. Final locked redemption rechecks current contact and retains original ownership; races can create only inert old-contact links. No migration or changes to GuestAccessStore; preserve B's P17 ownership.
+- Verification:15report-guard cases,31delivery-policy cases, contract regeneration, live protection, docs/inventory/whitespace pass; full native build in progress after correcting test delimiters. Failed selection/compile evidence in artifacts/p15-management-failure/initial-checks.json. Coordinator reviewed current application/lookup code without blocker; realPG/full coverage and exact-head review/CI pending. No local-v1, public-authentication or release completion claim.
+- Next concrete action: await full native build, inspect complete reports/coverage, publish one tested checkpoint and draft PR, then obtain exact-head independent review and every implemented CI category.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; preserved worktree/private/tmp/purpuragenda-p15-guest-access and branch/task/p15-email-redemption; stacked PR dependencies: P15 redemption765cbf5 merged, P17 session exchange and public protections remain separate.
