@@ -9,7 +9,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
-| P06 — Complete external receipt, refund and reconciliation calculations | Draft PR; https://github.com/Laymer/purpuragenda/pull/6; P05 merged;  |
+| P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Recovered WIP; depends on P06;  |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; depends on P07;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; depends on P08;  |
@@ -43,7 +43,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; depends on P36;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; depends on P37; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; depends on P38; historical selected Chromium/Firefox journeys only |
-| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; depends on P39; historical Angular branch coverage 56.33%; gate failing |
+| P40 — Complete backend and Angular coverage enforcement with meaningful tests | In progress; coverage foundation slice; agent p40_coverage; task/p40-coverage-foundation; final acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; depends on P40; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; depends on P41; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; depends on P42;  |
@@ -57,13 +57,17 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
+## Active task claims
+
+- P40/coverage-foundation: agent=Codex-p40; branch=task/p40-coverage-foundation; base=main; handoff=docs/handoffs/p40-coverage-foundation.md
+
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T07:01:22Z.
-- Current task: P06; branch: task/p06-payment-ledger; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/6.
-- Last pushed implementation commit: 9cf267c28a2a9b101fa81a45c687c672e50c6645; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p06.
-- What works: P05 exact-head CI passed and merge 1470d88 confirmed. What remains: verify exact-head CI/reviews and squash-merge when green.
-- Decisions: price bounds apply to service prices; actual external receipt amounts remain independent. One ledger represents one booking. Outstanding refund takes precedence, fully returned late money must not hide retained paid funds.
-- Verification: bash scripts/ci/verify-build.sh passed 108 domain and three architecture tests, no skips; 276/277 lines (99.64%) and 478/489 branches (97.75%). Docker unavailable in both sandboxed and approved checks. Existing gate remains 95% lines / 90% branches.
-- Next concrete action: gh pr checks 6; gh pr view 6 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after rebasing onto merged P05.
+- Agent and UTC checkpoint: p40_coverage, 2026-10-25T08:02:26Z.
+- Current task: P40 coverage foundation; branch: task/p40-coverage-foundation; base: main at 8d7f62d; PR URL: pending.
+- Last pushed implementation commit: none for P40; uncommitted changes: P40 coverage foundation, tests and evidence before commit.
+- What works: P01–P06 merged. What remains: independent review and exact-head CI; P40 final application coverage acceptance remains later.
+- Decisions: retain domain/application 95% lines, enforce 90% lines elsewhere and 90% branches everywhere; no aggregate masking.
+- Verification: bash scripts/ci/verify-build.sh passed 108 domain + 3 architecture + 23 coverage-gate tests, zero skips; 276/277 domain lines and 478/489 branches; git diff --check passed.
+- Next concrete action: push tested commit, open draft P40 foundation PR, and request independent review.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none; coordinator reconciles shared ledger.
