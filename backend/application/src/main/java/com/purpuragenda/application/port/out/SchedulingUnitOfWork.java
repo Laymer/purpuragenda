@@ -1,6 +1,8 @@
 package com.purpuragenda.application.port.out;
 
 import com.purpuragenda.domain.DomainFailure;
+import com.purpuragenda.domain.booking.*;
+import com.purpuragenda.domain.scheduling.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -11,8 +13,17 @@ import java.util.function.*;
 /** One resource-serialized transaction. Database/framework types stay in the adapter. */
 public interface SchedulingUnitOfWork {
     Receipt execute(CommandKey key, Function<Transaction,Receipt> work);
-    interface Transaction {
+    <T> T read(Function<View,T> work);
+    interface View {
         Instant now();
+        List<ServiceDefinition> services();
+        SchedulingPolicy policy();
+        AvailabilityCalendar calendar();
+        Optional<Booking> booking(UUID id);
+        List<Booking> bookings(ReservationInterval interval);
+    }
+    interface Transaction extends View {
+        void save(Booking booking);
         /** Earlier reclamation survives expected failure; unexpected failure aborts the whole command. */
         Receipt attempt(Supplier<Receipt> mutation);
     }

@@ -11,7 +11,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; transaction core merged https://github.com/Laymer/purpuragenda/pull/18 at 6c1f96f; persistence slice active separately |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; core PR18 at6c1f96f; final exact-head CI40182468535 passed |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T09:44:04Z.
-- Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: native CI, reviewed GUI authorization and metadata integration ready for publication.
-- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2; P08core6c1f96f, P43dependency2c896ff and P14queuee917ee3 integrated.
+- Agent and UTC checkpoint: Codex, 2026-10-25T09:58:20Z.
+- Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/22.
+- Last pushed implementation commit: ba6f066; local tested native signer correction da5715c; uncommitted changes: current-main reconciliation and actual native/host evidence.
+- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2; P08core6c1f96f, P43dependency2c896ff and P14queuee917ee3 and P08persistence98c7535 integrated.
 - What remains: tested pinned Tailscale installer/readiness bootstrap and clear host runbook, independent review/CI. Public ingress, live deployment and real Mac acceptance remain manual later.
 - Decisions: prefer local bootstrap on Mac rather than SSHcredentials; preserve existing apps/state/volumes; never print tailnet identity/auth JSON/URLs/tokens; stop with nonzero pending status for interactive Mac/tailnet approval.
-- Verification: 15 synthetic bootstrap tests and Bash syntax pass; independent agent review approved; SSH read-only confirms actual target15.7.8/x86_64, DockerDesktop installed, Tailscale absent, native administrator authorization needed; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native CI and actual installation/readiness remain pending; no privileged host changes or public exposure yet.
-- Next concrete action: implement safe macOS bootstrap and synthetic command tests.
+- Verification: 17 synthetic bootstrap tests and Bash syntax pass; independent agent review approved; SSH read-only confirms actual target15.7.8/x86_64, DockerDesktop installed, Tailscale absent, native administrator authorization needed; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native Intel CI40181989864 macos-bootstrap passed actual checksum/signature/Gatekeeper and AppleScript compilation. All46 adapter tests passed but branch coverage89% blocked aggregate; queue owner investigating. Staged reviewed immutable files over authenticated SSH; actual --check returned TAILSCALE_NOT_INSTALLED. SSH native authorization returned -60007; local Terminal bootstrap installed Tailscale. Strict/deep app signature verified and corrected inline team requirement passed on actual host. Tailnet onboarding/full readiness pending, no public exposure.
+- Next concrete action: require native extracted-app CI, complete Mac tailnet onboarding and reconcile shared queue coverage fix.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; runtime/SMTP/ingress activation outside this slice.
