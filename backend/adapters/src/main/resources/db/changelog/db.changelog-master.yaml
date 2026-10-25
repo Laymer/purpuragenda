@@ -55,3 +55,11 @@ databaseChangeLog:
             path: 007-required-invariants.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 008-request-charge-invariants
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 008-request-charge-invariants.sql
+            relativeToChangelogFile: true
+            splitStatements: false

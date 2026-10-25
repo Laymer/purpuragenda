@@ -17,6 +17,8 @@ def validate(root):
         suites.append(('PublicSchedulingPostgresTest', 1))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java').is_file():
         suites.append(('ExpiryReclamationPostgresTest', 6))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresQuotaStore.java').is_file():
+        suites.append(('CustomerQuotaPostgresTest', 10))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminMfa.java').is_file():
         suites.append(('AdminMfaDatabaseTest', 11))
     for name, minimum in suites:

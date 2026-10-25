@@ -12,14 +12,14 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; availability PR24 merged8d2ecf6; expiry/financial-effects PR26 merged04d982d with12 green checks; quotas/creation remain |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; quotas PR28 merged f72bae2; availability PR24/expiry PR26 merged; creation remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; SMTP transport PR30 merged fc06c21; durable auth envelopes/delivery remain pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; SMTP PR30 merged fc06c21; auth delivery PR32 active separately |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; PAUSED owner request; recovery-isolation checkpoint; MFA PR29 merged d34a735; recovery persistence pending |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/33; recovery isolation resumed; MFA PR29 d34a735 and bootstrap PR27 202fbc7 merged; recovery persistence pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,15 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P16/recovery-isolation: agent=Codex-p16; branch=task/p16-scoped-recovery; base=main; handoff=docs/handoffs/p16-recovery-isolation.md
+- P16/recovery-isolation: agent=Codex-p16-resume; branch=task/p16-scoped-recovery; base=main; handoff=docs/handoffs/p16-recovery-isolation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p16, 2026-10-25T10:59:03Z; owner explicitly requested wrap-up and pause.
-- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main atfc06c21; PR URL: draft checkpoint creation follows initial push.
-- Last pushed implementation commit: none before this first checkpoint publication; uncommitted changes: all current foundation code/tests/evidence staged for one tested checkpoint.
-- What works: history guard blocks password-only provision/ordinary enrollment, including immutable audit fallback; enrolled full-factor authentication unchanged. Pure grant metadata policy/types only, no persistence/authorization capability. What remains: independent review, actual11-case MFA PostgreSQL/coverage CI and current-main integration; no completed recovery claim.
-- Decisions: PAUSED at explicit owner request; no new implementation, migration010/master edits, merges or deployment. Preserve schema reservations008quota/009bookingfix/010recovery. Initial-history cleanup must not reopenbootstrap; sessions need locked-factor/persisted-purpose-proof boundary.
-- Verification:171 strict root Python tests and docs/inventory passed. Full build passed6Angular tests/build100%coverage,108domain,41application and32adapterunit/SMTP tests; all8 mandatory PG fixture starts failed unavailableDocker, zero skips; architecture not reached. New PG history regression compiled but not run; no full-build/PG/adapter-coverage passing claim.
-- Next concrete action: only after owner resumes, git fetch origin then git merge --no-edit origin/main, reconcile quota008/f72bae2 and mandatory10quotaPG/8changeset guards, inspect draft CI/review, then continue010 only after009merges. Do not execute now.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-recovery; stacked PR dependencies: currentSMTPfc06c21 integrated, quota008f72bae2 not integrated, booking009 and recovery010 still pending. No committed migration edits.
+- Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:12:59Z.
+- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main f72bae2; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
+- Last pushed implementation commit: fd45305; uncommitted changes: current-main merge and resumed ledger reconciliation.
+- What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: independent review, real PostgreSQL and coverage CI; no full recovery claim.
+- Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
+- Verification: prior local results remain historical; fresh verification pending after current-main integration.
+- Next concrete action: run full implemented verification and publish tested integration for CI/review.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.

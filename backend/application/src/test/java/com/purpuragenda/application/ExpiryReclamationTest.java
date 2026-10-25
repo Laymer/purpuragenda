@@ -44,6 +44,8 @@ class ExpiryReclamationTest {
         int timeReads;boolean failEffects;
         @Override public Instant now(){timeReads++;return now;}
         public List<Booking> duePending(){return due;}
+        public com.purpuragenda.application.scheduling.CustomerQuota quota(UUID customer){throw new AssertionError("Expiry never changes quota");}
+        public boolean chargeCreated(Booking booking){throw new AssertionError("Expiry never charges");}
         public void save(Booking booking){steps.add("save");saved.add(booking);}
         public void expiryEffects(UUID id,long version){
             if(failEffects)throw new Failure(Failure.Kind.STORAGE_FAILURE);

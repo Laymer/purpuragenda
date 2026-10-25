@@ -1,9 +1,8 @@
-
-- Agent and UTC checkpoint: Codex-p16, 2026-10-25T10:59:03Z; owner explicitly requested wrap-up and pause.
-- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main atfc06c21; PR URL: draft checkpoint creation follows initial push.
-- Last pushed implementation commit: none before this first checkpoint publication; uncommitted changes: all current foundation code/tests/evidence staged for one tested checkpoint.
-- What works: history guard blocks password-only provision/ordinary enrollment, including immutable audit fallback; enrolled full-factor authentication unchanged. Pure grant metadata policy/types only, no persistence/authorization capability. What remains: independent review, actual11-case MFA PostgreSQL/coverage CI and current-main integration; no completed recovery claim.
-- Decisions: PAUSED at explicit owner request; no new implementation, migration010/master edits, merges or deployment. Preserve schema reservations008quota/009bookingfix/010recovery. Initial-history cleanup must not reopenbootstrap; sessions need locked-factor/persisted-purpose-proof boundary.
-- Verification:171 strict root Python tests and docs/inventory passed. Full build passed6Angular tests/build100%coverage,108domain,41application and32adapterunit/SMTP tests; all8 mandatory PG fixture starts failed unavailableDocker, zero skips; architecture not reached. New PG history regression compiled but not run; no full-build/PG/adapter-coverage passing claim.
-- Next concrete action: only after owner resumes, git fetch origin then git merge --no-edit origin/main, reconcile quota008/f72bae2 and mandatory10quotaPG/8changeset guards, inspect draft CI/review, then continue010 only after009merges. Do not execute now.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-recovery; stacked PR dependencies: currentSMTPfc06c21 integrated, quota008f72bae2 not integrated, booking009 and recovery010 still pending. No committed migration edits.
+- Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:12:59Z.
+- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main f72bae2; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
+- Last pushed implementation commit: fd45305; uncommitted changes: current-main merge and resumed ledger reconciliation.
+- What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: independent review, real PostgreSQL and coverage CI; no full recovery claim.
+- Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
+- Verification: prior local results remain historical; fresh verification pending after current-main integration.
+- Next concrete action: run full implemented verification and publish tested integration for CI/review.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.
