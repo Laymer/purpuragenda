@@ -1,0 +1,11 @@
+# Decisions
+
+2026-10-24: Adopt the supplied version 1 plan, including proposed defaults D01–D13 and P01–P18, as implementation requirements. See implementation-plan.md for the full register and external launch gates.
+
+Existing host Java25.0.3/Maven3.9.12/Node24.19.0 are bootstrap tools only; project toolchains are isolated and pinned.
+
+2026-10-24 security adjustment: Vitest/coverage-v8 5.0.1 -> 5.0.5 and Vite override8.3.3. The exact approved Angular build22.2.4 depends on Vite8.3.0, which npm audit reports as affected by GHSA-587h-7wmj-h5pm and related advisories. Vitest5.0.1 is affected by GHSA-xp26-3454-mjgp (maintainer advisory confirms5.0.3 fix). Pin patched compatible releases and rerun build/tests/audit; do not suppress the findings. Upstream: https://github.com/vitest-dev/vitest/security/advisories/GHSA-xp26-3454-mjgp .
+
+Adoptium's version-assets API returned404 for25.0.5+8; the official temurin25-binaries GitHub release contains the planned Linux archive and SHA256 sidecar. Resolve these official assets directly; no JDK-version deviation.
+
+Deployment remains manual. No hosted Sites registration is required for this repository-based Java/PostgreSQL/Angular application. The Sites skill's local-only path applies.
