@@ -12,6 +12,7 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.ui.LoggerUIService;
 import org.junit.jupiter.api.*;
+import com.github.dockerjava.api.model.ExposedPort;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.MountableFile;
@@ -26,7 +27,7 @@ class MigrationTest {
     static final String SERVICE="10000000-0000-0000-0000-000000000001";
     static final Instant START=Instant.parse("2026-11-01T10:00:00Z");
     static PostgreSQLContainer postgres;
-    static String appPassword, migratorPassword;
+    static String appPassword, migratorPassword, jdbcUrl;
     String schema;
     final List<String> schemas=new ArrayList<>();
 
@@ -40,6 +41,7 @@ class MigrationTest {
                     .withPassword(HexFormat.of().formatHex(SecureRandom.getSeed(32)))
                     .withCommand("postgres","-c","fsync=on");
             phase="CONTAINER_START"; postgres.start();
+            jdbcUrl=postgres.getJdbcUrl();
             phase="ROLE_FILES";
             postgres.execInContainer("mkdir","-p","/run/secrets");
             postgres.copyFileToContainer(Transferable.of(appPassword),"/run/secrets/app_password");
@@ -74,7 +76,7 @@ class MigrationTest {
         Properties properties=new Properties(); properties.setProperty("user",role);
         properties.setProperty("password",role.equals(APP)?appPassword:role.equals(MIGRATOR)?migratorPassword:postgres.getPassword());
         properties.setProperty("currentSchema",schema==null?"public":schema+",public");
-        try { return DriverManager.getConnection(postgres.getJdbcUrl(),properties); }
+        try { return DriverManager.getConnection(jdbcUrl,properties); }
         catch(SQLException failure) { throw safe(failure); }
     }
     void migrate(int count) {
@@ -259,10 +261,17 @@ class MigrationTest {
         booking(START,"PENDING_CONFIRMATION",snapshot());
         assertEquals(1,scalar(APP,"SELECT count(*) FROM booking"));
         postgres.getDockerClient().restartContainerCmd(postgres.getContainerId()).exec();
+        // Docker may allocate a new ephemeral host port. TC's initial inspect data is cached.
+        var inspect=postgres.getDockerClient().inspectContainerCmd(postgres.getContainerId()).exec();
+        assertTrue(Boolean.TRUE.equals(inspect.getState().getRunning()),"POSTGRES_RESTART_CONTAINER_STOPPED");
+        var bindings=inspect.getNetworkSettings().getPorts().getBindings().get(ExposedPort.tcp(5432));
+        assertNotNull(bindings,"POSTGRES_RESTART_PORT_MISSING");
+        assertTrue(bindings.length>0,"POSTGRES_RESTART_PORT_MISSING");
+        jdbcUrl="jdbc:postgresql://"+postgres.getHost()+":"+bindings[0].getHostPortSpec()+"/purpuragenda_test";
         long deadline=System.nanoTime()+Duration.ofSeconds(45).toNanos();
         boolean ready=false;
         while(System.nanoTime()<deadline) {
-            try(Connection ignored=DriverManager.getConnection(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())) { ready=true; break; }
+            try(Connection ignored=DriverManager.getConnection(jdbcUrl,postgres.getUsername(),postgres.getPassword())) { ready=true; break; }
             catch(SQLException unavailable) { try { Thread.sleep(100); } catch(InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new AssertionError("RESTART_INTERRUPTED"); } }
         }
         assertTrue(ready,"POSTGRES_RESTART_FAILED");

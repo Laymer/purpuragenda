@@ -136,6 +136,14 @@ P48 integrated P40 foundationbb7d4cf and replaced Python discovery entry points 
 
 P48 public CI exposed equivalent UTC/offset spellings of updated_at; version comparison now normalizes aware ISO timestamps to UTC and rejects missing/malformed/naive values. Millisecond-change and equivalent-offset regressions pass; the administrator receipt remains unchanged.
 
+## P43 secret-scanning foundation evidence
+
+Pinned Gitleaks8.30.1 official release: archive551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb matched both GitHub asset metadata and official checksum sidecar. Executable88f91962aa2f93ac6ab281d553b9e125f5197bbbce38f9f2437f7299c32e5509 was derived from the verified archive. Real canaries/full reachable history/current70tracked files passed with zero findings. Count-only reports omit source/token/path/author metadata; no raw scanner output is published.
+
+Guarded Python suites passed58 root tests (38 existing+20security) and31delivery-policy tests; full build passed108domain+3architecture, zero skips, domain276/277lines(99.64%) and478/489branches(97.75%). Missing/tampered tools, shallow history, missing/stale/malformed/inconsistent reports, canary failures and sensitive report shapes fail. Archive member/checksum and link-text-only tracked copying are tested. Whitespace passed. This completes only a foundation implementation, not P43 acceptance: dependency/SAST/SBOM/container/config categories remain pending. Exact-head CI and independent review remain required.
+
+P43 independent review found symlinked tracked-file ancestors could redirect reads; the wrapper now rejects them before reading/copying, while leaf links remain link-text-only. A synthetic outside-marker regression proves no external bytes are copied. The final58root/31policy/full108+3build and real zero-finding scan passed. Safe receipt upload pins official upload-artifactv4.6.2 at ea165f8d65b6e75b540449e92b4886f43607fa02, verified from its official GitHub tag.
+
 P12 prerequisite integration: P48 PR8 merge0c3ae04 reconciled; all50 root+31 delivery Python tests, full108domain+3architecture build and whitespace passed. Independent reviewed SDK safety fixes retained. Exact-head combined CI required before merge.
 
 ## P13 crypto implementation evidence
@@ -148,11 +156,15 @@ Initial sandbox build stopped at an unavailable write to the Maven cache; approv
 
 P13 delivery checkpoint: integrated P48 at0c3ae04 preserving its strict runners, live protection receipt and31 policy tests. Strict ledger/coverage38 tests, policy31 tests, commit policy and read-only live protection passed; integrated full build retained108+10+3 tests and95.89%/100% adapter coverage. Draft PR12 created; coordinator independently approved security code and millisecond-boundary fix. Added a further regression proving the loaded JCE key remains stable after its file is replaced/removed; final full rerun passed108 domain+11 adapter+3 architecture tests,38 ledger/coverage tests, zero skips; adapter coverage remains70/73 lines52/52 branches.
 
+P43 integrated P12 contract foundation bc64f01 and P13 cryptography34836ed, preserving contracts and delivery-policy jobs alongside mandatory secrets. Integrated checks passed:70 root tests,31policy tests,108domain+11adapter+3architecture, deterministic contract regeneration, full-history/current110tracked-file zero-finding scan and whitespace. Domain coverage99.64%/97.75%; adapters95.89%/100%. Independent re-review approved the ancestor-symlink fix and CI wiring. Exact-head CI remains required.
+
 ## P01 standing authorization evidence
 
 Recorded the owner's standing permission for routine approved implementation, tests, dependency downloads, GitHub configuration, task PRs/reviews/pushes/green merges. Tool controls remain binding; deployment, DNS/ingress activation, purchases and live customer communication retain separate manual decisions. Agent instruction validation now requires durable decision/delivery references; a new negative regression checks both files.
 
 All51 root+31 policy Python tests passed; full build108 domain+11 security+3 architecture passed without failures/errors/skips, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters. Deterministic contract drift, docs and whitespace passed. Independent agent review approved. Exact-head CI remains required.
+
+P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
 
 ## P07 review checkpoint
 
@@ -173,3 +185,5 @@ P07 first actual-container CI40176534341 at eb28055 failed at MigrationTest boot
 P07 bootstrap root cause reproduced offline: Testcontainers2.0.5 parses a combined `postgres:18.6-bookworm@sha256:...` string as repository `postgres:18.6-bookworm`, incompatible with PostgreSQLContainer. Use digest-only `postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc`, preserving the exact immutable image. Two pure parser regression tests pass; the real fresh-schema test requires server_version_num180006 and fsync=on (overriding Testcontainers' fsync-off default). Added a dedicated required MigrationTest report gate so unrelated adapter tests cannot mask an absent/incomplete suite; three synthetic report tests pass. Root Python suite now53 tests; test compilation passes. Actual-container CI after this correction remains pending.
 
 P07 integrated standing authorization main04282fa, preserving current owner launch choices and instructions. Targeted parser test invocation initially stopped at strict domain/empty-scaffold selector checks; rerun includes actual domain suites and permits only empty scaffolds to have no selected tests. No CI threshold or suite gate was weakened.
+
+P07 actual-container CI40176952153 at8803d53 ran all11 migration tests,9 passed and2 failed: restart readiness and a later connection setup. Docker can reallocate an ephemeral published port during restart while Testcontainers retains its initial inspect data. The existing restart persistence test now inspects current running state/bindings and reconnects through the fresh endpoint. Added no raw provider diagnostics. Integrated mandatory secret scanning from main8f5ed62. Corrected exact-head container rerun remains required.

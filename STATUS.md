@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/14; 04282fa standing authorization; prior coordination PR9 at15ba8b4 |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell assigned to separate worker |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell in separate worker |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,16 +46,16 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret-scanning foundation merged https://github.com/Laymer/purpuragenda/pull/13 at8f5ed62; remaining scan categories pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; final release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage and P48 protection foundations are merged; final application coverage and release publication remain pending. P07 migrations and P13 crypto are active in their separate task branches.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 scanning foundation is active. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
@@ -67,8 +67,8 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p07, 2026-10-25T08:13:28Z.
 - Current task: P07/migrations; branch: task/p07-migrations; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/7.
-- Last pushed implementation commit: dd482e3 review checkpoint; local implementation c10568c; pushed implementation eb28055; uncommitted changes: standing authorization integration; parser/report fixes in local cf09add; no force-push.
-- What works: P01/P40/P48 foundations and P13 crypto merged; P07 existing review findings retained. What remains: latest-main integration, actual-container CI and independent review.
+- Last pushed implementation commit: dd482e3 review checkpoint; local implementation c10568c; pushed implementation eb28055; uncommitted changes: mandatory secrets integration and real restart endpoint refresh regression.
+- What works: P01/P40/P48 foundations and P13 crypto merged; P07 existing review findings retained. What remains: corrected restart actual-container CI and final independent review.
 - Decisions: preserve recovered changesets 001–006 byte-for-byte; add corrections in 007+, use distinct DDL/DML roles and retain absolute overlap barrier.
 - Verification: 38 Python gate/ledger tests and full build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Docker daemon unavailable, no migration passing claim.
 - Next concrete action: push exact-digest parser fix and mandatory migration report gate, integrate latest main, require actual-container CI.
