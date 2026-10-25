@@ -27,7 +27,7 @@ class SchedulingCommandsTest {
     }
 
     @Test void everyExplicitBusinessFailureBecomesAnEmptyFailureReceiptInsideTheAttempt() {
-        Set<Code> expected=EnumSet.of(Code.SLOT_UNAVAILABLE,Code.SERVICE_UNAVAILABLE,Code.SERVICE_CHANGED,Code.POLICY_CHANGED,
+        Set<Code> expected=EnumSet.of(Code.SLOT_UNAVAILABLE,Code.SERVICE_UNAVAILABLE,Code.SERVICE_CHANGED,Code.POLICY_CHANGED,Code.NOTICE_CHANGED,Code.INVALID_BIRTH_DATE,
                 Code.START_NOT_FUTURE,Code.START_NOT_AVAILABLE,Code.MINIMUM_NOTICE,Code.OUTSIDE_HORIZON,
                 Code.DAILY_CAPACITY_REACHED,Code.ACTIVE_LIMIT_REACHED,Code.REQUEST_LIMIT_REACHED,Code.HARD_BLACKOUT,
                 Code.IMPOSSIBLE_PENDING_HOLD,Code.BLACKOUT_OVERRIDE_REQUIRED,Code.INVALID_TRANSITION,Code.HOLD_EXPIRED,
@@ -63,6 +63,8 @@ class SchedulingCommandsTest {
         assertThrows(NullPointerException.class,()->new SchedulingCommands(null));
         assertThrows(NullPointerException.class,()->commands.execute(null,tx->stored));
         assertThrows(NullPointerException.class,()->commands.execute(key,null));
+        assertThrows(NullPointerException.class,()->SchedulingCommands.within(null,()->stored));
+        assertThrows(NullPointerException.class,()->SchedulingCommands.within(unit,null));
     }
 
     static class Fixture extends ExpiryReclamationTest.Fake implements SchedulingUnitOfWork {
