@@ -44,11 +44,11 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         core = self.report.with_name('TEST-com.purpuragenda.adapters.TransactionCoreTest.xml')
-        for tests, skipped in ((0, 0), (10, 0), (11, 1)):
+        for tests, skipped in ((0, 0), (11, 0), (12, 1)):
             core.write_text(f'<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="{tests}" skipped="{skipped}"/>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        core.write_text('<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="11"/>')
+        core.write_text('<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="12"/>')
         GATE.validate(self.root)
 
     def test_booking_persistence_requires_real_roundtrip_cases(self):
@@ -216,6 +216,21 @@ class MigrationReportTest(unittest.TestCase):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdminRecoveryDatabaseTest" tests="{count}" {attrs}/>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdminRecoveryDatabaseTest" tests="13"/>')
+        GATE.validate(self.root)
+
+    def test_customer_creation_requires_authority_replay_rollback_and_twenty_way_races(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBooking.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic authorized creation adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerCreationPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (42,42,''), (43,42,''), (44,43,''),
+                                     (43,43,'<failure/>'), (43,43,'<error/>'), (43,43,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerCreationPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerCreationPostgresTest" tests="43">'
+                          + '<testcase/>' * 43 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_sessions_require_atomic_handoff_expiry_rollback_and_revocation_cases(self):

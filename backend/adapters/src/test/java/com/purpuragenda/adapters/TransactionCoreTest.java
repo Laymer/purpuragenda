@@ -181,4 +181,16 @@ class TransactionCoreTest {
         assertEquals(opaque.key(),jdbc.queryForObject("SELECT key FROM idempotency_record",String.class));
         assertEquals(expected,unit.execute(opaque,tx->{fail("Stored receipt must replay");return ok();}));
     }
+    @Test void maintenanceRejectsNewCommandsAndOldReceiptsBeforeWorkOrReclamation() {
+        CommandKey key=key();unit.execute(key,tx->ok());
+        jdbc.update("UPDATE operation_control SET maintenance=true WHERE id=1");
+        for(CommandKey blocked:List.of(key,key())) {
+            Failure failure=assertThrows(Failure.class,()->unit.execute(blocked,tx->{
+                jdbc.update("INSERT INTO progress VALUES(1)");throw new AssertionError("Maintenance cannot invoke work");
+            }));
+            assertEquals(Failure.Kind.MAINTENANCE,failure.kind());assertNull(failure.getCause());
+        }
+        assertEquals(0,count("progress"));assertEquals(1,count("idempotency_record"));
+        jdbc.update("UPDATE operation_control SET maintenance=false WHERE id=1");assertEquals(ok(),unit.execute(key,tx->fail("Receipt survives maintenance")));
+    }
 }
