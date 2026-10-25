@@ -133,11 +133,11 @@ class MigrationReportTest(unittest.TestCase):
         report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
         report.parent.mkdir(parents=True)
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
-        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 7, 'errors="1"'),
-                                  ('<testcase><skipped/></testcase>' * 7, ''), ('<testcase><error/></testcase>' * 7, '')):
-            report.write_text(f'<testsuite name="{qualified}" tests="7" {attributes}>{cases}</testsuite>')
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 9, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 9, ''), ('<testcase><error/></testcase>' * 9, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="9" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text(f'<testsuite name="{qualified}" tests="7">' + '<testcase/>' * 7 + '</testsuite>')
+        report.write_text(f'<testsuite name="{qualified}" tests="9">' + '<testcase/>' * 9 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_operator_migration_requires_its_own_database_report(self):

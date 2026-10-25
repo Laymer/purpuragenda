@@ -118,6 +118,65 @@ class RuntimeDatabaseTest {
             assertEquals(0,pool.getHikariPoolMXBean().getActiveConnections());
         }
     }
+    static byte[] decodeBase32(String value) {
+        var out=new java.io.ByteArrayOutputStream();int buffer=0,bits=0;
+        for(char c: value.toCharArray()) {
+            buffer=(buffer<<5)|"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".indexOf(c);bits+=5;
+            if(bits>=8){out.write((buffer>>(bits-8))&0xff);bits-=8;buffer&=(1<<bits)-1;}
+        }
+        return out.toByteArray();
+    }
+    static long count(String query) throws Exception {
+        try(var c=DriverManager.getConnection(postgres.getJdbcUrl(),"postgres",postgres.getPassword());var s=c.createStatement();var r=s.executeQuery(query)){r.next();return r.getLong(1);}
+    }
+    @Test @Order(6) void operatorRefusesWithoutPrivateTerminalAndCreatesNothing() throws Exception {
+        sql("DELETE FROM admin_user");
+        var failure=assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[]{"admin-setup"},properties));
+        assertEquals("APPLICATION_START_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(0,count("SELECT count(*) FROM admin_user"));
+        assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[]{"admin-setup","extra"},properties));
+    }
+    @Test @Order(7) void operatorWorkflowEnrollsOnceThroughRealPrivateUseCasesAndRefusesRepeat() throws Exception {
+        sql("DELETE FROM admin_user");
+        String password="synthetic operator phrase "+token().substring(0,8);
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            var bootstrap=context.getBean(PrivateAdminBootstrap.class);var mfa=context.getBean(PrivateAdminMfa.class);
+            var wrong=new AdminSetupTest.FakeTerminal(true);
+            wrong.lines.addAll(List.of("owner@example.test","000000","000000","000000","000000","000000"));
+            wrong.secrets.addAll(List.of(password,password));
+            assertEquals(1,new AdminSetup(bootstrap,mfa,wrong).run());
+            assertEquals(1,count("SELECT count(*) FROM admin_user WHERE NOT enrolled"));
+            assertEquals(0,count("SELECT count(*) FROM admin_recovery_code"));
+            assertTrue(wrong.shown.getLast().contains("enrollment is incomplete"));
+            sql("DELETE FROM admin_user");
+            var terminal=new AdminSetupTest.FakeTerminal(true) {
+                @Override public String line(String prompt) {
+                    if(!prompt.startsWith("Authenticator")) return super.line(prompt);
+                    String key=shown.getFirst().lines().filter(l->l.startsWith("Key: ")).findFirst().orElseThrow().substring(5);
+                    try {
+                        var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");
+                        return String.format("%06d",generator.generateOneTimePassword(new javax.crypto.spec.SecretKeySpec(decodeBase32(key),"HmacSHA1"),java.time.Instant.now()));
+                    } catch(java.security.GeneralSecurityException failure) { throw new AssertionError(); }
+                }
+            };
+            terminal.lines.add("owner@example.test");terminal.secrets.addAll(List.of(password,password));
+            assertEquals(0,new AdminSetup(bootstrap,mfa,terminal).run());
+            String output=String.join("\n",terminal.shown);
+            assertTrue(output.contains("otpauth://totp/Purpuragenda:owner%40example.test?secret="));
+            assertEquals(10,output.lines().filter(l->l.matches("[A-Za-z0-9_-]{43}")).count());
+            assertFalse(output.contains(password));
+            assertEquals(1,count("SELECT count(*) FROM admin_user WHERE enrolled AND enabled"));
+            assertEquals(10,count("SELECT count(*) FROM admin_recovery_code"));
+            String key=terminal.shown.getFirst().lines().filter(l->l.startsWith("Key: ")).findFirst().orElseThrow().substring(5);
+            String plain=Base64.getEncoder().encodeToString(decodeBase32(key));
+            assertEquals(0,count("SELECT count(*) FROM admin_user WHERE position('"+plain+"' in totp_secret)>0 OR totp_secret=''"));
+            var repeat=new AdminSetupTest.FakeTerminal(true);
+            repeat.lines.add("other@example.test");repeat.secrets.addAll(List.of(password,password));
+            assertEquals(1,new AdminSetup(bootstrap,mfa,repeat).run());
+            assertEquals(List.of("An administrator already exists; nothing was changed."),repeat.shown);
+            assertEquals(1,count("SELECT count(*) FROM admin_user"));
+        }
+    }
 
     static HttpResponse<String> call(int port,String method,String path,String... headers) throws Exception {
         try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
@@ -128,17 +187,17 @@ class RuntimeDatabaseTest {
         }
     }
     static String field(String body,String name) { return body.replaceAll(".*\"" + name + "\":\"([^\"]+)\".*","$1"); }
-    static String count(String sql) throws Exception {
+    static String text(String sql) throws Exception {
         try(var c=DriverManager.getConnection(postgres.getJdbcUrl(),"postgres",postgres.getPassword());var s=c.createStatement();var r=s.executeQuery(sql)){r.next();return r.getString(1);}
     }
     static final String ORIGIN="http://localhost:8080";
-    @Test @Order(6) void sessionLifecycleOverRealHttpUsesPersistedSessionsOriginAndCsrf() throws Exception {
+    @Test @Order(8) void sessionLifecycleOverRealHttpUsesPersistedSessionsOriginAndCsrf() throws Exception {
         sql("DELETE FROM app_session");
         try(var context=Purpuragenda.launch(new String[0],properties)) {
             int port=port(context);
             var denied=call(port,"POST","/api/v1/session/bootstrap");
             assertEquals(403,denied.statusCode());assertTrue(denied.body().contains("\"code\":\"ORIGIN_REJECTED\""));
-            assertEquals("no-store",denied.headers().firstValue("Cache-Control").orElseThrow());assertEquals("0",count("SELECT count(*) FROM app_session"));
+            assertEquals("no-store",denied.headers().firstValue("Cache-Control").orElseThrow());assertEquals("0",text("SELECT count(*) FROM app_session"));
             assertEquals(403,call(port,"POST","/api/v1/session/bootstrap","Origin","http://127.0.0.1:"+port).statusCode());
             assertEquals(403,call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Sec-Fetch-Site","cross-site").statusCode());
             var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Sec-Fetch-Site","same-origin","X-Forwarded-Host","evil.example");
@@ -146,8 +205,8 @@ class RuntimeDatabaseTest {
             String setCookie=boot.headers().firstValue("Set-Cookie").orElseThrow();
             assertTrue(setCookie.startsWith("purpuragenda-local=") && setCookie.contains("HttpOnly") && setCookie.contains("SameSite=Lax") && !setCookie.contains("Secure"));
             String cookie=setCookie.substring(0,setCookie.indexOf(';')),csrf=field(boot.body(),"csrfToken");
-            assertEquals("1",count("SELECT count(*) FROM app_session"));assertEquals("ANONYMOUS",field(boot.body(),"role"));
-            assertEquals("0",count("SELECT count(*) FROM app_session WHERE token_hash='"+cookie.substring(cookie.indexOf('=')+1)+"' OR csrf_hash='"+csrf+"'"));
+            assertEquals("1",text("SELECT count(*) FROM app_session"));assertEquals("ANONYMOUS",field(boot.body(),"role"));
+            assertEquals("0",text("SELECT count(*) FROM app_session WHERE token_hash='"+cookie.substring(cookie.indexOf('=')+1)+"' OR csrf_hash='"+csrf+"'"));
             var state=call(port,"GET","/api/v1/session","Cookie",cookie);
             assertEquals(200,state.statusCode());assertFalse(state.body().contains("csrfToken"));
             assertEquals(401,call(port,"GET","/api/v1/session").statusCode());
@@ -156,17 +215,17 @@ class RuntimeDatabaseTest {
             assertEquals(403,call(port,"POST","/api/v1/session/logout","Origin","http://evil.example","Cookie",cookie,"X-CSRF-Token",csrf).statusCode());
             var again=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Cookie",cookie);
             assertEquals(200,again.statusCode());assertTrue(again.headers().firstValue("Set-Cookie").isEmpty());
-            String rotated=field(again.body(),"csrfToken");assertNotEquals(csrf,rotated);assertEquals("1",count("SELECT count(*) FROM app_session"));
+            String rotated=field(again.body(),"csrfToken");assertNotEquals(csrf,rotated);assertEquals("1",text("SELECT count(*) FROM app_session"));
             assertEquals(403,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",csrf).statusCode());
             var out=call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated);
             assertEquals(204,out.statusCode());assertTrue(out.headers().firstValue("Set-Cookie").orElseThrow().contains("Max-Age=0"));
-            assertEquals("1",count("SELECT count(*) FROM app_session WHERE revoked_at IS NOT NULL"));
+            assertEquals("1",text("SELECT count(*) FROM app_session WHERE revoked_at IS NOT NULL"));
             assertEquals(401,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated).statusCode());
             assertEquals(401,call(port,"GET","/api/v1/session","Cookie",cookie).statusCode());
             assertEquals(401,call(port,"POST","/api/v1/admin/register","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated).statusCode());
         }
     }
-    @Test @Order(7) void expiredSessionsAreRefusedAndRebootstrapIssuesFreshAuthority() throws Exception {
+    @Test @Order(9) void expiredSessionsAreRefusedAndRebootstrapIssuesFreshAuthority() throws Exception {
         sql("DELETE FROM app_session");
         try(var context=Purpuragenda.launch(new String[0],properties)) {
             int port=port(context);
@@ -178,7 +237,7 @@ class RuntimeDatabaseTest {
             var fresh=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Cookie",cookie);
             assertEquals(200,fresh.statusCode());assertTrue(fresh.headers().firstValue("Set-Cookie").orElseThrow().startsWith("purpuragenda-local="));
             assertNotEquals(cookie,fresh.headers().firstValue("Set-Cookie").orElseThrow().split(";")[0]);
-            assertEquals("2",count("SELECT count(*) FROM app_session"));
+            assertEquals("2",text("SELECT count(*) FROM app_session"));
             assertEquals(200,get(port,"/actuator/health/readiness").statusCode());
         }
     }

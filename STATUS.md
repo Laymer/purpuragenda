@@ -61,8 +61,8 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P10/postgres-changes: agent=Claude-worker-a; branch=task/p10-postgres-changes; base=main; handoff=docs/handoffs/p10-postgres-changes.md
 - P17/http-session: agent=Claude-worker-b; branch=task/p17-http-session; base=main; handoff=docs/handoffs/p17-http-session.md
+- P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
 
 ## Active handoff
 
