@@ -1,0 +1,9 @@
+{
+  "name": "Purpuragenda complete security analysis",
+  "disable-default-queries": false,
+  "queries": [
+    {
+      "uses": "security-extended"
+    }
+  ]
+}

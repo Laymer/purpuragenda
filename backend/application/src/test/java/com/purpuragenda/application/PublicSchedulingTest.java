@@ -104,6 +104,18 @@ class PublicSchedulingTest {
         f.calendar=new AvailabilityCalendar(Map.of(),Map.of(LocalDate.parse("2026-01-02"),new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.CLOSED,List.of())),List.of(),1);
         assertTrue(on("2026-01-02","UTC").slots().isEmpty());
     }
+    @Test void completedMorningStillConsumesCapacityForEveningAndThirtyOneDatesAreAccepted() {
+        Booking pending=f.pending(Instant.parse("2026-01-02T08:00:00Z"));
+        Booking confirmed=pending.approve(f.now,Meeting.parse("https://zoom.us/j/123456789",Set.of("zoom.us")),Booking.ConfirmationBasis.MANUAL_APPROVAL);
+        f.now=Instant.parse("2026-01-02T11:00:00Z");
+        f.bookings=List.of(confirmed.outcome(f.now,Booking.State.COMPLETED,""));
+        f.policy=new SchedulingPolicy(1,30,1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO);
+        assertTrue(on("2026-01-02","America/New_York").slots().isEmpty());
+        var range=query.availability(f.service.id(),LocalDate.parse("2026-01-02"),LocalDate.parse("2026-02-01"),"UTC");
+        assertFalse(range.slots().isEmpty());
+        assertTrue(range.slots().stream().allMatch(slot->slot.start().isAfter(f.now)));
+        assertTrue(range.slots().stream().noneMatch(slot->slot.businessDate().equals(LocalDate.parse("2026-01-02"))));
+    }
     PublicScheduling.Availability on(String day,String zone) { return query.availability(f.service.id(),LocalDate.parse(day),LocalDate.parse(day),zone); }
     void assertCode(String code,Runnable action) { assertEquals(code,assertThrows(DomainFailure.class,action::run).code()); }
     static class Fixture implements SchedulingUnitOfWork,SchedulingUnitOfWork.View {

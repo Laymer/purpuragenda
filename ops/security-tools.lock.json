@@ -28,5 +28,37 @@
       "https://repo.maven.apache.org/maven2/org/cyclonedx/cyclonedx-maven-plugin/maven-metadata.xml",
       "https://cyclonedx.github.io/cyclonedx-maven-plugin/"
     ]
+  },
+  "codeql": {
+    "version": "2.27.3",
+    "actionCommit": "9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+    "provenance": [
+      "https://github.com/github/codeql-action/tree/9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+      "https://github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.3",
+      "https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/"
+    ],
+    "bundles": {
+      "java-kotlin": {
+        "canonical": "java",
+        "buildMode": "manual",
+        "url": "https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.3/codeql-bundle-java-linux64.tar.zst",
+        "size": 278796402,
+        "sha256": "8ba44c5caf0906f477163946bf4c16811e494ed43a717731a8bd226ab29f7065"
+      },
+      "python": {
+        "canonical": "python",
+        "buildMode": "none",
+        "url": "https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.3/codeql-bundle-python-linux64.tar.zst",
+        "size": 111248339,
+        "sha256": "ffb149bcbb0818f1017bec9f68d7b84693a7b0ac4a69b7be390a4f2825c3a170"
+      },
+      "javascript-typescript": {
+        "canonical": "javascript",
+        "buildMode": "none",
+        "url": "https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.3/codeql-bundle-javascript-linux64.tar.zst",
+        "size": 136251472,
+        "sha256": "95a1de65ac7f234ebbc49786eda82135819e2b0ac3b2c5d3263277ec5c020711"
+      }
+    }
   }
 }
