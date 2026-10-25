@@ -1,5 +1,11 @@
 # Implementation evidence
 
+## P09 command failure boundary — local implementation checkpoint
+
+Added `SchedulingCommands`, which reclaims expiry before the attempted mutation savepoint and translates only explicitly registered business failures into backward-compatible receipts. Unknown/control-code domain failures, storage failures and reclamation failures abort the whole transaction. No authentication or booking-creation endpoint is introduced.
+
+The supplemental host-tool run passed108domain+57application tests. With the P49 worker's verified native JDK25.0.5+8/Maven3.9.16/Node24.22.1/Python3.12.15 tools, the actual Docker PostgreSQL command suite passed5cases: expected-failure rollback of booking/charge with retained expiry effects, total rollback on unknown failure, exclusion-constraint conflict, concurrent replay/fingerprint conflict and every persisted receipt code. The full `PATH="$PWD/.toolchain/python/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH" TMPDIR=/private/tmp bash scripts/ci/verify-build.sh` passed locally:108domain/57application/147adapters/3architecture tests,6Angular tests and production build,185strictPython cases, zero skipped tests. Coverage counters: domain276/277lines478/489branches, application236/237lines265/266branches, adapters636/643lines518/552branches, Angular22/22lines30/30branches. Deterministic contract regeneration,31delivery-policy tests, live main protection, suite inventory/docs/whitespace passed. Worker C independently reviewed the implementation with no blocker; exact-commit review and all-category CI remain required. Existing external acceptance remains pending.
+
 Baseline inspected 2026-10-24: main at48b544dac501b9da5e304e9ba57451a668a83f06; README.md and .gitignore only; no applicable ancestor AGENTS.md. Original content preserved.
 
 ## Evidence authority
