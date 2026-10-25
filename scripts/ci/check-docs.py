@@ -75,9 +75,12 @@ def validate_claims(root, ledger):
 
 def validate(root):
     errors = []
-    required = ('AGENTS.md', 'CLAUDE.md', 'STATUS.md', 'docs/implementation-plan.md',
+    required = ('AGENTS.md', 'CLAUDE.md', 'STATUS.md', 'prompt.txt', 'docs/implementation-plan.md',
                 'docs/decisions.md', 'docs/status.md', 'docs/delivery.md')
     for name in required:
+        if name == 'prompt.txt' and (root / name).is_symlink():
+            errors.append('handoff prompt must be a regular repository file: prompt.txt')
+            continue
         if not (root / name).is_file() or not (root / name).read_text().strip():
             errors.append(f'missing or empty required document: {name}')
     if errors:
