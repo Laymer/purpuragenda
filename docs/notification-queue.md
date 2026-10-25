@@ -10,7 +10,7 @@ Renewal also checks process/global delivery suppression. Successful completion r
 
 ## Required verification
 
-The outbox foundation category is implemented under the mandatory build job. `check-queue-report.py` requires the exact real PostgreSQL class, at least ten executed test cases, matching counts, and zero failures/errors/skips. Generic adapter/unit tests cannot replace this suite. Source activation/inventory and per-module coverage remain mandatory. The P07 PostgreSQL fixture is reused through composition, with the shared JUnit resource lock retained for future parallel execution.
+The outbox foundation category is implemented under the mandatory build job. `check-queue-report.py` requires the exact real PostgreSQL class, at least eleven executed test cases, matching counts, and zero failures/errors/skips. Generic adapter/unit tests cannot replace this suite. Source activation/inventory and per-module coverage remain mandatory. The P07 PostgreSQL fixture is reused through composition, with the shared JUnit resource lock retained for future parallel execution.
 
 Real database scenarios cover20 independent workers for different jobs in one booking/audience; different audience/booking progress; a locked row and held advisory group lock; restart renewal; expiry/token rotation and stale completion; durable retry timing/terminal failure; restore suppression and missing control; malformed old leases; a datasource defaulting to REPEATABLE READ, and a pg_stat_activity-confirmed row-lock wait extending past expiry. Pure application tests check inclusive expiry and redacted diagnostics. Storage-failure tests require fixed cause-free errors. Every fixture is synthetic; token comparisons are boolean and no provider error or token enters a report.
 
