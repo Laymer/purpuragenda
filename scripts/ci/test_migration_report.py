@@ -66,6 +66,21 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.BookingPersistenceTest" tests="10"/>')
         GATE.validate(self.root)
 
+    def test_public_availability_requires_database_backed_evidence(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic implemented query')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.PublicSchedulingPostgresTest.xml')
+        for count, skipped in ((0, 0), (1, 1)):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="{count}" skipped="{skipped}"/>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="1"/>')
+        GATE.validate(self.root)
+
 
     def test_private_bootstrap_requires_its_own_real_database_report(self):
         self.write()

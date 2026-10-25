@@ -11,13 +11,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; transaction core PR18 at6c1f96f |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; availability merged https://github.com/Laymer/purpuragenda/pull/24 at8d2ecf6; creation, quotas and expiry remain |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue correction merged https://github.com/Laymer/purpuragenda/pull/23 at6afe0e1; SMTP/auth delivery active separately |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation PR19 e917ee3 and deterministic correction PR23 6afe0e1 merged; SMTP delivery remains pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap/password slice; atomic MFA/recovery pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -72,4 +72,4 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - Decisions:15–128 Unicode codepoints, reject unpaired surrogates/ISO controls, no trim/normalization/truncation; fixed Argon2id64MiB/3/p1; bootstrap remains unenrolled/unusable until MFA. No public entrypoint or argv/env credential fallback.
 - Verification: independent root core/eight-PG-case review approved;163 strict root Python tests,108domain+11application+22adapter unit tests and all-module test compilation passed. Full local build failed all5 mandatory PG fixture starts at unavailable Docker, zero skips, after6Angular tests/build100%coverage and Java unit suites. No actual PG or full-build passing claim. Prior SAST exact-head CI40183118747 at6429156 all12 checks passed and independently reviewed.
 - Next concrete action: publish draft, integrate P09 current main and require actual PG/coverage/all mandatory categories.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P14 deterministic coverage correction6afe0e1 integrated; P09 availability8d2ecf6 pending integration.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P14 deterministic coverage correction6afe0e1 integrated; P09 availability8d2ecf6 integrated including mandatory PG report.
