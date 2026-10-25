@@ -83,8 +83,8 @@
     },
     "dependencies": {
       "owner": "P43",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "dependencies"
     },
     "sbom": {
       "owner": "P43",

@@ -8,6 +8,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import tempfile
+from artifact_paths import remove_artifact, write_artifact
 
 ROOT = Path(__file__).resolve().parents[2]
 BINARY = ROOT / '.cache/security/gitleaks'
@@ -84,8 +85,7 @@ def tracked_copy(root, destination):
 
 
 def run(root, binary, pin, receipt):
-    if receipt.exists():
-        receipt.unlink()  # No stale passing receipt after a dependency/tool/report failure.
+    remove_artifact(root, receipt)  # No stale receipt or link-following cleanup.
     verify_binary(binary, pin)
     if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
         raise ValueError('Secret scan requires complete Git history')
@@ -114,8 +114,7 @@ def run(root, binary, pin, receipt):
                    'commit': head, 'trackedFiles': files,
                    'historyFindings': history, 'trackedTreeFindings': working,
                    'passed': not (history or working)}
-        receipt.parent.mkdir(parents=True, exist_ok=True)
-        receipt.write_text(json.dumps(summary, indent=2) + '\n')
+        write_artifact(root, receipt, json.dumps(summary, indent=2) + '\n')
         if not summary['passed']:
             raise ValueError('Secret findings block this revision; review privately with redaction')
     return summary
