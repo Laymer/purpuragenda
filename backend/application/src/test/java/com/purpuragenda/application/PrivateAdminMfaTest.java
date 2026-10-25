@@ -13,10 +13,11 @@ class PrivateAdminMfaTest {
     final List<RecoveryCode> issued=new ArrayList<>();
     final Instant now=Instant.parse("2026-10-25T10:00:00Z");
     Credential credential=new Credential(UUID.randomUUID(),"synthetic-hash",false,-1,new Secret(new byte[20]));
-    long nextStep=7,lastAccepted=-1,previous;int writes;boolean failCommit;byte[] borrowed;Object prepared;
+    long nextStep=7,lastAccepted=-1,previous;int writes;boolean failCommit;boolean initial=true;byte[] borrowed;Object prepared;
     final Admin context=new Admin() {
         public Instant now() { return now; }
         public Optional<Credential> credential() { return Optional.ofNullable(credential); }
+        public boolean initialEnrollment() { return initial; }
         public void enroll(long step,List<String> hashes) { assertEquals(10,new HashSet<>(hashes).size());writes++;lastAccepted=step; }
         public void acceptStep(long step) { writes++;lastAccepted=step; }
     };
@@ -74,6 +75,12 @@ class PrivateAdminMfaTest {
         char[] password=password();assertTrue(mfa.authenticate("owner@example.test",password,"synthetic"));cleared(password);
         assertEquals(6,previous);assertEquals(7,lastAccepted);assertEquals(1,writes);assertTrue(issued.isEmpty());
         credential=null;assertFalse(mfa.authenticate("owner@example.test",password(),"synthetic"));
+    }
+    @Test void recoveryHistoryBlocksPasswordOnlyProvisioningAndEnrollmentButNotFullFactorVerification() {
+        initial=false;char[] password=password();
+        assertTrue(mfa.provision("owner@example.test",password).isEmpty());cleared(password);
+        assertTrue(mfa.enroll("owner@example.test",password(),"synthetic").isEmpty());assertEquals(0,writes);assertTrue(issued.isEmpty());
+        enabled();assertTrue(mfa.authenticate("owner@example.test",password(),"synthetic"));assertEquals(1,writes);
     }
     @Test void failedCommitErasesUnreturnedProvisioningSecretCopy() {
         byte[] initial=new byte[20];Arrays.fill(initial,(byte)7);

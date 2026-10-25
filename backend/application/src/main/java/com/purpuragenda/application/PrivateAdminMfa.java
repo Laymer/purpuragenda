@@ -19,7 +19,7 @@ public final class PrivateAdminMfa {
         try {
             return withPassword(email,password,admin->{
                 var value=admin.credential();
-                if(value.isEmpty() || value.get().enrolled() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
+                if(value.isEmpty() || value.get().enrolled() || !admin.initialEnrollment() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
                 byte[] bytes=value.get().secret().bytes();
                 try { var secret=new Secret(bytes);prepared.add(secret);return Optional.of(secret); }
                 finally { Arrays.fill(bytes,(byte)0); }
@@ -31,7 +31,7 @@ public final class PrivateAdminMfa {
         try {
             return withPassword(email,password,admin->{
                 var value=admin.credential();
-                if(value.isEmpty() || value.get().enrolled() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
+                if(value.isEmpty() || value.get().enrolled() || !admin.initialEnrollment() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
                 long step=step(admin,value.get(),code);if(step<0)return Optional.empty();
                 for(int i=0;i<10;i++)issued.add(factors.recoveryCode());
                 admin.enroll(step,issued.stream().map(RecoveryCode::hash).toList());

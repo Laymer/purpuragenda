@@ -39,29 +39,34 @@ public final class PostgresAdminMfa implements AdminMfaUnitOfWork {
         }
         Instant now;
         try(var query=connection.createStatement();var row=query.executeQuery("SELECT clock_timestamp()")) { row.next();now=row.getTimestamp(1).toInstant(); }
-        Credential credential=null;
+        Credential credential=null;boolean initial=false;
         if(id!=null) {
+            try(var query=connection.prepareStatement("SELECT NOT EXISTS(SELECT 1 FROM admin_recovery_code WHERE admin_id=?) AND NOT EXISTS(SELECT 1 FROM audit_event WHERE actor_id=? AND type='ADMIN_MFA_ENROLLED')")) {
+                query.setObject(1,id);query.setObject(2,id);try(var row=query.executeQuery()) { row.next();initial=row.getBoolean(1); }
+            }
             byte[] raw=Base64.getDecoder().decode(secrets.decrypt(encrypted));
             try {
                 if(raw.length!=20 || previous < -1 || !Argon2PasswordHash.validEncoding(hash))throw unavailable();
                 credential=new Credential(id,hash,enrolled,previous,new Secret(raw));
             } finally { Arrays.fill(raw,(byte)0); }
         }
-        return new Context(connection,now,credential);
+        return new Context(connection,now,credential,initial);
     }
     private static IllegalStateException unavailable() { return new IllegalStateException("ADMIN_MFA_UNAVAILABLE"); }
     private static final class Context implements Admin,AutoCloseable {
         private final Connection connection;
         private final Instant captured;
         private final Credential credential;
+        private final boolean initial;
         private final Thread owner=Thread.currentThread();
         private boolean active=true;
-        Context(Connection connection,Instant captured,Credential credential) { this.connection=connection;this.captured=captured;this.credential=credential; }
+        Context(Connection connection,Instant captured,Credential credential,boolean initial) { this.connection=connection;this.captured=captured;this.credential=credential;this.initial=initial; }
         private void check() { if(!active || owner!=Thread.currentThread())throw new IllegalStateException("ADMIN_MFA_CONTEXT_CLOSED"); }
         @Override public Instant now() { check();return captured; }
         @Override public Optional<Credential> credential() { check();return Optional.ofNullable(credential); }
+        @Override public boolean initialEnrollment() { check();return initial; }
         @Override public void enroll(long step,List<String> hashes) {
-            check();if(credential==null || credential.enrolled() || hashes.size()!=10 || new HashSet<>(hashes).size()!=10)throw unavailable();
+            check();if(credential==null || credential.enrolled() || !initial || hashes.size()!=10 || new HashSet<>(hashes).size()!=10)throw unavailable();
             for(String hash:hashes)if(!hash.matches("[a-f0-9]{64}"))throw unavailable();
             update(step,"UPDATE admin_user SET enrolled=true,last_totp_step=? WHERE id=? AND NOT enrolled AND last_totp_step<?");
             try(var insert=connection.prepareStatement("INSERT INTO admin_recovery_code(id,admin_id,code_hash) VALUES (?,?,?)")) {
