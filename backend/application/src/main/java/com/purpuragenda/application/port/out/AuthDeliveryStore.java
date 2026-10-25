@@ -20,5 +20,7 @@ public interface AuthDeliveryStore {
     }
     record Receipt(UUID challengeId, UUID jobId, Instant expiresAt) { }
     Receipt issue(Issue issue);
+    /** Bounded, no-decryption cleanup. Live leases remain owned by their worker. */
+    int eraseExpired();
     Optional<MailDelivery.Message> prepare(NotificationQueue.Lease lease);
 }

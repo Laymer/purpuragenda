@@ -18,7 +18,10 @@ public final class PostgresNotificationQueue implements NotificationQueue {
         this.source = Objects.requireNonNull(source); this.suppressed = suppressed;
     }
 
-    @Override public Optional<Lease> claim() {
+    @Override public Optional<Lease> claim() { return claim(false); }
+    @Override public Optional<Lease> claimAuth() { return claim(true); }
+
+    private Optional<Lease> claim(boolean authOnly) {
         if (suppressed) return Optional.empty();
         return transaction(c -> {
             try (var query = c.prepareStatement("SELECT delivery_suppressed FROM operation_control WHERE id=1 FOR SHARE");
@@ -29,20 +32,20 @@ public final class PostgresNotificationQueue implements NotificationQueue {
             Instant now = now(c);
             update(c, """
                 UPDATE notification_job SET state='QUEUED',lease_until=NULL,lease_token=NULL
-                WHERE id IN (SELECT id FROM notification_job WHERE state='LEASED'
+                WHERE id IN (SELECT id FROM notification_job WHERE state='LEASED' AND (NOT ? OR (template='AUTH' AND audience='CUSTOMER'))
                   AND (lease_until<=? OR lease_until IS NULL OR lease_token IS NULL)
                   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 100)
-                """, now);
+                """, authOnly, now);
             UUID id; String group;
             try (var query = c.prepareStatement("""
                 SELECT j.id,COALESCE(j.booking_id,j.challenge_id,j.id)::text||':'||j.audience
-                FROM notification_job j WHERE j.state='QUEUED' AND j.due_at<=?
+                FROM notification_job j WHERE j.state='QUEUED' AND j.due_at<=? AND (NOT ? OR (j.template='AUTH' AND j.audience='CUSTOMER'))
                   AND NOT EXISTS (SELECT 1 FROM notification_job l WHERE l.state='LEASED'
                     AND COALESCE(l.booking_id,l.challenge_id,l.id)=COALESCE(j.booking_id,j.challenge_id,j.id)
                     AND l.audience=j.audience)
                 ORDER BY j.due_at,j.id FOR UPDATE OF j SKIP LOCKED LIMIT 1
                 """)) {
-                query.setTimestamp(1, Timestamp.from(now));
+                query.setTimestamp(1, Timestamp.from(now)); query.setBoolean(2, authOnly);
                 try (var result = query.executeQuery()) {
                     if (!result.next()) return Optional.empty();
                     id = result.getObject(1, UUID.class); group = result.getString(2);
@@ -100,7 +103,7 @@ public final class PostgresNotificationQueue implements NotificationQueue {
             Instant due = now.plusSeconds(success || attempts > RETRIES.length ? 0 : RETRIES[attempts - 1]);
             update(c, """
                 UPDATE notification_job SET state=?,due_at=CASE WHEN ?='SENT' THEN due_at ELSE ? END,lease_until=NULL,lease_token=NULL,
-                  encrypted_envelope=CASE WHEN ?='SENT' THEN NULL ELSE encrypted_envelope END,safe_error=? WHERE id=?
+                  encrypted_envelope=CASE WHEN ? IN ('SENT','FAILED') THEN NULL ELSE encrypted_envelope END,safe_error=? WHERE id=?
                 """, state, state, due, state, success ? null : "SMTP_DELIVERY_FAILED", lease.id());
             update(c, "INSERT INTO delivery_attempt(id,job_id,attempted_at,success,safe_code,lease_token) VALUES(?,?,?,?,?,?)",
                     UUID.randomUUID(), lease.id(), now, success, success ? null : "SMTP_DELIVERY_FAILED", lease.token());
