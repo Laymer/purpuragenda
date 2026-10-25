@@ -6,7 +6,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | --- | --- |
 | P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/1; d4f78ac |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
-| P03 — Adopt money, service values, intake validation and reservation intervals | In progress; claimed by Codex; P02 merged https://github.com/Laymer/purpuragenda/pull/2;  |
+| P03 — Adopt money, service values, intake validation and reservation intervals | Draft PR; https://github.com/Laymer/purpuragenda/pull/3; P02 merged;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Recovered WIP; depends on P03;  |
 | P05 — Complete immutable booking snapshots and state transitions | Recovered WIP; depends on P04;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Recovered WIP; depends on P05;  |
@@ -60,10 +60,10 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex, 2026-10-25T06:30:00Z.
-- Current task: P03; branch: task/p03-domain-values; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for P03; uncommitted changes: task claim, then adopted domain values in /tmp/purpuragenda-p03.
-- What works: P02 local build passed; P02 exact-head CI passed and merged at d0c5978. What remains: move onto merged main, open draft PR and inspect CI/reviews.
+- Current task: P03; branch: task/p03-domain-values; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/3.
+- Last pushed implementation commit: 7a494919dfbef5fbc52eb505b1168c7e03d3fadf; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p03.
+- What works: P02 local build passed; P02 exact-head CI passed and merged at d0c5978. What remains: inspect exact-head CI/reviews and squash-merge when green.
 - Decisions: retain generic half-open intervals for blackouts; reserve factory always creates exactly 120 elapsed minutes. No scheduling policy/state code adopted yet.
 - Verification: bash scripts/ci/verify-build.sh passed 44 domain tests and three architecture tests; domain 54/55 lines (98.18%) and 91/92 branches (98.91%) exceed 95%/90%. Coverage XML required. git diff --check passed. Corrected fixture failures retained in docs/status.md.
-- Next concrete action: commit P03, rebase onto origin/main, push and open draft PR.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b. stacked PR dependencies: P02 (PR 2) merged; move P03 onto main before opening PR.
+- Next concrete action: gh pr checks 3; gh pr view 3 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b. stacked PR dependencies: none; P03 rebased onto merged P02 before first push.
