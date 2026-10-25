@@ -19,7 +19,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation PR19 e917ee3 and deterministic correction PR23 6afe0e1 merged; SMTP delivery remains pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; atomic MFA slice; bootstrap PR27 merged202fbc7; recovery remains pending |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/29; atomic MFA; bootstrap PR27 merged202fbc7; recovery pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -65,11 +65,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p16, 2026-10-25T10:37:11Z.
-- Current task: P16/atomic-mfa; branch: task/p16-atomic-mfa; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for this slice; uncommitted changes: tested atomic MFA workflow/ports/crypto/JDBC plus ten PostgreSQL cases and report guard.
+- Agent and UTC checkpoint: Codex-p16, 2026-10-25T10:41:34Z.
+- Current task: P16/atomic-mfa; branch: task/p16-atomic-mfa; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/29.
+- Last pushed implementation commit:e54f07a; uncommitted changes: provisioning copy cleanup on failed commit and regression, plus published handoff/evidence update.
 - What works: private bootstrap PR27 merged202fbc7, all12checks and8realPG cases passed. What remains: private password-proven TOTP provisioning/enrollment, atomic accepted-step auth and initial10hashed recovery-code issuance; recovery redemption/forced reenrollment remains a later slice.
 - Decisions: one admin row lock and captured authoritative DB time; password+TOTP required; no HTTP/CLI/session/owner-credential wiring. Sensitive provisioning/recovery outputs must be explicitly private/redacted; no reusable authorization capability is issued.
-- Verification: bootstrap actual coverage domain276/277lines478/489branches; application87/88lines113/114branches; adapters360/364lines255/272branches. New targeted108domain+31application+24adapter unit tests,168 strict root Python, docs/inventory and all-module test compilation passed. Full build passed6Angular tests/100%coverage and unit suites, then failed all8 mandatory PG fixture starts because Docker is unavailable; zero skips. No PG/full-build/adapter-coverage acceptance claimed.
-- Next concrete action: publish draft for independent review and actual ten-case PostgreSQL/coverage/all-category CI.
+- Verification: bootstrap actual coverage domain276/277lines478/489branches; application87/88lines113/114branches; adapters360/364lines255/272branches. New targeted108domain+32application+24adapter unit tests,168 strict root Python, docs/inventory and all-module test compilation passed. Full build passed6Angular tests/100%coverage and unit suites, then failed all8 mandatory PG fixture starts because Docker is unavailable; zero skips. Actual initial-head CI40185599785 ate54f07a passed all13 checks and all10 MFA PG cases; new cleanup fix requires a fresh exact-head run.
+- Next concrete action: push tested provisioning cleanup fix and require independent review plus fresh all-category CI.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; previous local worktree/tmp/purpuragenda-p16-bootstrap only has historical handoff updates now reconciled here; stacked PR dependencies: bootstrap202fbc7 merged, P49 Windows preflight7d7f19e and expiry04d982d integrated with required suites.

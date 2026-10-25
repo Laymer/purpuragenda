@@ -13,7 +13,7 @@ class PrivateAdminMfaTest {
     final List<RecoveryCode> issued=new ArrayList<>();
     final Instant now=Instant.parse("2026-10-25T10:00:00Z");
     Credential credential=new Credential(UUID.randomUUID(),"synthetic-hash",false,-1,new Secret(new byte[20]));
-    long nextStep=7,lastAccepted=-1,previous;int writes;boolean failCommit;byte[] borrowed;
+    long nextStep=7,lastAccepted=-1,previous;int writes;boolean failCommit;byte[] borrowed;Object prepared;
     final Admin context=new Admin() {
         public Instant now() { return now; }
         public Optional<Credential> credential() { return Optional.ofNullable(credential); }
@@ -22,7 +22,7 @@ class PrivateAdminMfaTest {
     };
     final AdminMfaUnitOfWork store=new AdminMfaUnitOfWork() {
         public <T>T locked(String email,Function<Admin,T> work) {
-            assertTrue(email.equals("owner@example.test"));T result=work.apply(context);
+            assertTrue(email.equals("owner@example.test"));T result=work.apply(context);prepared=result;
             if(failCommit)throw new IllegalStateException("SYNTHETIC_COMMIT_FAILURE");return result;
         }
     };
@@ -74,6 +74,15 @@ class PrivateAdminMfaTest {
         char[] password=password();assertTrue(mfa.authenticate("owner@example.test",password,"synthetic"));cleared(password);
         assertEquals(6,previous);assertEquals(7,lastAccepted);assertEquals(1,writes);assertTrue(issued.isEmpty());
         credential=null;assertFalse(mfa.authenticate("owner@example.test",password(),"synthetic"));
+    }
+    @Test void failedCommitErasesUnreturnedProvisioningSecretCopy() {
+        byte[] initial=new byte[20];Arrays.fill(initial,(byte)7);
+        credential=new Credential(credential.id(),credential.passwordHash(),false,-1,new Secret(initial));
+        failCommit=true;char[] password=password();
+        assertThrows(IllegalStateException.class,()->mfa.provision("owner@example.test",password));cleared(password);
+        var returned=(Optional<?>)prepared;var secret=(Secret)returned.orElseThrow();
+        assertTrue(Arrays.equals(new byte[20],secret.bytes()),"UNRETURNED_PROVISIONING_COPY_NOT_ERASED");
+        assertTrue(Arrays.equals(initial,credential.secret().bytes()),"CREDENTIAL_OWNER_BUFFER_CHANGED");Arrays.fill(initial,(byte)0);
     }
     @Test void failedCommitClearsEveryIssuedRecoveryCodeAndPassword() {
         failCommit=true;char[] password=password();

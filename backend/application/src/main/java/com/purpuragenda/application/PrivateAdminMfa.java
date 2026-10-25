@@ -15,12 +15,16 @@ public final class PrivateAdminMfa {
         this.store=Objects.requireNonNull(store);this.passwords=Objects.requireNonNull(passwords);this.factors=Objects.requireNonNull(factors);
     }
     public Optional<Secret> provision(String email,char[] password) {
-        return withPassword(email,password,admin->{
-            var value=admin.credential();
-            if(value.isEmpty() || value.get().enrolled() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
-            byte[] bytes=value.get().secret().bytes();
-            try { return Optional.of(new Secret(bytes)); } finally { Arrays.fill(bytes,(byte)0); }
-        });
+        List<Secret> prepared=new ArrayList<>();
+        try {
+            return withPassword(email,password,admin->{
+                var value=admin.credential();
+                if(value.isEmpty() || value.get().enrolled() || !passwords.verify(password,value.get().passwordHash())) return Optional.empty();
+                byte[] bytes=value.get().secret().bytes();
+                try { var secret=new Secret(bytes);prepared.add(secret);return Optional.of(secret); }
+                finally { Arrays.fill(bytes,(byte)0); }
+            });
+        } catch(RuntimeException failure) { prepared.forEach(Secret::close);throw failure; }
     }
     public Optional<Enrollment> enroll(String email,char[] password,String code) {
         List<RecoveryCode> issued=new ArrayList<>();

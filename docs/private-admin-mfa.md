@@ -24,8 +24,8 @@ reject post-transaction or cross-thread access and erase decrypted secret buffer
 
 Secret/recovery/enrollment values defensively copy owned arrays, redact toString
 and clear their buffers on close. Application password inputs are consumed and
-cleared on every outcome; issued recovery buffers are also cleared when commit
-fails. Callers must copy/display provisioning and recovery material only through
+cleared on every outcome; unreturned provisioning copies and issued recovery
+buffers are also cleared when commit fails. Callers must copy/display provisioning and recovery material only through
 a future private owner interface, close values promptly and never log/serialize
 these objects into general artifacts. Managed-runtime copies cannot be promised
 erased. No real owner secret or credentials are provisioned by implementation/tests.
