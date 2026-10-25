@@ -46,7 +46,7 @@ class SessionHttpTest {
     }
     @org.springframework.web.bind.annotation.RestController static final class Probe {
         final String[] seen;Probe(String[] seen){this.seen=seen;}
-        @org.springframework.web.bind.annotation.GetMapping("/x") public String x(jakarta.servlet.http.HttpServletRequest r){seen[0]=(String)r.getAttribute(ApiGuardFilter.CLIENT_ATTRIBUTE);return "ok";}
+        @org.springframework.web.bind.annotation.GetMapping("/x") public String getClient(jakarta.servlet.http.HttpServletRequest r){seen[0]=(String)r.getAttribute(ApiGuardFilter.CLIENT_ATTRIBUTE);return "ok";}
     }
     Memory store;MockMvc mvc;SessionCookies cookies=SessionCookies.operational();
     @BeforeEach void setup() {

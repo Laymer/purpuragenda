@@ -24,7 +24,7 @@ public final class SessionController {
         } catch(IllegalStateException unavailable) { Problems.send(response,Problems.Code.SESSION_UNAVAILABLE);return null; }
     }
     @GetMapping
-    public ResponseEntity<String> current(HttpServletRequest request,HttpServletResponse response) throws IOException {
+    public ResponseEntity<String> getSession(HttpServletRequest request,HttpServletResponse response) throws IOException {
         try {
             var session=access.current(cookies.read(request));
             if(session.isPresent()) return json(HttpStatus.OK,state(SessionAccess.view(session.get()),null));
