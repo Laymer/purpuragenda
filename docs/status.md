@@ -165,3 +165,9 @@ Recorded the owner's standing permission for routine approved implementation, te
 All51 root+31 policy Python tests passed; full build108 domain+11 security+3 architecture passed without failures/errors/skips, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters. Deterministic contract drift, docs and whitespace passed. Independent agent review approved. Exact-head CI remains required.
 
 P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
+
+## P48 mandatory suite inventory evidence
+
+Added explicit implemented/planned categories and owning task mapping, exact workflow/aggregate prerequisite/results agreement, source activation checks and a release guard that rejects unimplemented categories. Independent review caught job-step/aggregate-step condition and continue-on-error bypasses; regressions now reject ordinary/first-key/flow-style forms while retaining always-run receipt upload.
+
+Local pre-P07 integration verification:83 root+31 policy Python tests,108 domain+11 security+3 architecture full build, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters, deterministic contracts/docs/whitespace passed. --release deliberately fails while planned automated categories remain. P07 has since merged with real PostgreSQL CI evidence; integration must activate postgres-migrations and obtain fresh combined CI, with localDocker still unavailable. No full-release or P48 publication claim.
