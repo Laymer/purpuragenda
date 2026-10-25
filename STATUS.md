@@ -4,8 +4,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | Draft PR; https://github.com/Laymer/purpuragenda/pull/1; claimed by Codex |
-| P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Recovered WIP; depends on P01;  |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/1; d4f78ac |
+| P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | In progress; claimed by Codex; P01 merged;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Recovered WIP; depends on P02;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Recovered WIP; depends on P03;  |
 | P05 — Complete immutable booking snapshots and state transitions | Recovered WIP; depends on P04;  |
@@ -59,11 +59,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T06:04:20Z.
-- Current task: P01; branch: task/p01-handoffs; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/1.
-- Last pushed implementation commit: 3ddced8; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p01.
-- What works: recovery checkpoint secret-scanned and pushed; isolated P01 worktree established. What remains: inspect CI and reviews, mark ready and squash-merge when green.
-- Decisions: normalize incomplete prototype states to Recovered WIP with explicit limitations; retain all 50 stable task IDs. No implementation is certified by recovery.
-- Verification: staged gitleaks scan of recovery (954546 bytes): passed, no leaks. GitHub PR list: empty. Main protection lookup: HTTP 404, branch unprotected; protection belongs to P48. P01 documentation check and six negative mutations passed; git diff --check passed; P01 staged gitleaks scan passed (39532 bytes). Initial negative harness matched prose; corrected to mutate state cells.
-- Next concrete action: gh pr checks 1; gh pr view 1 --json reviews,reviewDecision,mergeStateStatus.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; ignored local secrets, dependencies and build outputs remain in the original checkout and are intentionally not published. No stacked PR dependencies for P01.
+- Agent and UTC checkpoint: Codex, 2026-10-25T06:19:00Z.
+- Current task: P02; branch: task/p02-build; base: main; PR URL: pending creation.
+- Last pushed implementation commit: none for P02; uncommitted changes: P02 scaffolding, tool installer, architecture checks and CI in /tmp/purpuragenda-p02.
+- What works: P01 merged at d4f78ac; recovery remains intact. What remains: open draft PR, verify CI and reviews, squash-merge if green.
+- Decisions: adopt no feature code in P02; architecture verification checks module dependencies immediately and bytecode when feature classes are introduced. Empty feature modules are scaffolding, not passing feature suites.
+- Verification: P01 final head f46127c passed documentation and aggregate checks; GitHub reviews/comments empty and merge confirmed. P02 installer checksums passed; wrapper archive SHA256 matched; corrupted archive rejected; bash scripts/ci/verify-build.sh passed six-module build and three architecture tests with no skips; git diff --check passed. Corrected local failures are recorded in docs/status.md.
+- Next concrete action: open P02 draft PR, then gh pr checks 2.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b. No stacked PR dependencies; P02 is based on merged P01.

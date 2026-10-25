@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "baseline": "2026-10-24",
+  "artifacts": {
+    "jdk": {
+      "version": "25.0.5+8",
+      "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz",
+      "sha256": "68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb",
+      "archive": "tar.gz"
+    },
+    "node": {
+      "version": "24.22.1",
+      "url": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-x64.tar.xz",
+      "sha256": "6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6",
+      "archive": "tar.xz"
+    },
+    "maven": {
+      "version": "3.9.16",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip",
+      "sha512": "ed41650d42485cfc243fad22158caf9cbb5dc408ce7a09ddb94dd42a019de929ca43065bfa450612cf12bf78b5cafa3884b96c090de326ff590448c933454af3",
+      "archive": "zip"
+    }
+  },
+  "versions": {
+    "springBoot": "4.1.2",
+    "angular": "22.2.3",
+    "angularBuild": "22.2.4",
+    "typescript": "6.0.3",
+    "rxjs": "7.8.2",
+    "junit": "6.1.3",
+    "cucumber": "8.0.4",
+    "playwright": "1.64.0",
+    "testcontainers": "2.0.5",
+    "vitest": "5.0.5",
+    "vite": "8.3.3",
+    "axeCore": "4.14.0"
+  },
+  "actions": {
+    "actions/checkout": {
+      "tag": "v5",
+      "sha": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09"
+    },
+    "actions/setup-java": {
+      "tag": "v5",
+      "sha": "b6effb05e454b25005698d916606bdc6ffcbf961"
+    },
+    "actions/setup-node": {
+      "tag": "v5",
+      "sha": "a0853c24544627f65ddf259abe73b1d18a591444"
+    },
+    "actions/upload-artifact": {
+      "tag": "v4",
+      "sha": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    },
+    "github/codeql-action": {
+      "tag": "v3",
+      "sha": "4bfa242aa49c5f7c6770b98670d354a7dfac05f8"
+    }
+  }
+}
