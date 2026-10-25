@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Real production migrations and roles. Missing Docker/image/dependencies fail, never skip. */
 @Timeout(180)
 class MigrationTest {
-    static final String IMAGE = "postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc";
+    // Exact 18.6-bookworm digest; TC2.0.5 misparses combined tag@digest repository names.
+    static final String IMAGE = "postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc";
     static final String MIGRATOR="purpuragenda_migrator", APP="purpuragenda_app";
     static final String SERVICE="10000000-0000-0000-0000-000000000001";
     static final Instant START=Instant.parse("2026-11-01T10:00:00Z");
@@ -36,7 +37,8 @@ class MigrationTest {
         String phase="IMAGE_CONFIGURATION";
         try {
             postgres=new PostgreSQLContainer(IMAGE).withDatabaseName("purpuragenda_test").withUsername("postgres")
-                    .withPassword(HexFormat.of().formatHex(SecureRandom.getSeed(32)));
+                    .withPassword(HexFormat.of().formatHex(SecureRandom.getSeed(32)))
+                    .withCommand("postgres","-c","fsync=on");
             phase="CONTAINER_START"; postgres.start();
             phase="ROLE_FILES";
             postgres.execInContainer("mkdir","-p","/run/secrets");
@@ -142,6 +144,8 @@ class MigrationTest {
     }
 
     @Test void freshSchemaHasAllChangesAndSeeds() {
+        assertEquals(180006,scalar(APP,"SELECT current_setting('server_version_num')::integer"));
+        assertEquals(1,scalar(APP,"SELECT (current_setting('fsync')='on')::integer"));
         assertEquals(7,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(2,scalar(APP,"SELECT count(*) FROM service"));
         assertEquals(1500,scalar(APP,"SELECT price_minor FROM service WHERE duration_minutes=30"));

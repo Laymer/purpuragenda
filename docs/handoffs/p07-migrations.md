@@ -36,7 +36,7 @@ Review the restored files, implement additive fixes and the acceptance suite, th
 - What works: P01/P40/P48 foundations and P13 crypto merged; P07 existing review findings retained. What remains: latest-main integration, actual-container CI and independent review.
 - Decisions: preserve recovered changesets 001–006 byte-for-byte; add corrections in 007+, use distinct DDL/DML roles and retain absolute overlap barrier.
 - Verification: 38 Python gate/ledger tests and full build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Docker daemon unavailable, no migration passing claim.
-- Next concrete action: commit tested implementation checkpoint, integrate latest main, push draft for mandatory real-container CI.
+- Next concrete action: push exact-digest parser fix and mandatory migration report gate, integrate latest main, require actual-container CI.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, prerequisites merged; preserve private ignored local state.
 
 P07 current checks: dependency/test compilation and isolated PostgreSQL18.6 manual SQL checks passed; mandatory full build fails locally at POSTGRES_TEST_START_FAILED (Docker daemon unavailable), so no migration-suite passing claim.

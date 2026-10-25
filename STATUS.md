@@ -10,7 +10,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; implementation eb28055; first real-container CI failed at bootstrap; diagnosis in progress |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; implementation eb28055; first container bootstrap parser failure reproduced and corrected; final CI pending |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -71,7 +71,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - What works: P01/P40/P48 foundations and P13 crypto merged; P07 existing review findings retained. What remains: latest-main integration, actual-container CI and independent review.
 - Decisions: preserve recovered changesets 001–006 byte-for-byte; add corrections in 007+, use distinct DDL/DML roles and retain absolute overlap barrier.
 - Verification: 38 Python gate/ledger tests and full build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Docker daemon unavailable, no migration passing claim.
-- Next concrete action: commit tested implementation checkpoint, integrate latest main, push draft for mandatory real-container CI.
+- Next concrete action: push exact-digest parser fix and mandatory migration report gate, integrate latest main, require actual-container CI.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, prerequisites merged; preserve private ignored local state.
 
 P07 current checks: dependency/test compilation and isolated PostgreSQL18.6 manual SQL checks passed; mandatory full build fails locally at POSTGRES_TEST_START_FAILED (Docker daemon unavailable), so no migration-suite passing claim.
