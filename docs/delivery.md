@@ -71,3 +71,5 @@ Start the owner checklist early: hosting/DNS/HTTPS, SMTP/sender identity, Zoom e
 Release requires P07–P49 merged with every slice and full exact-revision gates; owner demonstrations of unpaid manual approval/calendars, races/quotas and changes/SMTP/restore; reviewed immutable artifacts/migration compatibility/recovery receipts; explicit owner deployment and purchase decisions; then synthetic live smoke/notification/backup/readiness verification and owner acceptance. Real external gates cannot be replaced by simulated CI results.
 
 English, single practitioner, external payment facts and manual Zoom remain v1 scope. Checkout and automatic Zoom remain excluded.
+
+Owner platform update permits P49/macOS-bootstrap as an early independent host-prerequisite slice. Target is Intel/macOSSequoia15.7.8 with existingDockerDesktop, local bootstrap preferred; retain native acceptance and full runbooks as pending. Publicmedinavie.com ingress connects throughTailscale; the Linux computer is the proposed off-host backup.
