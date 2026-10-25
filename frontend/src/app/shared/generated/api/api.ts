@@ -1,3 +1,5 @@
 export * from './catalog.service';
 import { CatalogService } from './catalog.service';
-export const APIS = [CatalogService];
+export * from './session.service';
+import { SessionService } from './session.service';
+export const APIS = [CatalogService, SessionService];

@@ -3,7 +3,7 @@
   "info": {
     "title": "Purpuragenda version 1",
     "version": "0.1.0",
-    "description": "Public catalog contract foundation. Availability is advisory and dates use the selected IANA display zone. Remaining v1 endpoints are added with their owning tasks. Online checkout is excluded."
+    "description": "Public catalog contract foundation. Availability is advisory and dates use the selected IANA display zone. Remaining v1 endpoints are added with their owning tasks. Online checkout is excluded. Session endpoints require same-origin browser requests: unsafe requests carry the exact configured Origin and a persisted-session CSRF header."
   },
   "servers": [
     {
@@ -113,6 +113,190 @@
         },
         "security": [],
         "description": "Inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Revalidate all availability during booking mutations."
+      }
+    },
+    "/session/bootstrap": {
+      "post": {
+        "operationId": "bootstrapSession",
+        "tags": [
+          "Session"
+        ],
+        "security": [],
+        "parameters": [],
+        "description": "Requires the exact configured Origin and no cross-site Fetch Metadata. Creates an anonymous guest session, or rotates only the CSRF proof of a current live session. The CSRF proof is stored as a digest only, so a page reload must call this endpoint again. No body.",
+        "responses": {
+          "200": {
+            "description": "Session state with a fresh CSRF proof",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Set-Cookie": {
+                "description": "Only when a new anonymous guest session is created: __Host-purpuragenda (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain); local HTTP uses purpuragenda-local without Secure.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionBootstrap"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session": {
+      "get": {
+        "operationId": "getSession",
+        "tags": [
+          "Session"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "description": "Safe role and deadlines only. Read-only: it does not extend the idle lifetime. Never returns identifiers, grants or CSRF proofs.",
+        "responses": {
+          "200": {
+            "description": "Current session state",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionState"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/logout": {
+      "post": {
+        "operationId": "logoutSession",
+        "tags": [
+          "Session"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        ],
+        "description": "Requires the exact configured Origin, a live persisted session and its current CSRF proof. Revokes the session and clears the cookie.",
+        "responses": {
+          "204": {
+            "description": "Revoked",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Set-Cookie": {
+                "description": "Expires the session cookie.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -282,6 +466,76 @@
           "slots",
           "restrictions"
         ]
+      },
+      "SessionState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "ANONYMOUS",
+              "GUEST",
+              "ACCOUNT",
+              "ADMIN"
+            ]
+          },
+          "idleExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "absoluteExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "role",
+          "idleExpiresAt",
+          "absoluteExpiresAt"
+        ]
+      },
+      "SessionBootstrap": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "ANONYMOUS",
+              "GUEST",
+              "ACCOUNT",
+              "ADMIN"
+            ]
+          },
+          "idleExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "absoluteExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "csrfToken": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
+        },
+        "required": [
+          "role",
+          "idleExpiresAt",
+          "absoluteExpiresAt",
+          "csrfToken"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-purpuragenda"
       }
     }
   }

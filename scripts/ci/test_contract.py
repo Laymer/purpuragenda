@@ -19,8 +19,10 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
-        self.assertEqual({'listServices', 'availability'}, {op['operationId'] for op in operations})
-        self.assertTrue(all(op['security'] == [] for op in operations))
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession'},
+                         {op['operationId'] for op in operations})
+        public = {op['operationId'] for op in operations if op['security'] == []}
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)
         self.assertEqual(len(operations), len({op['operationId'] for op in operations}))
 
     def test_all_references_resolve(self):
@@ -61,7 +63,29 @@ class ContractTest(unittest.TestCase):
         self.assertTrue(all(p['required'] for p in operation['parameters']))
         self.assertIn('31', operation['description'])
         for path in self.document['paths'].values():
-            self.assertIn('application/problem+json', path['get']['responses']['default']['content'])
+            for operation in path.values():
+                self.assertIn('application/problem+json', operation['responses']['default']['content'])
+
+    def test_session_contract_is_same_origin_csrf_protected_and_no_store(self):
+        paths = self.document['paths']
+        self.assertEqual({'/session/bootstrap': 'post', '/session': 'get', '/session/logout': 'post'},
+                         {path: next(iter(paths[path])) for path in ('/session/bootstrap', '/session', '/session/logout')})
+        logout = paths['/session/logout']['post']
+        self.assertEqual([{'sessionCookie': []}], logout['security'])
+        csrf = logout['parameters'][0]
+        self.assertEqual(('X-CSRF-Token', 'header', True), (csrf['name'], csrf['in'], csrf['required']))
+        self.assertEqual({'sessionCookie': {'type': 'apiKey', 'in': 'cookie', 'name': '__Host-purpuragenda'}},
+                         self.document['components']['securitySchemes'])
+        schemas = self.document['components']['schemas']
+        self.assertEqual({'role', 'idleExpiresAt', 'absoluteExpiresAt'}, schemas['SessionState']['properties'].keys())
+        self.assertEqual({'role', 'idleExpiresAt', 'absoluteExpiresAt', 'csrfToken'}, set(schemas['SessionBootstrap']['required']))
+        self.assertEqual(['ANONYMOUS', 'GUEST', 'ACCOUNT', 'ADMIN'], schemas['SessionState']['properties']['role']['enum'])
+        for path in paths.values():
+            for operation in (op for key, op in path.items() if key in ('get', 'post')):
+                if operation['operationId'] in ('bootstrapSession', 'getSession'):
+                    self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+                self.assertEqual(['no-store'], operation['responses']['default']['headers']['Cache-Control']['schema']['enum']
+                                 if 'headers' in operation['responses']['default'] else ['no-store'])
 
     def test_generator_pin_and_validation(self):
         from xml.etree import ElementTree as ET

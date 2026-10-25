@@ -41,6 +41,37 @@ public final class PostgresSessions implements SessionStore {
             });
         } finally { clear(token); }
     }
+    @Override public Optional<CsrfRotation> rotateCsrf(char[] token) {
+        try {
+            var hash=crypto.digest(token);if(hash.isEmpty())return Optional.empty();
+            List<CsrfRotation> prepared=new ArrayList<>();
+            try {
+                return transaction(c->{
+                    var row=load(c,"token_hash",hash.get(),null);Instant now=now(c);
+                    if(row==null || !live(c,row,now))return Optional.empty();
+                    try(var csrf=crypto.recoveryCode()) {
+                        update(c,"UPDATE app_session SET csrf_hash=?,last_seen_at=? WHERE id=?",csrf.hash(),now,row.session.reference().id());
+                        char[] nonce=csrf.value();
+                        try { var result=new CsrfRotation(touched(row.session,now),nonce);prepared.add(result);return Optional.of(result); }
+                        finally { clear(nonce); }
+                    }
+                });
+            } catch(RuntimeException failure) { prepared.forEach(CsrfRotation::close);throw failure; }
+        } finally { clear(token); }
+    }
+    @Override public Optional<Snapshot> inspect(char[] token) {
+        try {
+            var hash=crypto.digest(token);if(hash.isEmpty())return Optional.empty();
+            try(var c=source.getConnection()) {
+                c.setReadOnly(true);c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);c.setAutoCommit(false);
+                try(var s=c.createStatement()) { s.execute("SET LOCAL statement_timeout='5s'"); }
+                try {
+                    var row=load(c,"token_hash",hash.get(),null,false);
+                    return row!=null && live(c,row,now(c))?Optional.of(row.session):Optional.empty();
+                } finally { c.rollback(); }
+            } catch(SQLException | RuntimeException failure) { throw new IllegalStateException("SESSION_UNAVAILABLE"); }
+        } finally { clear(token); }
+    }
     @Override public boolean csrf(SessionReference reference,char[] token) {
         try {
             var hash=crypto.digest(token);if(hash.isEmpty())return false;
@@ -112,8 +143,9 @@ public final class PostgresSessions implements SessionStore {
     private record Row(Snapshot session,String csrfHash,Instant revokedAt) {
         @Override public String toString() { return "StoredSession[REDACTED]"; }
     }
-    private static Row load(Connection c,String column,Object value,String browser) throws SQLException {
-        try(var q=c.prepareStatement("SELECT id,browser_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at,csrf_hash,revoked_at FROM app_session WHERE "+column+"=?"+(browser==null?"":" AND browser_hash=?")+" FOR UPDATE")) {
+    private static Row load(Connection c,String column,Object value,String browser) throws SQLException { return load(c,column,value,browser,true); }
+    private static Row load(Connection c,String column,Object value,String browser,boolean lock) throws SQLException {
+        try(var q=c.prepareStatement("SELECT id,browser_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at,csrf_hash,revoked_at FROM app_session WHERE "+column+"=?"+(browser==null?"":" AND browser_hash=?")+(lock?" FOR UPDATE":""))) {
             q.setObject(1,value);if(browser!=null)q.setString(2,browser);
             try(var r=q.executeQuery()) {
                 if(!r.next())return null;
