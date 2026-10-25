@@ -195,6 +195,15 @@ open_docker() { :; }
             self.assertNotEqual(0, result.returncode)
             self.assertFalse(marker.exists())
 
+    def test_failed_admin_install_stops_before_onboarding_or_readiness(self):
+        overrides = 'source ' + shlex.quote(str(SCRIPT)) + '\n'
+        overrides += "platform_name() { printf Darwin; }\nhost_architecture() { printf x86_64; }\nmacos_version() { printf 15.7.8; }\npin() { return 0; }\nvalidate_pin() { return 0; }\ninstalled() { return 1; }\ndownload_package() { printf synthetic > \"$1\"; }\n"
+        overrides += 'verify_package() { return 0; }\nelevated_install() { return 1; }\n'
+        result = self.run_shell('main --install', overrides)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual('', result.stdout)
+        self.assertEqual('TAILSCALE_INSTALL_FAILED\n', result.stderr)
+
     def test_intel_native_ci_uses_stock_bash_real_verification_and_required_receipt(self):
         text = (ROOT / '.github/workflows/verify.yml').read_text()
         self.assertIn('runs-on: macos-15-intel', text)
