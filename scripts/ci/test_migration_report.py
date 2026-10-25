@@ -96,6 +96,21 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.ExpiryReclamationPostgresTest" tests="6"/>')
         GATE.validate(self.root)
 
+    def test_quota_requires_migration_integrity_and_race_suite(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresQuotaStore.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic quota adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerQuotaPostgresTest.xml')
+        for count, skipped in ((0, 0), (9, 0), (10, 1)):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerQuotaPostgresTest" tests="{count}" skipped="{skipped}"/>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerQuotaPostgresTest" tests="10"/>')
+        GATE.validate(self.root)
+
 
     def test_private_bootstrap_requires_its_own_real_database_report(self):
         self.write()

@@ -1,6 +1,7 @@
 package com.purpuragenda.application.port.out;
 
 import com.purpuragenda.domain.DomainFailure;
+import com.purpuragenda.application.scheduling.CustomerQuota;
 import com.purpuragenda.domain.booking.*;
 import com.purpuragenda.domain.scheduling.*;
 import java.nio.ByteBuffer;
@@ -28,6 +29,9 @@ public interface SchedulingUnitOfWork {
         List<Booking> duePending();
         /** Fixed expiry refund obligations and system audit/outbox; repeat calls are harmless. */
         void expiryEffects(UUID bookingId, long expiredVersion);
+        CustomerQuota quota(UUID stableCustomerId);
+        /** New customer creation only; false for an existing immutable charge or an administrator origin. */
+        boolean chargeCreated(Booking booking);
         /** Earlier reclamation survives expected failure; unexpected failure aborts the whole command. */
         Receipt attempt(Supplier<Receipt> mutation);
     }
