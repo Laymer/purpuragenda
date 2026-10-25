@@ -65,7 +65,7 @@ per-commit test-source gate and mandatory delivery-policy CI job. The worker did
 apply live rules. Existing nodelete rules remain untouched; live enforcement is a
 coordinator action after review. P48 publication and final inventory remain unfinished.
 
-`python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py' -v` passed 20 tests.
+`python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py' -v` passed 21 tests.
 `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests,
 zero skips, domain 276/277 lines (99.64%) and 478/489 branches (97.75%).
 `git diff --check` passed. No PostgreSQL, browser, load, security or restore suite
@@ -77,3 +77,5 @@ rename-aware old/new content comparison. The initial pagination fixture matched
 query fixed the test. Both corrected cases pass. Historical commits through exact
 P07 head dd482e3 are grandfathered; all later commits require test-source changes.
 Semantic test relevance still requires independent review.
+
+P48 foundation published as draft PR8 at 74aa161; follow-up adds an ineffective-API-write readback regression. Live rules remain unapplied by this worker.

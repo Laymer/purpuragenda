@@ -156,6 +156,16 @@ class ProtectionTest(unittest.TestCase):
         self.assertTrue(writes[0][1].endswith('/rulesets/25'))
         self.assertEqual('GET', self.calls[-1][0])
 
+    def test_apply_readback_rejects_ineffective_api_update(self):
+        self.managed['enforcement'] = 'disabled'
+        def api(method, endpoint, payload=None):
+            if '?' in endpoint:
+                return [{'id': 25, 'name': self.expected['name']}]
+            # Simulate a provider accepting PUT without actually enforcing it.
+            return copy.deepcopy(self.managed)
+        self.assertIn('Ruleset differs: enforcement',
+                      protection.reconcile(api, self.expected, apply=True))
+
     def test_absent_ruleset_created_then_verified(self):
         def api(method, endpoint, payload=None):
             if '?' in endpoint:

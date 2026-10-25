@@ -51,7 +51,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; depends on P44; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; depends on P45; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; depends on P46; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | In progress; foundation slice claimed by p48_protection; branch task/p48-merge-protection; release publication remains pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Draft PR; https://github.com/Laymer/purpuragenda/pull/8; foundation slice; release publication remains pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; depends on P48;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
 
@@ -63,11 +63,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: p48_protection, 2026-10-25T08:02:39Z.
-- Current task: P48 merge-protection foundation; branch: task/p48-merge-protection; base: main; PR URL: pending creation.
-- Last pushed implementation commit: 8d7f62d (base); uncommitted changes: tested P48 foundation pending first commit.
+- Agent and UTC checkpoint: p48_protection, 2026-10-25T08:06:44Z.
+- Current task: P48 merge-protection foundation; branch: task/p48-merge-protection; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/8.
+- Last pushed implementation commit: 74aa161; uncommitted changes: readback regression test and publication handoff pending commit.
 - What works: P01–P06 merged per coordinator reconciliation. What remains: tested protection configuration and per-commit test-change CI.
 - Decisions: no live protection changes by this worker; coordinator applies reviewed settings. Existing deletion/non-fast-forward restrictions preserved.
-- Verification: 20 delivery-policy tests passed; full build passed 108 domain + three architecture tests, no skips; domain coverage 99.64% lines / 97.75% branches; git diff --check passed. Live rules remain unapplied.
-- Next concrete action: independent review, commit/push draft PR, coordinator applies reviewed protection and reconciles current main.
+- Verification: 21 delivery-policy tests passed; full build passed 108 domain + three architecture tests, no skips; domain coverage 99.64% lines / 97.75% branches; git diff --check passed. Live rules remain unapplied.
+- Next concrete action: independent review PR8, coordinator applies reviewed protection and reconciles current main; require all checks before merge.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none.
