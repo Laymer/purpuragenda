@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
+      - run: python3 scripts/ci/run-python-tests.py --start scripts/ci
       - run: python3 scripts/ci/check-docs.py
   build:
     runs-on: ubuntu-24.04
@@ -18,9 +18,26 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: bash scripts/dev/install-toolchain.sh
       - run: bash scripts/ci/verify-build.sh
+  delivery-policy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Test delivery policy without skips
+        run: python3 scripts/ci/run-python-tests.py --start scripts/ci/tests
+      - name: Require tests in every new commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/ci/check-commit-tests.py --base "$BASE" --head "$HEAD"
+      - name: Verify live main protection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/main-protection.py
   verify:
     if: always()
-    needs: [documentation, build]
+    needs: [documentation, build, delivery-policy]
     runs-on: ubuntu-24.04
     steps:
       - name: Require every implemented category
