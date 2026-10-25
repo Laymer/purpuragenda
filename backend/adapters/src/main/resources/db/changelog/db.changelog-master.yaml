@@ -71,3 +71,11 @@ databaseChangeLog:
             path: 009-deferred-booking-invariants.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 010-admin-recovery
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 010-admin-recovery.sql
+            relativeToChangelogFile: true
+            splitStatements: false

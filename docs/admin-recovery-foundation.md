@@ -1,9 +1,8 @@
 # Recovery isolation foundation
 
-This P16 slice restricts existing private MFA components and supplies metadata
-policy/types for later recovery persistence. It creates no grant table, recovery
-endpoint, token issuer, session or normal administrator authorization. Full P16
-recovery remains incomplete.
+This foundation restricts existing private MFA components and supplies metadata
+policy/types. Persisted recovery now builds on it as described in admin-recovery.md.
+Public recovery endpoints, sessions and operator composition remain unfinished.
 
 Password-only provisioning and ordinary enrollment are initial-bootstrap actions.
 Both require no recovery-code rows and no immutable ADMIN_MFA_ENROLLED audit event
@@ -29,7 +28,6 @@ server-owned browser context, sessions, CSRF and throttles before a usable publi
 flow. P17 must join factor/session mutation or redeem an atomically persisted
 purpose proof, preserving disable/revocation races.
 
-Migration010 is reserved after008quota and009deferred-booking correction. This
-foundation does not modify migrations/master and does not pretend to persist or
-redeem recovery grants. Real recovery/resumption/reenrollment acceptance remains
-required in that later slice.
+The additive010-admin-recovery migration follows008quota and009deferred-booking
+correction. Its workflow reloads eligibility and proof under the administrator
+lock; constructing these metadata values alone still conveys no authority.
