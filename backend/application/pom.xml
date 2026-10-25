@@ -2,5 +2,6 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>com.purpuragenda</groupId><artifactId>purpuragenda</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../../pom.xml</relativePath></parent>
   <artifactId>application</artifactId>
+  <properties><coverage.lines>0.95</coverage.lines></properties>
   <dependencies><dependency><groupId>com.purpuragenda</groupId><artifactId>domain</artifactId><version>${project.version}</version></dependency></dependencies>
 </project>

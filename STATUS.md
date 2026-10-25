@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; concurrency slice claimed by Codex; original PR https://github.com/Laymer/purpuragenda/pull/1 merged at d4f78ac |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/9; 15ba8b4 concurrency slice; original PR1 d4f78ac |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -43,7 +43,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
-| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; dependencies in docs/delivery.md; historical Angular branch coverage 56.33%; gate failing |
+| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Draft PR; https://github.com/Laymer/purpuragenda/pull/10; coverage-foundation only; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
@@ -61,16 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P01/concurrency: agent=Codex; branch=task/p01-concurrent-handoffs; base=main; handoff=docs/handoffs/p01-concurrency.md
+- P40/coverage-foundation: agent=Codex-p40; branch=task/p40-coverage-foundation; base=main; handoff=docs/handoffs/p40-coverage-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T08:02:25Z.
-- Current task: P01/concurrency; branch: task/p01-concurrent-handoffs; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for this slice; uncommitted changes: coordination implementation and tests in this worktree.
-- What works: remote main 8d7f62d confirms P01–P06 merged; P07 dd482e3 remains the only preexisting draft, with review notes only.
-- What remains: push draft PR, exact-head CI and merge; P40/P48 foundations run concurrently in separate worktrees.
-- Decisions: no force-push or branch deletion; one task per PR; each new commit includes a relevant test change; independent agent review before coordinator merge. Delivery dependency map is in docs/delivery.md.
-- Verification: 15 ledger tests, documentation validation, whitespace and full build passed (108 domain + 3 architecture, zero skips; domain 99.64% lines / 97.75% branches); independent agent approved after three findings were fixed. Docker daemon unavailable; PostgreSQL not yet adopted.
-- Next concrete action: python3 -m unittest discover -s scripts/ci -p 'test_*.py'; bash scripts/ci/verify-build.sh.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none.
+- Agent and UTC checkpoint: Codex-p40, 2026-10-25T08:09:27Z.
+- Current task: P40/coverage-foundation; branch: task/p40-coverage-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/10.
+- Last pushed implementation commit: 39b271d; uncommitted changes: merge origin/main at 15ba8b4, reconciled ledger and evidence before merge commit.
+- What works: P01 concurrency merged at 15ba8b4, original P01–P06 merged. P40 core independently approved by coordinator. What remains: exact-head remote CI; final P40 application-wide acceptance remains pending.
+- Decisions: domain/application 95% lines, other backend/Angular 90% lines, all 90% branches; no aggregate masking. Preserve P01 delivery dependencies and concurrent claim validation.
+- Verification: prior full build passed 108 domain + 3 architecture + 23 coverage-gate tests, zero skips; 276/277 domain lines and 478/489 branches. Integrated python discovery passed 38 tests (15 ledger + 23 coverage), documentation and full build passed with 108 domain + 3 architecture tests, zero skips.
+- Next concrete action: push merge commit and request coordinator exact-head CI check.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, P01 prerequisite merged.
