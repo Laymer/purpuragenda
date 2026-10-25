@@ -58,11 +58,45 @@ Adopted the append-only external-payment ledger and repaired three prototype def
 
 Fresh operational dependency check: `docker version` exited 1 both inside and outside the sandbox; Docker client 28.5.2 exists but cannot connect to unix:///var/run/docker.sock. No local Docker/Testcontainers or Compose passing claim follows from unit-test evidence. CI may provide independent PostgreSQL evidence once the suite is adopted. P05 exact-head CI passed and merge 1470d88 was confirmed.
 
+## P48 merge-protection foundation evidence
+
+Implemented a managed main ruleset, default-read-only API checker/application command,
+per-commit test-source gate and mandatory delivery-policy CI job. The worker did not
+apply live rules. Existing nodelete rules remain untouched; live enforcement is a
+coordinator action after review. P48 publication and final inventory remain unfinished.
+
+`python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py' -v` passed 21 tests.
+`bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests,
+zero skips, domain 276/277 lines (99.64%) and 478/489 branches (97.75%).
+`git diff --check` passed. No PostgreSQL, browser, load, security or restore suite
+was added or certified. An ignored local toolchain symlink supplies pinned tools.
+
+The initial negative rename test exposed an unchanged-rename loophole, fixed with
+rename-aware old/new content comparison. The initial pagination fixture matched
+`page=1` inside `per_page=100`, looped, and was interrupted; matching the final page
+query fixed the test. Both corrected cases pass. Historical commits through exact
+P07 head dd482e3 are grandfathered; all later commits require test-source changes.
+Semantic test relevance still requires independent review.
+
+P48 foundation published as draft PR8 at 74aa161; follow-up adds an ineffective-API-write readback regression. Live rules remain unapplied by this worker.
+
+P48 independent review found that explicit application could remove extra required
+checks despite preserving stronger review counts. The guard now preserves each
+existing required check and source-app pin, strict checks, branch-creation checks,
+merge restrictions and stronger/unknown managed parameters before writing. Added
+eight negative API subcases and a positive unpinned-to-pinned strengthening case.
+
+After the review fix, 23 delivery-policy tests and the full 108-domain/three-architecture build passed with no skips; domain coverage remains 99.64% lines/97.75% branches.
+
 ## P01 concurrent delivery evidence
 
 Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and sole preexisting draft P07 dd482e3. Added tested concurrent claims/handoffs and the approved dependency queue, coverage/commit/review/launch decisions. No recovered feature code adopted.
 
 `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` passed 15 synthetic ledger tests. `python3 scripts/ci/check-docs.py` and `git diff --check` passed. `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests with zero failures/errors/skips; domain coverage 276/277 lines (99.64%) and 478/489 branches (97.75%). Independent agent review found and verified fixes for idle claims, mandatory dependency documentation and claim/state mismatch. Exact-head remote CI remains required. PostgreSQL/Angular/browser/security/recovery suites are not yet implemented; no application/release completion is claimed.
+
+P48 integrated merged P01/concurrency15ba8b4, preserving its validator/tests, delivery dependency document and workflow documentation suite. Integrated verification passed 15 ledger tests, 23 delivery-policy tests and the full 108-domain/three-architecture build with unchanged coverage and no skips.
+
+Coordinator applied live ruleset25814212; initial readback exposed GitHub-added required_reviewers=[] and require_extra_approval_for_unattributed_changes=true. Both are now explicit in managed configuration. A regression verifies provider defaults and refusal to relax the extra-approval requirement. Worker made no live settings changes.
 
 ## P40 coverage foundation evidence
 
@@ -73,6 +107,20 @@ Implemented inherited JaCoCo instrumentation/report/check for all Maven modules 
 Limits: application/adapters/bootstrap are empty scaffolds, and Angular is not yet adopted on this branch; no application or Angular coverage result is claimed. Real PostgreSQL, external acceptance-process coverage merging, browser, load, security and recovery suites remain their owning tasks. Full-project P40 completion remains pending.
 
 P01 concurrency prerequisite merged at 15ba8b4 and was integrated without history rewriting. Its delivery dependency map, validator and test suite are preserved. Integrated local checks passed: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` ran 38 tests (15 ledger + 23 coverage); documentation validation, whitespace and the full implemented build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Remote exact-head CI remains required.
+
+P48 integrated P40 foundationbb7d4cf and replaced Python discovery entry points with a tested runner that rejects empty, skipped, failed and expected-failure suites. Guarded root suite runs 15 ledger plus 23 coverage tests; delivery-policy runs 31 tests. Live protection readback passed; coordinator recorded an administrator-verified id/version/config-hash receipt for read-only CI, which omits bypass metadata; absent/stale receipts fail.
+
+P48 public CI exposed equivalent UTC/offset spellings of updated_at; version comparison now normalizes aware ISO timestamps to UTC and rejects missing/malformed/naive values. Millisecond-change and equivalent-offset regressions pass; the administrator receipt remains unchanged.
+
+## P13 crypto implementation evidence
+
+Selectively adopted bounded AES256-GCM Secrets and a small six-digit/30-second TOTP primitive. Keys require exactly32 raw bytes and safe bounded IDs; final symlinks are refused, temporary key/plaintext buffers cleared, malformed/tampered/oversized envelopes rejected with fixed cause-free errors. Independent TOTP/delivery keys remain caller configuration. No identity, SMTP or password-storage flow is claimed. BC1.86 is test-scoped for RFC9106 and the approved64MiB/3/p1 baseline; OTP1.0.0 is production-scoped. Exact Maven Central POM publisher/SCM/license provenance was checked.
+
+`bash scripts/ci/verify-build.sh` passed108 domain+10 adapter+3 architecture tests, zero skips, plus23 coverage-gate regressions. Domain276/277 lines and478/489 branches; adapters70/73 lines(95.89%) and52/52 branches(100%). Python discovery separately passed38 ledger/coverage tests. Tests cover18 RFC6238 vectors, RFC9106 Argon2id, envelope and key validation/tampering, token/hash shape, adjacent/replayed steps and the library's epoch-millisecond boundary. Argon2 receipt records only parameters and timing, no secrets.
+
+Initial sandbox build stopped at an unavailable write to the Maven cache; approved rerun downloaded dependencies and passed. Independent coordinator review found that java-otp calls Instant.toEpochMilli; replaced the initial Instant-range guard with a bound ensuring all three candidate steps fit epoch milliseconds and added exact last-safe/unsupported tests. The complete rerun above includes that fix. No secret values are included in assertion diagnostics. P48 integration, final independent approval and remote exact-head CI remain outstanding.
+
+P13 delivery checkpoint: integrated P48 at0c3ae04 preserving its strict runners, live protection receipt and31 policy tests. Strict ledger/coverage38 tests, policy31 tests, commit policy and read-only live protection passed; integrated full build retained108+10+3 tests and95.89%/100% adapter coverage. Draft PR12 created; coordinator independently approved security code and millisecond-boundary fix. Added a further regression proving the loaded JCE key remains stable after its file is replaced/removed; final full rerun passed108 domain+11 adapter+3 architecture tests,38 ledger/coverage tests, zero skips; adapter coverage remains70/73 lines52/52 branches.
 
 ## P07 review checkpoint
 
@@ -85,3 +133,5 @@ Adopted historical SQL changesets 001–006 byte-for-byte from recovery and appe
 Exact Liquibase 5.0.4, PostgreSQL JDBC 42.7.14 and Testcontainers 2.0.5 Maven Central POM URLs returned 200 before adoption. `./mvnw --batch-mode --no-transfer-progress -pl backend/adapters -am test-compile` passed with the pinned toolchain. The new MigrationTest covers fresh/upgrade/rerun seeds, rejected inconsistent historical snapshots, immutable facts, real role denials/default grants, overlap/adjacency/state occupancy, finite bounds, snapshot policy/nulls, DST elapsed days and container restart persistence. Resource-only adapters now require reports.
 
 The mandatory full build failed locally inside and outside the sandbox at sanitized POSTGRES_TEST_START_FAILED because Docker has no reachable daemon; 108 domain tests passed before that failure. There is no passing full-build or migration-suite claim. Separate manual SQL checks used an isolated cached PostgreSQL18.6 cluster under /tmp/p07-postgres: migration syntax/seeds and synthetic pending ceiling, null snapshot, overlap, occupancy deletion and DST elapsed-day checks passed. These manual checks do not certify Testcontainers, Compose or the full Java migration suite. Required actual-container CI and independent review remain pending.
+
+P07 integrated P48 protection and P13 cryptography from main34836ed. Preserved both adapter dependency sets and the strict Python test runner. Actual-container CI remains pending.
