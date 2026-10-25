@@ -61,6 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P45/followup: agent=Claude-workerC; branch=task/p45-followup; base=main; handoff=docs/handoffs/p45-followup.md
 - P10/customer-changes: agent=Claude-coordinator; branch=task/p10-customer-changes; base=main; handoff=docs/handoffs/p10-customer-changes.md
 
 ## Active handoff

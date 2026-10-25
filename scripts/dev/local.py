@@ -18,6 +18,10 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 PASSWORDS = ('postgres-password', 'migrator-password', 'app-password')
 KEYS = ('totp-key', 'delivery-key', 'rate-key')
+# Tag-name match: tolerant of Angular attributes, whitespace and attribute order.
+FRONTEND_MARKER = re.compile(r'<app-root[\s>/]')
+# No credential, environment value or option ever appears here; the prompts run inside the container TTY.
+ADMIN_SETUP_ARGUMENTS = ('--profile', 'operator', 'run', '--rm', '--build', 'operator')
 
 
 def prepare(directory):
@@ -102,20 +106,30 @@ def compose(environment, *arguments, capture=False):
 
 
 def smoke():
-    for url, expected in [('http://127.0.0.1:8080/healthz', 'UP'),
-                          ('http://127.0.0.1:8025/readyz', None),
-                          ('http://127.0.0.1:8080/', '<app-root>')]:
+    for url, check in [('http://127.0.0.1:8080/healthz', lambda text: json.loads(text).get('status') == 'UP'),
+                       ('http://127.0.0.1:8025/readyz', lambda text: True),
+                       ('http://127.0.0.1:8080/', lambda text: bool(FRONTEND_MARKER.search(text)))]:
         with urllib.request.urlopen(url, timeout=10) as response:
-            content = response.read(100_000).decode()
-            if response.status != 200 or (expected == 'UP' and json.loads(content).get('status') != 'UP'):
+            if response.status != 200 or not check(response.read(100_000).decode()):
                 raise ValueError('LOCAL_SMOKE_FAILED')
-            if expected and expected != 'UP' and expected not in content:
-                raise ValueError('LOCAL_SMOKE_FAILED')
+
+
+def admin_setup(interactive):
+    # Real credentials need a private terminal on both ends; piped input could be logged or scripted.
+    if not interactive:
+        raise ValueError('ADMIN_SETUP_REQUIRES_TERMINAL')
+    prepare(os.environ.get('PURPURAGENDA_SECRET_DIR', ROOT / '.secrets'))
+    environment = docker_environment()
+    require_docker(environment)
+    compose(environment, *ADMIN_SETUP_ARGUMENTS)  # Inherits the terminal; nothing is captured or passed as an argument.
 
 
 def main(arguments):
-    if arguments not in (['init'], ['up'], ['smoke']):
-        raise ValueError('Usage: ./scripts/dev/local.sh {init|up|smoke}')
+    if arguments not in (['init'], ['up'], ['smoke'], ['admin-setup']):
+        raise ValueError('Usage: ./scripts/dev/local.sh {init|up|smoke|admin-setup}')
+    if arguments == ['admin-setup']:
+        admin_setup(sys.stdin.isatty() and sys.stdout.isatty())
+        return
     if arguments[0] in ('init', 'up'):
         prepare(os.environ.get('PURPURAGENDA_SECRET_DIR', ROOT / '.secrets'))
     if arguments[0] == 'up':

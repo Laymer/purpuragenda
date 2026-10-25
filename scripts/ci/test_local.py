@@ -7,6 +7,7 @@ from pathlib import Path
 import stat
 import tempfile
 import unittest
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location('local', Path(__file__).resolve().parents[1] / 'dev/local.py')
 LOCAL = importlib.util.module_from_spec(SPEC)
@@ -100,6 +101,24 @@ class LocalSecretsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 LOCAL.prepare(self.directory)
             self.assertTrue(key.read_bytes() == b'x' * size)
+
+    def test_admin_setup_requires_private_terminals_and_never_passes_credentials(self):
+        with self.assertRaises(ValueError):
+            LOCAL.admin_setup(False)
+        self.assertFalse(self.directory.exists())
+        self.assertEqual(('--profile', 'operator', 'run', '--rm', '--build', 'operator'), LOCAL.ADMIN_SETUP_ARGUMENTS)
+        self.assertFalse({'-e', '--env', '-T', '--no-TTY', '--env-file'} & set(LOCAL.ADMIN_SETUP_ARGUMENTS))
+        with self.assertRaises(ValueError):
+            LOCAL.main(['admin-setup', 'extra'])
+
+    def test_admin_setup_runs_only_the_operator_profile_on_the_inherited_terminal(self):
+        calls = []
+        with mock.patch.multiple(LOCAL, docker_environment=lambda: {}, require_docker=lambda environment: None,
+                                 compose=lambda environment, *arguments, **options: calls.append((arguments, options))), \
+                mock.patch.dict(os.environ, {'PURPURAGENDA_SECRET_DIR': str(self.directory)}):
+            LOCAL.admin_setup(True)
+        self.assertEqual([(LOCAL.ADMIN_SETUP_ARGUMENTS, {})], calls)
+        self.assertEqual(6, len(self.contents()))
 
 
 if __name__ == '__main__':

@@ -118,5 +118,63 @@ class RuntimeDatabaseTest {
             assertEquals(0,pool.getHikariPoolMXBean().getActiveConnections());
         }
     }
-
+    static byte[] decodeBase32(String value) {
+        var out=new java.io.ByteArrayOutputStream();int buffer=0,bits=0;
+        for(char c: value.toCharArray()) {
+            buffer=(buffer<<5)|"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".indexOf(c);bits+=5;
+            if(bits>=8){out.write((buffer>>(bits-8))&0xff);bits-=8;buffer&=(1<<bits)-1;}
+        }
+        return out.toByteArray();
+    }
+    static long count(String query) throws Exception {
+        try(var c=DriverManager.getConnection(postgres.getJdbcUrl(),"postgres",postgres.getPassword());var s=c.createStatement();var r=s.executeQuery(query)){r.next();return r.getLong(1);}
+    }
+    @Test @Order(6) void operatorRefusesWithoutPrivateTerminalAndCreatesNothing() throws Exception {
+        sql("DELETE FROM admin_user");
+        var failure=assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[]{"admin-setup"},properties));
+        assertEquals("APPLICATION_START_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(0,count("SELECT count(*) FROM admin_user"));
+        assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[]{"admin-setup","extra"},properties));
+    }
+    @Test @Order(7) void operatorWorkflowEnrollsOnceThroughRealPrivateUseCasesAndRefusesRepeat() throws Exception {
+        sql("DELETE FROM admin_user");
+        String password="synthetic operator phrase "+token().substring(0,8);
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            var bootstrap=context.getBean(PrivateAdminBootstrap.class);var mfa=context.getBean(PrivateAdminMfa.class);
+            var wrong=new AdminSetupTest.FakeTerminal(true);
+            wrong.lines.addAll(List.of("owner@example.test","000000","000000","000000","000000","000000"));
+            wrong.secrets.addAll(List.of(password,password));
+            assertEquals(1,new AdminSetup(bootstrap,mfa,wrong).run());
+            assertEquals(1,count("SELECT count(*) FROM admin_user WHERE NOT enrolled"));
+            assertEquals(0,count("SELECT count(*) FROM admin_recovery_code"));
+            assertTrue(wrong.shown.getLast().contains("enrollment is incomplete"));
+            sql("DELETE FROM admin_user");
+            var terminal=new AdminSetupTest.FakeTerminal(true) {
+                @Override public String line(String prompt) {
+                    if(!prompt.startsWith("Authenticator")) return super.line(prompt);
+                    String key=shown.getFirst().lines().filter(l->l.startsWith("Key: ")).findFirst().orElseThrow().substring(5);
+                    try {
+                        var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");
+                        return String.format("%06d",generator.generateOneTimePassword(new javax.crypto.spec.SecretKeySpec(decodeBase32(key),"HmacSHA1"),java.time.Instant.now()));
+                    } catch(java.security.GeneralSecurityException failure) { throw new AssertionError(); }
+                }
+            };
+            terminal.lines.add("owner@example.test");terminal.secrets.addAll(List.of(password,password));
+            assertEquals(0,new AdminSetup(bootstrap,mfa,terminal).run());
+            String output=String.join("\n",terminal.shown);
+            assertTrue(output.contains("otpauth://totp/Purpuragenda:owner%40example.test?secret="));
+            assertEquals(10,output.lines().filter(l->l.matches("[A-Za-z0-9_-]{43}")).count());
+            assertFalse(output.contains(password));
+            assertEquals(1,count("SELECT count(*) FROM admin_user WHERE enrolled AND enabled"));
+            assertEquals(10,count("SELECT count(*) FROM admin_recovery_code"));
+            String key=terminal.shown.getFirst().lines().filter(l->l.startsWith("Key: ")).findFirst().orElseThrow().substring(5);
+            String plain=Base64.getEncoder().encodeToString(decodeBase32(key));
+            assertEquals(0,count("SELECT count(*) FROM admin_user WHERE position('"+plain+"' in totp_secret)>0 OR totp_secret=''"));
+            var repeat=new AdminSetupTest.FakeTerminal(true);
+            repeat.lines.add("other@example.test");repeat.secrets.addAll(List.of(password,password));
+            assertEquals(1,new AdminSetup(bootstrap,mfa,repeat).run());
+            assertEquals(List.of("An administrator already exists; nothing was changed."),repeat.shown);
+            assertEquals(1,count("SELECT count(*) FROM admin_user"));
+        }
+    }
 }

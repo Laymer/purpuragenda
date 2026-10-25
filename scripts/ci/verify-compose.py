@@ -4,18 +4,25 @@ import importlib.util
 import ipaddress
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import secrets
 import uuid
 from artifact_paths import remove_artifact, write_artifact
+from operator_session import Session, totp
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('local', ROOT / 'scripts/dev/local.py')
 LOCAL = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(LOCAL)
-CHECKS = {'configuration', 'startup', 'persistence', 'maintenance', 'proxy-headers'}
+CHECKS = {'configuration', 'startup', 'persistence', 'maintenance', 'proxy-headers', 'admin-setup'}
+KEYS = {'totp_key', 'delivery_key', 'rate_key'}
+SECRETS = {'postgres': {'postgres_password', 'migrator_password', 'app_password'}, 'migrate': {'migrator_password'},
+           'backend': {'app_password'} | KEYS, 'operator': {'app_password', 'totp_key', 'delivery_key'},
+           'web': set(), 'mailpit': set()}
 
 
 def allocated_subnets(networks):
@@ -24,7 +31,9 @@ def allocated_subnets(networks):
 
 def validate_configuration(document):
     services = document['services']
-    if set(services) != {'postgres', 'migrate', 'backend', 'web', 'mailpit'}:
+    # The profile-gated private operator is validated only when its profile is rendered.
+    if set(services) not in ({'postgres', 'migrate', 'backend', 'web', 'mailpit'},
+                             {'postgres', 'migrate', 'backend', 'web', 'mailpit', 'operator'}):
         raise ValueError('INVALID_LOCAL_SERVICES')
     for name, service in services.items():
         if (not service.get('read_only') or service.get('cap_drop') != ['ALL']
@@ -38,6 +47,15 @@ def validate_configuration(document):
             raise ValueError('DOCKER_SOCKET_EXPOSED')
         if any(not mount.startswith('/') for mount in service.get('tmpfs', [])):
             raise ValueError('INVALID_TMPFS_PATH')
+        if {secret['source'] for secret in service.get('secrets', [])} != SECRETS[name]:
+            raise ValueError('INVALID_SERVICE_SECRETS')
+    if 'operator' in services:
+        operator = services['operator']
+        if (operator.get('command') != ['admin-setup'] or operator.get('ports') or operator.get('tty') is not True
+                or operator.get('stdin_open') is not True or set(operator.get('networks', {})) != {'private'}
+                or operator['environment'].get('APP_DATABASE_USER') != 'purpuragenda_app'
+                or operator['environment'].get('APP_MODE') != 'local'):
+            raise ValueError('INVALID_OPERATOR_BOUNDARY')
     if (services['backend']['environment']['APP_DATABASE_USER'] != 'purpuragenda_app'
             or services['migrate']['environment']['APP_DATABASE_USER'] != 'purpuragenda_migrator'
             or {s['source'] for s in services['migrate']['secrets']} != {'migrator_password'}
@@ -52,6 +70,43 @@ def validate_configuration(document):
     if (services['backend']['environment']['APP_SECURITY_TRUSTED_PROXY_PEERS'] != peer
             or address not in ipaddress.ip_network(network['subnet']) or address in ipaddress.ip_network(network['ip_range'])):
         raise ValueError('INVALID_PROXY_ALLOCATION')
+
+
+def verify_admin_setup(command, environment, sql):
+    """Real private enrollment on a pseudo-terminal using one synthetic credential, then a refused repeat."""
+    password = 'synthetic ' + secrets.token_hex(12)
+    session = Session(command, ROOT, environment)
+    try:
+        session.expect('Administrator email: ')
+        session.send('operator@example.test')
+        for prompt in (re.escape('Password (15-128 characters): '), 'Repeat password: '):
+            session.expect(prompt)
+            session.send(password)
+        key = session.expect(r'Key: ([A-Z2-7]+)').group(1)
+        session.expect('Authenticator code: ')
+        session.send(totp(key))
+        session.expect('Enrollment complete')
+        status, remainder = session.finish()
+        assert status == 0 and password not in remainder and len(re.findall(r'(?m)^[A-Za-z0-9_-]{43}\s*$', remainder)) == 10
+    finally:
+        if session.process.poll() is None:
+            session.process.kill()
+    assert sql('SELECT enrolled AND enabled FROM admin_user') == 't'
+    assert sql('SELECT count(*) FROM admin_recovery_code') == '10'
+    repeat = Session(command, ROOT, environment)
+    try:
+        repeat.expect('Administrator email: ')
+        repeat.send('other@example.test')
+        for prompt in (re.escape('Password (15-128 characters): '), 'Repeat password: '):
+            repeat.expect(prompt)
+            repeat.send(password)
+        repeat.expect('An administrator already exists')
+        status, remainder = repeat.finish()
+        assert status != 0 and password not in remainder
+    finally:
+        if repeat.process.poll() is None:
+            repeat.process.kill()
+    assert sql('SELECT count(*) FROM admin_user') == '1'
 
 
 def validate_report(report, revision):
@@ -98,11 +153,12 @@ def main():
         original = {p.name: p.read_bytes() for p in (directory / 'secrets').iterdir()}
         shutil.copyfile(ROOT / 'ops/caddy/Caddyfile', directory / 'Caddyfile')
         validate_configuration(json.loads(run('config', '--format', 'json', base_command=base)))
+        validate_configuration(json.loads(run('--profile', 'operator', 'config', '--format', 'json', base_command=base)))
         assert not any(s.get('ports') for s in json.loads(run('config', '--format', 'json'))['services'].values())
         report['checks'].append('configuration')
         run('up', '--build', '--wait', '--wait-timeout', '240')
         assert json.loads(get('web', 'http://127.0.0.1:8080/healthz'))['status'] == 'UP'
-        assert '<app-root>' in get('web', 'http://127.0.0.1:8080/')
+        assert LOCAL.FRONTEND_MARKER.search(get('web', 'http://127.0.0.1:8080/'))
         assert sql('SELECT count(*) FROM service') == '2'
         assert sql('SELECT count(*) FROM scheduling_resource') == '1'
         for name in ('postgres', 'backend', 'web', 'mailpit'):
@@ -136,10 +192,11 @@ def main():
         assert get('web', 'http://proxy-probe:8081/api/probe', *headers).startswith('203.0.113.9|')
         assert get('web', 'http://127.0.0.1:8080/api/probe', *headers) == '127.0.0.1|-|-|-|-'
         report['checks'].append('proxy-headers')
+        verify_admin_setup(isolated + ['--profile', 'operator', 'run', '--rm', 'operator'], environment, sql)
+        report['checks'].append('admin-setup')
         report['passed'] = True
     finally:
         report['project'] = project
-        report['stateDirectory'] = str(directory)
         try:
             run('--profile', 'proxy-probe', 'down')  # Preserve named volumes AND the matching private secrets.
         except (OSError, subprocess.SubprocessError):
