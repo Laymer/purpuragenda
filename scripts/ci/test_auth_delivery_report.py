@@ -26,6 +26,16 @@ class AuthDeliveryReportTest(unittest.TestCase):
         self.assertIn('\npython3 scripts/ci/check-auth-delivery-report.py\n',build)
         self.assertNotIn('check-auth-delivery-report.py ||',build)
 
+    def test_nested_case_failures_and_errors_fail_even_with_zero_suite_counts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for tag in ('failure', 'error'):
+                with self.subTest(tag=tag):
+                    path = self.write(root, field='failures="0" errors="0" skipped="0"')
+                    path.write_text(path.read_text().replace('<testcase/>', f'<testcase><{tag}/></testcase>', 1))
+                    with self.assertRaises(ValueError):
+                        GATE.validate(root)
+
     def test_missing_incomplete_phantom_skipped_and_unrelated_suites_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
