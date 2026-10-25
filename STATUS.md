@@ -19,7 +19,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundations PR19 e917ee3 and PR23 6afe0e1 merged; SMTP transport claimed; auth worker pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; private bootstrap merged https://github.com/Laymer/purpuragenda/pull/27 at202fbc7 with12 green checks; MFA/enrollment/recovery/authentication remain |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/29; atomic MFA; bootstrap PR27 merged202fbc7; recovery pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -52,7 +52,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; Windows/WSL preflight slice active; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; remaining runbooks pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Windows preflight PR25 merged7d7f19e; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; actual WSL/full runbooks pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress unprovisioned, no existing public Linux server; registrar Squarespace confirmed read-only, Google Domains nameservers; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
