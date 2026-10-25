@@ -8,8 +8,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
-| P05 — Complete immutable booking snapshots and state transitions | Draft PR; https://github.com/Laymer/purpuragenda/pull/5; P04 merged;  |
-| P06 — Complete external receipt, refund and reconciliation calculations | Recovered WIP; depends on P05;  |
+| P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
+| P06 — Complete external receipt, refund and reconciliation calculations | Draft PR; https://github.com/Laymer/purpuragenda/pull/6; P05 merged;  |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Recovered WIP; depends on P06;  |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; depends on P07;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; depends on P08;  |
@@ -59,11 +59,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T06:52:02Z.
-- Current task: P05; branch: task/p05-booking-state; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/5.
-- Last pushed implementation commit: d5fa77c; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p05.
-- What works: P04 exact-head CI passed and merge 06f829a confirmed. What remains: inspect exact-head CI/reviews and squash-merge when green.
-- Decisions: meeting values can only be created by validated parsing; stored state must agree with confirmation history. Snapshots and payment facts stay independent.
-- Verification: bash scripts/ci/verify-build.sh passed 100 domain and three architecture tests, no skips; 228/229 lines (99.56%) and 378/385 branches (98.18%). Existing gate remains 95% lines / 90% branches.
-- Next concrete action: gh pr checks 5; gh pr view 5 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none, based on merged main.
+- Agent and UTC checkpoint: Codex, 2026-10-25T07:01:22Z.
+- Current task: P06; branch: task/p06-payment-ledger; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/6.
+- Last pushed implementation commit: 9cf267c28a2a9b101fa81a45c687c672e50c6645; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p06.
+- What works: P05 exact-head CI passed and merge 1470d88 confirmed. What remains: verify exact-head CI/reviews and squash-merge when green.
+- Decisions: price bounds apply to service prices; actual external receipt amounts remain independent. One ledger represents one booking. Outstanding refund takes precedence, fully returned late money must not hide retained paid funds.
+- Verification: bash scripts/ci/verify-build.sh passed 108 domain and three architecture tests, no skips; 276/277 lines (99.64%) and 478/489 branches (97.75%). Docker unavailable in both sandboxed and approved checks. Existing gate remains 95% lines / 90% branches.
+- Next concrete action: gh pr checks 6; gh pr view 6 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after rebasing onto merged P05.
