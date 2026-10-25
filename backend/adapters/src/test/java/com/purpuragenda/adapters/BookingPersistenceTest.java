@@ -2,6 +2,7 @@ package com.purpuragenda.adapters;
 
 import com.purpuragenda.adapters.out.postgres.PostgresScheduling;
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
+import com.purpuragenda.domain.DomainFailure;
 import com.purpuragenda.domain.booking.*;
 import com.purpuragenda.domain.customer.Intake;
 import com.purpuragenda.domain.scheduling.*;
@@ -155,6 +156,13 @@ class BookingPersistenceTest {
         corrupt("booking_snapshot","DELETE FROM booking_snapshot WHERE booking_id=?",b.id());invalidRead(b.id());
     }
     @Test void meetingIdAgreementAndConfiguredHostValidationAreRequired() {
+        assertEquals("INVALID_MEETING",assertThrows(DomainFailure.class,()->unit.execute(key(),tx->tx.attempt(()->{
+            Booking p=pending(tx,tx.now().plusSeconds(259200));
+            Booking b=Booking.confirmed(p.id(),p.reference(),customer,p.snapshot(),Booking.Origin.ADMINISTRATOR,tx.now(),p.start(),
+                    Meeting.parse("https://meeting.example.test/j/345678901234",Set.of("meeting.example.test")));
+            tx.save(b);return ok(b);
+        }))).code());
+        assertEquals(0,count("booking"));assertEquals(0,count("booking_snapshot"));assertEquals(0,count("booking_occupancy"));
         UUID id=fixture.booking(MigrationTest.START,"CONFIRMED",MigrationTest.snapshot());
         String originalId=jdbc.queryForObject("SELECT meeting_id FROM booking WHERE id=?",String.class,id);
         String changedId=originalId.equals("123456789012")?"123456789013":"123456789012";
@@ -162,6 +170,13 @@ class BookingPersistenceTest {
         jdbc.update("UPDATE booking SET meeting_url=? WHERE id=?","https://meeting.example.test/j/"+changedId,id);invalidRead(id);
         Set<String> hosts=new HashSet<>(Set.of("meeting.example.test"));PostgresScheduling configured=new PostgresScheduling(source,hosts);hosts.clear();
         assertEquals(changedId,configured.read(v->v.booking(id).orElseThrow().meeting().meetingId()));
+        Receipt allowed=configured.execute(key(),tx->tx.attempt(()->{
+            Booking p=pending(tx,tx.now().plusSeconds(259200));
+            Booking b=Booking.confirmed(p.id(),p.reference(),customer,p.snapshot(),Booking.Origin.ADMINISTRATOR,tx.now(),p.start(),
+                    Meeting.parse("https://meeting.example.test/j/345678901234",Set.of("meeting.example.test")));
+            tx.save(b);return ok(b);
+        }));
+        assertEquals("345678901234",configured.read(v->v.booking(allowed.entityId()).orElseThrow().meeting().meetingId()));
         assertThrows(IllegalArgumentException.class,()->new PostgresScheduling(source,Set.of()));
         assertThrows(IllegalArgumentException.class,()->new PostgresScheduling(source,null));
     }
@@ -194,6 +209,10 @@ class BookingPersistenceTest {
                     normal.createdAt(),normal.start(),normal.expiresAt().minusNanos(1),null,null,1,0,false);
             assertThrows(Failure.class,()->tx.save(fractionalExpiry));
             assertThrows(Failure.class,()->tx.save(copy(normal,customer,normal.reference(),normal.origin(),normal.createdAt(),normal.snapshot(),2)));
+            Intake intake=normal.snapshot().intake();
+            Intake future=new Intake(intake.firstName(),intake.lastName(),intake.telephone(),tx.now().atZone(SchedulingPolicy.BUSINESS_ZONE).toLocalDate().plusDays(1),intake.birthTime(),intake.birthplace(),intake.message());
+            Booking.Snapshot badBirth=new Booking.Snapshot(normal.snapshot().service(),normal.snapshot().policy(),future,normal.snapshot().creationEmail(),normal.snapshot().displayZone(),normal.snapshot().privacyNoticeVersion());
+            assertEquals("INVALID_BIRTH_DATE",assertThrows(DomainFailure.class,()->tx.save(copy(normal,customer,normal.reference(),normal.origin(),normal.createdAt(),badBirth,1))).code());
             return new Receipt(Code.OK,null,0);
         });
         assertEquals(0,count("booking"));

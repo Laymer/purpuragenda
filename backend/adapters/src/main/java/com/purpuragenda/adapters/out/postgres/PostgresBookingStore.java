@@ -61,6 +61,8 @@ final class PostgresBookingStore {
         } catch(RuntimeException failure) { throw invalid(); }
     }
     void save(Booking value,Instant now) {
+        value.snapshot().intake().validateAt(value.createdAt());
+        if(value.meeting()!=null) require(Meeting.parse(value.meeting().participantUrl(),meetingHosts).meetingId().equals(value.meeting().meetingId()));
         require(value.createdAt().equals(value.createdAt().truncatedTo(ChronoUnit.MICROS))
                 && value.start().equals(value.start().truncatedTo(ChronoUnit.MICROS))
                 && (value.expiresAt()==null || value.expiresAt().equals(value.expiresAt().truncatedTo(ChronoUnit.MICROS))));
