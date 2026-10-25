@@ -16,7 +16,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; dependencies in docs/delivery.md;  |
-| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Recovered WIP; dependencies in docs/delivery.md;  |
+| P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Draft PR; https://github.com/Laymer/purpuragenda/pull/12; implementation9acb191; P48 integrated; exact-head CI pending |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -51,25 +51,26 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Draft PR; https://github.com/Laymer/purpuragenda/pull/8; protection foundation; final release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at0c3ae04; final release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection PR8 is active. Full P40 application-wide acceptance and P48 release publication remain pending.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P48/merge-protection: agent=Codex-p48; branch=task/p48-merge-protection; base=main; handoff=docs/handoffs/p48-merge-protection.md
+- P13/crypto: agent=Codex-p13; branch=task/p13-crypto; base=main; handoff=docs/handoffs/p13-crypto.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p48, 2026-10-25T08:17:50Z.
-- Current task: P48/merge-protection; branch: task/p48-merge-protection; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/8.
-- Last pushed implementation commit: 79d8482; uncommitted changes: timestamp-normalization fix and regression tests pending commit.
-- What works: P01–P06 and P01/concurrency merged. P48 tested implementation is pushed; coordinator applied ruleset25814212; admin receipt and live readback passed. What remains: exact-head CI, reviewed live configuration and coordinator merge; P40/final publication pending.
-- Decisions: preserve independent category jobs, existing deletion/non-fast-forward restrictions, required-check pins and stronger managed rules; no settings application by worker.
-- Verification: integrated 15 ledger + 23 coverage + 31 delivery-policy tests and full build passed (108 domain + three architecture, no skips, 99.64% lines / 97.75% branches); whitespace passed. Read-only live protection check passed; exact-head CI remains required.
-- Next concrete action: push receipt/regressions, require exact-head CI, independent approval and coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P01/concurrency15ba8b4 already merged; P40 foundation bb7d4cf already merged.
+- Agent and UTC checkpoint: Codex-p13, 2026-10-25T08:22:07Z.
+- Current task: P13/crypto; branch: task/p13-crypto; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/12.
+- Last pushed implementation commit: ca51dd5; uncommitted changes: final draft handoff and key-file replacement regression, to be included in this tested checkpoint.
+- What works: P40 foundation merged bb7d4cf; Maven Central POM provenance verified for BC1.86 and OTP1.0.0.
+- What remains: exact-head remote CI and coordinator merge; coordinator reviewed implementation and millisecond-boundary fix.
+- Decisions: bounded AES256-GCM key/envelope handling; OTP RFC vectors; Argon2id fixed parameters; no authentication flows in P13.
+- Verification: full build passed108 domain+11 adapter+3 architecture tests including key-file replacement regression; domain276/277 lines478/489 branches; adapters70/73 lines52/52 branches;23 coverage and38 ledger/coverage regressions passed. Initial sandbox cache write failed; approved rerun passed. Coordinator millisecond-overflow finding fixed with boundary regression.
+- Next concrete action: push final checkpoint and request coordinator exact-head CI/merge.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: P40 bb7d4cf and P48 0c3ae04 merged and integrated.
