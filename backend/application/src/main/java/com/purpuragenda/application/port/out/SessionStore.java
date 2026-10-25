@@ -26,7 +26,16 @@ public interface SessionStore {
         @Override public void close() { Arrays.fill(token,'\0');Arrays.fill(csrf,'\0'); }
         @Override public String toString() { return "IssuedSession[REDACTED]"; }
     }
+    /** Replacement CSRF proof for a current live session; the bearer cookie and browser binding are unchanged. */
+    record CsrfRotation(Snapshot session,char[] csrf) implements AutoCloseable {
+        public CsrfRotation { csrf=csrf.clone(); }
+        @Override public char[] csrf() { return csrf.clone(); }
+        @Override public void close() { Arrays.fill(csrf,'\0'); }
+        @Override public String toString() { return "CsrfRotation[REDACTED]"; }
+    }
     Issued anonymous();
+    /** Consumes the cookie buffer. Locks only the session row; no grant or administrator row is locked. */
+    Optional<CsrfRotation> rotateCsrf(char[] token);
     /** Consumes the caller's cookie buffer; lookup and idle touch share one captured DB time. */
     Optional<Snapshot> resolve(char[] token);
     /** Verifies both current persisted session and current CSRF digest. Input CSRF buffer is consumed. */

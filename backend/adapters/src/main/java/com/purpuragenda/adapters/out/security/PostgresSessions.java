@@ -41,6 +41,24 @@ public final class PostgresSessions implements SessionStore {
             });
         } finally { clear(token); }
     }
+    @Override public Optional<CsrfRotation> rotateCsrf(char[] token) {
+        try {
+            var hash=crypto.digest(token);if(hash.isEmpty())return Optional.empty();
+            List<CsrfRotation> prepared=new ArrayList<>();
+            try {
+                return transaction(c->{
+                    var row=load(c,"token_hash",hash.get(),null);Instant now=now(c);
+                    if(row==null || !live(c,row,now))return Optional.empty();
+                    try(var csrf=crypto.recoveryCode()) {
+                        update(c,"UPDATE app_session SET csrf_hash=?,last_seen_at=? WHERE id=?",csrf.hash(),now,row.session.reference().id());
+                        char[] nonce=csrf.value();
+                        try { var result=new CsrfRotation(touched(row.session,now),nonce);prepared.add(result);return Optional.of(result); }
+                        finally { clear(nonce); }
+                    }
+                });
+            } catch(RuntimeException failure) { prepared.forEach(CsrfRotation::close);throw failure; }
+        } finally { clear(token); }
+    }
     @Override public boolean csrf(SessionReference reference,char[] token) {
         try {
             var hash=crypto.digest(token);if(hash.isEmpty())return false;

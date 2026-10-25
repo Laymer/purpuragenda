@@ -91,6 +91,17 @@ constructor({ accessToken, apiKeys, basePath, credentials, encodeParam, encoder,
         }
         this.encodeParam = encodeParam ?? (param => this.defaultEncodeParam(param));
         this.credentials = credentials ?? {};
+
+        // init default sessionCookie credential
+        if (!this.credentials['sessionCookie']) {
+            this.credentials['sessionCookie'] = () => {
+                if (this.apiKeys === null || this.apiKeys === undefined) {
+                    return undefined;
+                } else {
+                    return this.apiKeys['sessionCookie'] || this.apiKeys['__Host-purpuragenda'];
+                }
+            };
+        }
     }
 
     /**

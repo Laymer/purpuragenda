@@ -119,4 +119,68 @@ class RuntimeDatabaseTest {
         }
     }
 
+    static HttpResponse<String> call(int port,String method,String path,String... headers) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            var request=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).timeout(Duration.ofSeconds(5))
+                    .method(method,HttpRequest.BodyPublishers.noBody());
+            for(int i=0;i<headers.length;i+=2)request.header(headers[i],headers[i+1]);
+            return client.send(request.build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
+    static String field(String body,String name) { return body.replaceAll(".*\"" + name + "\":\"([^\"]+)\".*","$1"); }
+    static String count(String sql) throws Exception {
+        try(var c=DriverManager.getConnection(postgres.getJdbcUrl(),"postgres",postgres.getPassword());var s=c.createStatement();var r=s.executeQuery(sql)){r.next();return r.getString(1);}
+    }
+    static final String ORIGIN="http://localhost:8080";
+    @Test @Order(6) void sessionLifecycleOverRealHttpUsesPersistedSessionsOriginAndCsrf() throws Exception {
+        sql("DELETE FROM app_session");
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            int port=port(context);
+            var denied=call(port,"POST","/api/v1/session/bootstrap");
+            assertEquals(403,denied.statusCode());assertTrue(denied.body().contains("\"code\":\"ORIGIN_REJECTED\""));
+            assertEquals("no-store",denied.headers().firstValue("Cache-Control").orElseThrow());assertEquals("0",count("SELECT count(*) FROM app_session"));
+            assertEquals(403,call(port,"POST","/api/v1/session/bootstrap","Origin","http://127.0.0.1:"+port).statusCode());
+            assertEquals(403,call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Sec-Fetch-Site","cross-site").statusCode());
+            var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Sec-Fetch-Site","same-origin","X-Forwarded-Host","evil.example");
+            assertEquals(200,boot.statusCode());assertEquals("no-store",boot.headers().firstValue("Cache-Control").orElseThrow());
+            String setCookie=boot.headers().firstValue("Set-Cookie").orElseThrow();
+            assertTrue(setCookie.startsWith("purpuragenda-local=") && setCookie.contains("HttpOnly") && setCookie.contains("SameSite=Lax") && !setCookie.contains("Secure"));
+            String cookie=setCookie.substring(0,setCookie.indexOf(';')),csrf=field(boot.body(),"csrfToken");
+            assertEquals("1",count("SELECT count(*) FROM app_session"));assertEquals("ANONYMOUS",field(boot.body(),"role"));
+            assertEquals("0",count("SELECT count(*) FROM app_session WHERE token_hash='"+cookie.substring(cookie.indexOf('=')+1)+"' OR csrf_hash='"+csrf+"'"));
+            var state=call(port,"GET","/api/v1/session","Cookie",cookie);
+            assertEquals(200,state.statusCode());assertFalse(state.body().contains("csrfToken"));
+            assertEquals(401,call(port,"GET","/api/v1/session").statusCode());
+            assertEquals(401,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"X-CSRF-Token",csrf).statusCode());
+            assertEquals(403,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie).statusCode());
+            assertEquals(403,call(port,"POST","/api/v1/session/logout","Origin","http://evil.example","Cookie",cookie,"X-CSRF-Token",csrf).statusCode());
+            var again=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Cookie",cookie);
+            assertEquals(200,again.statusCode());assertTrue(again.headers().firstValue("Set-Cookie").isEmpty());
+            String rotated=field(again.body(),"csrfToken");assertNotEquals(csrf,rotated);assertEquals("1",count("SELECT count(*) FROM app_session"));
+            assertEquals(403,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",csrf).statusCode());
+            var out=call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated);
+            assertEquals(204,out.statusCode());assertTrue(out.headers().firstValue("Set-Cookie").orElseThrow().contains("Max-Age=0"));
+            assertEquals("1",count("SELECT count(*) FROM app_session WHERE revoked_at IS NOT NULL"));
+            assertEquals(401,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated).statusCode());
+            assertEquals(401,call(port,"GET","/api/v1/session","Cookie",cookie).statusCode());
+            assertEquals(401,call(port,"POST","/api/v1/admin/register","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",rotated).statusCode());
+        }
+    }
+    @Test @Order(7) void expiredSessionsAreRefusedAndRebootstrapIssuesFreshAuthority() throws Exception {
+        sql("DELETE FROM app_session");
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            int port=port(context);
+            var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow();cookie=cookie.substring(0,cookie.indexOf(';'));
+            sql("UPDATE app_session SET issued_at=issued_at-interval '31 minutes',last_seen_at=last_seen_at-interval '31 minutes',absolute_expires_at=absolute_expires_at-interval '31 minutes'");
+            assertEquals(401,call(port,"GET","/api/v1/session","Cookie",cookie).statusCode());
+            assertEquals(401,call(port,"POST","/api/v1/session/logout","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",field(boot.body(),"csrfToken")).statusCode());
+            var fresh=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN,"Cookie",cookie);
+            assertEquals(200,fresh.statusCode());assertTrue(fresh.headers().firstValue("Set-Cookie").orElseThrow().startsWith("purpuragenda-local="));
+            assertNotEquals(cookie,fresh.headers().firstValue("Set-Cookie").orElseThrow().split(";")[0]);
+            assertEquals("2",count("SELECT count(*) FROM app_session"));
+            assertEquals(200,get(port,"/actuator/health/readiness").statusCode());
+        }
+    }
+
 }

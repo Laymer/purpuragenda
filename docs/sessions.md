@@ -55,3 +55,11 @@ New PostgreSQL tests cover migration rerun, strict clock boundaries, proof/sessi
 rollback, a 20-way proof race, recovery races, credential epochs, grant revocation
 and token rotation. Their full report is mandatory; compilation alone does not
 certify these scenarios.
+
+## HTTP edge
+
+`POST /api/v1/session/bootstrap`, `GET /api/v1/session` and `POST /api/v1/session/logout` expose these sessions. The cookie is `__Host-purpuragenda` (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain) operationally and `purpuragenda-local` (no Secure) in local, test and restore modes. Bootstrap needs only the exact configured Origin: with no live cookie it creates an anonymous guest session; with one it rotates only the CSRF proof and sets no cookie. Only digests are stored, so a reload must bootstrap again. `GET /session` returns the role and idle/absolute deadlines only.
+
+Every unsafe method on every route requires exactly one `Origin` equal to the canonical `APP_PUBLIC_ORIGIN` (`null`, repeated, wrong scheme, host or port are refused; forwarded headers are ignored), a `Sec-Fetch-Site` that is absent or `same-origin`, a live persisted session cookie and one `X-CSRF-Token` equal to the current proof. Failures are `application/problem+json` with `Cache-Control: no-store`, a fixed code (`ORIGIN_REJECTED`, `CROSS_SITE_REJECTED`, `SESSION_REQUIRED`, `CSRF_REJECTED`, `SESSION_UNAVAILABLE`) and a random correlation id; no exception text. Logout revokes the row and expires the cookie. Session-only requests lock the `app_session` row alone, never grant or administrator rows. Throttles and login/email endpoints are separate slices; until throttles land anonymous bootstrap creation is unlimited.
+
+`X-Purpuragenda-Client-IP` (set by Caddy) is honored only when the socket peer exactly matches a literal IP in `APP_SECURITY_TRUSTED_PROXY_PEERS` (default empty; no hostnames or ranges) and exactly one valid literal IP is supplied; otherwise the socket peer is used. `Forwarded` and `X-Forwarded-*` are never read.
