@@ -12,7 +12,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/35 at5909901; additive009 correction; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24, expiry PR26 and quota https://github.com/Laymer/purpuragenda/pull/28 atf72bae2 merged; creation remains |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24, expiry PR26 and quota https://github.com/Laymer/purpuragenda/pull/28 atf72bae2 merged; command failure boundary claimed; authorized creation remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
@@ -62,15 +62,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P49/native-toolchain: agent=Codex-worker-c; branch=task/p49-native-toolchain; base=main; handoff=docs/handoffs/p49-native-toolchain.md
+- P09/command-context: agent=Codex-coordinator; branch=task/p09-command-context; base=main; handoff=docs/handoffs/p09-command-context.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T13:04:12Z.
-- Current task: P01/handoff-integrity; branch: task/p01-handoff-integrity; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/37.
-- Last pushed implementation commit: fa618f0 (P14, merged526290f) and078214e (handoff guard); uncommitted changes: tested current-main merge and final ledger/evidence pending checkpoint publication.
-- What works: P08 correction PR35 merged5909901 and P14 worker PR36 merged526290f after exact-head independent review and all13checks. Claimed handoff ancestry links are rejected before the claimed file is opened.
-- What remains: P15 guest proof/redemption, P16 persisted recovery/reenrollment and P17 access protections; P09 creation remains. P14 operational key/profile/runner composition remains P45; booking event expansion/reminders remain P36. No active implementation owners remain.
-- Decisions: preserve applied001–008 plus additive009; recovery010 remains reserved; leave P50 PR31 paused; no deployment or liveSMTP. Static claimed-handoff link validation is not a race-proof guarantee for all document reads.
-- Verification: PR36 exactfa618f0 CI40195543498 all13green,10realPG/SMTP worker cases,108domain/52application/142adapters/3architecture without skips;183rootPython/31policy and allcoverage gates pass.19local ledger cases/docs/inventory/whitespace pass. Current checkpoint requires fresh combined CI and independent review; local platform limits remain recorded.
-- Next concrete action: claim P15/email-proof and P16/recovery-persistence as independent slices, serializing schema changes with010 reserved for recovery; keep public flows behind P17 protections before booking creation/HTTP integration.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; clean implementation worktrees/tmp/purpuragenda-p08-deferred-booking and/tmp/purpuragenda-p14-auth-worker; coordinator/tmp/purpuragenda-handoff-integrity; stacked PR dependencies: none, both application prerequisite slices merged.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T13:47:49Z.
+- Current task: P09/command-context; branch: task/p09-command-context; base: main; PR URL: not yet created.
+- Last pushed implementation commit: none for this slice; base00cdd57; uncommitted changes: tested command failure boundary and evidence ready for publication.
+- What works: GitHub confirms handoff PR37 merged00cdd57; root started clean. Docker Desktop server29.6.2 is reachable on this Mac.
+- What remains: full local v1. Worker A owns P15/email-redemption, worker B P16/recovery-persistence, worker C P49/native-toolchain in isolated worktrees with their own claimed ledgers. Coordinator owns the P09 command boundary, integration and review rotation.
+- Decisions: preserve recovery6f9405b and existing worktrees; reserve010 for P16 and011 for P15. Keep P50 PR31 paused. Local-only application acceptance is separate from deployment, live SMTP, purchases and genuine external acceptance.
+- Verification: full native build passed108domain/57application/147adapters/3architecture,6Angular and185Python; allcoverage gates pass. Contract drift,31policy cases, live protection/docs/inventory/whitespace pass. Exact-head hosted categories pending.
+- Next concrete action: publish command boundary draft and obtain exact-head review/CI; then integrate typed grant authority after P15.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; coordinator root checkout and worker worktrees/private/tmp/purpuragenda-p15-guest-access,/private/tmp/purpuragenda-p16-recovery-persistence,/private/tmp/purpuragenda-p49-native-toolchain; stacked PR dependencies: none for this command failure slice.
