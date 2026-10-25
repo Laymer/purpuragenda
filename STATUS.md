@@ -18,7 +18,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
-| P15 — Complete guest email proof, scoped management access and recovery | Draft PR; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 atfb65717 independently approved; native360Java/6Angular/199Python and allcoverage pass; main39001ae integration/checks pending; P17 session attachment remains |
+| P15 — Complete guest email proof, scoped management access and recovery | Draft PR; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 independently approved and hosted8a76635 green; native360Java/6Angular/199Python passed before integration; host sleep interrupted integrated run; currentmain6b4544e recheck pending; P17 session attachment remains |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; JDBC session/proof foundation claimed by Codex-worker-b; reserved migration012; HTTP protections and cleanup remain |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -48,7 +48,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; SAST merged https://github.com/Laymer/purpuragenda/pull/21 at0454505 with12 green checks; secret/dependency foundations merged; full SBOM/container/config pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
-| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; executable bootstrap https://github.com/Laymer/purpuragenda/pull/42 draft; local Docker Desktop verified; Compose/operator/test stack remain |
+| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; executable bootstrap https://github.com/Laymer/purpuragenda/pull/42 merged6b4544e; local-compose claimed; operator/test/operational/restore stack remain |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
@@ -64,7 +64,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P09/atomic-creation: agent=Codex-coordinator; branch=task/p09-atomic-creation; base=main; handoff=docs/handoffs/p09-atomic-creation.md
 - P15/management-recovery: agent=Codex-worker-a; branch=task/p15-management-recovery; base=main; handoff=docs/handoffs/p15-management-recovery.md
 - P17/session-proofs: agent=Codex-worker-b; branch=task/p17-session-proofs; base=main; handoff=docs/handoffs/p17-session-proofs.md
-- P45/executable-bootstrap: agent=Codex-worker-c; branch=task/p45-executable-bootstrap; base=main; handoff=docs/handoffs/p45-executable-bootstrap.md
+- P45/local-compose: agent=Codex-worker-c; branch=task/p45-local-compose; base=main; handoff=docs/handoffs/p45-local-compose.md
 
 ## Active handoff
 

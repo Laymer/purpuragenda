@@ -25,6 +25,8 @@ def validate(root):
         suites.append(('AdminMfaDatabaseTest', 12))
     if (root / 'backend/adapters/src/main/resources/db/changelog/009-deferred-booking-invariants.sql').is_file():
         suites.append(('DeferredBookingIntegrityTest', 8))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/DatabaseMigration.java').is_file():
+        suites.append(('DatabaseMigrationTest', 5))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java').is_file():
         suites.append(('GuestAccessDatabaseTest', 14))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java').is_file():
@@ -44,6 +46,18 @@ def validate(root):
         if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed guest access/recovery cases')
+
+    if (root / 'backend/bootstrap/src/main/java/com/purpuragenda/bootstrap/Purpuragenda.java').is_file():
+        qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
+        report = root / ('backend/bootstrap/target/surefire-reports/TEST-' + qualified + '.xml')
+        if not report.is_file():
+            raise ValueError('Missing mandatory runtime PostgreSQL report')
+        suite = ET.parse(report).getroot()
+        cases = suite.findall('testcase')
+        if (suite.get('name') != qualified or len(cases) < 5 or int(suite.get('tests', '0')) != len(cases)
+                or any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
+                or any(suite.findall('.//' + key) for key in ('failure', 'error', 'skipped'))):
+            raise ValueError('Incomplete or failed runtime PostgreSQL suite')
 
 
 if __name__ == '__main__':

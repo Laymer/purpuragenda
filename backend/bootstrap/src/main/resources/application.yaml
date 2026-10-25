@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8081}
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  shutdown: graceful
+  forward-headers-strategy: none
+  error:
+    include-message: never
+    include-stacktrace: never
+spring:
+  main:
+    banner-mode: 'off'
+    log-startup-info: false
+  liquibase:
+    enabled: false
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,applicationSchema
+logging:
+  level:
+    root: 'OFF'
