@@ -166,6 +166,12 @@ All51 root+31 policy Python tests passed; full build108 domain+11 security+3 arc
 
 P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
 
+## P48 mandatory suite inventory evidence
+
+Added explicit implemented/planned categories and owning task mapping, exact workflow/aggregate prerequisite/results agreement, source activation checks and a release guard that rejects unimplemented categories. Independent review caught job-step/aggregate-step condition and continue-on-error bypasses; regressions now reject ordinary/first-key/flow-style forms while retaining always-run receipt upload.
+
+Local pre-P07 integration verification:83 root+31 policy Python tests,108 domain+11 security+3 architecture full build, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters, deterministic contracts/docs/whitespace passed. --release deliberately fails while planned automated categories remain. P07 has since merged with real PostgreSQL CI evidence; integration must activate postgres-migrations and obtain fresh combined CI, with localDocker still unavailable. No full-release or P48 publication claim.
+
 ## P07 review checkpoint
 
 P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
@@ -187,3 +193,5 @@ P07 bootstrap root cause reproduced offline: Testcontainers2.0.5 parses a combin
 P07 integrated standing authorization main04282fa, preserving current owner launch choices and instructions. Targeted parser test invocation initially stopped at strict domain/empty-scaffold selector checks; rerun includes actual domain suites and permits only empty scaffolds to have no selected tests. No CI threshold or suite gate was weakened.
 
 P07 actual-container CI40176952153 at8803d53 ran all11 migration tests,9 passed and2 failed: restart readiness and a later connection setup. Docker can reallocate an ephemeral published port during restart while Testcontainers retains its initial inspect data. The existing restart persistence test now inspects current running state/bindings and reconnects through the fresh endpoint. Added no raw provider diagnostics. Integrated mandatory secret scanning from main8f5ed62. Corrected exact-head container rerun remains required.
+
+P07 final reconciliation: PR7 mergedff3b33b after CI40177367926 at exact head524aa51 passed every implemented category. Real pinned PostgreSQL18.6/fsync-on suite passed11 migration cases including restart; adapters24tests (11security+2image parser+11migration), domain108 and architecture3; coverage unchanged99.64/97.75domain95.89/100adapters. Local Docker remains unavailable; container evidence is CI, distinct from isolated manual SQL evidence.
