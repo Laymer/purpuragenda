@@ -1,0 +1,11 @@
+# Customer booking changes
+
+`CustomerBookingChanges` is an internal application command; its `BookingChangesUnitOfWork` adapter and protected HTTP routes remain subsequent implementation. The adapter must authorize the exact booking using the current persisted session and grant/account before any idempotent receipt replay. It must use the shared scheduling resource lock, captured database time and transaction, then expose the current booking after synchronous expiry reclamation. Neither request accepts a customer identity or administrator flag.
+
+Cancellation and rescheduling require an expected booking version, included in the normalized request fingerprint. A mismatch returns `STALE_VERSION` inside the savepoint, preserving earlier expiry reclamation. The snapshot customer cutoff is inclusive. Pending holds must still be live and terminal states never revive. Cancellation records refund obligations and audit/outbox atomically without changing independent payment facts or refunding the submission charge.
+
+A changed start requires the reviewed current policy version and rechecks current start windows, grid, notice, Brussels calendar-month horizon, daily capacity, active allowance and full120minute blackout/occupancy. The original reservation is excluded from all relevant counts. The submission limit is not reapplied and no new charge is recorded. Service/intake/policy/contact snapshots, payment facts, confirmation basis and state remain unchanged; pending expiry may shorten but never extend. Successful confirmed moves advance the calendar revision and queue both notification audiences through the adapter effects contract.
+
+An unchanged start is a no-op after checking the expected version, original state and snapshot cutoff. It returns the existing booking version without saving, reapplying current policy/calendar/quotas or creating effects. A stale reviewed policy version is harmless for this no-op; it is still part of the fingerprint, so reuse of one key for changed content remains a conflict. Changed-start requests require fresh policy review.
+
+Unit tests exercise the command boundary and failure propagation. Actual ownership, idempotent storage, refund/outbox atomicity, failed-move rollback and concurrent PostgreSQL mutations require the concrete adapter tests before public exposure.

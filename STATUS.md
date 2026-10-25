@@ -13,12 +13,12 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/35 at5909901; additive009 correction; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24, expiry PR26, quotas PR28 and command boundary PR39 merged; typed customer creation application and next-date occupancy https://github.com/Laymer/purpuragenda/pull/43 merged39001ae; concrete session/grant transaction pending P17 |
-| P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
+| P10 — Complete atomic cancellation, rescheduling and appointment outcomes | In progress; customer cancellation/rescheduling application slice claimed by Codex-worker-a; concrete authorization/storage and administrator outcomes remain |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
-| P15 — Complete guest email proof, scoped management access and recovery | Draft PR; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 independently approved and hosted8a76635 green; native360Java/6Angular/199Python passed before integration; host sleep interrupted integrated run; currentmain6b4544e recheck pending; P17 session attachment remains |
+| P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d after exact20a7120 review, CI40212269656 and native393Java/6Angular/201Python passed; P17 session attachment/public protections remain |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; JDBC session/proof foundation claimed by Codex-worker-b; reserved migration012; HTTP protections and cleanup remain |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P09/atomic-creation: agent=Codex-coordinator; branch=task/p09-atomic-creation; base=main; handoff=docs/handoffs/p09-atomic-creation.md
-- P15/management-recovery: agent=Codex-worker-a; branch=task/p15-management-recovery; base=main; handoff=docs/handoffs/p15-management-recovery.md
+- P10/customer-changes: agent=Codex-worker-a; branch=task/p10-customer-changes; base=main; handoff=docs/handoffs/p10-customer-changes.md
 - P17/session-proofs: agent=Codex-worker-b; branch=task/p17-session-proofs; base=main; handoff=docs/handoffs/p17-session-proofs.md
 - P45/local-compose: agent=Codex-worker-c; branch=task/p45-local-compose; base=main; handoff=docs/handoffs/p45-local-compose.md
 
