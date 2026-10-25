@@ -46,19 +46,30 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
     private Instant capture() { return jdbc.queryForObject("SELECT clock_timestamp()",(row,n)->row.getTimestamp(1).toInstant()); }
     @Override public Receipt execute(CommandKey key, Function<Transaction,Receipt> work) {
         Objects.requireNonNull(key); Objects.requireNonNull(work);
+        return resolved(now -> new Resolved(key,Function.identity(),work));
+    }
+    /** Adapter-internal authority resolution shares this exact resource lock, time and transaction. */
+    record Resolved(CommandKey key,Function<Receipt,Receipt> replay,Function<Transaction,Receipt> work) {
+        Resolved { Objects.requireNonNull(key);Objects.requireNonNull(replay);Objects.requireNonNull(work); }
+    }
+    Receipt resolved(Function<Instant,Resolved> authorize) {
+        Objects.requireNonNull(authorize);
         for(int attempt=0;;attempt++) {
             try {
                 return transaction.execute(status->{
                     jdbc.execute("SET LOCAL lock_timeout='5s'");
                     jdbc.queryForObject("SELECT id FROM scheduling_resource WHERE id=1 FOR UPDATE",Integer.class);
                     Instant now=capture();
+                    if(Boolean.TRUE.equals(jdbc.queryForObject("SELECT maintenance FROM operation_control WHERE id=1",Boolean.class)))
+                        throw new Failure(Failure.Kind.MAINTENANCE);
+                    Resolved resolved=Objects.requireNonNull(authorize.apply(now));CommandKey key=resolved.key();
                     List<Receipt> existing=jdbc.query("""
                         SELECT fingerprint,receipt->>'code' AS code,receipt->>'entityId' AS entity,
                           receipt->>'version' AS version,jsonb_exists_all(receipt,ARRAY['code','entityId','version']) AS complete
                         FROM idempotency_record WHERE scope=? AND key=?
                         """,(row,n)->decode(row,key),key.scope().storageKey(),key.key());
-                    if(!existing.isEmpty()) return existing.getFirst();
-                    Receipt receipt=Objects.requireNonNull(work.apply(new Tx(now,status)));
+                    if(!existing.isEmpty()) return Objects.requireNonNull(resolved.replay().apply(existing.getFirst()));
+                    Receipt receipt=Objects.requireNonNull(resolved.work().apply(new Tx(now,status)));
                     jdbc.update("""
                         INSERT INTO idempotency_record(scope,key,fingerprint,receipt,created_at)
                         VALUES(?,?,?,jsonb_build_object('code',?::text,'entityId',?::text,'version',?::bigint),?)

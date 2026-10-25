@@ -106,7 +106,9 @@ public final class PostgresAuthDeliveryStore implements AuthDeliveryStore {
                         || !e.token.matches("[A-Za-z0-9_-]{43}") || !same(Secrets.hash(e.token),hash)) throw new IllegalArgumentException();
                 return Optional.of(new MailDelivery.Message(lease.id(),e.email,"Verify your Purpuragenda email",
                     "Open this link and choose Verify email:\n"+origin+"/verify#token="+e.token+"&purpose="+e.purpose.name()
-                    +"\n\nThis single-use link expires after 15 minutes. Open it in the browser that requested it. If you did not request this email, ignore it."));
+                    +"\n\nThis single-use link expires after 15 minutes."
+                    +(e.browser==null?"":" Open it in the browser that requested it.")
+                    +" If you did not request this email, ignore it."));
             } catch(RuntimeException invalid) { erase(c,lease.id(),"AUTH_DELIVERY_INVALID"); return Optional.empty(); }
         });
     }

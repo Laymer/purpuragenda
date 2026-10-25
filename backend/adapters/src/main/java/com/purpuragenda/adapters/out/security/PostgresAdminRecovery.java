@@ -100,7 +100,11 @@ public final class PostgresAdminRecovery implements AdminRecoveryUnitOfWork {
             finally { Arrays.fill(raw,(byte)0); }
         }
         private void revokeGrants() { update("UPDATE admin_reenrollment_grant SET revoked_at=? WHERE admin_id=? AND consumed_at IS NULL AND revoked_at IS NULL",captured,identity.id()); }
-        private void revokeSessions() { update("DELETE FROM spring_session WHERE principal_name=?",identity.id().toString()); }
+        private void revokeSessions() {
+            update("DELETE FROM spring_session WHERE principal_name=?",identity.id().toString());
+            update("DELETE FROM app_session WHERE admin_id=?",identity.id());
+            update("UPDATE admin_authentication_proof SET revoked_at=? WHERE admin_id=? AND consumed_at IS NULL AND revoked_at IS NULL",captured,identity.id());
+        }
         private void audit(String type) { update("INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at) VALUES (?,?,'ADMIN_RECOVERY',?,?)",UUID.randomUUID(),identity.id(),type,captured); }
         private void update(String sql,Object... values) {
             try(var statement=connection.prepareStatement(sql)) {

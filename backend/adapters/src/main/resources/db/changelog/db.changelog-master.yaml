@@ -87,3 +87,11 @@ databaseChangeLog:
             path: 011-guest-access-grants.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 012-session-proofs
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 012-session-proofs.sql
+            relativeToChangelogFile: true
+            splitStatements: false

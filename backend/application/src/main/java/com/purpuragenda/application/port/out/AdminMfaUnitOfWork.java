@@ -13,6 +13,7 @@ public interface AdminMfaUnitOfWork {
         boolean initialEnrollment();
         void enroll(long acceptedStep,List<String> recoveryHashes);
         void acceptStep(long acceptedStep);
+        Instant issueAuthenticationProof(String tokenHash,SessionStore.ProofBinding binding);
     }
     record Credential(UUID id,String passwordHash,boolean enrolled,long acceptedStep,Secret secret) {
         @Override public String toString() { return "AdminCredential[REDACTED]"; }
@@ -33,5 +34,9 @@ public interface AdminMfaUnitOfWork {
         public Enrollment { codes=List.copyOf(codes); }
         @Override public void close() { codes.forEach(RecoveryCode::close); }
         @Override public String toString() { return "AdminEnrollment[REDACTED]"; }
+    }
+    record AuthenticationProof(RecoveryCode token,Instant expiresAt) implements AutoCloseable {
+        @Override public void close() { token.close(); }
+        @Override public String toString() { return "AdminAuthenticationProof[REDACTED]"; }
     }
 }

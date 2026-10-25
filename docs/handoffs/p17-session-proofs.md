@@ -1,11 +1,13 @@
 # Persistent sessions and factor handoff
 
-- Agent and UTC checkpoint: Codex-worker-b, 2026-10-25T14:10:43Z.
-- Current task: P17/session-proofs; branch: task/p17-session-proofs; base: main; PR URL: not yet opened.
-- Last pushed implementation commit: none for this slice; P16head131de82 merged0cbfc88; uncommitted changes: new claim and recovery/native-toolchain reconciliation.
-- What works: merged P16recovery010 with exacthead independent approval and CI40200392949 all13green. P15guest011 awaits final activation/merge.
-- What remains: additive012 sessions/normal-MFAproof, atomic guest handoff, token/session rotation/revocation; HTTP CSRF/origin/throttles/cleanup remain separateP17slices.
+- Agent and UTC checkpoint: Codex-worker-b, 2026-10-25T16:51:39Z.
+- Current task: P17/session-proofs; branch: task/p17-session-proofs; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/45.
+- Last pushed implementation commit: a379986; uncommitted changes: append-only current-main 9ac2f8d integration, report-guard union and checkpoint evidence.
+- What works: exact a379986 received independent worker A approval and passed full native verification with 416 Java, 6 Angular and 201 Python tests and all coverage, including required 012 readiness and 30 session cases. Earlier c42ab6d also passed hosted Verify 40212571215. Main now includes merged P15 management recovery 9ac2f8d; all four claims and guest/session/bootstrap report guards are retained.
+- What remains: integrated-head native/hosted checks and independent review; HTTP protections, throttles and cleanup remain separate P17 slices.
 - Decisions: SessionStore.SessionReference(id,browserHash) stays internal/redacted; cookie bearer token hashed, stable server-owned browser binding across rotation; adminproof insidefactortransaction then single consumption underadminlock/epochrecheck. Guestexchange acquires resource→P15locks→session; adminexchange admin→session; session-only touches acquire no laterauthoritylocks. No authbypass/publicregistration.
-- Verification: P16native334Java/6Angular and allcoverage pass; final197Python/31policy and hosted13checks pass. New P17slice has no implementation acceptance yet.
-- Next concrete action: author agreed012schema and SessionStore contracts, review P15final010/011 integration, then implement atomic sessions/proofs with realPGboundary/race/rollback tests.
-- Recovery: recovery/2026-10-25-prototype at6f9405b preserved; previousP16worktree/private/tmp/purpuragenda-p16-recovery-persistence clean; current/private/tmp/purpuragenda-p17-session-proofs; stacked PR dependencies: P15migration011 before012activation.
+- Verification: native a379986 coverage passed: domain 276/277 lines and 478/489 branches; application 361/362 and 339/340; adapters 891/902 and 752/826; bootstrap 91/93 and 92/92; Angular 22/22 and 30/30. Main advancement caused merge conflicts and prevented a379986 hosted checks from starting; current integration resolves those conflicts and all 18 report regressions pass. Failed native coverage and pre-fix readiness receipts remain in artifacts/p17-failure. Temporary caffeinate -i prevents host sleep without persistent configuration changes.
+- Next concrete action: run caffeinate -i bash scripts/ci/verify-build.sh on the integrated tree and obtain fresh exact-head review/CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b preserved; previousP16worktree/private/tmp/purpuragenda-p16-recovery-persistence clean; current/private/tmp/purpuragenda-p17-session-proofs; own preservedautostasha5264e9 aftermainintegration; stacked PR dependencies: P15migration011 merged765cbf5; P09adapter awaits012.
+
+Final coordinator reconciliation2026-10-25T17:18:00Z: exact f9dec94e114296066382fc7fd7eaf9e4584fe3da passed426Java/6Angular/202Python and all coverage, CI40213766937 all13checks and exact independent review. GitHub confirms PR45 merged a6a62fadf12e4540eb60e1c4c3961fcdd7738514 at16:59:54Z. Worktree is clean; earlier pending statements above are historical. Claim released; HTTP/CSRF/origin/throttle/cleanup remains unimplemented, with concrete continuation in prompt.txt.
