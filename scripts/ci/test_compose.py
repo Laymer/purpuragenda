@@ -85,6 +85,13 @@ class ComposeGateTest(unittest.TestCase):
                     {'IPAM': {'Config': [{'Subnet': '172.30.78.0/28'}, {}]}}]
         self.assertEqual(['172.30.78.0/28'], [str(n) for n in GATE.allocated_subnets(networks)])
 
+    def test_proxy_probe_source_path_ends_with_its_package_directories(self):
+        # The JDK source launcher rejects a packaged source file mounted outside its package path.
+        text = (Path(__file__).parents[2] / 'compose.verify.yaml').read_text()
+        package_path = 'com/purpuragenda/bootstrap'
+        self.assertIn('command: [/probe/' + package_path + '/ProxyHeaderProbe.java]', text)
+        self.assertIn(':/probe/' + package_path + ':ro', text)
+
 
 if __name__ == '__main__':
     unittest.main()

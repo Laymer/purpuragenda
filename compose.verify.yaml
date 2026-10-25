@@ -9,9 +9,10 @@ services:
   proxy-probe:
     image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
     entrypoint: [/opt/java/bin/java]
-    command: [/probe/ProxyHeaderProbe.java]
+    command: [/probe/com/purpuragenda/bootstrap/ProxyHeaderProbe.java]
     volumes:
-      - ./backend/bootstrap/src/test/java/com/purpuragenda/bootstrap/ProxyHeaderProbe.java:/probe/ProxyHeaderProbe.java:ro
+      # The source launcher requires the file path to end with its package directories.
+      - ./backend/bootstrap/src/test/java/com/purpuragenda/bootstrap:/probe/com/purpuragenda/bootstrap:ro
     networks: [proxy]
     read_only: true
     tmpfs: [/tmp]
