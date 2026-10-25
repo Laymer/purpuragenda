@@ -38,6 +38,8 @@ public interface SessionStore {
     Optional<CsrfRotation> rotateCsrf(char[] token);
     /** Consumes the caller's cookie buffer; lookup and idle touch share one captured DB time. */
     Optional<Snapshot> resolve(char[] token);
+    /** Read-only status lookup: never writes, touches, extends idle time or locks any row. Consumes the cookie buffer. */
+    Optional<Snapshot> inspect(char[] token);
     /** Verifies both current persisted session and current CSRF digest. Input CSRF buffer is consumed. */
     boolean csrf(SessionReference session,char[] csrf);
     Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken);

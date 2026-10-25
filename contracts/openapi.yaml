@@ -186,7 +186,7 @@
           }
         ],
         "parameters": [],
-        "description": "Safe role and deadlines only. Never returns identifiers, grants or CSRF proofs.",
+        "description": "Safe role and deadlines only. Read-only: it does not extend the idle lifetime. Never returns identifiers, grants or CSRF proofs.",
         "responses": {
           "200": {
             "description": "Current session state",

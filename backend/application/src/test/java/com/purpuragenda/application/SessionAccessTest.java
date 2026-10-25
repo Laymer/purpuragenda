@@ -22,6 +22,7 @@ class SessionAccessTest {
             return token[0]=='L'?Optional.of(new CsrfRotation(live,"n".repeat(43).toCharArray())):Optional.empty();
         }
         @Override public Optional<Snapshot> resolve(char[] token) { calls.add("resolve");if(unavailable)throw new IllegalStateException("SESSION_UNAVAILABLE");return token[0]=='L'?Optional.of(live):Optional.empty(); }
+        @Override public Optional<Snapshot> inspect(char[] token) { calls.add("inspect");return token[0]=='L'?Optional.of(live):Optional.empty(); }
         @Override public boolean csrf(SessionReference session,char[] csrf) { calls.add("csrf");lastBuffer=csrf;return csrfMatches; }
         @Override public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError(); }
         @Override public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); }
@@ -60,7 +61,9 @@ class SessionAccessTest {
     }
     @Test void currentAndCsrfDelegateAndAbsentCookieNeverTouchesStore() {
         var store=new Fake();var access=new SessionAccess(store);
-        assertTrue(access.current(null).isEmpty());assertTrue(store.calls.isEmpty());
+        assertTrue(access.current(null).isEmpty());assertTrue(access.inspect(null).isEmpty());assertTrue(store.calls.isEmpty());
+        assertTrue(access.inspect("X".repeat(43).toCharArray()).isEmpty());assertEquals(store.live,access.inspect("L".repeat(43).toCharArray()).orElseThrow());
+        assertEquals(List.of("inspect","inspect"),store.calls);store.calls.clear();
         assertTrue(access.current("X".repeat(43).toCharArray()).isEmpty());
         var session=access.current("L".repeat(43).toCharArray()).orElseThrow();
         assertTrue(access.csrf(session,"c".toCharArray()));store.csrfMatches=false;assertFalse(access.csrf(session,"c".toCharArray()));

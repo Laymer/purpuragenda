@@ -40,6 +40,8 @@ public final class SessionAccess {
         }
         try(var issued=sessions.anonymous()) { return new Started(view(issued.session()),issued.token(),issued.csrf()); }
     }
+    /** Status view without touching the session, so polling cannot extend idle lifetime. */
+    public Optional<Snapshot> inspect(char[] cookie) { return cookie==null?Optional.empty():sessions.inspect(cookie); }
     public Optional<Snapshot> current(char[] cookie) { return cookie==null?Optional.empty():sessions.resolve(cookie); }
     /** Verifies the current CSRF proof of a session resolved in this request; consumes the borrowed buffer. */
     public boolean csrf(Snapshot session,char[] csrf) { return sessions.csrf(session.reference(),csrf); }

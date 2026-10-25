@@ -93,7 +93,7 @@ export class SessionService extends BaseService {
     }
 
     /**
-     * Safe role and deadlines only. Never returns identifiers, grants or CSRF proofs.
+     * Safe role and deadlines only. Read-only: it does not extend the idle lifetime. Never returns identifiers, grants or CSRF proofs.
      * @endpoint get /session
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.

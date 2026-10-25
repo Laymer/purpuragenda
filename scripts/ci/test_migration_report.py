@@ -239,13 +239,13 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic session adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.SessionDatabaseTest.xml')
-        for count, cases, nested in ((0,0,''), (32,32,''), (33,32,''), (34,33,''),
-                                     (33,33,'<failure/>'), (33,33,'<error/>'), (33,33,'<skipped/>')):
+        for count, cases, nested in ((0,0,''), (34,34,''), (35,34,''), (36,35,''),
+                                     (35,35,'<failure/>'), (35,35,'<error/>'), (35,35,'<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="33">'
-                          + '<testcase/>' * 33 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="35">'
+                          + '<testcase/>' * 35 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):

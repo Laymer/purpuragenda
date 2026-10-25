@@ -150,6 +150,32 @@ class SessionDatabaseTest {
             assertTrue(sessions.rotateCsrf(admin.token()).isEmpty());
         }
     }
+    @Test void inspectIsReadOnlyLockFreeAndHonorsExactIdleAndAbsoluteBoundaries() throws Exception {
+        Instant issued=browser.session().issuedAt();
+        String csrf=f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class);
+        for(long micros:new long[]{0,1,-1}) {
+            var reads=new AtomicInteger();var found=at(issued.plusSeconds(1800).plusNanos(micros*1000),reads).inspect(browser.token());
+            assertEquals(micros<0,found.isPresent());assertEquals(1,reads.get());
+        }
+        assertEquals(issued,f.jdbc.queryForObject("SELECT last_seen_at FROM app_session",Timestamp.class).toInstant());
+        assertEquals(csrf,f.jdbc.queryForObject("SELECT csrf_hash FROM app_session",String.class));
+        char[] token=browser.token();var snapshot=sessions.inspect(token).orElseThrow();assertTrue(Arrays.equals(new char[43],token));
+        assertEquals(ref(),snapshot.reference());assertEquals(issued,snapshot.lastSeenAt());
+        assertEquals(issued,f.jdbc.queryForObject("SELECT last_seen_at FROM app_session",Timestamp.class).toInstant());
+        assertTrue(sessions.inspect(null).isEmpty());assertTrue(sessions.inspect(new char[42]).isEmpty());
+        try(var unknown=new AdminCrypto().recoveryCode()) { assertTrue(sessions.inspect(unknown.value()).isEmpty()); }
+        try(var holder=f.source.getConnection()) {
+            holder.setAutoCommit(false);
+            try(var lock=holder.createStatement()) { lock.execute("SELECT 1 FROM app_session FOR UPDATE"); }
+            assertTrue(sessions.inspect(browser.token()).isPresent());
+            holder.rollback();
+        }
+        assertTrue(sessions.revoke(ref()));assertTrue(sessions.inspect(browser.token()).isEmpty());
+    }
+    @Test void inspectFailuresAreSafeAndNeverExposeProviderText() {
+        var broken=new PostgresSessions(new DelegatingDataSource(f.source) { @Override public Connection getConnection() throws SQLException { throw new SQLException("synthetic-private-marker"); } });
+        safe(()->broken.inspect(browser.token()));
+    }
     @Test void anonymousLifetimeIsElapsedAcrossTheBrusselsAutumnTransition() {
         Instant now=Instant.parse("2026-10-25T00:30:00Z");var reads=new AtomicInteger();
         try(var value=at(now,reads).anonymous()) { assertEquals(now.plusSeconds(7200),value.session().absoluteExpiresAt());assertEquals(1,reads.get()); }

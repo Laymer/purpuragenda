@@ -33,6 +33,7 @@ class SessionHttpTest {
             check();var entry=byToken.get(new String(token));if(entry==null || entry.revoked)return Optional.empty();
             String csrf=token();byToken.put(new String(token),new Entry(entry.session,csrf,false));return Optional.of(new CsrfRotation(entry.session,csrf.toCharArray()));
         }
+        @Override public Optional<Snapshot> inspect(char[] token) { check();var e=byToken.get(new String(token));return e==null || e.revoked?Optional.empty():Optional.of(e.session); }
         @Override public Optional<Snapshot> resolve(char[] token) { check();var e=byToken.get(new String(token));return e==null || e.revoked?Optional.empty():Optional.of(e.session); }
         @Override public boolean csrf(SessionReference reference,char[] csrf) {
             return byToken.values().stream().anyMatch(e->e.session.reference().equals(reference) && !e.revoked && e.csrf.equals(new String(csrf)));
@@ -183,6 +184,7 @@ class SessionHttpTest {
             public Issued anonymous(){throw new AssertionError();}
             public Optional<CsrfRotation> rotateCsrf(char[] t){throw new AssertionError();}
             public Optional<Snapshot> resolve(char[] t){return store.resolve(t);}
+            public Optional<Snapshot> inspect(char[] t){throw new AssertionError();}
             public boolean csrf(SessionReference r,char[] c){return true;}
             public Optional<Issued> exchangeAdmin(SessionReference p,String h,char[] t){throw new AssertionError();}
             public Optional<Issued> exchangeGuest(SessionReference p,GuestAccessStore.Redemption r){throw new AssertionError();}
