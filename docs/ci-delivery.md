@@ -44,3 +44,20 @@ inventory are delivered by later slices.
 
 GitHub rules API reference:
 https://docs.github.com/en/rest/repos/rules
+
+## Read-only CI evidence
+
+GitHub omits `bypass_actors` from the read-only Actions token response. CI never
+interprets an omitted field as an empty list. After full administrator verification,
+`python3 scripts/ci/main-protection.py --record-receipt` records
+`.github/rules/main.receipt.json`. Explicit `--apply` also records it only after
+successful full administrator readback. The coordinator reviews and commits this
+non-secret receipt with a relevant regression test.
+
+When bypass actors are omitted, CI requires the reviewed receipt to match the
+actual ruleset ID, exact `updated_at`, canonical configuration SHA256 and verified
+empty bypass list. Any settings edit changes the version and invalidates evidence;
+missing or mismatched receipts fail. An explicit bypass list is always checked
+directly. Read-only CI cannot mint administrator evidence, and receives no privileged
+secret. The receipt attests to the administrator readback at that immutable version;
+independent review protects the committed evidence from fabricated replacement.

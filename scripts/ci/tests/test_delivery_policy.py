@@ -163,6 +163,56 @@ class ProtectionTest(unittest.TestCase):
         self.assertTrue(pr['required_review_thread_resolution'])
         self.assertEqual(['squash'], pr['allowed_merge_methods'])
 
+    def public_response_and_receipt(self):
+        actual = dict(copy.deepcopy(self.expected), id=25, updated_at='2026-10-25T08:00:00Z')
+        receipt = protection.receipt_for(actual, self.expected)
+        del actual['bypass_actors']
+        return actual, receipt
+
+    def test_public_response_requires_exact_admin_receipt(self):
+        actual, receipt = self.public_response_and_receipt()
+        self.assertEqual([], protection.discrepancies(actual, self.expected, receipt))
+        self.assertIn('Ruleset differs: bypass_actors',
+                      protection.discrepancies(actual, self.expected))
+        for key, replacement in (('ruleset_id', 99), ('updated_at', 'changed'),
+                                 ('config_sha256', 'changed'), ('verified_bypass_actors', [1])):
+            stale = dict(receipt, **{key: replacement})
+            with self.subTest(key=key):
+                self.assertTrue(protection.discrepancies(actual, self.expected, stale))
+        altered = copy.deepcopy(self.expected)
+        altered['name'] = 'changed-reviewed-config'
+        self.assertFalse(protection.valid_receipt(actual, altered, receipt))
+
+    def test_receipt_does_not_override_visible_bypass_or_missing_version(self):
+        actual, receipt = self.public_response_and_receipt()
+        actual['bypass_actors'] = [{'actor_id': 5}]
+        self.assertTrue(protection.discrepancies(actual, self.expected, receipt))
+        del actual['bypass_actors']
+        del actual['updated_at']
+        self.assertTrue(protection.discrepancies(actual, self.expected, receipt))
+
+    def test_receipt_cannot_be_minted_from_public_or_bypassed_response(self):
+        actual, receipt = self.public_response_and_receipt()
+        with self.assertRaises(ValueError):
+            protection.receipt_for(actual, self.expected)
+        actual['bypass_actors'] = [1]
+        with self.assertRaises(ValueError):
+            protection.receipt_for(actual, self.expected)
+        recorded = []
+        def api(method, endpoint, payload=None):
+            if '?' in endpoint:
+                return [{'id': 25, 'name': self.expected['name']}]
+            return actual
+        self.assertTrue(protection.reconcile(api, self.expected, receipt=receipt,
+                                             record=recorded.append))
+        self.assertEqual([], recorded)
+
+    def test_admin_readback_can_record_public_verification_receipt(self):
+        self.managed.update(id=25, updated_at='2026-10-25T08:00:00Z')
+        recorded = []
+        self.assertEqual([], protection.reconcile(self.api, self.expected, record=recorded.append))
+        self.assertEqual([protection.receipt_for(self.managed, self.expected)], recorded)
+
     def test_provider_review_defaults_are_explicit_and_preserved(self):
         parameters = self.expected['rules'][2]['parameters']
         self.assertEqual([], parameters['required_reviewers'])

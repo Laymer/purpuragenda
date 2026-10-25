@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Check or apply only the managed main-branch ruleset, preserving other rulesets."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / '.github/rules/main.json'
+RECEIPT = ROOT / '.github/rules/main.receipt.json'
 REPOSITORY = 'Laymer/purpuragenda'
 
 
@@ -20,9 +22,31 @@ def gh(method, endpoint, payload=None):
     return json.loads(result.stdout)
 
 
-def discrepancies(actual, expected):
+def config_hash(expected):
+    canonical = json.dumps(expected, sort_keys=True, separators=(',', ':')).encode()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def receipt_for(actual, expected):
+    if actual.get('bypass_actors') != [] or not actual.get('id') or not actual.get('updated_at'):
+        raise ValueError('Administrator no-bypass readback and version metadata required')
+    return {'ruleset_id': actual['id'], 'updated_at': actual['updated_at'],
+            'config_sha256': config_hash(expected), 'verified_bypass_actors': []}
+
+
+def valid_receipt(actual, expected, receipt):
+    return bool(receipt and actual.get('id') and actual.get('updated_at') and
+                receipt.get('ruleset_id') == actual['id'] and
+                receipt.get('updated_at') == actual['updated_at'] and
+                receipt.get('config_sha256') == config_hash(expected) and
+                receipt.get('verified_bypass_actors') == [])
+
+
+def discrepancies(actual, expected, receipt=None):
     errors = []
     for key in ('name', 'target', 'enforcement', 'bypass_actors', 'conditions'):
+        if key == 'bypass_actors' and key not in actual and valid_receipt(actual, expected, receipt):
+            continue
         if actual.get(key) != expected[key]:
             errors.append('Ruleset differs: ' + key)
     actual_rules = {rule['type']: rule for rule in actual.get('rules', [])}
@@ -71,7 +95,7 @@ def prevent_weakening(current, expected):
                 raise ValueError('Changed managed parameters require manual reconciliation')
 
 
-def reconcile(api, expected, apply=False):
+def reconcile(api, expected, apply=False, receipt=None, record=None):
     endpoint = 'repos/' + REPOSITORY + '/rulesets'
     # The API supports at most 100 rulesets per page; do not silently miss later pages.
     all_rules = []
@@ -98,15 +122,24 @@ def reconcile(api, expected, apply=False):
             prevent_weakening(current, expected)
             api('PUT', endpoint + '/' + str(rule_id), expected)
     actual = api('GET', endpoint + '/' + str(rule_id))
-    return discrepancies(actual, expected)
+    errors = discrepancies(actual, expected, receipt)
+    if not errors and record is not None:
+        record(receipt_for(actual, expected))
+    return errors
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true', help='explicitly apply the reviewed ruleset')
+    parser.add_argument('--record-receipt', action='store_true',
+                        help='record administrator-verified no-bypass version for public CI')
     args = parser.parse_args()
+    def record(value):
+        RECEIPT.write_text(json.dumps(value, indent=2) + '\n')
     try:
-        errors = reconcile(gh, json.loads(CONFIG.read_text()), args.apply)
+        receipt = json.loads(RECEIPT.read_text()) if RECEIPT.exists() else None
+        errors = reconcile(gh, json.loads(CONFIG.read_text()), args.apply, receipt,
+                           record if args.apply or args.record_receipt else None)
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError):
         raise SystemExit('Protection verification failed: unavailable API or invalid configuration')
     if errors:
