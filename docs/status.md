@@ -57,3 +57,7 @@ Adopted the append-only external-payment ledger and repaired three prototype def
 `bash scripts/ci/verify-build.sh` passed 108 domain tests plus three architecture tests with no failures/errors/skips. Coverage: 276/277 lines (99.64%), 478/489 branches (97.75%), above unchanged 95%/90% gates. Synthetic tests cover partial/multiple currencies, refund balances, late receipts and retained nonrefundable money, zero-price facts, malformed entries/obligations, duplicate keys/IDs, delimiter collisions, immutable collections, cross-booking rejection, actual amounts above service-price bounds and overflow. No P06 test failures occurred. Durable financial idempotency, global reference uniqueness and reconciliation commands remain later application/database tasks.
 
 Fresh operational dependency check: `docker version` exited 1 both inside and outside the sandbox; Docker client 28.5.2 exists but cannot connect to unix:///var/run/docker.sock. No local Docker/Testcontainers or Compose passing claim follows from unit-test evidence. CI may provide independent PostgreSQL evidence once the suite is adopted. P05 exact-head CI passed and merge 1470d88 was confirmed.
+
+## P07 review checkpoint
+
+P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.

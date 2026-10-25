@@ -9,8 +9,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
-| P06 — Complete external receipt, refund and reconciliation calculations | Draft PR; https://github.com/Laymer/purpuragenda/pull/6; P05 merged;  |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Recovered WIP; depends on P06;  |
+| P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d;  |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | In progress; claimed by Codex; P06 merged; migration review checkpoint only;  |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; depends on P07;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; depends on P08;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; depends on P09;  |
@@ -59,11 +59,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T07:01:22Z.
-- Current task: P06; branch: task/p06-payment-ledger; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/6.
-- Last pushed implementation commit: 9cf267c28a2a9b101fa81a45c687c672e50c6645; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p06.
-- What works: P05 exact-head CI passed and merge 1470d88 confirmed. What remains: verify exact-head CI/reviews and squash-merge when green.
-- Decisions: price bounds apply to service prices; actual external receipt amounts remain independent. One ledger represents one booking. Outstanding refund takes precedence, fully returned late money must not hide retained paid funds.
-- Verification: bash scripts/ci/verify-build.sh passed 108 domain and three architecture tests, no skips; 276/277 lines (99.64%) and 478/489 branches (97.75%). Docker unavailable in both sandboxed and approved checks. Existing gate remains 95% lines / 90% branches.
-- Next concrete action: gh pr checks 6; gh pr view 6 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after rebasing onto merged P05.
+- Agent and UTC checkpoint: Codex, 2026-10-25T07:43:35Z.
+- Current task: P07; branch: task/p07-migrations; base: main; PR URL: pending draft creation.
+- Last pushed implementation commit: 8d7f62d on main (P06 squash); uncommitted changes: ledger and docs/handoffs/p07-migrations.md review checkpoint in the original repository checkout.
+- What works: P01–P06 merged; existing documentation/build/domain/architecture/coverage gates passed on their final PR heads. What remains: P07 SQL adoption/additive fixes, real PostgreSQL suite, roles/upgrade/constraint/seed checks; P08–P50 remain as recorded above.
+- Decisions: preserve recovered changesets 001–006; use additive fixes for the payment amount ceiling, nullable pending ceiling and null-sensitive snapshot agreement. No unverified SQL adopted in this checkpoint. Details and exact next command are in docs/handoffs/p07-migrations.md.
+- Verification: P06 final head 0318f1a passed documentation/build/aggregate CI, no reviews/comments blockers, merge 8d7f62d confirmed. Latest full build: 108 domain plus three architecture tests, zero skips; 276/277 lines (99.64%), 478/489 branches (97.75%). Local docker version exited 1 inside/outside sandbox: daemon unavailable. No PostgreSQL/Compose passing claim; no application milestone certified.
+- Next concrete action: git restore --source=recovery/2026-10-25-prototype --worktree backend/adapters/src/main/resources/db/changelog; then implement the additive fixes and mandatory real-PostgreSQL suite described in the handoff.
+- Recovery: recovery/2026-10-25-prototype at 6f9405b; ignored private secrets/toolchains/build outputs remain local in the original checkout, preserved and excluded from publication. No stacked PR dependencies; P07 starts from merged main. All prior task worktrees are clean checkpoints under /tmp/purpuragenda-p01 through /tmp/purpuragenda-p06.
