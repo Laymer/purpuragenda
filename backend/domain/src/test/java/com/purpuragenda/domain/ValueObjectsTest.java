@@ -29,8 +29,8 @@ class ValueObjectsTest {
         assertEquals("EUR", Money.eur(1500).currency());
         assertEquals("USD", new Money(1500, "USD").currency());
         failure("INVALID_AMOUNT", () -> Money.eur(-1));
-        failure("INVALID_AMOUNT", () -> Money.eur(100_000_001));
-        failure("INVALID_AMOUNT", () -> Money.eur(Long.MAX_VALUE));
+        assertEquals(100_000_001L, Money.eur(100_000_001).minor());
+        assertEquals(Long.MAX_VALUE, Money.eur(Long.MAX_VALUE).minor());
     }
 
     @ParameterizedTest @NullAndEmptySource @ValueSource(strings={"eur", "EU", "EURO", "ZZZ", "123", " EUR"})
@@ -56,6 +56,7 @@ class ValueObjectsTest {
         failure("INVALID_SERVICE", () -> new ServiceDefinition(SERVICE, 0, "Synthetic", 30, Money.eur(0), true));
         failure("INVALID_DURATION", () -> new ServiceDefinition(SERVICE, 1, "Synthetic", 0, Money.eur(0), true));
         failure("INVALID_DURATION", () -> new ServiceDefinition(SERVICE, 1, "Synthetic", 121, Money.eur(0), true));
+        failure("INVALID_AMOUNT", () -> new ServiceDefinition(SERVICE, 1, "Synthetic", 30, Money.eur(100_000_001), true));
         failure("INVALID_CURRENCY", () -> new ServiceDefinition(SERVICE, 1, "Synthetic", 30, null, true));
         failure("INVALID_CURRENCY", () -> new ServiceDefinition(SERVICE, 1, "Synthetic", 30, new Money(1, "USD"), true));
         failure("VALIDATION_FAILED", () -> new ServiceDefinition(SERVICE, 1, "x".repeat(121), 30, Money.eur(0), true));

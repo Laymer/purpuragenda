@@ -10,5 +10,6 @@ public record ServiceDefinition(UUID id, long version, String name, int duration
         name = Input.text(name, 1, 120);
         require(durationMinutes >= 1 && durationMinutes <= 120, "INVALID_DURATION");
         require(price != null && price.currency().equals("EUR"), "INVALID_CURRENCY");
+        require(price.minor() <= 100_000_000L, "INVALID_AMOUNT");
     }
 }
