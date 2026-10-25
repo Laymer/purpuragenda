@@ -55,12 +55,15 @@ class SessionDatabaseTest {
         };return new PostgresSessions(source);
     }
     GuestAccessStore.Redemption guest(String email) throws Exception {
+        return emailProof(email,GuestAccessStore.Kind.CREATE,null,ref().browserHash());
+    }
+    GuestAccessStore.Redemption emailProof(String email,GuestAccessStore.Kind kind,UUID booking,String browserHash) throws Exception {
         Path key=directory.resolve("delivery.key");Files.write(key,new byte[32]);
         var delivery=new PostgresAuthDeliveryStore(f.source,new Secrets(key,"delivery"),URI.create("https://example.test"),false);
-        delivery.issue(new AuthDeliveryStore.Issue(email,AuthDeliveryStore.Purpose.CREATE,null,ref().browserHash()));
+        delivery.issue(new AuthDeliveryStore.Issue(email,AuthDeliveryStore.Purpose.valueOf(kind.name()),booking,kind==GuestAccessStore.Kind.CREATE?browserHash:null));
         var queue=new PostgresNotificationQueue(f.source,false);var lease=queue.claimAuth().orElseThrow();
         String token=delivery.prepare(lease).orElseThrow().text().split("#token=",2)[1].split("&",2)[0];assertTrue(queue.sent(lease));
-        return new GuestAccessStore.Redemption(token,GuestAccessStore.Kind.CREATE,ref().browserHash());
+        return new GuestAccessStore.Redemption(token,kind,browserHash);
     }
     void rejectSessionInsert() {
         try(var c=f.fixture.connection(MigrationTest.MIGRATOR)) {
@@ -80,7 +83,7 @@ class SessionDatabaseTest {
     @Test void upgradeAndRerunPreserveExistingIdentityAndFenceLaterCredentialChanges() throws Exception {
         f.fixture.newSchema();f.fixture.migrate(11);UUID admin=UUID.randomUUID();
         try(var c=f.fixture.connection(MigrationTest.APP)) {
-            MigrationTest.execute(c,"INSERT INTO admin_user(id,email,password_hash,totp_secret,enrolled,enabled,security_version) VALUES (?,'upgrade@example.test',?,'synthetic-encrypted-secret',true,true,7)",admin,AdminMfaDatabaseTest.hash);
+            MigrationTest.execute(c,"INSERT INTO admin_user(id,email_key,password_hash,totp_secret,enrolled,enabled,security_version) VALUES (?,'upgrade@example.test',?,'synthetic-encrypted-secret',true,true,7)",admin,AdminMfaDatabaseTest.hash);
         }
         f.fixture.migrate(0);f.fixture.migrate(0);
         assertEquals(12,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
@@ -206,6 +209,38 @@ class SessionDatabaseTest {
             assertTrue(sessions.resolve(value.token()).isPresent());assertEquals(1,f.count("access_grant"));assertEquals(0,f.count("customer_account"));
             assertTrue(f.jdbc.queryForObject("SELECT s.issued_at=g.issued_at AND c.consumed_at=g.issued_at FROM app_session s JOIN access_grant g ON g.id=s.grant_id JOIN email_challenge c ON c.id=g.challenge_id WHERE s.id=?",Boolean.class,value.session().reference().id()));
         }
+    }
+    @Test void managementExchangeUsesFreshBrowserAndCurrentContactWithoutTransferringOwnership() throws Exception {
+        UUID booking=f.fixture.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());
+        UUID owner=f.jdbc.queryForObject("SELECT customer_id FROM booking WHERE id=?",UUID.class,booking);
+        f.jdbc.update("UPDATE booking SET delivery_email='old-delivery@example.test' WHERE id=?",booking);
+        try(var other=sessions.anonymous()) {
+            var previous=other.session().reference();var stale=emailProof("old-delivery@example.test",GuestAccessStore.Kind.MANAGE,booking,previous.browserHash());
+            f.jdbc.update("UPDATE booking SET delivery_email='current-delivery@example.test' WHERE id=?",booking);
+            assertTrue(sessions.exchangeGuest(previous,stale).isEmpty());assertEquals(0,f.count("access_grant"));assertEquals(2,f.count("app_session"));
+            assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM email_challenge WHERE consumed_at IS NOT NULL",Integer.class));
+            var current=emailProof("current-delivery@example.test",GuestAccessStore.Kind.MANAGE,booking,previous.browserHash());
+            try(var value=sessions.exchangeGuest(previous,current).orElseThrow()) {
+                assertEquals(owner,value.session().customerId());assertEquals(previous.browserHash(),value.session().reference().browserHash());assertNotEquals(ref().browserHash(),value.session().reference().browserHash());
+                assertTrue(f.jdbc.queryForObject("SELECT kind='MANAGE' AND booking_id=? AND customer_id=? FROM access_grant WHERE id=?",Boolean.class,booking,owner,value.session().grantId()));
+                assertTrue(sessions.resolve(other.token()).isEmpty());assertTrue(sessions.resolve(value.token()).isPresent());assertEquals(1,f.count("customer_identity"));assertEquals(0,f.count("customer_account"));
+                assertTrue(sessions.exchangeGuest(value.session().reference(),stale).isEmpty());assertEquals(1,f.count("access_grant"));
+            }
+        }
+    }
+    @Test void sessionLockWaitPrecedesGuestProofTimeAndExpiredProofRemainsUnconsumed() throws Exception {
+        var request=guest("synthetic@example.test");Instant expiry=f.jdbc.queryForObject("SELECT expires_at FROM email_challenge",Timestamp.class).toInstant();var reads=new AtomicInteger();
+        try(var blocker=f.fixture.connection(MigrationTest.APP);var executor=Executors.newSingleThreadExecutor()) {
+            blocker.setAutoCommit(false);MigrationTest.execute(blocker,"SELECT id FROM app_session WHERE id=? FOR UPDATE",ref().id());
+            var result=executor.submit(()->at(expiry,reads).exchangeGuest(ref(),request));long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);long waiting=0;
+            while(System.nanoTime()<deadline) {
+                MigrationTest.execute(blocker,"SELECT pg_stat_clear_snapshot()");
+                try(var q=blocker.createStatement();var r=q.executeQuery("SELECT count(*) FROM pg_stat_activity WHERE application_name='p16_mfa' AND wait_event_type='Lock'")) { r.next();waiting=r.getLong(1);if(waiting==1)break; }
+                java.util.concurrent.locks.LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+            }
+            assertEquals(1,waiting,"SESSION_CONNECTION_DID_NOT_REACH_LOCK");assertEquals(0,reads.get());blocker.commit();assertTrue(result.get(10,TimeUnit.SECONDS).isEmpty());assertEquals(1,reads.get());
+        }
+        assertEquals(0,f.count("access_grant"));assertEquals(0,f.count("customer_identity"));assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM email_challenge WHERE consumed_at IS NOT NULL",Integer.class));
     }
     @Test void staleOrWrongBrowserSessionRollsBackGuestProofAndIdentityCreation() throws Exception {
         var request=guest("synthetic@example.test");

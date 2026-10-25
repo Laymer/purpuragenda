@@ -198,13 +198,13 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic session adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.SessionDatabaseTest.xml')
-        for count, cases, nested in ((0,0,''), (26,26,''), (27,26,''), (28,27,''),
-                                     (27,27,'<failure/>'), (27,27,'<error/>'), (27,27,'<skipped/>')):
+        for count, cases, nested in ((0,0,''), (28,28,''), (29,28,''), (30,29,''),
+                                     (29,29,'<failure/>'), (29,29,'<error/>'), (29,29,'<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="27">'
-                          + '<testcase/>' * 27 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="29">'
+                          + '<testcase/>' * 29 + '</testsuite>')
         GATE.validate(self.root)
 
 
