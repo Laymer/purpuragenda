@@ -130,6 +130,11 @@
       "owner": "P49",
       "state": "implemented",
       "job": "macos-bootstrap"
+    },
+    "windows-preflight": {
+      "owner": "P49",
+      "state": "implemented",
+      "job": "windows-preflight"
     }
   }
 }

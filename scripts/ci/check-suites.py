@@ -16,9 +16,10 @@ OWNERS = {
     'accessibility': 'P39', 'performance': 'P41', 'load': 'P42',
     'dependencies': 'P43', 'sbom': 'P43', 'sast': 'P43', 'containers': 'P43',
     'configuration': 'P43', 'zap': 'P44', 'persistence': 'P45',
-    'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49',
+    'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49', 'windows-preflight': 'P49',
 }
 ACTIVATION = {
+    'windows-preflight': 'scripts/ops/preflight-wsl.ps1',
     'postgres-migrations': 'backend/adapters/src/main/resources/db/changelog/db.changelog-master.yaml',
     'angular': 'frontend/package.json',
     'outbox': 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/email/PostgresNotificationQueue.java',

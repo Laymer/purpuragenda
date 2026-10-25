@@ -178,9 +178,30 @@ jobs:
           path: artifacts/host/macos-package.json
           if-no-files-found: error
           retention-days: 14
+  windows-preflight:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run synthetic preflight cases in native PowerShell
+        id: wsl-tests
+        shell: pwsh
+        run: ./scripts/ci/test-wsl-preflight.ps1
+      - name: Require native execution report
+        shell: pwsh
+        env:
+          REPORT: ${{ steps.wsl-tests.outputs.receipt }}
+        run: python scripts/ci/check-wsl-report.py --report "$env:REPORT"
+      - name: Retain safe native preflight receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-preflight-counts
+          path: ${{ steps.wsl-tests.outputs.receipt }}
+          if-no-files-found: error
+          retention-days: 14
   verify:
     if: always()
-    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, sast, macos-bootstrap]
+    needs: [documentation, build, delivery-policy, contracts, secrets, dependencies, sast, macos-bootstrap, windows-preflight]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
