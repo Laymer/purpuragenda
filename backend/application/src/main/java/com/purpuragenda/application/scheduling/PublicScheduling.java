@@ -42,9 +42,9 @@ public final class PublicScheduling {
                 Instant first=lower.isAfter(now)?lower:now;
                 Instant last=upper.minusNanos(1).isBefore(horizon)?upper.minusNanos(1):horizon;
                 LocalDate firstDay=first.atZone(BUSINESS_ZONE).toLocalDate(), lastDay=last.atZone(BUSINESS_ZONE).toLocalDate();
-                // Include earlier appointments on each whole business date in the daily capacity count.
+                // Count whole business dates and include next-date bookings intersecting a late reservation.
                 List<Booking> occupied=v.bookings(new ReservationInterval(firstDay.atStartOfDay(BUSINESS_ZONE).toInstant(),
-                        lastDay.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant())).stream().filter(b -> b.occupies(now)).toList();
+                        lastDay.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant().plusSeconds(7200))).stream().filter(b -> b.occupies(now)).toList();
                 AvailabilityCalendar calendar=v.calendar();
                 for(LocalDate day=firstDay; !day.isAfter(lastDay); day=day.plusDays(1)) {
                     LocalDate current=day;
