@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; owner-requested prompt.txt handoff authored, final publication/check/merge state recorded on GitHub; prior foundation merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4; handoff-integrity follow-up https://github.com/Laymer/purpuragenda/pull/37 |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; owner-requested prompt.txt handoff authored in https://github.com/Laymer/purpuragenda/pull/50, final publication/check/merge state recorded on GitHub; prior foundation merged; https://github.com/Laymer/purpuragenda/pull/14; standing authorization04282fa; prior concurrency PR9 at15ba8b4; handoff-integrity follow-up https://github.com/Laymer/purpuragenda/pull/37 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -66,7 +66,7 @@ None.
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T17:20:00Z.
-- Current task: P01/claude-handoff; branch: task/p01-claude-handoff; base: main; PR URL: resolve this branch on GitHub after publication (not yet created at this authoring checkpoint).
+- Current task: P01/claude-handoff; branch: task/p01-claude-handoff-v2; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/50 (supersedes closed PR49, whose history failed the secrets gate).
 - Last pushed implementation commit: 102445ff3a55e79a9fd70da40d15e3d211e0c15f, confirmed PR46 merge bcc9fecc18f8b6a7b5cc6197ab34f5414cd02302; uncommitted changes: prompt.txt, consolidated status/handoffs, CLAUDE.md pointer and documentation validator/tests, all included in this handoff commit. No uncommitted application source.
 - What works: extensive Claude continuation prompt records merged foundations, frozen drafts, exact refs/evidence, local data, constraints and remaining workflow/gate implementation. PR46 native470Java/6Angular/203Python, all coverage, CI40215138889 all13green and exact independent workerB approval; GitHub confirms merged at17:15:16Z. Full localv1 remains unfinished.
 - What remains: this handoff's own publication/checks/review/merge are verified on GitHub after authoring; if reading this commit from main, resume application tasks instead of repeating handoff work. Draft47 P10 and48 Compose need current-main integration/fresh gates; P17HTTP and remaining features are deferred to Claude.

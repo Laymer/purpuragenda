@@ -1,7 +1,7 @@
 # Owner-requested Claude Code continuation handoff
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T17:20:00Z.
-- Current task: P01/claude-handoff; branch: task/p01-claude-handoff; base: main; PR URL: resolve this branch on GitHub after publication (not yet created at this authoring checkpoint).
+- Current task: P01/claude-handoff; branch: task/p01-claude-handoff-v2; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/50 (supersedes closed PR49, whose history failed the secrets gate).
 - Last pushed implementation commit: 102445ff3a55e79a9fd70da40d15e3d211e0c15f, confirmed PR46 merge bcc9fecc18f8b6a7b5cc6197ab34f5414cd02302; uncommitted changes: prompt.txt, consolidated status/handoffs, CLAUDE.md pointer and documentation validator/tests, all included in this handoff commit. No uncommitted application source.
 - What works: extensive Claude continuation prompt records merged foundations, frozen drafts, exact refs/evidence, local data, constraints and remaining workflow/gate implementation. PR46 native470Java/6Angular/203Python, all coverage, CI40215138889 all13green and exact independent workerB approval; GitHub confirms merged at17:15:16Z. Full localv1 remains unfinished.
 - What remains: this handoff's own publication/checks/review/merge are verified on GitHub after authoring; if reading this commit from main, resume application tasks instead of repeating handoff work. Draft47 P10 and48 Compose need current-main integration/fresh gates; P17HTTP and remaining features are deferred to Claude.

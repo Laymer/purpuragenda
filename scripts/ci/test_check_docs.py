@@ -193,6 +193,12 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue((self.root / 'docs/handoffs/p01.md').is_file())
 
 
+    def test_published_handoff_branch_and_pr_agree_between_ledger_and_record(self):
+        root = Path(__file__).resolve().parents[2]
+        line = 'branch: task/p01-claude-handoff-v2; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/50'
+        for name in ('STATUS.md', 'docs/handoffs/p01-claude-handoff.md'):
+            self.assertIn(line, (root / name).read_text())
+
     def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):
         for name in ('AGENTS.md', 'CLAUDE.md'):
             path = self.root / name
