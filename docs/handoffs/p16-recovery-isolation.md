@@ -1,8 +1,8 @@
-- Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:12:59Z.
-- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main f72bae2; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
-- Last pushed implementation commit: c588f45; uncommitted changes: history-query ordering fix, twelfth database regression/report guard and verification evidence.
-- What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: independent review, real PostgreSQL and coverage CI; no full recovery claim.
+- Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:17:51Z.
+- Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main 21de569; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
+- Last pushed implementation commit: f230ac1; uncommitted changes: tested auth-foundation merge and reconciled handoff/evidence.
+- What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: fresh exact combined CI after merging auth foundation; no full recovery claim.
 - Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
-- Verification: docs/inventory/whitespace passed;172Python cases170pass/2Python3.9rmtree errors;31policy cases21pass/10Python3.9 timestamp errors. Pinned Linux installer unavailable on macOS; real PostgreSQL/full CI required.
-- Next concrete action: run full implemented verification and publish tested integration for CI/review.
+- Verification: exactf230ac1 independently approved and CI40188050261 all13green,12MFA realPG/108domain/43application/112adapter/3architecture zero skips and full coverage passing. Fresh auth-integrated CI required; local macOS/Python3.9 limits remain documented.
+- Next concrete action: push auth-integrated merge and require fresh all-category CI/review before coordinator merge.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.
