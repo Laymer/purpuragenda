@@ -5,7 +5,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | Task | Advancement |
 | --- | --- |
 | P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/1; d4f78ac |
-| P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | In progress; claimed by Codex; P01 merged;  |
+| P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Draft PR; https://github.com/Laymer/purpuragenda/pull/2; P01 merged;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Recovered WIP; depends on P02;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Recovered WIP; depends on P03;  |
 | P05 — Complete immutable booking snapshots and state transitions | Recovered WIP; depends on P04;  |
@@ -60,10 +60,10 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex, 2026-10-25T06:19:00Z.
-- Current task: P02; branch: task/p02-build; base: main; PR URL: pending creation.
-- Last pushed implementation commit: none for P02; uncommitted changes: P02 scaffolding, tool installer, architecture checks and CI in /tmp/purpuragenda-p02.
-- What works: P01 merged at d4f78ac; recovery remains intact. What remains: open draft PR, verify CI and reviews, squash-merge if green.
+- Current task: P02; branch: task/p02-build; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/2.
+- Last pushed implementation commit: b63b302; uncommitted changes: ledger checkpoint only before this commit; worktree /tmp/purpuragenda-p02.
+- What works: P01 merged at d4f78ac; recovery remains intact. What remains: verify CI and reviews, squash-merge if green.
 - Decisions: adopt no feature code in P02; architecture verification checks module dependencies immediately and bytecode when feature classes are introduced. Empty feature modules are scaffolding, not passing feature suites.
 - Verification: P01 final head f46127c passed documentation and aggregate checks; GitHub reviews/comments empty and merge confirmed. P02 installer checksums passed; wrapper archive SHA256 matched; corrupted archive rejected; bash scripts/ci/verify-build.sh passed six-module build and three architecture tests with no skips; git diff --check passed. Corrected local failures are recorded in docs/status.md.
-- Next concrete action: open P02 draft PR, then gh pr checks 2.
+- Next concrete action: gh pr checks 2; gh pr view 2 --json headRefOid,statusCheckRollup,reviews,reviewDecision.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b. No stacked PR dependencies; P02 is based on merged P01.
