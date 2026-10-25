@@ -46,13 +46,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret PR13 and dependency PR17 merged at 2c896ff; SAST/full SBOM/container/config acceptance pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | In progress; SAST draft https://github.com/Laymer/purpuragenda/pull/21; secret/dependency foundations merged; full SBOM/container/config pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; macos-bootstrap slice; other runbooks and real host acceptance pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; macOS bootstrap merged https://github.com/Laymer/purpuragenda/pull/22 at4233afd with real host-prerequisite acceptance; remaining runbooks pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -61,16 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P49/macos-bootstrap: agent=Codex; branch=task/p49-mac-bootstrap; base=main; handoff=docs/handoffs/p49-mac-bootstrap.md
+- P43/sast-foundation: agent=Codex-p43; branch=task/p43-sast-foundation; base=main; handoff=docs/handoffs/p43-sast-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T09:59:28Z.
-- Current task: P49/macos-bootstrap; branch: task/p49-mac-bootstrap; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/22.
-- Last pushed implementation commit: c6a7e9a; uncommitted changes: actual host-readiness evidence and malformed-status privacy regression.
-- What works: owner confirmed Intel i9 macOSSequoia15.7.8, DockerDesktop installed; can run local bootstrap. P12 shell mergedc1151b2; P08core6c1f96f, P43dependency2c896ff and P14queuee917ee3 and P08persistence98c7535 integrated.
-- What remains: tested pinned Tailscale installer/readiness bootstrap and clear host runbook, independent review/CI. Public ingress, live deployment and real Mac acceptance remain manual later.
-- Decisions: prefer local bootstrap on Mac rather than SSHcredentials; preserve existing apps/state/volumes; never print tailnet identity/auth JSON/URLs/tokens; stop with nonzero pending status for interactive Mac/tailnet approval.
-- Verification: 18 synthetic bootstrap tests and Bash syntax pass; independent agent review approved; SSH read-only confirms actual target15.7.8/x86_64, DockerDesktop installed, Tailscale absent, native administrator authorization needed; official package checksum matched, embedded installer TeamID parsed. Linux --check refuses unsupported host. Native Intel CI40181989864 macos-bootstrap passed actual checksum/signature/Gatekeeper and AppleScript compilation. All46 adapter tests passed but branch coverage89% blocked aggregate; queue owner investigating. Staged reviewed immutable files over authenticated SSH; actual --check returned TAILSCALE_NOT_INSTALLED. SSH native authorization returned -60007; local Terminal bootstrap installed Tailscale. Strict/deep app signature verified and corrected inline team requirement passed on actual host. Corrected immutable bootstrap c6a7e9a then returned HOST_PREREQUISITES_READY on the actual owner host: signed pinned client Running/Online and explicit local Docker Linux/x86_64 with at least2CPU/4GiB. Native expanded-app CI40182843893 passed. No app deployment or public exposure.
-- Next concrete action: require final exact-head CI and independent review, reconcile shared queue fix, and merge this host-prerequisite slice.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; runtime/SMTP/ingress activation outside this slice.
+- Agent and UTC checkpoint: Codex-p43, 2026-10-25T09:44:08Z.
+- Current task: P43/sast-foundation; branch: task/p43-sast-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/21.
+- Last pushed implementation commit:c39090c; uncommitted changes: reviewed P49 integration4233afd; all previous-head SAST/full-build checks green; exact new head CI pending.
+- What works: dependency PR17 merged2c896ff with real PostgreSQL and472-package OSV CI. What remains: pinned three-language CodeQL and fail-closed SARIF gate; final SBOM/container/config remain pending.
+- Decisions: fixed mandatory Java/Python/JS-TS matrix, manual Java test-compile, no broad exclusions or high/critical waivers; raw SARIF only official Code Scanning.
+- Verification:161 strict root Python tests and31 strict delivery-policy tests passed; docs/inventory passed; real Java clean test-compile passed. Full local build failed at unavailable Docker (both mandatory PostgreSQL fixtures), zero skips;6 Angular/108domain/4application/11security/2image tests passed first. Actual exact-head CI40182830492 atc39090c passed all implemented jobs, real PostgreSQL/coverage and all three CodeQL cells. P49 integration requires its own exact-head rerun.
+- Next concrete action: push tested P49 integration and require all exact-head CI checks; coordinator review approved SAST, no merge before green.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; preserve newer P49/P14 category integration before final review.
