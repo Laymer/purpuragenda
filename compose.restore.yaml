@@ -1,0 +1,6 @@
+services:
+  backend:
+    environment: {APP_MODE: restore, DELIVERY_MODE: SUPPRESSED, SMTP_HOST: blocked.invalid}
+  web:
+    ports: ["127.0.0.1:18080:8080"]
+    networks: [private]

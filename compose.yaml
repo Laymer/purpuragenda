@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+    environment:
+      POSTGRES_DB: purpuragenda
+      POSTGRES_USER: purpuragenda_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/18/docker
+    secrets: [postgres_password, migrator_password, app_password]
+    volumes:
+      - database:/var/lib/postgresql
+      - ./ops/docker/init-database.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    networks: [private]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U purpuragenda_owner -d purpuragenda"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+  migrate:
+    image: purpuragenda-backend:${APP_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/backend.Dockerfile}
+    command: [migrate]
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
+      DATABASE_USER: purpuragenda_migrator
+      DATABASE_PASSWORD_FILE: /run/secrets/migrator_password
+      MIGRATIONS_ENABLED: "true"
+      APP_KEY_FILE: /run/secrets/encryption_key
+      APP_KEY_ID: ${APP_KEY_ID:-local-1}
+      APP_MODE: local
+      DELIVERY_MODE: SUPPRESSED
+      SMTP_HOST: mailpit
+    secrets: [migrator_password, encryption_key]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck: {disable: true}
+    mem_limit: 768m
+  backend:
+    image: purpuragenda-backend:${APP_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/backend.Dockerfile}
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/purpuragenda
+      DATABASE_USER: purpuragenda_app
+      DATABASE_PASSWORD_FILE: /run/secrets/app_password
+      APP_KEY_FILE: /run/secrets/encryption_key
+      APP_KEY_ID: ${APP_KEY_ID:-local-1}
+      APP_MODE: ${APP_MODE:-local}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      OWNER_NOTIFICATION_EMAIL: ${OWNER_NOTIFICATION_EMAIL:-owner@example.test}
+      MAIL_FROM: ${MAIL_FROM:-bookings@example.test}
+      DELIVERY_MODE: ${DELIVERY_MODE:-SUPPRESSED}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      PRIVACY_NOTICE_VERSION: ${PRIVACY_NOTICE_VERSION:-local-draft}
+    secrets: [app_password, encryption_key]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+    networks: [private]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 35s
+    mem_limit: 768m
+    cpus: 1.0
+  web:
+    image: purpuragenda-web:${APP_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: ops/docker/web.Dockerfile}
+    environment: {SITE_ADDRESS: "http://:8080"}
+    depends_on: {backend: {condition: service_healthy}}
+    networks: [private, edge]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    mem_limit: 192m
+networks:
+  private: {internal: true}
+  edge: {}
+volumes:
+  database: {}
+  caddy_data: {}
+  caddy_config: {}
+secrets:
+  postgres_password: {file: ./.secrets/postgres-password}
+  migrator_password: {file: ./.secrets/migrator-password}
+  app_password: {file: ./.secrets/app-password}
+  encryption_key: {file: ./.secrets/encryption-key}

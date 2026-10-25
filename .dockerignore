@@ -1,0 +1,13 @@
+.git
+.cache
+.toolchain
+.secrets
+.env.local
+.env.operational
+**/target
+frontend/node_modules
+frontend/dist
+frontend/.angular
+frontend/coverage
+artifacts
+*.dump

@@ -1,0 +1,28 @@
+{$SITE_ADDRESS:http://:8080} {
+  encode zstd gzip
+  header {
+    Referrer-Policy no-referrer
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  }
+  @api path /api/*
+  handle @api {
+    reverse_proxy backend:8081 {
+      header_up -Forwarded
+      header_up -X-Forwarded-For
+      header_up -X-Forwarded-Host
+    }
+  }
+  handle /healthz { respond "ok" 200 }
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+}
+
+http://:9090 {
+  respond /healthz "ok" 200
+}

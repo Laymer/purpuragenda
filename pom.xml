@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.purpuragenda</groupId><artifactId>purpuragenda</artifactId><version>0.1.0-SNAPSHOT</version><packaging>pom</packaging>
+  <modules><module>backend/domain</module><module>backend/application</module><module>backend/adapters</module><module>backend/bootstrap</module><module>acceptance-tests</module><module>quality</module></modules>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <spring-boot.version>4.1.2</spring-boot.version><junit.version>6.1.3</junit.version><cucumber.version>8.0.4</cucumber.version>
+    <playwright.version>1.64.0</playwright.version><jacoco.version>0.8.15</jacoco.version><argLine></argLine>
+  </properties>
+  <dependencyManagement><dependencies>
+    <dependency><groupId>org.junit</groupId><artifactId>junit-bom</artifactId><version>${junit.version}</version><type>pom</type><scope>import</scope></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId><version>${spring-boot.version}</version><type>pom</type><scope>import</scope></dependency>
+    <dependency><groupId>io.cucumber</groupId><artifactId>cucumber-bom</artifactId><version>${cucumber.version}</version><type>pom</type><scope>import</scope></dependency>
+    <dependency><groupId>org.testcontainers</groupId><artifactId>testcontainers-bom</artifactId><version>2.0.5</version><type>pom</type><scope>import</scope></dependency>
+  </dependencies></dependencyManagement>
+  <dependencies><dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency><dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><scope>test</scope></dependency></dependencies>
+  <build><pluginManagement><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version><configuration><argLine>@{argLine}</argLine><failIfNoTests>false</failIfNoTests></configuration></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId><version>3.6.0</version><configuration><argLine>@{argLine}</argLine><failIfNoTests>true</failIfNoTests></configuration><executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions></plugin>
+    <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><version>${spring-boot.version}</version></plugin>
+    <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.3</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.11.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.5.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.5.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>3.5.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-install-plugin</artifactId><version>3.1.4</version></plugin>
+  </plugins></pluginManagement><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId></plugin>
+    <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>${jacoco.version}</version><executions><execution><goals><goal>prepare-agent</goal></goals></execution><execution><id>report</id><phase>verify</phase><goals><goal>report</goal></goals></execution></executions></plugin>
+  </plugins></build>
+  <profiles><profile><id>contract</id><build><plugins><plugin><groupId>org.openapitools</groupId><artifactId>openapi-generator-maven-plugin</artifactId><version>7.26.0</version><executions><execution><goals><goal>generate</goal></goals><configuration><inputSpec>${maven.multiModuleProjectDirectory}/contracts/openapi.yaml</inputSpec><generatorName>typescript-angular</generatorName><output>${maven.multiModuleProjectDirectory}/frontend/src/app/shared/generated</output><configOptions><ngVersion>22.2.3</ngVersion><providedIn>root</providedIn><hideGenerationTimestamp>true</hideGenerationTimestamp><stringEnums>true</stringEnums></configOptions></configuration></execution></executions></plugin></plugins></build></profile></profiles>
+</project>

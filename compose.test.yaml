@@ -1,0 +1,8 @@
+services:
+  postgres:
+    environment: {POSTGRES_DB: purpuragenda_test}
+    ports: ["127.0.0.1:55433:5432"]
+  migrate:
+    environment: {DATABASE_URL: "jdbc:postgresql://postgres:5432/purpuragenda_test"}
+  backend:
+    environment: {DATABASE_URL: "jdbc:postgresql://postgres:5432/purpuragenda_test", APP_MODE: test, DELIVERY_MODE: SUPPRESSED}

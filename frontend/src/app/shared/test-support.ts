@@ -1,0 +1,15 @@
+import { signal } from '@angular/core';
+import { vi } from 'vitest';
+import { Booking,Identity } from './api';
+export const services=[{id:'10000000-0000-0000-0000-000000000001',version:1,name:'Karmic reading',durationMinutes:30,priceMinor:1500,currency:'EUR',active:true},{id:'10000000-0000-0000-0000-000000000002',version:1,name:'Transit reading',durationMinutes:60,priceMinor:3000,currency:'EUR',active:true}];
+export const intake={firstName:'Alex',lastName:'Synthetic',telephone:'+32400123456',birthDate:'1990-01-01',birthTime:'10:30:15',birthplace:'Synthetic city',message:''};
+export const slot={startInstant:'2027-01-12T14:30:00Z',sessionEndInstant:'2027-01-12T15:00:00Z',reservedEndInstant:'2027-01-12T16:30:00Z',businessDate:'2027-01-12',displayLocalTime:'2027-01-12T15:30',offset:'+01:00'};
+export const booking:Booking={id:'11111111-1111-1111-1111-111111111111',reference:'PP-SYNTHETIC',status:'PENDING_CONFIRMATION',version:1,service:services[0],intake,deliveryEmail:'synthetic@example.test',displayZone:'Europe/Brussels',...slot,expiresAt:'2027-01-11T09:00:00Z',cancellationDeadline:'2027-01-11T14:30:00Z',participantUrl:null,permittedActions:['CANCEL','RESCHEDULE','APPROVE','REJECT'],payment:{status:'UNPAID',receivedMinor:0,refundedMinor:0,remainingMinor:1500,refundDueByCurrency:{}}};
+export const settings={policy:{version:1,gridMinutes:30,dailyCapacity:3,minimumNoticeSeconds:86400,pendingLifetimeSeconds:86400,expiryBufferSeconds:3600,customerCutoffSeconds:86400},calendar:{weekly:Object.fromEntries(['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'].map(day=>[day,[{startMinute:540,endMinute:1200}]])),exceptions:{},blackouts:[]},conflicts:[]};
+export class StubApi {
+ identity=signal<Identity>({authenticated:false});value=structuredClone(booking);config=structuredClone(settings);
+ get=vi.fn(async(path:string):Promise<any>=>{if(path==='/services'||path==='/admin/services')return structuredClone(services);if(path.includes('availability?'))return {serverNow:'2027-01-10T09:00:00Z',policyVersion:1,slots:[slot],restrictions:[]};if(path==='/account/profile')return {version:2,fields:{firstName:'Alex',lastName:'Synthetic',telephone:'+32400123456'}};if(path==='/account/bookings')return [this.value];if(path==='/admin/settings')return structuredClone(this.config);if(path.endsWith('/notes')||path.endsWith('/payments')||['/admin/audit','/admin/privacy','/admin/notifications','/admin/reconciliation'].includes(path))return [];return structuredClone(this.value);});
+ post=vi.fn(async(path:string,_body:unknown):Promise<any>=>path==='/admin/bookings/search'?[this.value]:path==='/admin/customers/search'?[]:path.endsWith('/exports')?{id:'export-id'}:path==='/admin/auth/mfa-enrollment'?{recoveryCodes:['synthetic-recovery']} :{});
+ command=vi.fn(async(_path:string,_body:unknown,_version?:number,_method?:string):Promise<any>=>({code:'OK',bookingId:booking.id,version:2}));
+ me=vi.fn(async()=>this.identity());refreshCsrf=vi.fn(async()=>{});logout=vi.fn(async()=>{this.identity.set({authenticated:false});});
+}

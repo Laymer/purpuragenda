@@ -1,0 +1,27 @@
+{
+  "libgraphene-1.0-0": {
+    "version": "1.10.8-3build2",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/g/graphene/libgraphene-1.0-0_1.10.8-3build2_amd64.deb",
+    "sha256": "5276c4173bff30bd2a368cce30639227089512aad85fc4af87c284456bafe8ff"
+  },
+  "libgtk-4-1": {
+    "version": "4.14.5+ds-0ubuntu0.10",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/g/gtk4/libgtk-4-1_4.14.5+ds-0ubuntu0.10_amd64.deb",
+    "sha256": "2361861e33d34a26f3d6c4906935fd9e6241eb44ff30564cb493b5671111a24f"
+  },
+  "libicu74": {
+    "version": "74.2-1ubuntu3.1",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu74_74.2-1ubuntu3.1_amd64.deb",
+    "sha256": "c9a70989678660eed9a1e904c74fa043da8bec8e2036856fc16e31ced79b04f8"
+  },
+  "libjpeg-turbo8": {
+    "version": "2.1.5-2ubuntu2",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.1.5-2ubuntu2_amd64.deb",
+    "sha256": "f68b5b23bc8a1688fb787d2aed7e2cdf895a73022f6a5025e183162dac4500b2"
+  },
+  "libxml2": {
+    "version": "2.9.14+dfsg-1.3ubuntu3.10",
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxml2/libxml2_2.9.14+dfsg-1.3ubuntu3.10_amd64.deb",
+    "sha256": "c5a065f85c1e6f605741e365e40cad71c3ceb0e85e2791400bd35b8896e12ad1"
+  }
+}

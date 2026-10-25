@@ -1,0 +1,9 @@
+import { Component,inject,signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { Api,errorText } from '../shared/api';
+@Component({imports:[RouterLink],template:`<div class="container narrow"><p class="eyebrow">Email verification</p><h1>{{done()?'You’re verified.':'One more step.'}}</h1><section class="panel stack">@if(error()){<p class="error" role="alert">{{error()}}</p>}@if(done()){<p class="success" role="status">Your email has been verified. You can return to the booking tab and continue, or choose a time below.</p>@if(api.identity().bookingId){<a class="button" [routerLink]="['/booking',api.identity().bookingId]">Manage appointment</a>}@else if(api.identity().kind==='ACCOUNT'){<a class="button" routerLink="/account">Open my account</a>}@else{<a class="button" routerLink="/book">Choose an appointment</a>}}@else{<p>Choose Verify email to use this single-use link. Opening this page alone does not use your link.</p><p class="small muted">For booking requests and account enrollment, use the same browser that requested the email.</p><button class="button" [disabled]="busy()||!token" (click)="redeem()">{{busy()?'Verifying…':'Verify email'}}</button>}<p><a routerLink="/account">Request a new link or recover an appointment</a></p></section></div>`})
+export class AuthComponent {
+  api=inject(Api);token=new URLSearchParams(location.hash.slice(1)).get('token')??'';busy=signal(false);done=signal(false);error=signal('');
+  constructor(){history.replaceState(null,'',location.pathname+location.search);if(!this.token)this.error.set('This link is missing its verification code. Request a new email.');}
+  async redeem(){this.busy.set(true);try{await this.api.refreshCsrf();await this.api.post('/auth/email/redemptions',{token:this.token});this.token='';await this.api.refreshCsrf();await this.api.me();this.done.set(true);}catch(e){this.error.set(errorText(e));}finally{this.busy.set(false);}}
+}

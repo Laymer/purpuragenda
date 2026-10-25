@@ -1,0 +1,26 @@
+services:
+  web:
+    environment: {SITE_ADDRESS: "${PUBLIC_HOST:?Set the public HTTPS hostname}"}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    cap_add: [NET_BIND_SERVICE]
+  backend:
+    environment:
+      APP_MODE: operational
+      DELIVERY_MODE: NORMAL
+      SESSION_COOKIE_NAME: __Host-purpuragenda
+      SESSION_COOKIE_SECURE: "true"
+      SMTP_HOST: ${SMTP_HOST:?Set operational SMTP host}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public HTTPS URL}
+      PRIVACY_NOTICE_VERSION: ${PRIVACY_NOTICE_VERSION:?Set reviewed notice version}
+      OWNER_NOTIFICATION_EMAIL: ${OWNER_NOTIFICATION_EMAIL:?Set owner recipient}
+      MAIL_FROM: ${MAIL_FROM:?Set verified sender}
+    secrets: [smtp_password]
+    networks: [private, outbound]
+networks:
+  outbound: {}
+secrets:
+  smtp_password: {file: ./.secrets/smtp-password}

@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "baseline": "2026-10-24",
+  "artifacts": {
+    "jdk": {
+      "version": "25.0.5+8",
+      "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz",
+      "sha256": "68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb",
+      "archive": "tar.gz"
+    },
+    "node": {
+      "version": "24.22.1",
+      "url": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-x64.tar.xz",
+      "sha256": "6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6",
+      "archive": "tar.xz"
+    },
+    "maven": {
+      "version": "3.9.16",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip",
+      "sha512": "ed41650d42485cfc243fad22158caf9cbb5dc408ce7a09ddb94dd42a019de929ca43065bfa450612cf12bf78b5cafa3884b96c090de326ff590448c933454af3",
+      "archive": "zip"
+    }
+  },
+  "versions": {
+    "springBoot": "4.1.2",
+    "angular": "22.2.3",
+    "angularBuild": "22.2.4",
+    "typescript": "6.0.3",
+    "rxjs": "7.8.2",
+    "junit": "6.1.3",
+    "cucumber": "8.0.4",
+    "playwright": "1.64.0",
+    "testcontainers": "2.0.5",
+    "vitest": "5.0.5",
+    "vite": "8.3.3",
+    "axeCore": "4.14.0"
+  },
+  "images": {
+    "postgres": {
+      "image": "postgres:18.6-bookworm",
+      "digest": "sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
+    },
+    "ubuntu": {
+      "image": "ubuntu:24.04",
+      "digest": "sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac"
+    },
+    "caddy": {
+      "image": "caddy:2.11.7-alpine",
+      "digest": "sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f"
+    },
+    "mailpit": {
+      "image": "axllent/mailpit:v1.32.0",
+      "digest": "sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498"
+    }
+  },
+  "actions": {
+    "actions/checkout": {
+      "tag": "v5",
+      "sha": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09"
+    },
+    "actions/setup-java": {
+      "tag": "v5",
+      "sha": "b6effb05e454b25005698d916606bdc6ffcbf961"
+    },
+    "actions/setup-node": {
+      "tag": "v5",
+      "sha": "a0853c24544627f65ddf259abe73b1d18a591444"
+    },
+    "actions/upload-artifact": {
+      "tag": "v4",
+      "sha": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    },
+    "github/codeql-action": {
+      "tag": "v3",
+      "sha": "4bfa242aa49c5f7c6770b98670d354a7dfac05f8"
+    }
+  },
+  "testTools": {
+    "mailpit": {
+      "version": "v1.32.0",
+      "url": "https://github.com/axllent/mailpit/releases/download/v1.32.0/mailpit-linux-amd64.tar.gz",
+      "sha256": "4b5993c978e8604c70d43927e2ad103b311bba3b1822fa0cf1d4ee4ec890a93c",
+      "archive": "tar.gz",
+      "member": "mailpit"
+    },
+    "compose": {
+      "version": "v5.6.1",
+      "url": "https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-x86_64",
+      "sha256": "47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0"
+    },
+    "restic": {
+      "version": "v0.19.1",
+      "url": "https://github.com/restic/restic/releases/download/v0.19.1/restic_0.19.1_linux_amd64.bz2",
+      "sha256": "f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c",
+      "archive": "bz2"
+    },
+    "k6": {
+      "version": "v2.3.0",
+      "url": "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-amd64.tar.gz",
+      "sha256": "39c3117b6af817592dcd0ce4242105c0a7af10948c2a425306f0be8f7a8a8ab1",
+      "archive": "tar.gz",
+      "member": "k6-v2.3.0-linux-amd64/k6"
+    },
+    "gitleaks": {
+      "version": "v8.30.1",
+      "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+      "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+      "archive": "tar.gz",
+      "member": "gitleaks"
+    },
+    "trivy": {
+      "version": "v0.76.1",
+      "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.1/trivy_0.76.1_Linux-64bit.tar.gz",
+      "sha256": "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0",
+      "archive": "tar.gz",
+      "member": "trivy"
+    }
+  }
+}

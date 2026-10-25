@@ -1,0 +1,10 @@
+[Unit]
+Description=Purpuragenda encrypted off-host database backup
+After=docker.service network-online.target
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/purpuragenda
+EnvironmentFile=/etc/purpuragenda/backup.env
+ExecStart=/bin/bash /opt/purpuragenda/scripts/ops/backup.sh
+UMask=0077
+NoNewPrivileges=true

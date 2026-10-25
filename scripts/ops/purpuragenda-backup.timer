@@ -1,0 +1,8 @@
+[Unit]
+Description=Back up Purpuragenda every15minutes
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=15
+[Install]
+WantedBy=timers.target
