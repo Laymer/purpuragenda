@@ -125,6 +125,32 @@ class MigrationReportTest(unittest.TestCase):
         GATE.validate(self.root)
 
 
+    def test_executable_runtime_requires_actual_nonempty_database_cases(self):
+        self.write()
+        source = self.root / 'backend/bootstrap/src/main/java/com/purpuragenda/bootstrap/Purpuragenda.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic runtime')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory runtime'): GATE.validate(self.root)
+        report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
+        report.parent.mkdir(parents=True)
+        qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 5, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 5, ''), ('<testcase><error/></testcase>' * 5, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="5" {attributes}>{cases}</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        GATE.validate(self.root)
+
+    def test_operator_migration_requires_its_own_database_report(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/DatabaseMigration.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic migration adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.DatabaseMigrationTest.xml')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.DatabaseMigrationTest" tests="4"/>')
+        with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.DatabaseMigrationTest" tests="5"/>')
+        GATE.validate(self.root)
+
     def test_private_bootstrap_requires_its_own_real_database_report(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresPrivateAdmin.java'
