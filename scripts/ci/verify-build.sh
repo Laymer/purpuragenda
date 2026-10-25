@@ -32,3 +32,20 @@ for module in modules:
         raise SystemExit('Incomplete suite: ' + str(module))
     print(f'Reports verified: {module}, {count} tests')
 PY
+python3 - <<'PY'
+from pathlib import Path
+import xml.etree.ElementTree as ET
+if list(Path('backend/domain/src/main/java').rglob('*.java')):
+    report = Path('backend/domain/target/site/jacoco/jacoco.xml')
+    if not report.is_file():
+        raise SystemExit('Missing domain coverage report')
+    counters = {item.get('type'): item for item in ET.parse(report).getroot().findall('counter')}
+    for name, minimum in (('LINE', 0.95), ('BRANCH', 0.90)):
+        if name not in counters:
+            raise SystemExit('Missing domain coverage counter: ' + name)
+        covered = int(counters[name].get('covered'))
+        total = covered + int(counters[name].get('missed'))
+        if not total or covered / total < minimum:
+            raise SystemExit('Domain coverage below threshold: ' + name)
+        print(f'Domain {name}: {covered}/{total} ({covered / total:.2%})')
+PY
