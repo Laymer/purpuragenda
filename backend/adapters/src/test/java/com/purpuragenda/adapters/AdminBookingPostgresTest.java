@@ -122,6 +122,15 @@ class AdminBookingPostgresTest {
         assertEquals("t",c.f.value("SELECT blackout_ids @> to_jsonb(?::text) AND blackout_ids @> to_jsonb(?::text) FROM booking_override",one.toString(),two.toString()));
     }
 
+    @Test void unusedOverridesAreRejectedAndDuplicateMeetingIdsAreStableBusinessReceipts() {
+        assertEquals(Code.OVERRIDE_UNUSED,create("unused",request(day(3,9,0),"customer@example.test",null,override(Rule.NOTICE))).code());
+        assertEquals(0,count("booking"));assertEquals(0,count("booking_override"));assertEquals(0,count("customer_identity WHERE email_key='customer@example.test'"));
+        assertTrue(create("first",request(day(3,9,0),"customer@example.test",ZOOM,SchedulingRules.Override.none())).success());
+        Receipt duplicate=create("second",request(day(4,9,0),"other@example.test",ZOOM,SchedulingRules.Override.none()));
+        assertEquals(Code.MEETING_IN_USE,duplicate.code());assertEquals(1,count("booking"));assertEquals(0,count("customer_identity WHERE email_key='other@example.test'"));
+        assertEquals(duplicate,create("second",request(day(4,9,0),"other@example.test",ZOOM,SchedulingRules.Override.none())));
+    }
+
     @Test void reservationOverlapIsNeverOverridableAndAdjacencyIsAllowed() {
         var customer=c.guest("synthetic@example.test");Instant start=c.request(3,9).start();assertTrue(c.create(customer,"existing",c.request(3,9)).success());
         Rule[] every=Rule.values();
@@ -129,8 +138,8 @@ class AdminBookingPostgresTest {
             assertEquals(Code.SLOT_UNAVAILABLE,create("overlap"+minutes,request(start.plus(Duration.ofMinutes(minutes)),"admin-customer@example.test",null,override(every))).code());
         }
         assertEquals(1,count("booking"));assertEquals(0,count("customer_identity WHERE email_key='admin-customer@example.test'"));
-        assertTrue(create("before",request(start.minus(Duration.ofMinutes(120)),"admin-customer@example.test",null,override(every))).success());
-        assertTrue(create("after",request(start.plus(Duration.ofMinutes(120)),"admin-customer@example.test",null,override(every))).success());
+        assertTrue(create("before",request(start.minus(Duration.ofMinutes(120)),"admin-customer@example.test",null,override(Rule.START_RULES))).success());
+        assertTrue(create("after",request(start.plus(Duration.ofMinutes(120)),"admin-customer@example.test",null,SchedulingRules.Override.none())).success());
         assertEquals(3,count("booking_occupancy WHERE released_at IS NULL"));
     }
 
@@ -269,7 +278,7 @@ class AdminBookingPostgresTest {
 
     @Test void twentyIndependentConnectionsCreateExactlyOneBookingForAContestedRange() throws Exception {
         var other=new AdminBooking(new PostgresAdminBooking(c.f.source),"local-v1",Set.of("zoom.us"));var start=day(3,9,0);
-        var results=race(i->(i%2==0?admin:other).create(session,"race-"+i,request(start.plus(Duration.ofMinutes(i%4)),"race"+i+"@example.test",null,override(Rule.values()))));
+        var results=race(i->(i%2==0?admin:other).create(session,"race-"+i,request(start.plus(Duration.ofMinutes(30L*(i%4))),"race"+i+"@example.test",null,SchedulingRules.Override.none())));
         assertEquals(1,results.stream().filter(Receipt::success).count());assertEquals(19,results.stream().filter(r->r.code()==Code.SLOT_UNAVAILABLE).count());
         assertEquals(1,count("booking"));assertEquals(1,count("booking_occupancy"));assertEquals(1,count("outbox_event"));assertEquals(1,count("customer_identity"));
         assertEquals(20,count("idempotency_record"));
@@ -286,7 +295,7 @@ class AdminBookingPostgresTest {
         var customers=new ArrayList<com.purpuragenda.application.port.out.SessionStore.Snapshot>();
         for(int i=0;i<10;i++)customers.add(c.guest("contender"+i+"@example.test"));
         var start=c.request(3,9).start();var other=new AdminBooking(new PostgresAdminBooking(c.f.source),"local-v1",Set.of("zoom.us"));
-        var results=race(i->i<10?c.create(customers.get(i),"customer",c.request(3,9)):(i%2==0?admin:other).create(session,"admin-"+i,request(start,"admin"+i+"@example.test",null,override(Rule.values()))));
+        var results=race(i->i<10?c.create(customers.get(i),"customer",c.request(3,9)):(i%2==0?admin:other).create(session,"admin-"+i,request(start,"admin"+i+"@example.test",null,SchedulingRules.Override.none())));
         assertEquals(1,results.stream().filter(Receipt::success).count());assertEquals(19,results.stream().filter(r->r.code()==Code.SLOT_UNAVAILABLE).count());
         assertEquals(1,count("booking_occupancy WHERE released_at IS NULL"));assertEquals(1,count("request_charge")+count("booking WHERE origin='ADMINISTRATOR'"));
     }
