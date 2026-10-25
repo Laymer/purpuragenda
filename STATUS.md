@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell assigned to separate worker |
+| P12 — Establish contract generation, the Angular application shell and typed API access | In progress; contract foundation merged PR11 bc64f01; angular-shell claimed by Codex-p12-shell |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P01/standing-authorization: agent=Codex; branch=task/p01-standing-authorization; base=main; handoff=docs/handoffs/p01-standing-authorization.md
+- P12/angular-shell: agent=Codex-p12-shell; branch=task/p12-angular-shell; base=main; handoff=docs/handoffs/p12-angular-shell.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T08:29:00Z.
-- Current task: P01/standing-authorization; branch: task/p01-standing-authorization; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: reviewed authorization instructions/validator/test ready for initial publication.
-- What works: P01/P40/P48 foundations, P13 crypto and P12 contracts merged; separate workers own migrations, Angular shell and secret scan.
-- What remains: persist user authorization in agent instructions/decisions and test authority references, run required checks/review/PR CI.
-- Decisions: routine implementation permissions are standing authorization; sandbox prompts remain app controls; release/deployment/purchases remain separate manual owner decisions.
-- Verification: 51 root +31 policy Python tests,108 domain+11 security+3 architecture build, coverage99.64%/97.75% domain and95.89%/100% adapters, contract drift and whitespace passed; independent agent approved.
-- Next concrete action: update instructions and validator with regression tests.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none.
+- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:31:35Z.
+- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: shell implementation/tests/configuration/lock and evidence before first checkpoint.
+- What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
+- What remains: Angular shell, typed SDK compile/HTTP proof, strict npm install/test/build and sanitized required reports.
+- Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
+- Verification: full build fresh npmci,6 Angular tests,108 domain+11 security+3 architecture,63 strict root Python passed; Angular22/22 lines30/30 branches; bundle307.50kB.
+- Next concrete action: commit independently reviewed/tested checkpoint, integrate main8f5ed62 secrets and run all gates.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; integrate P43 and P07 when merged.

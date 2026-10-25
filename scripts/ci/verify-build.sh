@@ -4,6 +4,7 @@ cd "$(dirname "$0")/../.."
 source scripts/dev/toolchain-env.sh
 python3 scripts/ci/check-docs.py
 python3 scripts/ci/check-toolchain.py
+bash scripts/ci/verify-frontend.sh
 python3 - <<'PYTHON'
 from pathlib import Path
 for module in ('domain', 'application', 'adapters', 'bootstrap'):

@@ -24,3 +24,7 @@ The inherited JaCoCo agent appends unit and integration fork execution to one fi
 When frontend TypeScript is introduced, Angular tests must emit `frontend/coverage/coverage-final.json` with all handwritten production sources, including untouched files and bootstrap code. Configure the test runner to instrument all these sources before invoking the shared gate. It requires 90% lines and branches independently for Angular. Spec/declaration files are not executable production sources. Only individual generated files listed by `.openapi-generator/FILES` with generator-version provenance can be excluded; merely putting a file under a generated directory does not exclude it. Generated files must still pass deterministic generation checks in the contract task.
 
 Run the isolated synthetic gate tests with `python3 -m unittest discover -s scripts/ci -p 'test_coverage.py'`. The production entry point accepts no threshold overrides. Full-project P40 acceptance remains pending until the application and Angular features exist and meet these requirements.
+
+## Angular category
+
+The adopted P12 Angular shell now runs mandatory `npm ci`, Angular tests, production build and fail-closed report/coverage checks inside every full build. See frontend.md for commands, exact pins, generated-file exclusions and evidence paths. No missing dependency/report or skipped test may pass. All handwritten frontend TS, including bootstrap, is covered independently at90% lines/branches; this does not certify later feature journeys or the real-browser matrix.

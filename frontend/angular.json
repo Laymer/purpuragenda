@@ -1,0 +1,100 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "purpuragenda": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "index": "src/index.html",
+            "styles": [
+              "src/styles.css"
+            ],
+            "outputPath": "dist/purpuragenda"
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "550kB",
+                  "maximumError": "750kB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "development": {
+              "buildTarget": "purpuragenda:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "coverage": true,
+            "coverageInclude": [
+              "src/**/*.ts"
+            ],
+            "coverageExclude": [
+              "src/**/*.spec.ts",
+              "src/**/*.d.ts",
+              "src/app/shared/generated/api.base.service.ts",
+              "src/app/shared/generated/api.module.ts",
+              "src/app/shared/generated/api/api.ts",
+              "src/app/shared/generated/api/catalog.service.ts",
+              "src/app/shared/generated/configuration.ts",
+              "src/app/shared/generated/encoder.ts",
+              "src/app/shared/generated/index.ts",
+              "src/app/shared/generated/model/availability.ts",
+              "src/app/shared/generated/model/models.ts",
+              "src/app/shared/generated/model/problem.ts",
+              "src/app/shared/generated/model/service.ts",
+              "src/app/shared/generated/model/slot.ts",
+              "src/app/shared/generated/param.ts",
+              "src/app/shared/generated/provide-api.ts",
+              "src/app/shared/generated/query.params.ts",
+              "src/app/shared/generated/variables.ts"
+            ],
+            "coverageReporters": [
+              "text",
+              "json",
+              "lcov"
+            ],
+            "coverageThresholds": {
+              "lines": 90,
+              "branches": 90
+            },
+            "runnerConfig": "vitest.config.mjs",
+            "reporters": [
+              [
+                "junit",
+                {
+                  "outputFile": "coverage/junit.xml"
+                }
+              ]
+            ]
+          }
+        }
+      }
+    }
+  }
+}
