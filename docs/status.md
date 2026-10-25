@@ -391,3 +391,9 @@ Quota head7b58ea7 actual CI40186222200 passed all13 checks and all ten quota Pos
 Integrated reviewed SMTP transport fc06c21 including mandatory eight-case report invocation, Angus/API runtime and Bcpkix test dependencies. All Windows/Mac/SAST/MFA/quota categories and guards retained.008 remains the only new migration, applied001–007 byte-identical. Combined exact-head CI required before quota merge.
 
 MFA-integrated quota935039e CI40186378099 passed all13 checks including actual008 quota/migration and10 MFA database cases. Current SMTP integration compiles and172 strict Python tests/docs/inventory/whitespace pass; new exact-head full CI required. No quota implementation/008 changes after approved core and passing actual quota cases.
+
+## P16 resumed recovery-isolation verification
+
+Integrated current main f72bae2, including quota008 and its ten-case PostgreSQL guard. History eligibility is now read before decrypting a credential, preventing an unowned secret copy if that query fails; a twelfth mandatory PostgreSQL test proves query ordering and fixed, cause-free failure before workflow access. No migration, persisted grant, endpoint or session is added. Local pinned installer fails on this macOS host because the approved archives require Linuxx86_64; actual Java/Angular/PostgreSQL execution requires unchanged Linux CI. Initial local172-case Python run encountered macOS /tmp aliases in existing artifact-path fixtures; normalized TMPDIR rerun executes172 tests with170passing and two existing frontend cleanup errors because Python3.9 lacks shutil.rmtree(dir_fd). No local full-suite passing claim.
+
+P16 current-host delivery-policy run executed31 cases with21 passing and10 errors because Python3.9 datetime.fromisoformat rejects Z timestamps; this reproduces existing baseline limits, not a passing gate. Linux CI remains authoritative. Documentation validation passed locally.

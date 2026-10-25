@@ -131,10 +131,10 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic MFA adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.AdminMfaDatabaseTest.xml')
-        for count, skipped in ((0, 0), (10, 0), (11, 1)):
+        for count, skipped in ((0, 0), (11, 0), (12, 1)):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdminMfaDatabaseTest" tests="{count}" skipped="{skipped}"/>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.AdminMfaDatabaseTest" tests="11"/>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdminMfaDatabaseTest" tests="12"/>')
         GATE.validate(self.root)
 
 

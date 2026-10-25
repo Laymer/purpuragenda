@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; SMTP PR30 merged fc06c21; auth delivery PR32 active separately |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Draft PR; https://github.com/Laymer/purpuragenda/pull/32; SMTP PR30 fc06c21 merged; auth foundation resumed; worker remains pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/33; recovery isolation resumed; MFA PR29 d34a735 and bootstrap PR27 202fbc7 merged; recovery persistence pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,15 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P14/auth-delivery: agent=Codex-p14; branch=task/p14-auth-delivery; base=main; handoff=docs/handoffs/p14-auth-delivery.md
 - P16/recovery-isolation: agent=Codex-p16-resume; branch=task/p16-scoped-recovery; base=main; handoff=docs/handoffs/p16-recovery-isolation.md
 
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:12:59Z.
 - Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main f72bae2; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
-- Last pushed implementation commit: fd45305; uncommitted changes: current-main merge and resumed ledger reconciliation.
+- Last pushed implementation commit: c588f45; uncommitted changes: history-query ordering fix, twelfth database regression/report guard and verification evidence.
 - What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: independent review, real PostgreSQL and coverage CI; no full recovery claim.
 - Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
-- Verification: prior local results remain historical; fresh verification pending after current-main integration.
+- Verification: docs/inventory/whitespace passed;172Python cases170pass/2Python3.9rmtree errors;31policy cases21pass/10Python3.9 timestamp errors. Pinned Linux installer unavailable on macOS; real PostgreSQL/full CI required.
 - Next concrete action: run full implemented verification and publish tested integration for CI/review.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.

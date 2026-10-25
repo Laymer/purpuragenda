@@ -178,6 +178,25 @@ class AdminMfaDatabaseTest {
         assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{admin.enroll(7,hashes);return null;}));
         assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{admin.acceptStep(previous());return null;}));
     }
+    @Test void unavailableHistoryFailsBeforeDecryptingCredentialsOrInvokingWorkflow() {
+        jdbc.update("UPDATE admin_user SET totp_secret='invalid'");
+        AtomicBoolean historyRequested=new AtomicBoolean();
+        var wrapped=new DelegatingDataSource(source) {
+            @Override public Connection getConnection() throws SQLException {
+                Connection connection=super.getConnection();
+                return (Connection)Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{Connection.class},(proxy,method,args)->{
+                    if(method.getName().equals("prepareStatement") && ((String)args[0]).contains("SELECT NOT EXISTS")) {
+                        historyRequested.set(true);throw new SQLException("synthetic-private-history-failure");
+                    }
+                    return TransactionCoreTest.invoke(method,connection,args);
+                });
+            }
+        };
+        var failure=assertThrows(IllegalStateException.class,()->new PostgresAdminMfa(wrapped,secrets).locked("owner@example.test",admin->{throw new AssertionError("WORKFLOW_MUST_NOT_RUN");}));
+        assertTrue(historyRequested.get(),"HISTORY_MUST_BE_READ_BEFORE_SECRET_DECRYPTION");
+        assertEquals("ADMIN_MFA_UNAVAILABLE",failure.getMessage());assertNull(failure.getCause());
+        assertFalse(enrolled());assertEquals(-1,previous());assertEquals(0,count("admin_recovery_code"));
+    }
     @Test void recoveryAndImmutableAuditHistoryPreventPasswordOnlyReenrollmentForever() throws Exception {
         enroll();jdbc.update("UPDATE admin_user SET enrolled=false,last_totp_step=-1");
         String value=freshCode();assertTrue(mfa.provision("owner@example.test",password()).isEmpty());

@@ -41,14 +41,14 @@ public final class PostgresAdminMfa implements AdminMfaUnitOfWork {
         try(var query=connection.createStatement();var row=query.executeQuery("SELECT clock_timestamp()")) { row.next();now=row.getTimestamp(1).toInstant(); }
         Credential credential=null;boolean initial=false;
         if(id!=null) {
+            try(var query=connection.prepareStatement("SELECT NOT EXISTS(SELECT 1 FROM admin_recovery_code WHERE admin_id=?) AND NOT EXISTS(SELECT 1 FROM audit_event WHERE actor_id=? AND type='ADMIN_MFA_ENROLLED')")) {
+                query.setObject(1,id);query.setObject(2,id);try(var row=query.executeQuery()) { row.next();initial=row.getBoolean(1); }
+            }
             byte[] raw=Base64.getDecoder().decode(secrets.decrypt(encrypted));
             try {
                 if(raw.length!=20 || previous < -1 || !Argon2PasswordHash.validEncoding(hash))throw unavailable();
                 credential=new Credential(id,hash,enrolled,previous,new Secret(raw));
             } finally { Arrays.fill(raw,(byte)0); }
-            try(var query=connection.prepareStatement("SELECT NOT EXISTS(SELECT 1 FROM admin_recovery_code WHERE admin_id=?) AND NOT EXISTS(SELECT 1 FROM audit_event WHERE actor_id=? AND type='ADMIN_MFA_ENROLLED')")) {
-                query.setObject(1,id);query.setObject(2,id);try(var row=query.executeQuery()) { row.next();initial=row.getBoolean(1); }
-            }
         }
         return new Context(connection,now,credential,initial);
     }

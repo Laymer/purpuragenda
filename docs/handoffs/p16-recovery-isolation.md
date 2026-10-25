@@ -1,8 +1,8 @@
 - Agent and UTC checkpoint: Codex-p16-resume, 2026-10-25T11:12:59Z.
 - Current task: P16/recovery-isolation; branch: task/p16-scoped-recovery; base: main f72bae2; PR URL: https://github.com/Laymer/purpuragenda/pull/33.
-- Last pushed implementation commit: fd45305; uncommitted changes: current-main merge and resumed ledger reconciliation.
+- Last pushed implementation commit: c588f45; uncommitted changes: history-query ordering fix, twelfth database regression/report guard and verification evidence.
 - What works: existing initial-enrollment history barriers and metadata-only reenrollment policy. What remains: independent review, real PostgreSQL and coverage CI; no full recovery claim.
 - Decisions: owner resumed approved foundation plan; no recovery persistence, migration or endpoint expansion. Preserve applied001–008 and later009/010 reservations.
-- Verification: prior local results remain historical; fresh verification pending after current-main integration.
+- Verification: docs/inventory/whitespace passed;172Python cases170pass/2Python3.9rmtree errors;31policy cases21pass/10Python3.9 timestamp errors. Pinned Linux installer unavailable on macOS; real PostgreSQL/full CI required.
 - Next concrete action: run full implemented verification and publish tested integration for CI/review.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p16-resume; stacked PR dependencies: none; quota008 and SMTP integrated from main.
