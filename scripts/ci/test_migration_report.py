@@ -150,6 +150,21 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.DeferredBookingIntegrityTest" tests="8"/>')
         GATE.validate(self.root)
 
+    def test_guest_access_requires_executed_redemption_binding_replay_race_and_upgrade_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic guest proof adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.GuestAccessDatabaseTest.xml')
+        for count, cases, nested in ((0,0,''), (12,12,''), (13,12,''), (14,13,''),
+                                     (13,13,'<failure/>'), (13,13,'<error/>'), (13,13,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="13">'
+                          + '<testcase/>' * 13 + '</testsuite>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

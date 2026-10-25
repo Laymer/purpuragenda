@@ -23,6 +23,8 @@ def validate(root):
         suites.append(('AdminMfaDatabaseTest', 12))
     if (root / 'backend/adapters/src/main/resources/db/changelog/009-deferred-booking-invariants.sql').is_file():
         suites.append(('DeferredBookingIntegrityTest', 8))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java').is_file():
+        suites.append(('GuestAccessDatabaseTest', 13))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
@@ -33,6 +35,9 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
+        if name == 'GuestAccessDatabaseTest' and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+                or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
+            raise ValueError('Incomplete or failed guest access cases')
 
 
 if __name__ == '__main__':
