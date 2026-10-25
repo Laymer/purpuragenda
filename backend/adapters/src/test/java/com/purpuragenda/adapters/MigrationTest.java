@@ -33,17 +33,22 @@ class MigrationTest {
         LogManager.getLogManager().reset(); // Never print provider errors or SQL with fixture values.
         appPassword=HexFormat.of().formatHex(SecureRandom.getSeed(32));
         migratorPassword=HexFormat.of().formatHex(SecureRandom.getSeed(32));
+        String phase="IMAGE_CONFIGURATION";
         try {
             postgres=new PostgreSQLContainer(IMAGE).withDatabaseName("purpuragenda_test").withUsername("postgres")
                     .withPassword(HexFormat.of().formatHex(SecureRandom.getSeed(32)));
-            postgres.start();
+            phase="CONTAINER_START"; postgres.start();
+            phase="ROLE_FILES";
             postgres.execInContainer("mkdir","-p","/run/secrets");
             postgres.copyFileToContainer(Transferable.of(appPassword),"/run/secrets/app_password");
             postgres.copyFileToContainer(Transferable.of(migratorPassword),"/run/secrets/migrator_password");
             Path script=Path.of(System.getProperty("basedir"),"../../ops/docker/init-database.sh").normalize();
             postgres.copyFileToContainer(MountableFile.forHostPath(script),"/tmp/init-database.sh");
+            phase="ROLE_BOOTSTRAP";
             assertEquals(0,postgres.execInContainer("bash","/tmp/init-database.sh").getExitCode(),"ROLE_BOOTSTRAP_FAILED");
-        } catch(Exception failure) { throw new AssertionError("POSTGRES_TEST_START_FAILED"); }
+        } catch(Exception failure) {
+            throw new AssertionError("POSTGRES_TEST_START_FAILED:"+phase+":"+failure.getClass().getSimpleName());
+        }
     }
     @AfterAll static void stop() { if(postgres!=null) postgres.stop(); }
     @BeforeEach void fresh() { newSchema(); migrate(0); }

@@ -4,18 +4,18 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/9; concurrency slice 15ba8b4; original PR1 d4f78ac |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/9; 15ba8b4 concurrency slice; original PR1 d4f78ac |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; dd482e3 review only; SQL not adopted |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; implementation eb28055; first real-container CI failed at bootstrap; diagnosis in progress |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; dependencies in docs/delivery.md;  |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell pending |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -43,7 +43,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
-| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; coverage foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
+| P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Not started; dependencies in docs/delivery.md;  |
@@ -51,11 +51,11 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at0c3ae04; final release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks |
+| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04. Full P40 application-wide acceptance and P48 release publication remain pending.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage and P48 protection foundations are merged; final application coverage and release publication remain pending. P07 migrations and P13 crypto are active in their separate task branches.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
@@ -67,7 +67,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p07, 2026-10-25T08:13:28Z.
 - Current task: P07/migrations; branch: task/p07-migrations; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/7.
-- Last pushed implementation commit: dd482e3 review checkpoint; local implementation c10568c; uncommitted changes: latest-main merge with P48 protection and P13 crypto; both dependency sets preserved.
+- Last pushed implementation commit: dd482e3 review checkpoint; local implementation c10568c; pushed implementation eb28055; uncommitted changes: P12 main integration plus safe PostgreSQL bootstrap diagnostics and CI preflight.
 - What works: P01/P40/P48 foundations and P13 crypto merged; P07 existing review findings retained. What remains: latest-main integration, actual-container CI and independent review.
 - Decisions: preserve recovered changesets 001–006 byte-for-byte; add corrections in 007+, use distinct DDL/DML roles and retain absolute overlap barrier.
 - Verification: 38 Python gate/ledger tests and full build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Docker daemon unavailable, no migration passing claim.

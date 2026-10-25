@@ -76,6 +76,8 @@ def frontend(root):
         require(all(file.is_relative_to(generated.resolve()) for file in exclusions),
                 "Generated manifest escapes its directory")
         sources -= exclusions
+    if not sources:
+        return []  # Generated-only contract scaffolding has no handwritten coverage claim.
     report = root / "frontend/coverage/coverage-final.json"
     require(report.is_file(), "Missing Angular coverage-final.json")
     data = json.loads(report.read_text())

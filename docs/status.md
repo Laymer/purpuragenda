@@ -58,6 +58,30 @@ Adopted the append-only external-payment ledger and repaired three prototype def
 
 Fresh operational dependency check: `docker version` exited 1 both inside and outside the sandbox; Docker client 28.5.2 exists but cannot connect to unix:///var/run/docker.sock. No local Docker/Testcontainers or Compose passing claim follows from unit-test evidence. CI may provide independent PostgreSQL evidence once the suite is adopted. P05 exact-head CI passed and merge 1470d88 was confirmed.
 
+## P01 concurrent delivery evidence
+
+Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and sole preexisting draft P07 dd482e3. Added tested concurrent claims/handoffs and the approved dependency queue, coverage/commit/review/launch decisions. No recovered feature code adopted.
+
+`python3 -m unittest discover -s scripts/ci -p 'test_*.py'` passed 15 synthetic ledger tests. `python3 scripts/ci/check-docs.py` and `git diff --check` passed. `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests with zero failures/errors/skips; domain coverage 276/277 lines (99.64%) and 478/489 branches (97.75%). Independent agent review found and verified fixes for idle claims, mandatory dependency documentation and claim/state mismatch. Exact-head remote CI remains required. PostgreSQL/Angular/browser/security/recovery suites are not yet implemented; no application/release completion is claimed.
+
+## P40 coverage foundation evidence
+
+Implemented inherited JaCoCo instrumentation/report/check for all Maven modules with independent backend production-module thresholds: domain/application 95% lines and 90% branches, adapters/bootstrap 90% lines and branches. One append-only execution file per module combines unit/integration forks without summing duplicate counters. The shared post-build validator rejects missing reports/counters and omitted source files; it also requires complete Angular coverage-final JSON once handwritten frontend sources exist. Generated exclusions require individual generator-manifest entries and version provenance.
+
+`bash scripts/ci/verify-build.sh` passed locally on 2026-10-25: 108 domain tests, three architecture tests, zero failures/errors/skips; domain 276/277 lines (99.64%) and 478/489 branches (97.75%). The final full build included all 23 new synthetic gate tests, including zero-branch report edge cases. Negative cases include below-boundary line/branch thresholds, per-module masking, omitted production sources, missing reports/counters, invalid counters, Angular map truncation and generated-manifest path traversal. `git diff --check` passed. Final exact-head CI remains required.
+
+Limits: application/adapters/bootstrap are empty scaffolds, and Angular is not yet adopted on this branch; no application or Angular coverage result is claimed. Real PostgreSQL, external acceptance-process coverage merging, browser, load, security and recovery suites remain their owning tasks. Full-project P40 completion remains pending.
+
+P01 concurrency prerequisite merged at 15ba8b4 and was integrated without history rewriting. Its delivery dependency map, validator and test suite are preserved. Integrated local checks passed: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` ran 38 tests (15 ledger + 23 coverage); documentation validation, whitespace and the full implemented build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Remote exact-head CI remains required.
+
+## P12 contract foundation evidence
+
+Selectively adopted public service/availability schemas from recovery into an OpenAPI3.1 contract, requiring safe problem metadata and explicit time-offset labels. Added pinned OpenAPI Generator7.26.0 strict generation, same-origin Angular SDK and byte-complete drift verification. Generator artifact was executed from the existing approved versioned Maven cache. Generated files are reported separately from handwritten changes. No HTTP endpoint or Angular shell implementation is certified.
+
+Local checks on2026-10-25: 46 Python tests passed (15 ledger,24 coverage including generated-only scaffolding,7 contract); full build passed108 domain+3 architecture tests with zero failures/errors/skips and276/277 lines,478/489 branches. Fresh SDK generation and independent second generation byte comparison passed. Initial generator config warned that validateSpec was unknown; inspected the plugin's own descriptor and replaced it with explicit skipValidateSpec=false, then regenerated successfully. Generated-only source exemption retains a negative test requiring a report as soon as any handwritten TypeScript exists. Exact-head CI and independent review remain pending.
+
+P12 independent review found and resolved SDK write-path failures: reject symlinked ancestors/destination and invalid/empty fresh output before modifying the committed SDK; stage replacement and restore the prior SDK if installation fails. Four regression tests cover preservation/escape/stale removal/rollback; all50 Python tests and full108+3 build passed. Independent re-review approved. Initial PR11 CI passed all then-implemented categories before prerequisite P48 integration.
+
 ## P48 merge-protection foundation evidence
 
 Implemented a managed main ruleset, default-read-only API checker/application command,
@@ -112,6 +136,8 @@ P48 integrated P40 foundationbb7d4cf and replaced Python discovery entry points 
 
 P48 public CI exposed equivalent UTC/offset spellings of updated_at; version comparison now normalizes aware ISO timestamps to UTC and rejects missing/malformed/naive values. Millisecond-change and equivalent-offset regressions pass; the administrator receipt remains unchanged.
 
+P12 prerequisite integration: P48 PR8 merge0c3ae04 reconciled; all50 root+31 delivery Python tests, full108domain+3architecture build and whitespace passed. Independent reviewed SDK safety fixes retained. Exact-head combined CI required before merge.
+
 ## P13 crypto implementation evidence
 
 Selectively adopted bounded AES256-GCM Secrets and a small six-digit/30-second TOTP primitive. Keys require exactly32 raw bytes and safe bounded IDs; final symlinks are refused, temporary key/plaintext buffers cleared, malformed/tampered/oversized envelopes rejected with fixed cause-free errors. Independent TOTP/delivery keys remain caller configuration. No identity, SMTP or password-storage flow is claimed. BC1.86 is test-scoped for RFC9106 and the approved64MiB/3/p1 baseline; OTP1.0.0 is production-scoped. Exact Maven Central POM publisher/SCM/license provenance was checked.
@@ -135,3 +161,5 @@ Exact Liquibase 5.0.4, PostgreSQL JDBC 42.7.14 and Testcontainers 2.0.5 Maven Ce
 The mandatory full build failed locally inside and outside the sandbox at sanitized POSTGRES_TEST_START_FAILED because Docker has no reachable daemon; 108 domain tests passed before that failure. There is no passing full-build or migration-suite claim. Separate manual SQL checks used an isolated cached PostgreSQL18.6 cluster under /tmp/p07-postgres: migration syntax/seeds and synthetic pending ceiling, null snapshot, overlap, occupancy deletion and DST elapsed-day checks passed. These manual checks do not certify Testcontainers, Compose or the full Java migration suite. Required actual-container CI and independent review remain pending.
 
 P07 integrated P48 protection and P13 cryptography from main34836ed. Preserved both adapter dependency sets and the strict Python test runner. Actual-container CI remains pending.
+
+P07 first actual-container CI40176534341 at eb28055 failed at MigrationTest bootstrap in0.139s before SQL; domain108/security11 and documentation/delivery checks passed. Added controlled phase/exception-class diagnostics and mandatory Docker server/API/pinned-image preflight; no arbitrary provider message logging or weakened dependency gate. Integrated P12 contract foundationbc64f01 and its mandatory contract category.
