@@ -17,9 +17,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundations PR19 e917ee3 and PR23 6afe0e1 merged; SMTP transport claimed; auth worker pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue PR19 e917ee3, correction PR23 6afe0e1 and SMTP PR30 fc06c21 merged; encrypted auth envelopes/worker remain |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/29; atomic MFA; bootstrap PR27 merged202fbc7; recovery pending |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; private bootstrap PR27 202fbc7 and atomic MFA PR29 d34a735 merged with13 checks; recovery/scoped reenrollment remain; no HTTP/CLI/session wiring |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -52,8 +52,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Windows preflight PR25 merged7d7f19e; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; actual WSL/full runbooks pending |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress unprovisioned, no existing public Linux server; registrar Squarespace confirmed read-only, Google Domains nameservers; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Mac bootstrap PR22 at4233afd actual host ready; Windows preflight PR25 at7d7f19e with13 green checks; actual WSL acceptance/full runbooks pending |
+| P50 — Record owner acceptance and resolve live-use prerequisites | In progress; owner-input register active; privacy core wording approved, complete notice/retention/terms and external/live-use gates pending; Squarespace registrar confirmed, no public ingress server |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
 
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P14/smtp-transport: agent=Codex-p14; branch=task/p14-smtp-transport; base=main; handoff=docs/handoffs/p14-smtp-transport.md
+- P50/release-inputs: agent=Codex; branch=task/p50-release-inputs; base=main; handoff=docs/handoffs/p50-release-inputs.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T10:43:20Z.
-- Current task: P14/smtp-transport; branch: task/p14-smtp-transport; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/30.
-- Last pushed implementation commit:72817ac; uncommitted changes: ledger/evidence checkpoint and mandatory-invocation regression only; source published to draft PR30.
-- What works: queue foundation PR19 mergede917ee3, exact real PostgreSQL/coverage CI green.
-- What remains: integrate latest main, strict checks and draft publication; encrypted-auth worker follows separately.
-- Decisions: pure-JDK redacted message/result port; restore zero network; capture only loopback or literal private mailpit; operational required TLS/identity/timeouts/debug-off; no P36 templates.
-- Verification: two Message tests, eight actual SMTP/TLS tests and three report-guard regressions pass; mandatory actual report validates. Full verify-build fails on unavailable Docker/PostgreSQL, without skips. 169 current root Python tests and history/216-file secret scan passed; live dependency gate481 packages zero vulnerabilities. Actual CI coverage and all categories still required.
-- Next concrete action: require exact-head CI and independent review; fix findings before coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P13/P07/P08/P14 queue merged; P43 dependency/SAST, Mac bootstrap and P09 availability gates preserved from current main; queue correction6afe0e1 merged.
+- Agent and UTC checkpoint: Codex, 2026-10-25T10:33:25Z.
+- Current task: P50/release-inputs; branch: task/p50-release-inputs; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: exact approved core text, dated public inputs, pending full notice, strict release receipts/gates and tests ready for draft.
+- What works: Mac/Tailscale/Docker host prerequisites accepted; Squarespace registrar/public DNS verified; owner approved privacy core wording including necessary providers; existing Zoom/SMTP settings later; no public ingress server exists.
+- What remains: machine-checked input register separating owner-reported/approved core from complete launch gates; full notice/retention/terms, ingress/DNS/HTTPS, supplier settings, backup/recovery, real-client and deployment acceptance remain pending.
+- Decisions: preserve exact approved core text; no full-notice/legal-completeness claim or public deployment/purchase authorization inferred. Evidence must be safe and revision-bound for release.
+- Verification:179 strict root+31 delivery Python tests, input/docs/suite inventory and whitespace passed locally; release rejects missing full notice/acceptance. All existing implemented categories remain mandatory; exact-head CI and independent review pending.
+- Next concrete action: publish draft, integrate current main and require independent review/exact-head all-category CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P49 preflight7d7f19e merged with13 checks.

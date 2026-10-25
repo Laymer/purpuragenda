@@ -135,6 +135,11 @@
       "owner": "P49",
       "state": "implemented",
       "job": "windows-preflight"
+    },
+    "release-inputs": {
+      "owner": "P50",
+      "state": "implemented",
+      "job": "documentation"
     }
   }
 }
