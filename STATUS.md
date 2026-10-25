@@ -11,7 +11,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | In progress; additive009 deferred-booking correction; earlier slices merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24, expiry PR26 and quota https://github.com/Laymer/purpuragenda/pull/28 atf72bae2 merged; creation remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-None.
+- P14/auth-worker: agent=Codex-p14; branch=task/p14-auth-worker; base=main; handoff=docs/handoffs/p14-auth-worker.md
+- P08/deferred-booking-integrity: agent=Codex-p08; branch=task/p08-deferred-booking; base=main; handoff=docs/handoffs/p08-deferred-booking.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-25T11:22:01Z.
-- Current task: P01/auth-handoff; branch: task/p01-auth-handoff; base: main79dff5a; PR URL: https://github.com/Laymer/purpuragenda/pull/34.
-- Last pushed implementation commit: 9ab82cd (PR33, merged79dff5a); uncommitted changes: consolidated ledger/evidence and tested handoff lifecycle pending checkpoint publication.
-- What works: P14 persistence PR32 merged21de569 and P16 isolation PR33 merged79dff5a after independent exact-head review and all13 checks on each. No active implementation owners remain.
-- What remains: P14 worker/queued-expiry sweep, P15 guest redemption, P16 persisted recovery and P17 public access protections; P09 creation still pending. P14/P16 are not complete.
-- Decisions: preserve bounded foundation scope, applied001–008 and009/010 reservations; leave P50 PR31 paused; no deployment or live communication.
-- Verification: combined9ab82cd CI40188274058 passed all13 checks,12auth+12MFA realPG cases,108domain/45application/124adapter/3architecture cases with zero skips; all coverage gates passed.18 local ledger lifecycle cases pass; full local toolchain/Python limits are recorded in docs/status.md. Reconciliation PR requires its own full CI and independent review.
-- Next concrete action: claim P14/auth-worker and implement fenced SMTP delivery plus queued-expiry envelope cleanup as separate reviewed work; coordinate009 before P16 recovery010 and keep public flows behind P17 protections.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; clean implementation worktrees/tmp/purpuragenda-p14-auth-delivery and/tmp/purpuragenda-p16-resume; coordinator worktree/tmp/purpuragenda-auth-handoff; stacked PR dependencies: none, both foundation PRs merged.
+- Agent and UTC checkpoint: Codex-p08, 2026-10-25T12:49:42Z.
+- Current task: P08/deferred-booking-integrity; branch: task/p08-deferred-booking; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: additive009, eight real PostgreSQL regressions, mandatory-report guard and evidence ready for first publication.
+- What works: prior P08 storage/transaction slices merged. What remains: additive009 current-final-row deferred validation and real PostgreSQL regressions/CI/review.
+- Decisions: preserve applied001–008 bytes and every007 invariant;010 reserved recovery; no recovery/session/API scope.
+- Verification:11 synthetic mandatory-report checks, docs/inventory/whitespace pass; eight real PostgreSQL cases authored, not locally executed. Local macOS/Python3.9/Linux-only toolchain and absentDocker limits remain; actual CI required.
+- Next concrete action: add009 and same-transaction multi-save/final-invalid/upgrade tests; publish draft for actual Linux CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/tmp/purpuragenda-p08-deferred-booking; stacked PR dependencies: none, prior auth foundations merged.
