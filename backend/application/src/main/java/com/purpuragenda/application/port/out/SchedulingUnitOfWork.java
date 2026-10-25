@@ -24,6 +24,10 @@ public interface SchedulingUnitOfWork {
     }
     interface Transaction extends View {
         void save(Booking booking);
+        /** Due at captured now, locked and ordered by PostgreSQL UUID order. */
+        List<Booking> duePending();
+        /** Fixed expiry refund obligations and system audit/outbox; repeat calls are harmless. */
+        void expiryEffects(UUID bookingId, long expiredVersion);
         /** Earlier reclamation survives expected failure; unexpected failure aborts the whole command. */
         Receipt attempt(Supplier<Receipt> mutation);
     }

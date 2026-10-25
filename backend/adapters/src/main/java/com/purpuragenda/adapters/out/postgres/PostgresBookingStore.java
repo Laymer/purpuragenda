@@ -40,6 +40,10 @@ final class PostgresBookingStore {
     List<Booking> bookings(ReservationInterval interval) {
         return List.copyOf(jdbc.query(BOOKINGS+" WHERE b.start_at<? AND b.reserved_end>? ORDER BY b.start_at,b.id",(row,n)->map(row),timestamp(interval.end()),timestamp(interval.start())));
     }
+    List<Booking> duePending(Instant now) {
+        return List.copyOf(jdbc.query(BOOKINGS+" WHERE b.state='PENDING_CONFIRMATION' AND b.expires_at<=? ORDER BY b.id FOR UPDATE OF b",
+                (row,n)->map(row),timestamp(now)));
+    }
     private Booking map(ResultSet row) throws SQLException {
         try {
             String url=row.getString("meeting_url"); Meeting meeting=url==null?null:Meeting.parse(url,meetingHosts);
