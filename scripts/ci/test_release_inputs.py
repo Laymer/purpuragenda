@@ -170,5 +170,9 @@ class ReleaseInputsTest(unittest.TestCase):
         suites = importlib.util.module_from_spec(spec); spec.loader.exec_module(suites)
         text = (ROOT / '.github/workflows/verify.yml').read_text()
         jobs = suites.inventory(json.loads((ROOT / 'scripts/ci/suites.json').read_text()), ROOT)
-        with self.assertRaisesRegex(ValueError, 'Owner input validation'):
-            suites.workflow(text.replace('      - run: python3 scripts/ci/check-release-inputs.py\n', ''), jobs)
+        command = '      - run: python3 scripts/ci/check-release-inputs.py'
+        for replacement in ('', '      - run: true # python3 scripts/ci/check-release-inputs.py',
+                            '      # python3 scripts/ci/check-release-inputs.py',
+                            command + ' || true', command + '; true'):
+            with self.subTest(replacement=replacement), self.assertRaisesRegex(ValueError, 'Owner input validation'):
+                suites.workflow(text.replace(command, replacement), jobs)

@@ -75,7 +75,8 @@ def workflow(text, expected):
     jobs = dict(blocks)
     require(len(jobs) == len(blocks) and set(jobs) == expected | {'verify'},
             'Workflow jobs do not match mandatory inventory')
-    require('python3 scripts/ci/check-release-inputs.py' in jobs['documentation'], 'Owner input validation must run on every PR')
+    require(re.search(r'^      - run: python3 scripts/ci/check-release-inputs\.py[ \t]*$', jobs['documentation'], re.MULTILINE),
+            'Owner input validation must run as an unmasked exact step on every PR')
     aggregate = jobs['verify']
     require(re.search(r'^    if: always\(\)\s*$', aggregate, re.MULTILINE),
             'Aggregate must run after failed/skipped prerequisites')
