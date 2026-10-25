@@ -35,3 +35,5 @@ Future private operator composition must use Console.readPassword and fail when
 no private interactive console exists; never accept passwords through argv,
 environment variables or public registration. This slice deliberately has no
 operator wiring while secure atomic enrollment is unavailable.
+
+Update (P45/followup): the private operator form now exists as `admin-setup` (`Purpuragenda admin-setup`, composed by a non-web `OperatorApplication`). It uses `System.console()` and requires `Console.isTerminal()`, reads the password twice with `readPassword`, then runs the unchanged bootstrap, password-proven provisioning and enrollment use cases and prints key and recovery codes only through that console. `scripts/dev/local.sh admin-setup` supplies the container terminal; `verify-compose.py` drives it on a pseudo-terminal with a synthetic credential and an independently computed TOTP code.
