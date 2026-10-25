@@ -9,23 +9,34 @@ GATE = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(GATE)
 
 
 class QueueReportTest(unittest.TestCase):
-    def test_complete_real_suite_name_with_ten_executed_cases_passes(self):
+    def test_complete_real_suite_name_with_eleven_executed_cases_passes(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); self.write(root)
             GATE.validate(root)
 
-    def write(self, root, name='NotificationQueueDatabaseTest', tests=10, field='', cases=10):
+    def write(self, root, name='NotificationQueueDatabaseTest', tests=11, field='', cases=11):
         path = root / 'backend/adapters/target/surefire-reports/TEST-com.purpuragenda.adapters.NotificationQueueDatabaseTest.xml'
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{tests}" {field}>'
                         + '<testcase/>' * cases + '</testsuite>')
         return path
 
+    def test_ci_retains_only_counter_xml_for_backend_coverage_diagnostics(self):
+        import re
+        workflow=(Path(__file__).resolve().parents[2]/'.github/workflows/verify.yml').read_text()
+        block=re.search(r'      - name: Retain backend coverage counters\n((?:        [^\n]*\n)+)',workflow)
+        self.assertIsNotNone(block)
+        self.assertIn('if: always()',block[1])
+        self.assertIn('uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',block[1])
+        self.assertIn('path: backend/*/target/site/jacoco/jacoco.xml',block[1])
+        self.assertIn('if-no-files-found: error',block[1])
+        self.assertNotIn('surefire-reports',block[1])
+
     def test_missing_incomplete_phantom_skipped_and_unrelated_suites_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             with self.assertRaises(ValueError): GATE.validate(root)
-            for arguments in ({'name':'SecurityPrimitivesTest'}, {'tests':9}, {'tests':11},
+            for arguments in ({'name':'SecurityPrimitivesTest'}, {'tests':10}, {'tests':12},
                               {'field':'failures="1"'}, {'field':'errors="1"'}, {'field':'skipped="1"'}):
                 with self.subTest(arguments=arguments):
                     self.write(root, **arguments)
