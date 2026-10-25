@@ -10,6 +10,9 @@ def validate(root):
         suites.append(('TransactionCoreTest', 11))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresBookingStore.java').is_file():
         suites.append(('BookingPersistenceTest', 10))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresPrivateAdmin.java').is_file():
+        suites.append(('PrivateAdminDatabaseTest', 8))
+
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java').is_file():
         suites.append(('PublicSchedulingPostgresTest', 1))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java').is_file():
