@@ -40,3 +40,7 @@ test-results/
 *.dump
 *.key
 !**/src/test/resources/**
+
+# Python verification caches
+__pycache__/
+*.pyc

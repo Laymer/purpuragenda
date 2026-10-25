@@ -1,0 +1,116 @@
+"""Synthetic ledger cases: claims must be complete, nonoverlapping and recoverable."""
+import importlib.util
+from pathlib import Path
+import tempfile
+import unittest
+
+SPEC = importlib.util.spec_from_file_location('check_docs', Path(__file__).with_name('check-docs.py'))
+CHECK = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(CHECK)
+
+
+class LedgerTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        for name in ('AGENTS.md', 'CLAUDE.md'):
+            (self.root / name).write_text('Read STATUS.md and docs/status.md.\n')
+        (self.root / 'docs/handoffs').mkdir(parents=True)
+        for name in ('implementation-plan.md', 'decisions.md', 'status.md', 'delivery.md'):
+            (self.root / 'docs' / name).write_text('Synthetic evidence\n')
+        self.handoff = '\n'.join(CHECK.HANDOFF_FIELDS) + '\n2026-10-25T08:00:00Z\n'
+        self.handoff = self.handoff.replace('Current task:', 'Current task: P01/concurrency;')
+        self.handoff = self.handoff.replace('branch:', 'branch: task/p01;').replace('base:', 'base: main;')
+        self.handoff += '\nSynthetic-agent\n'
+        (self.root / 'docs/handoffs/p01.md').write_text(self.handoff)
+        self.claim = '- P01/concurrency: agent=Synthetic-agent; branch=task/p01; base=main; handoff=docs/handoffs/p01.md'
+        self.ledger = '# Task ledger\n\n| Task | Advancement |\n| --- | --- |\n'
+        self.ledger += '\n'.join(f'| P{i:02} — Task | Not started |' for i in range(1, 51))
+        self.ledger = self.ledger.replace('| P01 — Task | Not started |', '| P01 — Task | In progress |')
+        self.ledger += '\n\n## Active task claims\n\n' + self.claim
+        self.ledger += '\n\n## Active handoff\n\n' + self.handoff
+
+    def validate(self, text=None):
+        (self.root / 'STATUS.md').write_text(self.ledger if text is None else text)
+        return CHECK.validate(self.root)
+
+    def test_valid_claim(self):
+        self.assertEqual([], self.validate())
+
+    def test_concurrent_distinct_claims(self):
+        second = self.handoff.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40')
+        (self.root / 'docs/handoffs/p40.md').write_text(second)
+        claim = self.claim.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40').replace('p01.md', 'p40.md')
+        self.assertEqual([], self.validate(self.ledger.replace('| P40 — Task | Not started |', '| P40 — Task | In progress |').replace(self.claim, self.claim + '\n' + claim)))
+
+    def test_claim_must_match_active_ledger_state(self):
+        for state in ('Not started', 'Merged', 'Recovered WIP'):
+            with self.subTest(state=state):
+                errors = self.validate(self.ledger.replace('| In progress |', '| ' + state + ' |'))
+                self.assertTrue(any('not active in ledger' in e for e in errors))
+
+    def test_no_active_work(self):
+        self.assertEqual([], self.validate(self.ledger.replace(self.claim, 'None.')))
+
+    def test_delivery_document_required(self):
+        path = self.root / 'docs/delivery.md'
+        path.write_text('')
+        self.assertTrue(self.validate())
+        path.unlink()
+        self.assertTrue(self.validate())
+
+    def test_duplicate_task_or_branch(self):
+        for claim in (self.claim, self.claim.replace('P01/concurrency', 'P40/coverage')):
+            with self.subTest(claim=claim):
+                self.assertTrue(any('overlapping' in e for e in self.validate(self.ledger.replace(self.claim, self.claim + '\n' + claim))))
+
+    def test_unknown_task(self):
+        self.assertTrue(any('unknown claimed task' in e for e in self.validate(self.ledger.replace('P01/concurrency', 'P99/concurrency'))))
+
+    def test_missing_claims_or_malformed_claim(self):
+        for replacement in ('', 'unstructured claim', self.claim.replace('agent=', 'owner=')):
+            with self.subTest(replacement=replacement):
+                self.assertTrue(self.validate(self.ledger.replace(self.claim, replacement)))
+
+    def test_unsafe_handoff_path(self):
+        for path in ('/tmp/p01.md', '../p01.md', 'docs/handoffs/../p01.md', 'docs/elsewhere.md'):
+            with self.subTest(path=path):
+                self.assertTrue(any('invalid handoff path' in e for e in self.validate(self.ledger.replace('docs/handoffs/p01.md', path))))
+
+    def test_missing_handoff(self):
+        (self.root / 'docs/handoffs/p01.md').unlink()
+        self.assertTrue(any('missing handoff' in e for e in self.validate()))
+
+    def test_symlink_handoff_rejected(self):
+        path = self.root / 'docs/handoffs/p01.md'
+        path.unlink()
+        path.symlink_to(self.root / 'docs/status.md')
+        self.assertTrue(any('missing handoff' in e for e in self.validate()))
+
+    def test_handoff_mismatches(self):
+        path = self.root / 'docs/handoffs/p01.md'
+        for old, new in (('task/p01', 'task/p010'), ('main;', 'other;'), ('P01/concurrency', 'P01/elsewhere'), ('Synthetic-agent', 'Other-agent')):
+            with self.subTest(old=old):
+                path.write_text(self.handoff.replace(old, new))
+                self.assertTrue(any('mismatch' in e for e in self.validate()))
+
+    def test_handoff_fields_and_timestamp_required(self):
+        path = self.root / 'docs/handoffs/p01.md'
+        for field in (*CHECK.HANDOFF_FIELDS, '2026-10-25T08:00:00Z'):
+            with self.subTest(field=field):
+                path.write_text(self.handoff.replace(field, ''))
+                self.assertTrue(self.validate())
+
+    def test_historical_ledger_guards(self):
+        for old, new in (('| Not started |', '| Unknown |'), ('P02 — Task', 'P01 — Task'), ('| Task | Advancement |', '| Task | Advancement | Extra |'), ('| Not started |', '| Merged |')):
+            with self.subTest(old=old):
+                self.assertTrue(self.validate(self.ledger.replace(old, new, 1)))
+
+    def test_required_documents(self):
+        (self.root / 'docs/decisions.md').unlink()
+        self.assertTrue(self.validate())
+
+
+if __name__ == '__main__':
+    unittest.main()
