@@ -12,3 +12,5 @@
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b; preserved clean P15 worktree/private/tmp/purpuragenda-p15-guest-access and branches; stacked PR dependencies: none for the unwired application slice, future concrete adapter depends on P17 and root P09 atomic creation.
 
 Coordinator reconciliation2026-10-25T17:18:00Z: owner requested wrap-up; this feature claim is released/frozen for Claude, with its draft, worktree and recovery evidence preserved. Main is now bcc9fec; integrate and reverify before merge. No old worker continues implementation.
+
+Release 2026-10-25T19:30:00Z: PR47 is confirmed merged to main as 27e2df1 (application commands); this claim is released and the concrete PostgreSQL adapter slice continues in docs/handoffs/p10-postgres-changes.md. Recovery refs above remain preserved.
