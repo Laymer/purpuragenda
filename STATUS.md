@@ -17,7 +17,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Draft PR; https://github.com/Laymer/purpuragenda/pull/19; queue-foundation2c6fce4 initial CI green; SMTP/auth delivery pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundation merged PR19 e917ee3; SMTP transport claimed; encrypted-auth worker pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P14/queue-foundation: agent=Codex-p14; branch=task/p14-queue-foundation; base=main; handoff=docs/handoffs/p14-queue-foundation.md
+- P14/smtp-transport: agent=Codex-p14; branch=task/p14-smtp-transport; base=main; handoff=docs/handoffs/p14-smtp-transport.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:31:09Z.
-- Current task: P14/queue-foundation; branch: task/p14-queue-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/19.
-- Last pushed implementation commit: 2c6fce4 (reviewed implementation9c3faff plus prerequisites); uncommitted changes: original-due preservation regression and final PR/CI evidence before tested checkpoint.
-- What works: P12 shell merged c1151b2 with actual-container and Angular CI; crypto/migration/security/inventory foundations merged.
-- What remains: final checkpoint exact-head rerun and coordinator merge; SMTP/auth envelopes later P14 slice.
-- Decisions: explicit READ_COMMITTED; pg_stat_activity barrier before expiry change; no P36 event expansion/reminders; no network calls in queue transaction; per-booking/audience advisory lock plus database exclusion; stale completion cannot record attempts.
-- Verification: initial exact-head CI40180605912 at2c6fce4 all7jobs passed;10queue+11migration+11core realPG cases,46adapter+6application+108domain+3architecture tests, zero skips. Coverage adapter202/205lines151/166branches; app32/33lines48/48branches; Angular100%;124rootPython+31policy and472package advisory scan passed. Local full command fails Docker as required; real CI supplies integrity evidence.
-- Next concrete action: push tested final checkpoint and require exact-head real PostgreSQL CI/coordinator merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12/P13/P07 merged; P08 transaction-core6c1f96f merged and integrated; booking/policy persistence owned separately; P43 dependencies2c896ff integrated.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:44:19Z.
+- Current task: P14/smtp-transport; branch: task/p14-smtp-transport; base: main; PR URL: pending.
+- Last pushed implementation commit: none for SMTP slice; uncommitted changes: MailDelivery port/Message tests, SmtpDelivery adapter and adapter POM plus this claim; all local only, no SMTP PR yet.
+- What works: queue foundation PR19 mergede917ee3, exact real PostgreSQL/coverage CI green.
+- What remains: resumed after corrective PR23 merged6afe0e1; actual positive STARTTLS/SMTPS, trusted/untrusted/hostname-mismatch and loopback tests; encrypted-auth worker follows separately.
+- Decisions: pure-JDK redacted message/result port; restore zero network; capture only loopback or literal private mailpit; operational required TLS/identity/timeouts/debug-off; no P36 templates.
+- Verification: preserved SMTP source compiles; targeted domain/application tests including two MailDelivery tests passed; no SMTP transport passing claim until actual TLS tests/gates.
+- Next concrete action: checkpoint tested port/WIP, integrate current main, implement actual TLS tests and privacy acceptance.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P13/P07/P08/P14 queue merged; P43 dependency gate mandatory.
