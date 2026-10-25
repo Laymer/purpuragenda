@@ -15,9 +15,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation bc64f01 and Angular shell verified |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation merged https://github.com/Laymer/purpuragenda/pull/19 at e917ee3; SMTP/auth delivery pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,12 +46,12 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation merged https://github.com/Laymer/purpuragenda/pull/13 at 8f5ed62; other scans pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation PR13 8f5ed62 and dependency foundation https://github.com/Laymer/purpuragenda/pull/17 at2c896ff merged; remaining scans pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 atf3a4841; release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
@@ -67,9 +67,9 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-p08, 2026-10-25T09:14:38Z.
 - Current task: P08/persistence; branch: task/p08-persistence; base: main; PR URL: pending.
-- Last pushed implementation commit: none for persistence; uncommitted changes: P08 persistence,10 real PostgreSQL cases,2 codec tests and named-report regression before first commit.
+- Last pushed implementation commit: none for persistence; local implementation f422456; uncommitted changes: integrate mandatory dependency scanning and merged queue foundation before publication.
 - What works: transaction-core PR18 merged6c1f96f; all exact-head CI40179409004 categories passed, including11 transaction+11 migration PostgreSQL cases. What remains: catalog/policy/calendar/booking mappings and atomic writes within the same transaction; no P09/quota/financial/contact/configuration use cases in this slice.
 - Decisions: framework-free inward views, adapter-only JSON, domain-validated reconstruction including private Meeting.parse, immutable existing snapshots, captured-time occupancy release and derived pending ceilings. Preserve applied migrations.
-- Verification: core108domain+4application+35adapter+3architecture+6Angular passed without skips; domain276/277lines478/489branches, application29/30lines48/48branches, adapters126/129lines91/94branches. Targeted108 domain+4 application+15 adapter unit tests and101 root+31 delivery Python tests passed; test compilation, docs/inventory and whitespace passed; actual persistence PostgreSQL and coverage CI pending.
+- Verification: core108domain+4application+35adapter+3architecture+6Angular passed without skips; domain276/277lines478/489branches, application29/30lines48/48branches, adapters126/129lines91/94branches. Targeted108 domain+4 application+15 adapter unit tests and125 root+31 delivery Python tests passed; complete live OSV scan475 resolved packages with zero known vulnerabilities; test compilation, docs/inventory and whitespace passed; actual persistence PostgreSQL and coverage CI pending.
 - Next concrete action: checkpoint tested implementation, integrate latest main including mandatory dependency scans, push draft for real PostgreSQL/coverage CI.
 - Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, core prerequisite merged. Same DataSource identity and transaction-bound JDBC are mandatory.

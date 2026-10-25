@@ -48,8 +48,8 @@
     },
     "outbox": {
       "owner": "P14",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "build"
     },
     "api-acceptance": {
       "owner": "P38",
@@ -83,8 +83,8 @@
     },
     "dependencies": {
       "owner": "P43",
-      "state": "planned",
-      "job": null
+      "state": "implemented",
+      "job": "dependencies"
     },
     "sbom": {
       "owner": "P43",
