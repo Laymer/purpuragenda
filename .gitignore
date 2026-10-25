@@ -22,3 +22,21 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Purpuragenda build outputs and private local state
+**/target/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+.cache/
+.toolchain/
+.secrets/
+.env.local
+.env.operational
+artifacts/
+playwright-report/
+test-results/
+*.dump
+*.key
+!**/src/test/resources/**
