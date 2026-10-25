@@ -11,7 +11,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; real PostgreSQL11-case acceptance passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | In progress; transaction-core slice owned by Codex-p08; booking/policy persistence deferred to second slice |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P48/suite-inventory: agent=Codex; branch=task/p48-suite-inventory; base=main; handoff=docs/handoffs/p48-suite-inventory.md
+- P08/transaction-core: agent=Codex-p08; branch=task/p08-transaction-core; base=main; handoff=docs/handoffs/p08-transaction-core.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T08:33:09Z.
-- Current task: P48/suite-inventory; branch: task/p48-suite-inventory; base: main; PR URL: pending.
-- Last pushed implementation commit: none for this slice; uncommitted changes: inventory, strict aggregate and regression tests ready for review.
-- What works: coverage/protection/secret-scan foundations and crypto/contracts merged.
-- What remains: explicit implemented/planned suite inventory, exact aggregate job matching, release completeness guard and negative tests.
-- Decisions: every implemented category remains mandatory on every PR; planned categories cannot certify a release.
-- Verification: Pre-P07 local83 root+31 policy tests and108+11+3 build passed; independent re-review approved. P07 real11-case suite passed CI and mergedff3b33b; inventory activates it; fresh combined exact-head CI required because local Docker is unavailable.
-- Next concrete action: implement fail-closed inventory/workflow/results validation and tests.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P08/P12/P43 workers own separate task PRs.
+- Agent and UTC checkpoint: Codex-p08, 2026-10-25T08:46:12Z.
+- Current task: P08/transaction-core; branch: task/p08-transaction-core; base: main; PR URL: pending.
+- Last pushed implementation commit: none for P08; uncommitted changes: P08 transaction core,9 real PostgreSQL tests,4 application value tests and mandatory-report regression before first commit.
+- What works: P07 merged ff3b33b; actual-container CI40177367926 passed11 migration +11 security +2 parser +108 domain +3 architecture tests, zero skips; all implemented categories green. What remains: minimal transaction/idempotency port and JDBC core; booking/policy persistence remains second P08 slice.
+- Decisions: explicit READ COMMITTED, resource lock then one database time, savepoint validation before returning success, only known conflicts translated; no operational test clock or network effects under lock.
+- Verification: 87 root Python and31 policy tests, docs/suite inventory/whitespace passed; targeted108 domain+4 application tests passed, application29/30 lines and48/48 branches; full local build fails at unavailable Docker as required; P07 domain276/277 lines478/489 branches, adapters70/73 lines52/52 branches. Local Docker unavailable; real CI remains mandatory.
+- Next concrete action: push draft transaction-core PR, require actual PostgreSQL CI/coverage and independent review.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P07 prerequisite merged. Preserve old transaction adapter only as review reference.

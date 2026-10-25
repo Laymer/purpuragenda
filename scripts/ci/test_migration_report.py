@@ -36,6 +36,21 @@ class MigrationReportTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     GATE.validate(self.root)
 
+    def test_transaction_core_requires_its_own_complete_report(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresScheduling.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic implemented adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        core = self.report.with_name('TEST-com.purpuragenda.adapters.TransactionCoreTest.xml')
+        for tests, skipped in ((0, 0), (8, 0), (9, 1)):
+            core.write_text(f'<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="{tests}" skipped="{skipped}"/>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        core.write_text('<testsuite name="com.purpuragenda.adapters.TransactionCoreTest" tests="9"/>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

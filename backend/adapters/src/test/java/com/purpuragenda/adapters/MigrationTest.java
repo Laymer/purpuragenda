@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Real production migrations and roles. Missing Docker/image/dependencies fail, never skip. */
 @Timeout(180)
+@org.junit.jupiter.api.parallel.ResourceLock("postgres-migration-fixture")
 class MigrationTest {
     // Exact 18.6-bookworm digest; TC2.0.5 misparses combined tag@digest repository names.
     static final String IMAGE = "postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc";

@@ -5,14 +5,19 @@ import xml.etree.ElementTree as ET
 
 
 def validate(root):
-    report = root / 'backend/adapters/target/surefire-reports/TEST-com.purpuragenda.adapters.MigrationTest.xml'
-    if not report.is_file():
-        raise ValueError('Missing mandatory PostgreSQL migration report')
-    suite = ET.parse(report).getroot()
-    if suite.get('name') != 'com.purpuragenda.adapters.MigrationTest' or int(suite.get('tests', '0')) < 11:
-        raise ValueError('Incomplete mandatory PostgreSQL migration suite')
-    if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
-        raise ValueError('Failed or skipped PostgreSQL migration checks')
+    suites = [('MigrationTest', 11)]
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresScheduling.java').is_file():
+        suites.append(('TransactionCoreTest', 9))
+    for name, minimum in suites:
+        qualified = 'com.purpuragenda.adapters.' + name
+        report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
+        if not report.is_file():
+            raise ValueError('Missing mandatory PostgreSQL report: ' + name)
+        suite = ET.parse(report).getroot()
+        if suite.get('name') != qualified or int(suite.get('tests', '0')) < minimum:
+            raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
+        if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
+            raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
 
 
 if __name__ == '__main__':
