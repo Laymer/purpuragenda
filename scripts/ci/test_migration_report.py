@@ -111,6 +111,19 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerQuotaPostgresTest" tests="10"/>')
         GATE.validate(self.root)
 
+    def test_scheduling_commands_require_replay_and_rollback_database_evidence(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/SchedulingCommands.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic command boundary')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.SchedulingCommandsPostgresTest.xml')
+        for count, status in ((0, {}), (4, {}), (5, {'failures': 1}), (5, {'errors': 1}), (5, {'skipped': 1})):
+            attrs = ' '.join(f'{key}="{value}"' for key, value in status.items())
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.SchedulingCommandsPostgresTest" tests="{count}" {attrs}/>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SchedulingCommandsPostgresTest" tests="5"/>')
+        GATE.validate(self.root)
+
 
     def test_private_bootstrap_requires_its_own_real_database_report(self):
         self.write()

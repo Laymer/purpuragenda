@@ -35,7 +35,18 @@ public interface SchedulingUnitOfWork {
         /** Earlier reclamation survives expected failure; unexpected failure aborts the whole command. */
         Receipt attempt(Supplier<Receipt> mutation);
     }
-    enum Code { OK, SLOT_UNAVAILABLE, IDEMPOTENCY_KEY_REUSED }
+    /** Additive names preserve existing persisted receipts. Only explicit business codes may commit reclamation. */
+    enum Code {
+        OK(false), IDEMPOTENCY_KEY_REUSED(false), SLOT_UNAVAILABLE(true),
+        SERVICE_UNAVAILABLE(true), SERVICE_CHANGED(true), POLICY_CHANGED(true),
+        START_NOT_FUTURE(true), START_NOT_AVAILABLE(true), MINIMUM_NOTICE(true), OUTSIDE_HORIZON(true),
+        DAILY_CAPACITY_REACHED(true), ACTIVE_LIMIT_REACHED(true), REQUEST_LIMIT_REACHED(true), HARD_BLACKOUT(true),
+        IMPOSSIBLE_PENDING_HOLD(true), BLACKOUT_OVERRIDE_REQUIRED(true),
+        INVALID_TRANSITION(true), HOLD_EXPIRED(true), CUTOFF_PASSED(true), SESSION_NOT_STARTED(true), MEETING_REQUIRED(true);
+        private final boolean businessFailure;
+        Code(boolean businessFailure) { this.businessFailure=businessFailure; }
+        public boolean businessFailure() { return businessFailure; }
+    }
     record Receipt(Code code, UUID entityId, long version) {
         public Receipt {
             DomainFailure.require(code!=null && version>=0, "INVALID_RECEIPT");
