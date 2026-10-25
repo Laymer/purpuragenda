@@ -74,11 +74,11 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.PublicSchedulingPostgresTest.xml')
-        for count, skipped in ((0, 0), (1, 1)):
+        for count, skipped in ((0, 0), (1, 0), (2, 1)):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="{count}" skipped="{skipped}"/>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="1"/>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="2"/>')
         GATE.validate(self.root)
 
     def test_expiry_requires_its_own_complete_unskipped_database_suite(self):

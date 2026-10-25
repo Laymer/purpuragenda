@@ -14,7 +14,7 @@ def validate(root):
         suites.append(('PrivateAdminDatabaseTest', 8))
 
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java').is_file():
-        suites.append(('PublicSchedulingPostgresTest', 1))
+        suites.append(('PublicSchedulingPostgresTest', 2))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java').is_file():
         suites.append(('ExpiryReclamationPostgresTest', 6))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/SchedulingCommands.java').is_file():

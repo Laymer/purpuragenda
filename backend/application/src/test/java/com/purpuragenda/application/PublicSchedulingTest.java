@@ -83,7 +83,7 @@ class PublicSchedulingTest {
         assertEquals(LocalDate.parse("2026-01-02"),slots.getFirst().businessDate());
         assertTrue(slots.stream().allMatch(s->s.displayLocal().startsWith("2026-01-01")));
         assertEquals(Instant.parse("2025-12-31T23:00:00Z"),f.loaded.start());
-        assertEquals(Instant.parse("2026-01-02T23:00:00Z"),f.loaded.end());
+        assertEquals(Instant.parse("2026-01-03T01:00:00Z"),f.loaded.end());
         assertTrue(slots.stream().noneMatch(s->s.start().equals(Instant.parse("2026-01-02T05:00:00Z"))));
     }
     @Test void fullReservationOverlapAndDailyCapacityIncludeAppointmentsOutsideDisplayWindow() {
@@ -116,6 +116,14 @@ class PublicSchedulingTest {
         assertTrue(range.slots().stream().allMatch(slot->slot.start().isAfter(f.now)));
         assertTrue(range.slots().stream().noneMatch(slot->slot.businessDate().equals(LocalDate.parse("2026-01-02"))));
     }
+    @Test void lateStartsCannotHideOverlapWithTheNextBusinessDate() {
+        f.calendar=new AvailabilityCalendar(Map.of(DayOfWeek.FRIDAY,List.of(new AvailabilityCalendar.Window(1380,1440))),Map.of(),List.of(),1);
+        f.bookings=List.of(f.pending(Instant.parse("2026-01-02T23:00:00Z")));
+        assertTrue(on("2026-01-02","Europe/Brussels").slots().isEmpty());
+        assertEquals(Instant.parse("2026-01-03T01:00:00Z"),f.loaded.end());
+        f.bookings=List.of(f.pending(Instant.parse("2026-01-03T00:30:00Z")));
+        assertEquals(2,on("2026-01-02","Europe/Brussels").slots().size());
+    }
     PublicScheduling.Availability on(String day,String zone) { return query.availability(f.service.id(),LocalDate.parse(day),LocalDate.parse(day),zone); }
     void assertCode(String code,Runnable action) { assertEquals(code,assertThrows(DomainFailure.class,action::run).code()); }
     static class Fixture implements SchedulingUnitOfWork,SchedulingUnitOfWork.View {
@@ -129,7 +137,7 @@ class PublicSchedulingTest {
         public Instant now(){return now;} public List<ServiceDefinition> services(){return services;}
         public SchedulingPolicy policy(){return policy;} public AvailabilityCalendar calendar(){return calendar;}
         public Optional<Booking> booking(UUID id){throw new AssertionError("Unexpected identity read");}
-        public List<Booking> bookings(ReservationInterval interval){loaded=interval;return bookings;}
+        public List<Booking> bookings(ReservationInterval interval){loaded=interval;return bookings.stream().filter(b->b.interval().intersects(interval)).toList();}
         Booking pending(Instant start) {
             var intake=new Intake("Synthetic","Person","+32123456789",LocalDate.parse("2000-01-01"),LocalTime.NOON,"Synthetic town","");
             var snapshot=new Booking.Snapshot(service,policy,intake,"synthetic@example.invalid","UTC","v1");
