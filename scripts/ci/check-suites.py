@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
+from release_inputs import validate as validate_release_inputs
 
 ROOT = Path(__file__).resolve().parents[2]
 # Stable release requirements from docs/implementation-plan.md, not inferred from passing jobs.
@@ -16,9 +18,10 @@ OWNERS = {
     'accessibility': 'P39', 'performance': 'P41', 'load': 'P42',
     'dependencies': 'P43', 'sbom': 'P43', 'sast': 'P43', 'containers': 'P43',
     'configuration': 'P43', 'zap': 'P44', 'persistence': 'P45',
-    'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49', 'windows-preflight': 'P49',
+    'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49', 'windows-preflight': 'P49', 'release-inputs': 'P50',
 }
 ACTIVATION = {
+    'release-inputs': 'ops/release-inputs.json',
     'windows-preflight': 'scripts/ops/preflight-wsl.ps1',
     'postgres-migrations': 'backend/adapters/src/main/resources/db/changelog/db.changelog-master.yaml',
     'angular': 'frontend/package.json',
@@ -72,6 +75,7 @@ def workflow(text, expected):
     jobs = dict(blocks)
     require(len(jobs) == len(blocks) and set(jobs) == expected | {'verify'},
             'Workflow jobs do not match mandatory inventory')
+    require('python3 scripts/ci/check-release-inputs.py' in jobs['documentation'], 'Owner input validation must run on every PR')
     aggregate = jobs['verify']
     require(re.search(r'^    if: always\(\)\s*$', aggregate, re.MULTILINE),
             'Aggregate must run after failed/skipped prerequisites')
@@ -103,24 +107,27 @@ def results(document, expected):
                 'Required job failed, skipped, cancelled or missing: ' + name)
 
 
-def validate(root, outcomes=None, release=False):
+def validate(root, outcomes=None, release=False, owner_evidence=None):
     jobs = inventory(json.loads((root / 'scripts/ci/suites.json').read_text()), root, release)
     workflow((root / '.github/workflows/verify.yml').read_text(), jobs)
     if outcomes is not None:
         results(outcomes, jobs)
+    if release:
+        validate_release_inputs(root, release=True, owner_evidence=owner_evidence)
     return jobs
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--results', action='store_true', help='require successful current needs results')
-    parser.add_argument('--release', action='store_true', help='reject every planned category')
+    parser.add_argument('--release', action='store_true', help='reject planned categories and require exact-revision owner acceptance')
+    parser.add_argument('--owner-evidence', type=Path, help='separate exact-revision owner acceptance directory for release')
     args = parser.parse_args()
     try:
         outcomes = json.loads(os.environ['RESULTS']) if args.results else None
-        jobs = validate(ROOT, outcomes, args.release)
-    except (OSError, ValueError, TypeError, KeyError):
-        raise SystemExit('Suite gate failed: inventory, workflow, source activation and successful reports must agree.')
+        jobs = validate(ROOT, outcomes, args.release, args.owner_evidence)
+    except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
+        raise SystemExit('Suite gate failed: inventory, workflow, source activation, successful reports and owner release acceptance must agree.')
     print('Mandatory suite inventory verified: ' + ', '.join(sorted(jobs)))
 
 

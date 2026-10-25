@@ -52,8 +52,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; Windows/WSL preflight slice active; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; remaining runbooks pending |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress unprovisioned, no existing public Linux server; registrar Squarespace confirmed read-only, Google Domains nameservers; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Mac bootstrap PR22 at4233afd actual host ready; Windows preflight PR25 at7d7f19e with13 green checks; actual WSL acceptance/full runbooks pending |
+| P50 — Record owner acceptance and resolve live-use prerequisites | In progress; owner-input register active; privacy core wording approved, complete notice/retention/terms and external/live-use gates pending; Squarespace registrar confirmed, no public ingress server |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
 
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P49/wsl-preflight: agent=Codex; branch=task/p49-wsl-preflight; base=main; handoff=docs/handoffs/p49-wsl-preflight.md
+- P50/release-inputs: agent=Codex; branch=task/p50-release-inputs; base=main; handoff=docs/handoffs/p50-release-inputs.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T10:25:30Z.
-- Current task: P49/wsl-preflight; branch: task/p49-wsl-preflight; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/25.
-- Last pushed implementation commit: 1809140; uncommitted changes: current-main04d982d expiry reconciliation, all prior13 checks green.
-- What works: P49 Mac bootstrap PR22 merged4233afd with actual host readiness; P43 SAST PR21 merged0454505 and P16 private bootstrap202fbc7 each passed12 checks.
-- What remains: read-only Windows preflight for explicit Ubuntu24.04/WSL2 and local Docker Desktop, synthetic native PowerShell tests and development instructions; actual Windows/WSL acceptance remains pending.
-- Decisions: preserve Kali/default distribution and all data; no automatic install, unregister, version conversion or Docker mutation. Native CI certifies the preflight tests, not a real WSL installation.
-- Verification:167 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally; actual Windows CI40184137651 passed the initial16-case suite and report gate. Added two actual child-process cases for argument/exit/stderr and timeout boundaries; actual18-case Windows CI40184316896 passed. Current202fbc7-based full CI40184505278 passed all13 checks; expiry04d982d integration requires a fresh result. No actual WSL acceptance is claimed. Independent agent review approved preflight/cases/report safety; native Windows CI remains required.
-- Next concrete action: require actual native PowerShell CI and all implemented categories before merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, P02/P49Mac/P43 foundations merged.
+- Agent and UTC checkpoint: Codex, 2026-10-25T10:33:25Z.
+- Current task: P50/release-inputs; branch: task/p50-release-inputs; base: main; PR URL: pending.
+- Last pushed implementation commit: none; uncommitted changes: exact approved core text, dated public inputs, pending full notice, strict release receipts/gates and tests ready for draft.
+- What works: Mac/Tailscale/Docker host prerequisites accepted; Squarespace registrar/public DNS verified; owner approved privacy core wording including necessary providers; existing Zoom/SMTP settings later; no public ingress server exists.
+- What remains: machine-checked input register separating owner-reported/approved core from complete launch gates; full notice/retention/terms, ingress/DNS/HTTPS, supplier settings, backup/recovery, real-client and deployment acceptance remain pending.
+- Decisions: preserve exact approved core text; no full-notice/legal-completeness claim or public deployment/purchase authorization inferred. Evidence must be safe and revision-bound for release.
+- Verification:179 strict root+31 delivery Python tests, input/docs/suite inventory and whitespace passed locally; release rejects missing full notice/acceptance. All existing implemented categories remain mandatory; exact-head CI and independent review pending.
+- Next concrete action: publish draft, integrate current main and require independent review/exact-head all-category CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P49 preflight7d7f19e merged with13 checks.

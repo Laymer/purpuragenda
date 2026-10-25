@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "privacyCore": {
+    "version": "core-2026-10-25",
+    "approvedOn": "2026-10-25",
+    "path": "docs/policies/privacy-core.en.txt",
+    "sha256": "b4952a1e3a0a663beeb7e364e9ae999df2dda082cd18689b84fb0ac1613f00d7"
+  },
+  "facts": {
+    "domain": {
+      "name": "medinavie.com",
+      "registrar": "Squarespace",
+      "nameservers": [
+        "ns-cloud-a1.googledomains.com",
+        "ns-cloud-a2.googledomains.com",
+        "ns-cloud-a3.googledomains.com",
+        "ns-cloud-a4.googledomains.com"
+      ]
+    },
+    "host": {
+      "platform": "macos-intel",
+      "version": "15.7.8",
+      "prerequisitesVerified": true
+    },
+    "publicIngressExists": false,
+    "backupDestination": "owner-linux-computer",
+    "backupVerified": false,
+    "smtpExistsOwnerReported": true,
+    "smtpSettingsReady": false,
+    "zoomExistsOwnerReported": true,
+    "zoomSettingsReady": false,
+    "reviewedPoliciesOwnerReported": true
+  },
+  "launchGates": [
+    "full-privacy-notice",
+    "retention-schedule",
+    "booking-cancellation-refund-terms",
+    "public-ingress",
+    "dns-https",
+    "smtp-sender-delivery",
+    "zoom-entitlement-links",
+    "off-host-backup-restore",
+    "host-restart-recovery",
+    "real-client-owner-acceptance",
+    "deployment-decision"
+  ],
+  "recordedOn": "2026-10-25",
+  "fullNotice": {
+    "version": null,
+    "path": null,
+    "sha256": null
+  }
+}
