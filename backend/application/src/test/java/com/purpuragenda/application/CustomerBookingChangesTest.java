@@ -132,6 +132,28 @@ class CustomerBookingChangesTest {
         f.reset(f.confirmed(original.start()));f.policy=SchedulingPolicy.defaults();assertTrue(move(target).success());
     }
 
+    @Test void stalePolicyReviewPrecedesCurrentRuleFailuresButFollowsVersionAndBookingTransitionFailures() {
+        f.policy=policy(2,3,Duration.ZERO,Duration.ZERO,Duration.ZERO);Booking original=f.current;
+        // The domain transition (past target) is evaluated before the reviewed policy version is compared.
+        unchangedWithPolicy(Code.START_NOT_FUTURE,1,f.now);
+        // Current rules such as availability, notice and quotas are only evaluated against the reviewed policy.
+        unchangedWithPolicy(Code.POLICY_CHANGED,1,target.plusSeconds(60));
+        f.active=9;unchangedWithPolicy(Code.POLICY_CHANGED,1,target);
+        // Stale booking version has precedence over everything else.
+        assertEquals(Receipt.failure(Code.STALE_VERSION),move(original.version()+1,1,target));
+        // With a fresh review the same requests report their own domain failure.
+        unchangedWithPolicy(Code.ACTIVE_LIMIT_REACHED,2,target);
+    }
+    void unchangedWithPolicy(Code code,long policy,Instant start){Booking original=f.current;assertEquals(Receipt.failure(code),move(original.version(),policy,start));assertSame(original,f.current);assertEquals(0,f.mutationSaves);assertEquals(0,f.effects);}
+
+    @Test void activeQuotaReportedByTheAdapterIncludesTheBookingBeingMovedAndNeverGoesNegative() {
+        // quota().active() counts the booking being moved, so a customer exactly at the limit may still move it.
+        int limit=SchedulingPolicy.CUSTOMER_LIMIT;Booking original=f.current;
+        f.active=limit;assertTrue(move(target).success());
+        f.reset(original);f.active=limit+1;unchangedWithPolicy(Code.ACTIVE_LIMIT_REACHED,1,target);
+        f.reset(original);f.active=0;assertTrue(move(target).success());assertEquals(1,f.effects);
+    }
+
     @Test void selfIsExcludedFromDailyOccupancyAndActiveQuotaAndSubmissionLimitIsNeverReapplied() {
         f.policy=policy(2,1,Duration.ZERO,Duration.ZERO,Duration.ZERO);f.active=3;f.requests=3;
         Instant changed=f.current.start().plusSeconds(1800);assertTrue(move(changed).success());

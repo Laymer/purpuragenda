@@ -62,6 +62,7 @@ public final class CustomerBookingChanges {
         List<Booking> occupied=tx.bookings(new ReservationInterval(day.atStartOfDay(BUSINESS_ZONE).toInstant(),end))
                 .stream().filter(b -> !b.id().equals(original.id()) && b.occupies(now)).toList();
         int daily=(int)occupied.stream().filter(b -> b.businessDate().equals(day)).count();
+        // The adapter's active count includes this live booking, which is being moved; the clamp guards a stale zero.
         int otherActive=Math.max(0,tx.quota(original.customerId()).active()-1);
         SchedulingRules.validate(request.start(),now,policy,tx.calendar(),daily,otherActive,0,
                 occupied.stream().map(Booking::interval).toList(),SchedulingRules.Override.none());
