@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.*;
 
 /** Bounded real loopback SMTP/TLS peer. Captured messages remain private in memory. */
-final class TestSmtpServer implements AutoCloseable {
+public final class TestSmtpServer implements AutoCloseable {
     final AtomicInteger accepted=new AtomicInteger(),auth=new AtomicInteger(),unsafeAuth=new AtomicInteger(),mail=new AtomicInteger(),secure=new AtomicInteger();
     final BlockingQueue<byte[]> messages=new LinkedBlockingQueue<>();
     final ServerSocket listener;
@@ -18,7 +18,7 @@ final class TestSmtpServer implements AutoCloseable {
     final int recipientCode;
     final ExecutorService workers=Executors.newVirtualThreadPerTaskExecutor();
     final List<Socket> sockets=new CopyOnWriteArrayList<>();
-    TestSmtpServer(SSLContext tls, boolean implicit, int recipientCode, boolean closeAfterData) throws IOException {
+    public TestSmtpServer(SSLContext tls, boolean implicit, int recipientCode, boolean closeAfterData) throws IOException {
         this.tls=tls; this.implicit=implicit; this.recipientCode=recipientCode; this.closeAfterData=closeAfterData;
         InetAddress loopback=InetAddress.getByAddress(new byte[]{127,0,0,1});
         listener=implicit?tls.getServerSocketFactory().createServerSocket(0,20,loopback):new ServerSocket(0,20,loopback);
@@ -29,7 +29,9 @@ final class TestSmtpServer implements AutoCloseable {
             } catch(IOException stopped) { break; }
         });
     }
-    int port() { return listener.getLocalPort(); }
+    public int port() { return listener.getLocalPort(); }
+    public byte[] receive() throws InterruptedException { return messages.poll(5,TimeUnit.SECONDS); }
+    public int acceptedCount() { return accepted.get(); }
     static void reply(BufferedWriter output,String text) throws IOException { output.write(text+"\r\n"); output.flush(); }
     void conversation(Socket initial) {
         Socket socket=initial; boolean encrypted=implicit,authenticated=false;
