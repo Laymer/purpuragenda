@@ -58,6 +58,22 @@ Adopted the append-only external-payment ledger and repaired three prototype def
 
 Fresh operational dependency check: `docker version` exited 1 both inside and outside the sandbox; Docker client 28.5.2 exists but cannot connect to unix:///var/run/docker.sock. No local Docker/Testcontainers or Compose passing claim follows from unit-test evidence. CI may provide independent PostgreSQL evidence once the suite is adopted. P05 exact-head CI passed and merge 1470d88 was confirmed.
 
+## P01 concurrent delivery evidence
+
+Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and sole preexisting draft P07 dd482e3. Added tested concurrent claims/handoffs and the approved dependency queue, coverage/commit/review/launch decisions. No recovered feature code adopted.
+
+`python3 -m unittest discover -s scripts/ci -p 'test_*.py'` passed 15 synthetic ledger tests. `python3 scripts/ci/check-docs.py` and `git diff --check` passed. `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests with zero failures/errors/skips; domain coverage 276/277 lines (99.64%) and 478/489 branches (97.75%). Independent agent review found and verified fixes for idle claims, mandatory dependency documentation and claim/state mismatch. Exact-head remote CI remains required. PostgreSQL/Angular/browser/security/recovery suites are not yet implemented; no application/release completion is claimed.
+
+## P40 coverage foundation evidence
+
+Implemented inherited JaCoCo instrumentation/report/check for all Maven modules with independent backend production-module thresholds: domain/application 95% lines and 90% branches, adapters/bootstrap 90% lines and branches. One append-only execution file per module combines unit/integration forks without summing duplicate counters. The shared post-build validator rejects missing reports/counters and omitted source files; it also requires complete Angular coverage-final JSON once handwritten frontend sources exist. Generated exclusions require individual generator-manifest entries and version provenance.
+
+`bash scripts/ci/verify-build.sh` passed locally on 2026-10-25: 108 domain tests, three architecture tests, zero failures/errors/skips; domain 276/277 lines (99.64%) and 478/489 branches (97.75%). The final full build included all 23 new synthetic gate tests, including zero-branch report edge cases. Negative cases include below-boundary line/branch thresholds, per-module masking, omitted production sources, missing reports/counters, invalid counters, Angular map truncation and generated-manifest path traversal. `git diff --check` passed. Final exact-head CI remains required.
+
+Limits: application/adapters/bootstrap are empty scaffolds, and Angular is not yet adopted on this branch; no application or Angular coverage result is claimed. Real PostgreSQL, external acceptance-process coverage merging, browser, load, security and recovery suites remain their owning tasks. Full-project P40 completion remains pending.
+
+P01 concurrency prerequisite merged at 15ba8b4 and was integrated without history rewriting. Its delivery dependency map, validator and test suite are preserved. Integrated local checks passed: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` ran 38 tests (15 ledger + 23 coverage); documentation validation, whitespace and the full implemented build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Remote exact-head CI remains required.
+
 ## P07 review checkpoint
 
 P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
