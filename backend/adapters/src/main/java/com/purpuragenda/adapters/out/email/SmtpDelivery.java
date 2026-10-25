@@ -112,6 +112,7 @@ public final class SmtpDelivery implements MailDelivery {
         for (int i=0; current!=null && i<10; i++) {
             if (current instanceof SMTPAddressFailedException address) status = address.getReturnCode();
             if (current instanceof SMTPSendFailedException send) status = send.getReturnCode();
+            if (current instanceof SMTPSenderFailedException sender) status = sender.getReturnCode();
             permanent |= current instanceof AuthenticationFailedException || current instanceof SSLException;
             io |= current instanceof IOException;
             current = current.getCause();

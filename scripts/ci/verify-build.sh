@@ -36,5 +36,6 @@ for module in modules:
 PY
 python3 scripts/ci/check-migration-report.py
 python3 scripts/ci/check-queue-report.py
+python3 scripts/ci/check-smtp-report.py
 python3 scripts/ci/run-python-tests.py --start scripts/ci
 python3 scripts/ci/check-coverage.py
