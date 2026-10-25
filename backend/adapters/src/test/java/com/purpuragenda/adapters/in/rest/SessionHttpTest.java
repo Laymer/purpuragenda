@@ -101,7 +101,7 @@ class SessionHttpTest {
         var booted=boot();
         var response=mvc.perform(get("/api/v1/session").cookie(cookie(booted))).andExpect(status().isOk()).andReturn().getResponse();
         assertEquals("{\"role\":\"ANONYMOUS\",\"idleExpiresAt\":\"2026-10-25T10:30:00Z\",\"absoluteExpiresAt\":\"2026-10-25T12:00:00Z\"}",response.getContentAsString());
-        assertEquals("no-store",response.getHeader("Cache-Control"));
+        assertEquals("no-store",response.getHeader("Cache-Control"));assertTrue(response.getContentType().startsWith("application/json"));
         problem(mvc.perform(get("/api/v1/session")),401,"SESSION_REQUIRED");
         problem(mvc.perform(get("/api/v1/session").cookie(new Cookie(cookies.name(),"z".repeat(43)))),401,"SESSION_REQUIRED");
     }

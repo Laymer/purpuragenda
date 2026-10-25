@@ -15,7 +15,7 @@ final class Problems {
         Code(int status,String title,boolean retryable) { this.status=status;this.title=title;this.retryable=retryable; }
     }
     private Problems() { }
-    static void send(HttpServletResponse response,Code code) throws IOException {
+    static void reject(HttpServletResponse response,Code code) throws IOException {
         byte[] body=("{\"type\":\"about:blank\",\"title\":\""+code.title+"\",\"status\":"+code.status+",\"code\":\""+code.name()
                 +"\",\"correlationId\":\""+UUID.randomUUID()+"\",\"retryable\":"+code.retryable+",\"refreshAvailability\":false}")
                 .getBytes(StandardCharsets.UTF_8);

@@ -28,19 +28,19 @@ public final class ApiGuardFilter extends OncePerRequestFilter {
         if(method.equals("GET") || method.equals("HEAD")) { chain.doFilter(request,response);return; }
         try {
             var origins=Collections.list(request.getHeaders("Origin"));
-            if(origins.size()!=1 || !origins.get(0).equals(origin)) { Problems.send(response,Problems.Code.ORIGIN_REJECTED);return; }
+            if(origins.size()!=1 || !origins.get(0).equals(origin)) { Problems.reject(response,Problems.Code.ORIGIN_REJECTED);return; }
             var site=Collections.list(request.getHeaders("Sec-Fetch-Site"));
-            if(site.size()>1 || site.size()==1 && !site.get(0).equals("same-origin")) { Problems.send(response,Problems.Code.CROSS_SITE_REJECTED);return; }
+            if(site.size()>1 || site.size()==1 && !site.get(0).equals("same-origin")) { Problems.reject(response,Problems.Code.CROSS_SITE_REJECTED);return; }
             if(method.equals("POST") && request.getRequestURI().equals(BOOTSTRAP)) { chain.doFilter(request,response);return; }
             char[] cookie=cookies.read(request);
             var session=cookie==null?Optional.<com.purpuragenda.application.port.out.SessionStore.Snapshot>empty():access.current(cookie);
-            if(session.isEmpty()) { Problems.send(response,Problems.Code.SESSION_REQUIRED);return; }
+            if(session.isEmpty()) { Problems.reject(response,Problems.Code.SESSION_REQUIRED);return; }
             var tokens=Collections.list(request.getHeaders("X-CSRF-Token"));
             if(tokens.size()!=1 || !CSRF.matcher(tokens.get(0)).matches() || !access.csrf(session.get(),tokens.get(0).toCharArray())) {
-                Problems.send(response,Problems.Code.CSRF_REJECTED);return;
+                Problems.reject(response,Problems.Code.CSRF_REJECTED);return;
             }
             request.setAttribute(SESSION_ATTRIBUTE,session.get());
-        } catch(IllegalStateException unavailable) { Problems.send(response,Problems.Code.SESSION_UNAVAILABLE);return; }
+        } catch(IllegalStateException unavailable) { Problems.reject(response,Problems.Code.SESSION_UNAVAILABLE);return; }
         chain.doFilter(request,response);
     }
 }

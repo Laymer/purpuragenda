@@ -21,22 +21,22 @@ public final class SessionController {
         try(var started=access.bootstrap(cookie)) {
             if(started.cookie()!=null) cookies.write(response,started.cookie());
             return json(HttpStatus.OK,state(started.view(),new String(started.csrf())));
-        } catch(IllegalStateException unavailable) { Problems.send(response,Problems.Code.SESSION_UNAVAILABLE);return null; }
+        } catch(IllegalStateException unavailable) { Problems.reject(response,Problems.Code.SESSION_UNAVAILABLE);return null; }
     }
     @GetMapping
     public ResponseEntity<String> getSession(HttpServletRequest request,HttpServletResponse response) throws IOException {
         try {
             var session=access.current(cookies.read(request));
             if(session.isPresent()) return json(HttpStatus.OK,state(SessionAccess.view(session.get()),null));
-            Problems.send(response,Problems.Code.SESSION_REQUIRED);
-        } catch(IllegalStateException unavailable) { Problems.send(response,Problems.Code.SESSION_UNAVAILABLE); }
+            Problems.reject(response,Problems.Code.SESSION_REQUIRED);
+        } catch(IllegalStateException unavailable) { Problems.reject(response,Problems.Code.SESSION_UNAVAILABLE); }
         return null;
     }
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request,HttpServletResponse response) throws IOException {
-        if(!(request.getAttribute(ApiGuardFilter.SESSION_ATTRIBUTE) instanceof Snapshot session)) { Problems.send(response,Problems.Code.SESSION_REQUIRED);return null; }
+        if(!(request.getAttribute(ApiGuardFilter.SESSION_ATTRIBUTE) instanceof Snapshot session)) { Problems.reject(response,Problems.Code.SESSION_REQUIRED);return null; }
         try { access.logout(session); }
-        catch(IllegalStateException unavailable) { Problems.send(response,Problems.Code.SESSION_UNAVAILABLE);return null; }
+        catch(IllegalStateException unavailable) { Problems.reject(response,Problems.Code.SESSION_UNAVAILABLE);return null; }
         cookies.clear(response);
         return ResponseEntity.noContent().header(HttpHeaders.CACHE_CONTROL,"no-store").build();
     }
