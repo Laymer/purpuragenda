@@ -2,6 +2,7 @@
 import concurrent.futures
 import importlib.util
 import os
+import re
 from pathlib import Path
 import stat
 import tempfile
@@ -30,15 +31,15 @@ class LocalSecretsTest(unittest.TestCase):
         self.assertEqual(0o700, stat.S_IMODE(self.directory.stat().st_mode))
         self.assertEqual({0o444}, {stat.S_IMODE(p.stat().st_mode) for p in self.directory.iterdir()})
         for name in LOCAL.PASSWORDS:
-            self.assertRegex(original[name], b'^[a-f0-9]{64}\n$')
+            self.assertTrue(re.fullmatch(b'[a-f0-9]{64}\n', original[name]))
         for name in LOCAL.KEYS:
             self.assertEqual(32, len(original[name]))
         LOCAL.prepare(self.directory)
-        self.assertEqual(original, self.contents())
+        self.assertTrue(original == self.contents())
         (self.directory / 'rate-key').unlink()
         LOCAL.prepare(self.directory)
-        self.assertEqual({k: v for k, v in original.items() if k != 'rate-key'},
-                         {k: v for k, v in self.contents().items() if k != 'rate-key'})
+        self.assertTrue({k: v for k, v in original.items() if k != 'rate-key'} ==
+                        {k: v for k, v in self.contents().items() if k != 'rate-key'})
 
     def test_symlink_directory_and_leaf_never_write_outside(self):
         outside = self.root / 'outside'
@@ -88,7 +89,17 @@ class LocalSecretsTest(unittest.TestCase):
         original = self.contents()
         self.assertEqual(6, len(original))
         LOCAL.prepare(self.directory)
-        self.assertEqual(original, self.contents())
+        self.assertTrue(original == self.contents())
+
+    def test_invalid_key_lengths_never_truncate_or_regenerate_existing_material(self):
+        LOCAL.prepare(self.directory)
+        key = self.directory / 'totp-key'
+        for size in (0, 31, 33, 4096):
+            key.chmod(0o600)
+            key.write_bytes(b'x' * size)
+            with self.assertRaises(ValueError):
+                LOCAL.prepare(self.directory)
+            self.assertTrue(key.read_bytes() == b'x' * size)
 
 
 if __name__ == '__main__':

@@ -133,4 +133,4 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
     except (OSError, ValueError, subprocess.SubprocessError):
-        raise SystemExit('LOCAL_COMMAND_FAILED: check Docker Desktop, private secret files and local service readiness.')
+        raise SystemExit('LOCAL_COMMAND_FAILED: check Docker Desktop, private secret files and local service readiness.') from None

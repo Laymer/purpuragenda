@@ -152,5 +152,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, KeyError, AssertionError, StopIteration, subprocess.SubprocessError):
-        raise SystemExit('COMPOSE_VERIFICATION_FAILED: require complete current-revision persistence evidence.')
+    except (OSError, ValueError, KeyError, TypeError, AssertionError, StopIteration, subprocess.SubprocessError):
+        raise SystemExit('COMPOSE_VERIFICATION_FAILED: require complete current-revision persistence evidence.') from None
