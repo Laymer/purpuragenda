@@ -1,6 +1,7 @@
 """Synthetic repository and API cases for commit and protection enforcement."""
 import copy
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -19,6 +20,7 @@ def load(name):
 
 commits = load('check-commit-tests')
 protection = load('main-protection')
+runner = load('run-python-tests')
 
 
 class CommitPolicyTest(unittest.TestCase):
@@ -112,6 +114,26 @@ class CommitPolicyTest(unittest.TestCase):
             self.validate()
 
 
+class StrictSuiteTest(unittest.TestCase):
+    def result(self, behavior):
+        class Synthetic(unittest.TestCase):
+            def runTest(self):
+                if behavior == 'skip':
+                    self.skipTest('synthetic missing dependency')
+                if behavior in ('fail', 'xfail'):
+                    self.fail('synthetic failure')
+        if behavior == 'xfail':
+            Synthetic.runTest = unittest.expectedFailure(Synthetic.runTest)
+        suite = unittest.TestSuite([] if behavior == 'empty' else [Synthetic()])
+        return unittest.TextTestRunner(stream=io.StringIO()).run(suite)
+
+    def test_empty_skipped_failed_and_passing_results(self):
+        for behavior in ('empty', 'skip', 'fail', 'xfail'):
+            with self.subTest(behavior=behavior):
+                self.assertFalse(runner.successful(self.result(behavior)))
+        self.assertTrue(runner.successful(self.result('pass')))
+
+
 class ProtectionTest(unittest.TestCase):
     def setUp(self):
         self.expected = json.loads(protection.CONFIG.read_text())
@@ -140,6 +162,19 @@ class ProtectionTest(unittest.TestCase):
         pr = rules['pull_request']['parameters']
         self.assertTrue(pr['required_review_thread_resolution'])
         self.assertEqual(['squash'], pr['allowed_merge_methods'])
+
+    def test_provider_review_defaults_are_explicit_and_preserved(self):
+        parameters = self.expected['rules'][2]['parameters']
+        self.assertEqual([], parameters['required_reviewers'])
+        self.assertTrue(parameters['require_extra_approval_for_unattributed_changes'])
+        response = copy.deepcopy(self.expected)
+        response['rules'][2]['parameters'].update(
+            required_reviewers=[], require_extra_approval_for_unattributed_changes=True)
+        self.assertEqual([], protection.discrepancies(response, self.expected))
+        weakened = copy.deepcopy(self.expected)
+        weakened['rules'][2]['parameters']['require_extra_approval_for_unattributed_changes'] = False
+        with self.assertRaises(ValueError):
+            protection.prevent_weakening(response, weakened)
 
     def test_read_only_check_never_writes(self):
         self.assertEqual([], protection.reconcile(self.api, self.expected))

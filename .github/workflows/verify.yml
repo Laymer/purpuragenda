@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: python3 scripts/ci/run-python-tests.py --start scripts/ci
       - run: python3 scripts/ci/check-docs.py
   build:
     runs-on: ubuntu-24.04
@@ -24,14 +25,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Test delivery policy without skips
-        run: |
-          python3 - <<'PY'
-          import unittest
-          suite = unittest.defaultTestLoader.discover('scripts/ci/tests', pattern='test_*.py')
-          result = unittest.TextTestRunner(verbosity=2).run(suite)
-          if not result.testsRun or result.skipped or not result.wasSuccessful():
-              raise SystemExit('Missing, failed or skipped delivery-policy tests')
-          PY
+        run: python3 scripts/ci/run-python-tests.py --start scripts/ci/tests
       - name: Require tests in every new commit
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}

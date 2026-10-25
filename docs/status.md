@@ -87,3 +87,13 @@ merge restrictions and stronger/unknown managed parameters before writing. Added
 eight negative API subcases and a positive unpinned-to-pinned strengthening case.
 
 After the review fix, 23 delivery-policy tests and the full 108-domain/three-architecture build passed with no skips; domain coverage remains 99.64% lines/97.75% branches.
+
+## P01 concurrent delivery evidence
+
+Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and sole preexisting draft P07 dd482e3. Added tested concurrent claims/handoffs and the approved dependency queue, coverage/commit/review/launch decisions. No recovered feature code adopted.
+
+`python3 -m unittest discover -s scripts/ci -p 'test_*.py'` passed 15 synthetic ledger tests. `python3 scripts/ci/check-docs.py` and `git diff --check` passed. `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests with zero failures/errors/skips; domain coverage 276/277 lines (99.64%) and 478/489 branches (97.75%). Independent agent review found and verified fixes for idle claims, mandatory dependency documentation and claim/state mismatch. Exact-head remote CI remains required. PostgreSQL/Angular/browser/security/recovery suites are not yet implemented; no application/release completion is claimed.
+
+P48 integrated merged P01/concurrency15ba8b4, preserving its validator/tests, delivery dependency document and workflow documentation suite. Integrated verification passed 15 ledger tests, 23 delivery-policy tests and the full 108-domain/three-architecture build with unchanged coverage and no skips.
+
+Coordinator applied live ruleset25814212; initial readback exposed GitHub-added required_reviewers=[] and require_extra_approval_for_unattributed_changes=true. Both are now explicit in managed configuration. A regression verifies provider defaults and refusal to relax the extra-approval requirement. Worker made no live settings changes.

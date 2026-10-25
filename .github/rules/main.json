@@ -13,6 +13,8 @@
       "require_last_push_approval": false,
       "required_approving_review_count": 0,
       "required_review_thread_resolution": true,
+      "required_reviewers": [],
+      "require_extra_approval_for_unattributed_changes": true,
       "allowed_merge_methods": ["squash"]
     }},
     {"type": "required_status_checks", "parameters": {
