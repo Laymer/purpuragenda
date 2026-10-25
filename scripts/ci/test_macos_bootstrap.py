@@ -154,6 +154,18 @@ open_docker() { :; }
                     self.assertEqual('', result.stdout)
                     self.assertNotIn('synthetic-private-marker', result.stderr)
 
+    def test_malformed_private_status_cannot_report_ready_or_escape_to_output(self):
+        with tempfile.TemporaryDirectory() as temp:
+            binary = Path(temp) / 'synthetic-client'
+            binary.write_text("#!/bin/sh\nprintf '%s' 'synthetic-private-marker-invalid-json'\n")
+            binary.chmod(0o755)
+            overrides = 'source ' + shlex.quote(str(SCRIPT)) + '\n' + self.extraction_function()
+            overrides += 'MAC_TAILSCALE_CLI=' + shlex.quote(str(binary)) + '\n'
+            result = self.run_shell('tailnet_connected', overrides)
+            self.assertNotEqual(0, result.returncode)
+            self.assertEqual('', result.stdout)
+            self.assertEqual('', result.stderr)
+
     def test_existing_app_links_and_store_variant_are_preserved(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
