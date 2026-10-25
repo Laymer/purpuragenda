@@ -86,6 +86,16 @@ class CustomerCreationPostgresTest {
         assertEquals(Failure.Kind.FORBIDDEN,failure(()->create(session,"another",request(3,9))).kind());
         assertEquals(1,count("booking"));assertEquals(1,count("request_charge"));assertEquals(1,count("outbox_event"));
     }
+    @Test void separateCreationGrantsForOneIdentityHaveIndependentIdempotencyScopes() {
+        var first=guest("synthetic@example.test");var second=guest("synthetic@example.test");
+        assertEquals(first.customerId(),second.customerId());assertNotEquals(first.grantId(),second.grantId());
+        var firstRequest=request(2,9);var secondRequest=request(3,9);
+        Receipt firstReceipt=create(first,"shared-key",firstRequest),secondReceipt=create(second,"shared-key",secondRequest);
+        assertTrue(firstReceipt.success());assertTrue(secondReceipt.success());assertNotEquals(firstReceipt.entityId(),secondReceipt.entityId());
+        assertEquals(firstReceipt,create(first,"shared-key",firstRequest));assertEquals(secondReceipt,create(second,"shared-key",secondRequest));
+        assertEquals(1,count("customer_identity"));assertEquals(2,count("booking"));assertEquals(2,count("request_charge"));
+        assertEquals(2,count("idempotency_record"));assertEquals(2,count("outbox_event"));
+    }
     @Test void aStoredSuccessForAnotherBookingCannotEscapeTheBoundManagementScope() {
         var session=guest("synthetic@example.test");var request=request(2,9);assertTrue(create(session,"original",request).success());
         jdbc.update("UPDATE idempotency_record SET receipt=jsonb_set(receipt,'{entityId}',to_jsonb(?::text))",UUID.randomUUID().toString());
