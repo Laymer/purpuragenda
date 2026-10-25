@@ -9,3 +9,5 @@ Existing host Java25.0.3/Maven3.9.12/Node24.19.0 are bootstrap tools only; proje
 Adoptium's version-assets API returned404 for25.0.5+8; the official temurin25-binaries GitHub release contains the planned Linux archive and SHA256 sidecar. Resolve these official assets directly; no JDK-version deviation.
 
 Deployment remains manual. No hosted Sites registration is required for this repository-based Java/PostgreSQL/Angular application. The Sites skill's local-only path applies.
+
+2026-10-25: Approved remaining-work delivery in delivery.md: three concurrent workers with separate task PRs/worktrees, independent agent review and coordinator green squash merges. Every new commit includes a relevant test addition/update. Require per-module/backend and Angular 90% line/branch coverage, retaining 95% lines for domain/application. Keep full implemented suites mandatory on every PR. Launch prerequisites remain owner gates and deployment/purchases require separate manual decisions.

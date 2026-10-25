@@ -23,3 +23,5 @@ The approved version 1 scope is an English, single-practitioner booking applicat
 - Deliver one coherent task per PR, generally 200–800 handwritten changed lines; identify generated clients and lockfiles separately. Reuse recovery code selectively and verify before adoption. Preserve applied migrations with additive fixes.
 - Every PR runs all implemented automated categories, including documentation-only changes. Add CI categories progressively; missing dependencies, suites and reports fail. Never weaken coverage or integrity gates.
 - Squash-merge green PRs only after required checks/reviews pass and findings are resolved. Never bypass blockers. Mark Merged only after reconciling GitHub merge state. Deployment and purchases remain manual.
+
+Follow docs/delivery.md for approved task dependencies and parallel ownership. Every new commit includes a meaningful relevant automated test addition/update; consolidate handoff-only checkpoints. Require 90% line/branch coverage per production module and Angular, retaining 95% lines for domain/application. Independent agent review and all implemented CI categories are mandatory before coordinator squash merge.
