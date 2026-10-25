@@ -48,7 +48,9 @@ final class TestSmtpServer implements AutoCloseable {
                 } else if(line.equals("STARTTLS") && tls!=null && !encrypted) {
                     reply(output,"220 Begin TLS");
                     var wrapped=(SSLSocket)tls.getSocketFactory().createSocket(socket,"127.0.0.1",port(),true);
-                    wrapped.setUseClientMode(false); wrapped.setSoTimeout(3000); wrapped.startHandshake();
+                    wrapped.setUseClientMode(false);
+                    var parameters=wrapped.getSSLParameters(); parameters.setEndpointIdentificationAlgorithm("HTTPS");
+                    wrapped.setSSLParameters(parameters); wrapped.setSoTimeout(3000); wrapped.startHandshake();
                     socket=wrapped; encrypted=true; secure.incrementAndGet();
                     input=new BufferedReader(new InputStreamReader(socket.getInputStream(),StandardCharsets.UTF_8));
                     output=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.UTF_8));
