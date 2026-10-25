@@ -19,7 +19,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; queue foundation PR19 e917ee3 and deterministic correction PR23 6afe0e1 merged; SMTP delivery remains pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
-| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; private bootstrap merged https://github.com/Laymer/purpuragenda/pull/27 at202fbc7 with12 green checks; MFA/enrollment/recovery/authentication remain |
+| P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Draft PR; https://github.com/Laymer/purpuragenda/pull/29; atomic MFA; bootstrap PR27 merged202fbc7; recovery pending |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -52,7 +52,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | In progress; Windows/WSL preflight slice active; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; remaining runbooks pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Windows preflight PR25 merged7d7f19e; Mac bootstrap PR22 merged4233afd with real host-prerequisite acceptance; actual WSL/full runbooks pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress unprovisioned, no existing public Linux server; registrar Squarespace confirmed read-only, Google Domains nameservers; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -61,16 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P49/wsl-preflight: agent=Codex; branch=task/p49-wsl-preflight; base=main; handoff=docs/handoffs/p49-wsl-preflight.md
+- P16/atomic-mfa: agent=Codex-p16; branch=task/p16-atomic-mfa; base=main; handoff=docs/handoffs/p16-atomic-mfa.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T10:25:30Z.
-- Current task: P49/wsl-preflight; branch: task/p49-wsl-preflight; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/25.
-- Last pushed implementation commit: 1809140; uncommitted changes: current-main04d982d expiry reconciliation, all prior13 checks green.
-- What works: P49 Mac bootstrap PR22 merged4233afd with actual host readiness; P43 SAST PR21 merged0454505 and P16 private bootstrap202fbc7 each passed12 checks.
-- What remains: read-only Windows preflight for explicit Ubuntu24.04/WSL2 and local Docker Desktop, synthetic native PowerShell tests and development instructions; actual Windows/WSL acceptance remains pending.
-- Decisions: preserve Kali/default distribution and all data; no automatic install, unregister, version conversion or Docker mutation. Native CI certifies the preflight tests, not a real WSL installation.
-- Verification:167 strict root Python tests, docs/inventory and whitespace passed; native PowerShell is unavailable locally; actual Windows CI40184137651 passed the initial16-case suite and report gate. Added two actual child-process cases for argument/exit/stderr and timeout boundaries; actual18-case Windows CI40184316896 passed. Current202fbc7-based full CI40184505278 passed all13 checks; expiry04d982d integration requires a fresh result. No actual WSL acceptance is claimed. Independent agent review approved preflight/cases/report safety; native Windows CI remains required.
-- Next concrete action: require actual native PowerShell CI and all implemented categories before merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none, P02/P49Mac/P43 foundations merged.
+- Agent and UTC checkpoint: Codex-p16, 2026-10-25T10:41:34Z.
+- Current task: P16/atomic-mfa; branch: task/p16-atomic-mfa; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/29.
+- Last pushed implementation commit:e54f07a; uncommitted changes: provisioning copy cleanup on failed commit and regression, plus published handoff/evidence update.
+- What works: private bootstrap PR27 merged202fbc7, all12checks and8realPG cases passed. What remains: private password-proven TOTP provisioning/enrollment, atomic accepted-step auth and initial10hashed recovery-code issuance; recovery redemption/forced reenrollment remains a later slice.
+- Decisions: one admin row lock and captured authoritative DB time; password+TOTP required; no HTTP/CLI/session/owner-credential wiring. Sensitive provisioning/recovery outputs must be explicitly private/redacted; no reusable authorization capability is issued.
+- Verification: bootstrap actual coverage domain276/277lines478/489branches; application87/88lines113/114branches; adapters360/364lines255/272branches. New targeted108domain+32application+24adapter unit tests,168 strict root Python, docs/inventory and all-module test compilation passed. Full build passed6Angular tests/100%coverage and unit suites, then failed all8 mandatory PG fixture starts because Docker is unavailable; zero skips. Actual initial-head CI40185599785 ate54f07a passed all13 checks and all10 MFA PG cases; new cleanup fix requires a fresh exact-head run.
+- Next concrete action: push tested provisioning cleanup fix and require independent review plus fresh all-category CI.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; previous local worktree/tmp/purpuragenda-p16-bootstrap only has historical handoff updates now reconciled here; stacked PR dependencies: bootstrap202fbc7 merged, P49 Windows preflight7d7f19e and expiry04d982d integrated with required suites.
