@@ -1,11 +1,11 @@
 # HTTP session, origin and CSRF foundation
 
 - Agent and UTC checkpoint: Claude-worker-b, 2026-10-25T19:30:00Z.
-- Current task: P17/http-session; branch: task/p17-http-session; base: main; PR URL: recorded on the draft PR for this branch.
-- Last pushed implementation commit: none yet; uncommitted changes: first implementation checkpoint (application SessionAccess, REST adapters, bootstrap composition, contract, tests, docs).
+- Current task: P17/http-session; branch: task/p17-http-session; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/53.
+- Last pushed implementation commit: bdf742b; uncommitted changes: PR number and verification evidence in STATUS.md, this handoff and docs/status.md, plus one HEAD/safe-method regression test.
 - What works: POST /api/v1/session/bootstrap, GET /api/v1/session and CSRF-protected POST /api/v1/session/logout over the merged JDBC sessions (migration 012, no new migration); a fail-closed filter guards every unsafe method; trusted client IP resolution exists but nothing consumes it yet.
 - What remains: login and email-issuance endpoints, PostgreSQL throttles (anonymous bootstrap creation is unthrottled until then), scheduled cleanup, Compose wiring of APP_SECURITY_TRUSTED_PROXY_PEERS (the Caddy peer address is the scripts/Compose worker's decision) and Angular consumption of the generated session client.
 - Decisions: exact configured Origin only (never forwarded headers); single Origin header, null or repeated rejected; Sec-Fetch-Site must be absent or same-origin; only bootstrap skips session and CSRF; CSRF digest-only so reload re-bootstraps and rotates only the CSRF proof of a live session; cookie __Host-purpuragenda (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain), local modes use purpuragenda-local without Secure; session-only paths lock only the app_session row, never grants or administrators; problems are fixed codes with a random correlation id and no-store.
-- Verification: see docs/status.md section P17 HTTP session foundation.
-- Next concrete action: run the full native verification, publish the draft PR, wait for hosted checks and independent review; the coordinator merges.
+- Verification: bdf742b full native caffeinate verify-build passed 527 Java (108 domain, 113 application, 286 adapters, 17 bootstrap, 3 architecture), 7 Angular and 220 Python tests with zero failures/errors/skips; coverage domain 276/277 lines 478/489 branches, application 439/441 and 383/384, adapters 1092/1104 and 907/992, bootstrap 109/111 and 112/116, Angular 22/22 and 30/30. Details in docs/status.md.
+- Next concrete action: wait for hosted checks and independent review of the exact head; the coordinator merges. Next slice: PostgreSQL throttles, then login/email endpoints.
 - Recovery: origin/recovery/2026-10-25-prototype at 6f9405b preserved; worktree /private/tmp/purpuragenda-p17-http; stacked PR dependencies: none (PR45 sessions and PR42 bootstrap are merged).

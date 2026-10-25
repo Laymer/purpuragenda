@@ -142,6 +142,12 @@ class SessionHttpTest {
         problem(mvc.perform(post("/api/v1/session/bootstrap/").cookie(cookie(booted))),403,"CSRF_REJECTED");
         mvc.perform(get("/api/v1/session/bootstrap")).andExpect(status().isMethodNotAllowed());
     }
+    @Test void headIsSafeButPostOnlyBootstrapExemptionDoesNotExtendToOtherMethods() throws Exception {
+        mvc.perform(head("/api/v1/session")).andExpect(status().isUnauthorized());
+        problem(mvc.perform(put("/api/v1/session/bootstrap").header("Origin",ORIGIN)),401,"SESSION_REQUIRED");
+        problem(mvc.perform(delete("/api/v1/session/bootstrap").header("Origin",ORIGIN)),401,"SESSION_REQUIRED");
+        assertTrue(store.byToken.isEmpty());
+    }
     @Test void crossSiteFetchMetadataIsRejectedEvenWithCorrectOrigin() throws Exception {
         var booted=boot();
         for(String value:List.of("cross-site","same-site","none","","SAME-ORIGIN"))
