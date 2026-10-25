@@ -4,7 +4,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 
 | Task | Advancement |
 | --- | --- |
-| P01 — Establish shared status, agent handoffs and initial documentation checks | Merged; https://github.com/Laymer/purpuragenda/pull/9; 15ba8b4 concurrency slice; original PR1 d4f78ac |
+| P01 — Establish shared status, agent handoffs and initial documentation checks | In progress; standing-authorization slice; prior coordination merged https://github.com/Laymer/purpuragenda/pull/9 at 15ba8b4 |
 | P02 — Adopt the pinned toolchain, Maven modules, wrapper, architecture checks and build CI | Merged; https://github.com/Laymer/purpuragenda/pull/2; d0c5978;  |
 | P03 — Adopt money, service values, intake validation and reservation intervals | Merged; https://github.com/Laymer/purpuragenda/pull/3; fc3f0fa;  |
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
@@ -15,7 +15,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/11; contract foundation only; shell pending; dependencies in docs/delivery.md;  |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Recovered WIP; contract foundation merged https://github.com/Laymer/purpuragenda/pull/11 at bc64f01; Angular shell assigned to separate worker |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P12/contract-foundation: agent=Codex; branch=task/p12-contract-foundation; base=main; handoff=docs/handoffs/p12-contract-foundation.md
+- P01/standing-authorization: agent=Codex; branch=task/p01-standing-authorization; base=main; handoff=docs/handoffs/p01-standing-authorization.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T08:12:00Z.
-- Current task: P12/contract-foundation; branch: task/p12-contract-foundation; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/11.
-- Last pushed implementation commit: 81890e8 initial tested slice; uncommitted changes: P48 integration and approved safety fixes ready for exact-head CI.
-- What works: P01 coordination and P40 coverage foundations merged; P13 crypto PR12 merged34836ed; P48 PR8 merged0c3ae04; protected live settings verified; per-commit and strict-suite checks active.
-- What remains: reviewed public contract seed, deterministic generated Angular SDK and contract tests; Angular shell is next P12 slice.
-- Decisions: adopt only current public service/availability seam, not recovered monolithic contract or feature implementations.
-- Verification: 50 root +31 delivery Python tests, full108+3 build, coverage99.64%/97.75%, two deterministic generations and whitespace passed; independent re-review approved after safe replacement fixes; exact-head prerequisite-integrated CI pending.
-- Next concrete action: finish prerequisite integration, then implement contract generation and tests.
-- Recovery: recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none after merged P48 integration.
+- Agent and UTC checkpoint: Codex, 2026-10-25T08:29:00Z.
+- Current task: P01/standing-authorization; branch: task/p01-standing-authorization; base: main; PR URL: pending.
+- Last pushed implementation commit: none for this slice; uncommitted changes: reviewed authorization instructions/validator/test ready for initial publication.
+- What works: P01/P40/P48 foundations, P13 crypto and P12 contracts merged; separate workers own migrations, Angular shell and secret scan.
+- What remains: persist user authorization in agent instructions/decisions and test authority references, run required checks/review/PR CI.
+- Decisions: routine implementation permissions are standing authorization; sandbox prompts remain app controls; release/deployment/purchases remain separate manual owner decisions.
+- Verification: 51 root +31 policy Python tests,108 domain+11 security+3 architecture build, coverage99.64%/97.75% domain and95.89%/100% adapters, contract drift and whitespace passed; independent agent approved.
+- Next concrete action: update instructions and validator with regression tests.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none.
