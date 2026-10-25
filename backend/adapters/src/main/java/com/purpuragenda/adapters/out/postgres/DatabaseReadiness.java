@@ -24,8 +24,10 @@ public final class DatabaseReadiness implements HealthIndicator {
             statement.setQueryTimeout(2);
             // Parse the currently required application columns without reading any customer rows.
             try(var shape=statement.executeQuery("""
-                SELECT b.expiry_ceiling,o.released_at,n.lease_token,q.customer_id
-                FROM booking b,booking_occupancy o,notification_job n,request_charge q LIMIT 0
+                SELECT b.expiry_ceiling,o.released_at,n.lease_token,q.customer_id,
+                  g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at
+                FROM booking b,booking_occupancy o,notification_job n,request_charge q,
+                  access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c

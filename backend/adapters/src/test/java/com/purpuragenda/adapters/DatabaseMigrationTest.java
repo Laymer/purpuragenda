@@ -45,6 +45,8 @@ class DatabaseMigrationTest {
         DataSource app=source(MigrationTest.APP);
         var readiness=new DatabaseReadiness(app,new PostgresScheduling(app));
         assertEquals(Status.DOWN,readiness.health().getStatus());
+        fixture.migrate(9); // Earlier scheduling schema lacks the current recovery/guest authority columns.
+        assertEquals(Status.DOWN,readiness.health().getStatus());
         DatabaseMigration.apply(source(MigrationTest.MIGRATOR));
         assertEquals(Status.UP,readiness.health().getStatus());
         try(var connection=fixture.connection(MigrationTest.APP)) {
