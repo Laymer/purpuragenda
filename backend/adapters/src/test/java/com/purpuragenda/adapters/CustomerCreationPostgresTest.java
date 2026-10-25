@@ -175,15 +175,16 @@ class CustomerCreationPostgresTest {
         assertEquals(account.id()+"/CREATE_BOOKING/-",f.value("SELECT scope FROM idempotency_record LIMIT 1"));assertEquals("ACCOUNT",f.value("SELECT actor_kind FROM audit_event LIMIT 1"));
     }
     record Account(SessionBinding binding,UUID customer,UUID id) { }
-    Account account() {
+    Account account() { return account("account@example.test"); }
+    Account account(String email) {
         // Database fixture for an already authenticated account; P18 separately owns enrollment/session exchange.
         UUID customer=UUID.randomUUID(),account=UUID.randomUUID(),id=UUID.randomUUID();String browser="a".repeat(64);
-        jdbc.update("INSERT INTO customer_identity VALUES(?,'account@example.test',clock_timestamp())",customer);
+        jdbc.update("INSERT INTO customer_identity VALUES(?,?,clock_timestamp())",customer,email);
         jdbc.update("INSERT INTO customer_account VALUES(?,?,clock_timestamp())",account,customer);
         jdbc.update("""
             INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,customer_id,account_id,issued_at,last_seen_at,absolute_expires_at,authenticated_at)
             SELECT ?,?,?,?,'ACCOUNT',?,?,t,t,t+interval '12 hours',t FROM (SELECT clock_timestamp() t) captured
-            """,id,Secrets.hash("synthetic-account-token"),browser,Secrets.hash("synthetic-account-csrf"),customer,account);
+            """,id,Secrets.hash("synthetic-account-token"+id),browser,Secrets.hash("synthetic-account-csrf"),customer,account);
         return new Account(new SessionBinding(id,browser),customer,account);
     }
     @ParameterizedTest @ValueSource(longs={-1,0,1})

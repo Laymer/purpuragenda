@@ -13,7 +13,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/35 at5909901; additive009 correction; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability/expiry/quotas/command boundary and typed application PR43 merged39001ae; atomic customer authority/creation https://github.com/Laymer/purpuragenda/pull/46 confirmed merged bcc9fec after native470Java/6Angular/203Python and all13checks; HTTP acceptance remains |
-| P10 — Complete atomic cancellation, rescheduling and appointment outcomes | In progress; Claude takeover after Codex freeze; draft https://github.com/Laymer/purpuragenda/pull/47 at9f97ad742015c9d306b33de5100b5ff56d01942d; frozen owner handoff, old-base checks/review pass; current-main integration/fresh gates and concrete adapter/admin outcomes remain |
+| P10 — Complete atomic cancellation, rescheduling and appointment outcomes | In progress; application commands https://github.com/Laymer/purpuragenda/pull/47 merged 27e2df1; concrete PostgreSQL customer-change adapter in draft slice task/p10-postgres-changes (code and actual-container tests implemented, review and hosted checks pending); HTTP and administrator outcomes remain |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P10/customer-changes: agent=Claude-coordinator; branch=task/p10-customer-changes; base=main; handoff=docs/handoffs/p10-customer-changes.md
+- P10/postgres-changes: agent=Claude-worker-a; branch=task/p10-postgres-changes; base=main; handoff=docs/handoffs/p10-postgres-changes.md
 
 ## Active handoff
 

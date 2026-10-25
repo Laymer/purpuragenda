@@ -36,13 +36,11 @@ public final class PostgresCustomerBooking implements CustomerBookingUnitOfWork 
             });
         });
     }
-    private record Session(UUID id,String browser,String kind,UUID grant,UUID customer,UUID account,
-                           Instant issued,Instant lastSeen,Instant expires,Instant revoked) { }
     private record Grant(UUID id,UUID customer,String browser,String kind,UUID booking,Instant issued,
                          Instant expires,Instant consumed,Instant revoked) { }
     private record Authority(UUID actor,Customer customer,Grant grant,UUID booking,boolean fresh) { }
     private Authority authorize(SessionBinding binding,Instant now) {
-        Session initial=session(binding,false);if(initial==null)throw unauthenticated();
+        PersistedSession initial=PersistedSession.find(jdbc,binding,false);if(initial==null)throw unauthenticated();
         Grant grant=null;UUID actor;
         if(initial.kind().equals("GUEST")) {
             List<Grant> grants=jdbc.query("SELECT * FROM access_grant WHERE id=? FOR UPDATE",(r,n)->new Grant(
@@ -67,22 +65,13 @@ public final class PostgresCustomerBooking implements CustomerBookingUnitOfWork 
             if(accounts.size()!=1)throw denied();actor=accounts.getFirst();
         } else throw denied();
         // Lock order: resource -> grant/account -> session -> booking/customer. Recheck after the lock.
-        Session current=session(binding,true);
-        if(current==null || current.revoked()!=null || current.issued().isAfter(now) || !now.isBefore(current.expires())
-                || !now.isBefore(current.lastSeen().plusSeconds(1800)) || !current.kind().equals(initial.kind())
-                || !Objects.equals(current.grant(),initial.grant()) || !Objects.equals(current.account(),initial.account())
-                || !Objects.equals(current.customer(),initial.customer()))throw unauthenticated();
+        PersistedSession current=PersistedSession.find(jdbc,binding,true);
+        if(current==null || !current.validAfterLock(initial,now))throw unauthenticated();
         Customer customer=jdbc.queryForObject("SELECT id,email_key FROM customer_identity WHERE id=?",
                 (r,n)->new Customer(r.getObject(1,UUID.class),r.getString(2)),current.customer());
         // An independent HTTP session touch can occur after the command's captured time. Never move it backwards.
         jdbc.update("UPDATE app_session SET last_seen_at=GREATEST(last_seen_at,?) WHERE id=?",stamp(now),current.id());
         return new Authority(actor,Objects.requireNonNull(customer),grant,grant==null?null:grant.booking(),grant==null || grant.consumed()==null);
-    }
-    private Session session(SessionBinding binding,boolean lock) {
-        return jdbc.query("SELECT * FROM app_session WHERE id=? AND browser_hash=?"+(lock?" FOR UPDATE":""),(r,n)->new Session(
-                r.getObject("id",UUID.class),r.getString("browser_hash"),r.getString("kind"),r.getObject("grant_id",UUID.class),
-                r.getObject("customer_id",UUID.class),r.getObject("account_id",UUID.class),time(r,"issued_at"),time(r,"last_seen_at"),
-                time(r,"absolute_expires_at"),time(r,"revoked_at")),binding.sessionId(),binding.browserHash()).stream().findFirst().orElse(null);
     }
     private final class CreationState implements Creation {
         private final Transaction tx;private final Authority authority;
@@ -126,8 +115,8 @@ public final class PostgresCustomerBooking implements CustomerBookingUnitOfWork 
                     event,value.id(),value.version(),stamp(now()));
         }
     }
-    private static Instant time(ResultSet row,String column) throws SQLException { Timestamp value=row.getTimestamp(column);return value==null?null:value.toInstant(); }
-    private static Timestamp stamp(Instant value) { return Timestamp.from(value); }
-    private static Failure denied() { return new Failure(Failure.Kind.FORBIDDEN); }
-    private static Failure unauthenticated() { return new Failure(Failure.Kind.AUTHENTICATION_REQUIRED); }
+    private static Instant time(ResultSet row,String column) throws SQLException { return PersistedSession.time(row,column); }
+    private static Timestamp stamp(Instant value) { return PersistedSession.stamp(value); }
+    private static Failure denied() { return PersistedSession.denied(); }
+    private static Failure unauthenticated() { return PersistedSession.unauthenticated(); }
 }
