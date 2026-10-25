@@ -12,7 +12,7 @@ def validate(path):
             or not isinstance(document['powershell'], str)
             or not re.fullmatch(r'[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,3}', document['powershell'])
             or tuple(map(int, document['powershell'].split('.'))) < (7, 4, 0)
-            or type(document['tests']) is not int or document['tests'] < 16
+            or type(document['tests']) is not int or document['tests'] < 18
             or any(type(document[key]) is not int or document[key] != 0 for key in ('failures', 'skipped'))):
         raise ValueError('Missing native Windows test execution')
 

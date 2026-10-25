@@ -13,7 +13,7 @@ SPEC.loader.exec_module(GATE)
 class WslReportTest(unittest.TestCase):
     def test_native_evidence_and_complete_safe_shape_are_required(self):
         good = {'schemaVersion': 1, 'platform': 'windows', 'powershell': '7.4.13',
-                'tests': 16, 'failures': 0, 'skipped': 0}
+                'tests': 18, 'failures': 0, 'skipped': 0}
         with tempfile.TemporaryDirectory() as temporary:
             report = Path(temporary) / 'receipt.json'
             with self.assertRaises(OSError):
@@ -21,7 +21,7 @@ class WslReportTest(unittest.TestCase):
             report.write_text(json.dumps(good))
             GATE.validate(report)
             for changes in ({'schemaVersion': True}, {'platform': 'other'}, {'powershell': '7.3.10'}, {'powershell': 'unknown'},
-                            {'tests': 0}, {'tests': 15}, {'tests': True}, {'failures': 1},
+                            {'tests': 0}, {'tests': 17}, {'tests': True}, {'failures': 1},
                             {'skipped': 1}, {'skipped': False}, {'privateDetails': 'synthetic marker'}):
                 with self.subTest(changes=changes):
                     report.write_text(json.dumps(good | changes))
@@ -36,6 +36,7 @@ class WslReportTest(unittest.TestCase):
         self.assertIn('path: ${{ steps.wsl-tests.outputs.receipt }}', workflow)
         script = (ROOT / 'scripts/ops/preflight-wsl.ps1').read_text()
         self.assertIn('ArgumentList.Add($argument)', script)
-        self.assertIn('WaitForExit(30000)', script)
+        self.assertIn('[ValidateRange(1, 30000)]', script)
+        self.assertIn('WaitForExit($TimeoutMilliseconds)', script)
         for mutation in ('--unregister', '--set-default', '--set-version', '--install', 'Invoke-Expression'):
             self.assertNotIn(mutation, script)

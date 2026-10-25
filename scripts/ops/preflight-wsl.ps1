@@ -3,11 +3,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Invoke-WslRead {
-    param([string[]]$Arguments)
+function Invoke-CapturedProcess {
+    param([string]$Executable, [string[]]$Arguments, [ValidateRange(1, 30000)][int]$TimeoutMilliseconds = 30000)
     $process = [Diagnostics.Process]::new()
     try {
-        $process.StartInfo.FileName = 'wsl.exe'
+        $process.StartInfo.FileName = $Executable
         $process.StartInfo.UseShellExecute = $false
         $process.StartInfo.RedirectStandardOutput = $true
         $process.StartInfo.RedirectStandardError = $true
@@ -16,7 +16,7 @@ function Invoke-WslRead {
         # Drain both streams concurrently, without printing either private stream.
         $output = $process.StandardOutput.ReadToEndAsync()
         $errors = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(30000)) {
+        if (-not $process.WaitForExit($TimeoutMilliseconds)) {
             $process.Kill($true)
             return @{ Code = 1; Text = '' }
         }
@@ -24,6 +24,11 @@ function Invoke-WslRead {
         return @{ Code = $process.ExitCode; Text = $output.Result.Replace([string][char]0, '') }
     } catch { return @{ Code = 1; Text = '' } }
     finally { $process.Dispose() }
+}
+
+function Invoke-WslRead {
+    param([string[]]$Arguments)
+    return (Invoke-CapturedProcess -Executable 'wsl.exe' -Arguments $Arguments)
 }
 
 function Assert-WslPrerequisites {

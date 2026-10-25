@@ -37,6 +37,21 @@ function Require-Failure {
     if ($caught -ne $Code) { throw 'EXPECTED_FIXED_FAILURE_MISSING' }
 }
 $tests = [ordered]@{
+    'native_argument_boundaries_and_private_stderr' = {
+        $fixture = Join-Path ([IO.Path]::GetTempPath()) ('purpuragenda child ' + [Guid]::NewGuid().ToString('N') + '.ps1')
+        try {
+            [IO.File]::WriteAllText($fixture, 'param([string]$Value) [Console]::Out.Write($Value); [Console]::Error.Write("synthetic private error marker"); exit 9')
+            $value = "argument with spaces and 'single' and " + [char]34 + 'double' + [char]34
+            $result = Invoke-CapturedProcess -Executable ([Environment]::ProcessPath) -Arguments @('-NoProfile', '-NonInteractive', '-File', $fixture, '-Value', $value)
+            if ($result.Code -ne 9 -or $result.Text -cne $value) { throw 'NATIVE_CAPTURE_BOUNDARY_FAILED' }
+        } finally { if ([IO.File]::Exists($fixture)) { [IO.File]::Delete($fixture) } }
+    }
+    'native_timeout_does_not_return_private_streams' = {
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        $result = Invoke-CapturedProcess -Executable ([Environment]::ProcessPath) -Arguments @('-NoProfile', '-NonInteractive', '-Command', '[Console]::Out.Write("synthetic private marker"); Start-Sleep -Seconds 20') -TimeoutMilliseconds 100
+        $clock.Stop()
+        if ($result.Code -eq 0 -or $result.Text -ne '' -or $clock.ElapsedMilliseconds -gt 10000) { throw 'NATIVE_TIMEOUT_BOUNDARY_FAILED' }
+    }
     'ready_preserves_default_kali' = {
         $result = @(Assert-WslPrerequisites)
         if ($result.Count -ne 0 -or $script:calls.Count -ne 5) { throw 'READINESS_OR_OUTPUT_MISMATCH' }
@@ -78,7 +93,7 @@ $tests = [ordered]@{
 }
 $executed = 0
 try {
-    if ($tests.Count -ne 16) { throw 'INCOMPLETE_NATIVE_TEST_REGISTRY' }
+    if ($tests.Count -ne 18) { throw 'INCOMPLETE_NATIVE_TEST_REGISTRY' }
     foreach ($test in $tests.GetEnumerator()) {
         Reset-Fixture
         & $test.Value
