@@ -1,0 +1,21 @@
+# Used only by verify-compose.py. No host ports; unique project, secrets and proxy subnet.
+services:
+  web:
+    ports: !reset []
+    volumes:
+      - ${PURPURAGENDA_VERIFY_DIR:?verification directory required}/Caddyfile:/etc/caddy/Caddyfile:ro
+  mailpit:
+    ports: !reset []
+  proxy-probe:
+    image: purpuragenda-backend:${PURPURAGENDA_IMAGE_TAG:-local}
+    entrypoint: [/opt/java/bin/java]
+    command: [/probe/ProxyHeaderProbe.java]
+    volumes:
+      - ./backend/bootstrap/src/test/java/com/purpuragenda/bootstrap/ProxyHeaderProbe.java:/probe/ProxyHeaderProbe.java:ro
+    networks: [proxy]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: none}
+    profiles: [proxy-probe]
