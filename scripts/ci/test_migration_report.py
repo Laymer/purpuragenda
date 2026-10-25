@@ -233,6 +233,21 @@ class MigrationReportTest(unittest.TestCase):
                           + '<testcase/>' * 30 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic management recovery lookup')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.GuestRecoveryDatabaseTest.xml')
+        for count, cases, nested in ((0,0,''), (5,5,''), (6,5,''), (7,6,''),
+                                     (6,6,'<failure/>'), (6,6,'<error/>'), (6,6,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.GuestRecoveryDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestRecoveryDatabaseTest" tests="6">'
+                          + '<testcase/>' * 6 + '</testsuite>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

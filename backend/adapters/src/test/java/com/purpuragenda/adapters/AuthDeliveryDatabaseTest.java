@@ -76,6 +76,7 @@ class AuthDeliveryDatabaseTest {
             var issue=request(purpose); var receipt=store.issue(issue); var lease=queue.claim().orElseThrow();
             assertTrue(receipt.jobId().equals(lease.id())); var message=store.prepare(lease).orElseThrow();
             assertTrue(message.recipient().equals(issue.email())); assertTrue(message.text().contains("https://example.test/verify#token="));
+            assertEquals(issue.browserHash()!=null,message.text().contains("browser that requested it"));
             String token=message.text().split("#token=",2)[1].split("&",2)[0]; assertTrue(token.matches("[A-Za-z0-9_-]{43}"));
             assertTrue(text("SELECT token_hash FROM email_challenge WHERE id=?",receipt.challengeId()).equals(Secrets.hash(token)));
             assertFalse(text("SELECT encrypted_envelope FROM notification_job WHERE id=?",receipt.jobId()).contains(token));

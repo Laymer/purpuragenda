@@ -29,6 +29,8 @@ def validate(root):
         suites.append(('DatabaseMigrationTest', 5))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java').is_file():
         suites.append(('GuestAccessDatabaseTest', 14))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java').is_file():
+        suites.append(('GuestRecoveryDatabaseTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminRecovery.java').is_file():
         suites.append(('AdminRecoveryDatabaseTest', 13))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSessions.java').is_file():
@@ -43,7 +45,7 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('GuestAccessDatabaseTest', 'SessionDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed authentication cases')
 
