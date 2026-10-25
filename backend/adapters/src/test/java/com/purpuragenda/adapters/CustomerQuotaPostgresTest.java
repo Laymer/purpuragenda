@@ -38,6 +38,20 @@ class CustomerQuotaPostgresTest {
     void cancel(Booking value){f.unit.execute(f.key(),tx->{tx.save(tx.booking(value.id()).orElseThrow().cancel(tx.now(),false));return ok();});}
     void legacy(){f.fixture.newSchema();f.fixture.migrate(7);Properties p=new Properties();p.setProperty("currentSchema",f.fixture.schema+",public");f.source.setConnectionProperties(p);f.customer=f.customer();}
     void rawCharge(Booking b,UUID customer,LocalDate day){f.jdbc.update("INSERT INTO request_charge VALUES(?,?,?,'CUSTOMER')",b.id(),customer,day);}
+    UUID boundaryBooking(Transaction tx,boolean confirmed,Instant start,Instant created,Instant expires) {
+        UUID id=UUID.randomUUID();String meeting=confirmed?"123456789":null;
+        f.jdbc.update("""
+            INSERT INTO booking(id,reference,customer_id,service_id,state,origin,created_at,start_at,session_minutes,
+              session_end,reserved_end,business_date,expires_at,expiry_ceiling,delivery_email,meeting_id,meeting_url,
+              confirmation_basis,version,calendar_revision,previously_confirmed)
+            VALUES(?,?,?,?::uuid,?,'CUSTOMER',?,?,30,?,?,?,?,?,'synthetic@example.test',?,?,?,1,0,?)
+            """,id,"synthetic-"+id,f.customer,MigrationTest.SERVICE,confirmed?"CONFIRMED":"PENDING_CONFIRMATION",
+                Timestamp.from(created),Timestamp.from(start),Timestamp.from(start.plusSeconds(1800)),Timestamp.from(start.plusSeconds(7200)),CustomerQuota.dayAt(start),
+                expires==null?null:Timestamp.from(expires),confirmed?null:Timestamp.from(created.plusSeconds(86400)),meeting,confirmed?"https://zoom.us/j/"+meeting:null,confirmed?"MANUAL_APPROVAL":null,confirmed);
+        f.jdbc.update("INSERT INTO booking_snapshot VALUES(?,?::jsonb)",id,MigrationTest.snapshot());
+        f.jdbc.update("INSERT INTO booking_occupancy VALUES(?,1,tstzrange(?,?,'[)'),NULL)",id,Timestamp.from(start),Timestamp.from(start.plusSeconds(7200)));
+        assertTrue(created.isBefore(tx.now()));return id;
+    }
     void badShape(Booking b,UUID customer,LocalDate day) {
         try(Connection c=f.fixture.connection(MigrationTest.APP)){
             c.setAutoCommit(false);
@@ -80,21 +94,18 @@ class CustomerQuotaPostgresTest {
         assertEquals(0,f.count("booking"));assertEquals(0,f.count("request_charge"));assertEquals(0,f.count("customer_request_day"));
     }
     @Test void usageMatchesExactPendingExpiryAndOngoingConfirmedSessionEndBoundaries() {
-        UUID id=f.fixture.booking(Instant.now().minusSeconds(1800),"CONFIRMED",MigrationTest.snapshot());
         f.unit.execute(f.key(),tx->{
             Instant boundary=tx.now().minusSeconds(1800);
-            f.jdbc.update("UPDATE booking SET customer_id=?,start_at=?,session_end=?,reserved_end=?,business_date=? WHERE id=?",f.customer,Timestamp.from(boundary),Timestamp.from(tx.now()),Timestamp.from(boundary.plusSeconds(7200)),CustomerQuota.dayAt(boundary),id);
-            f.jdbc.update("UPDATE booking_occupancy SET occupied=tstzrange(?,?,'[)') WHERE booking_id=?",Timestamp.from(boundary),Timestamp.from(boundary.plusSeconds(7200)),id);
+            UUID id=boundaryBooking(tx,true,boundary,tx.now().minusSeconds(604800),null);
+            boundaryBooking(tx,false,tx.now().plusSeconds(259200),tx.now().minusSeconds(3600),tx.now());
             assertEquals(0,tx.quota(f.customer).active()); // sessionEnd == captured now
             Instant start=tx.now().minusSeconds(900);
             f.jdbc.update("UPDATE booking SET start_at=?,session_end=?,reserved_end=?,business_date=? WHERE id=?",Timestamp.from(start),Timestamp.from(start.plusSeconds(1800)),Timestamp.from(start.plusSeconds(7200)),CustomerQuota.dayAt(start),id);
             f.jdbc.update("UPDATE booking_occupancy SET occupied=tstzrange(?,?,'[)') WHERE booking_id=?",Timestamp.from(start),Timestamp.from(start.plusSeconds(7200)),id);
             assertEquals(1,tx.quota(f.customer).active());
             for(String state:List.of("COMPLETED","NO_SHOW")){f.jdbc.update("UPDATE booking SET state=? WHERE id=?",state,id);assertEquals(0,tx.quota(f.customer).active());}
-            Booking pending=candidate(tx,0,Booking.Origin.CUSTOMER,false);tx.save(pending);
-            f.jdbc.update("UPDATE booking SET created_at=?,expires_at=?,expiry_ceiling=? WHERE id=?",Timestamp.from(tx.now().minusSeconds(3600)),Timestamp.from(tx.now()),Timestamp.from(tx.now().plusSeconds(82800)),pending.id());
             assertEquals(0,tx.quota(f.customer).active());
-            f.jdbc.update("UPDATE booking SET expires_at=? WHERE id=?",Timestamp.from(tx.now().plusNanos(1000)),pending.id());
+            boundaryBooking(tx,false,tx.now().plusSeconds(270000),tx.now().minusSeconds(3600),tx.now().plusNanos(1000));
             assertEquals(1,tx.quota(f.customer).active());return ok();
         });
     }
@@ -141,10 +152,10 @@ class CustomerQuotaPostgresTest {
     }
     @Test void upgradeRejectsMalformedHistoricalChargeIdentityDateOriginAndCounters() {
         for(String defect:List.of("identity","date","origin","missing-counter","counter","overlimit")){
-            legacy();Booking b=create(0,Booking.Origin.CUSTOMER,false,false);LocalDate day=CustomerQuota.dayAt(b.createdAt());
+            legacy();Booking b=create(0,defect.equals("origin")?Booking.Origin.ADMINISTRATOR:Booking.Origin.CUSTOMER,false,false);LocalDate day=CustomerQuota.dayAt(b.createdAt());
             if(defect.equals("identity")){UUID other=f.customer();rawCharge(b,other,day);f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",other,day);}
             else if(defect.equals("date")){rawCharge(b,f.customer,day.minusDays(1));f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day.minusDays(1));}
-            else if(defect.equals("origin")){f.jdbc.update("UPDATE booking SET origin='ADMINISTRATOR' WHERE id=?",b.id());rawCharge(b,f.customer,day);f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day);}
+            else if(defect.equals("origin")){rawCharge(b,f.customer,day);f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day);}
             else if(defect.equals("missing-counter"))rawCharge(b,f.customer,day);
             else if(defect.equals("overlimit")){
                 rawCharge(b,f.customer,day);

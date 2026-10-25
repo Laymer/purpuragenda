@@ -124,6 +124,9 @@ class MigrationTest {
             """.formatted(SERVICE);
     }
     UUID booking(Instant start,String state,String document) {
+        return booking(start,state,document,"ADMINISTRATOR");
+    }
+    UUID booking(Instant start,String state,String document,String origin) {
         UUID id=UUID.randomUUID(), customer=UUID.randomUUID();
         boolean confirmed=Set.of("CONFIRMED","COMPLETED","NO_SHOW").contains(state);
         boolean occupied=confirmed || state.equals("PENDING_CONFIRMATION");
@@ -135,10 +138,10 @@ class MigrationTest {
                 INSERT INTO booking(id,reference,customer_id,service_id,state,origin,created_at,start_at,
                   session_minutes,session_end,reserved_end,business_date,expires_at,expiry_ceiling,delivery_email,
                   meeting_id,meeting_url,confirmation_basis,version,calendar_revision,previously_confirmed)
-                VALUES(?,?,?,?::uuid,?,'ADMINISTRATOR','2026-10-01T00:00:00Z',?,30,?,?,
+                VALUES(?,?,?,?::uuid,?,?,'2026-10-01T00:00:00Z',?,30,?,?,
                   (?::timestamptz AT TIME ZONE 'Europe/Brussels')::date,
                   '2026-10-02T00:00:00Z','2026-10-02T00:00:00Z','synthetic@example.test',?,?,?,1,0,?)
-                """,id,"synthetic-"+id,customer,SERVICE,state,start,start.plusSeconds(1800),start.plusSeconds(7200),start,
+                """,id,"synthetic-"+id,customer,SERVICE,state,origin,start,start.plusSeconds(1800),start.plusSeconds(7200),start,
                     confirmed?meeting:null,confirmed?"https://zoom.us/j/"+meeting:null,confirmed?"MANUAL_APPROVAL":null,confirmed);
             execute(c,"INSERT INTO booking_snapshot VALUES(?,?::jsonb)",id,document);
             execute(c,"INSERT INTO booking_occupancy VALUES(?,1,tstzrange(?,?,'[)'),?::timestamptz)",id,start,start.plusSeconds(7200),occupied?null:"2026-10-02T00:00:00Z");
@@ -220,12 +223,16 @@ class MigrationTest {
         } catch(SQLException failure) { throw safe(failure); }
     }
     @Test void actualMoneyIsIndependentAndFactsRemainImmutable() {
-        UUID id=booking(START,"PENDING_CONFIRMATION",snapshot()), receipt=UUID.randomUUID();
+        UUID id=booking(START,"PENDING_CONFIRMATION",snapshot(),"CUSTOMER"), receipt=UUID.randomUUID();
         try(Connection c=connection(APP)) {
+            c.setAutoCommit(false);
             execute(c,"INSERT INTO payment_entry VALUES(?,?,'RECEIPT',?,'EUR','BANK','synthetic-reference','2026-10-01T00:00:00Z',NULL)",receipt,id,Long.MAX_VALUE);
             execute(c,"INSERT INTO request_charge VALUES(?,?,DATE '2026-10-01','CUSTOMER')",id,scalarCustomer(id));
+            execute(c,"INSERT INTO customer_request_day VALUES(?,DATE '2026-10-01',1)",scalarCustomer(id));
             execute(c,"INSERT INTO audit_event(id,booking_id,actor_kind,type,occurred_at) VALUES(?,?,'ADMINISTRATOR','SYNTHETIC','2026-10-01T00:00:00Z')",UUID.randomUUID(),id);
+            c.commit();
         } catch(SQLException failure) { throw safe(failure); }
+        assertEquals(1,scalar(APP,"SELECT count FROM customer_request_day"));
         for(String table:List.of("payment_entry","request_charge","booking_snapshot","policy_version","audit_event")) {
             denied("23514","DELETE FROM "+table);
         }
