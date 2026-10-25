@@ -21,6 +21,7 @@ OWNERS = {
 ACTIVATION = {
     'postgres-migrations': 'backend/adapters/src/main/resources/db/changelog/db.changelog-master.yaml',
     'angular': 'frontend/package.json',
+    'outbox': 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/email/PostgresNotificationQueue.java',
 }
 
 
