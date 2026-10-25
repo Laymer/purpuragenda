@@ -137,6 +137,19 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdminMfaDatabaseTest" tests="12"/>')
         GATE.validate(self.root)
 
+    def test_deferred_booking_fix_requires_real_final_state_and_upgrade_cases(self):
+        self.write()
+        migration = self.root / 'backend/adapters/src/main/resources/db/changelog/009-deferred-booking-invariants.sql'
+        migration.parent.mkdir(parents=True); migration.write_text('synthetic additive migration')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.DeferredBookingIntegrityTest.xml')
+        for count, status in ((0, {}), (7, {}), (8, {'failures': 1}), (8, {'errors': 1}), (8, {'skipped': 1})):
+            attrs = ' '.join(f'{key}="{value}"' for key, value in status.items())
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.DeferredBookingIntegrityTest" tests="{count}" {attrs}/>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.DeferredBookingIntegrityTest" tests="8"/>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()
