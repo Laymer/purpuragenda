@@ -46,16 +46,16 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation merged https://github.com/Laymer/purpuragenda/pull/13 at8f5ed62; remaining scans pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation merged https://github.com/Laymer/purpuragenda/pull/13 at 8f5ed62; other scans pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged https://github.com/Laymer/purpuragenda/pull/8 at 0c3ae04; final release publication pending |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
 | P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
-| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires external inputs and real-client checks; owner selected always-on laptop via Tailscale/public ingress at purchased medinavie.com; Zoom/SMTP exist, settings later; ingress/backup/legal acceptance unverified |
+| P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
-Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62. Full P40 application-wide acceptance and P48 release publication remain pending.
+Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
 
 Online payments are deferred and are not unfinished version 1 implementation.
 
@@ -65,12 +65,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:47:55Z.
+- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:49:57Z.
 - Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/16.
-- Last pushed implementation commit: 013ae2c; uncommitted changes: final PR handoff, nested-symlink cleanup regression and pinned Angular report upload.
+- Last pushed implementation commit: 013ae2c; uncommitted changes: final integrated evidence before publication; P48 inventory and pinned Angular receipt upload included.
 - What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
 - What remains: final exact-head CI and coordinator merge; P07 now makes real PostgreSQL verification mandatory.
 - Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
-- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and87 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed.
-- Next concrete action: run available local checks, integrate P48 inventory when merged, push tested handoff and require actual-container CI.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory integration pending.
+- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and99 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed; final scan covered145 tracked files plus full history, zero findings; suite inventory passed.
+- Next concrete action: push final integrated checkpoint and require exact-head actual-container CI plus coordinator review/merge.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory f3a4841 integrated; Angular activated as implemented jobbuild.

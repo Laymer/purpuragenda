@@ -166,6 +166,12 @@ All51 root+31 policy Python tests passed; full build108 domain+11 security+3 arc
 
 P43 integrated standing authorization04282fa without history rewriting. Final resolved-index verification passed71root+31policy tests,108domain+11adapter+3architecture, deterministic contracts and zero-finding full-history/105tracked-file scan. Earlier in-progress merge scan counts included duplicate index entries; final105 count is from the resolved staged tree. Domain/adapters coverage unchanged; exact-head CI remains required.
 
+## P48 mandatory suite inventory evidence
+
+Added explicit implemented/planned categories and owning task mapping, exact workflow/aggregate prerequisite/results agreement, source activation checks and a release guard that rejects unimplemented categories. Independent review caught job-step/aggregate-step condition and continue-on-error bypasses; regressions now reject ordinary/first-key/flow-style forms while retaining always-run receipt upload.
+
+Local pre-P07 integration verification:83 root+31 policy Python tests,108 domain+11 security+3 architecture full build, coverage276/277 lines478/489 branches domain and70/73 lines52/52 branches adapters, deterministic contracts/docs/whitespace passed. --release deliberately fails while planned automated categories remain. P07 has since merged with real PostgreSQL CI evidence; integration must activate postgres-migrations and obtain fresh combined CI, with localDocker still unavailable. No full-release or P48 publication claim.
+
 ## P07 review checkpoint
 
 P06 final head 0318f1a passed all three implemented CI jobs; merge 8d7f62d confirmed. Migration review findings and the next adoption/test commands are preserved in handoffs/p07-migrations.md. No P07 SQL or PostgreSQL suite has been adopted at this checkpoint; existing passing unit/architecture evidence is not migration acceptance. Local Docker daemon remains unavailable.
@@ -188,6 +194,8 @@ P07 integrated standing authorization main04282fa, preserving current owner laun
 
 P07 actual-container CI40176952153 at8803d53 ran all11 migration tests,9 passed and2 failed: restart readiness and a later connection setup. Docker can reallocate an ephemeral published port during restart while Testcontainers retains its initial inspect data. The existing restart persistence test now inspects current running state/bindings and reconnects through the fresh endpoint. Added no raw provider diagnostics. Integrated mandatory secret scanning from main8f5ed62. Corrected exact-head container rerun remains required.
 
+P07 final reconciliation: PR7 mergedff3b33b after CI40177367926 at exact head524aa51 passed every implemented category. Real pinned PostgreSQL18.6/fsync-on suite passed11 migration cases including restart; adapters24tests (11security+2image parser+11migration), domain108 and architecture3; coverage unchanged99.64/97.75domain95.89/100adapters. Local Docker remains unavailable; container evidence is CI, distinct from isolated manual SQL evidence.
+
 ## P12 Angular shell evidence
 
 Implemented only the standalone Material shell, real home/not-found routes, keyboard skip destination, system-font purple theme and typed generatedSDK wiring at same-origin /api/v1. No unavailable booking/account/admin links or startup API request. All exported SDK types compile through the test import. Six Angular tests cover shell navigation/landmarks, SDK HTTP/query/error behavior and bootstrap success/failure.
@@ -199,3 +207,5 @@ Initial npmci could not write its cache inside the sandbox; approved retry succe
 Independent coordinator review approved semantic header/landmark assertions, generated Problem fixture alignment, descriptor-anchored cleanup and report-count integrity fixes. Cleanup refuses ancestor/destination symlinks before deleting either artifact tree and never follows outside targets.
 
 P12 PR16 publication checkpoint: P43 secret foundation8f5ed62 and P07 migrationsff3b33b integrated. Secret scan passed complete history+127tracked files, deterministic SDK regeneration passed and31 strict policy tests passed. Local root Python87 tests passed after the nested-symlink cleanup regression. The unchanged mandatory full build after P07 adoption failed at `POSTGRES_TEST_START_FAILED:CONTAINER_START:IllegalStateException` because the Docker daemon is unavailable, with zero skips; it must pass actual PostgreSQL18.6 in remote CI. That same local command passed fresh npmci,6 Angular tests, production output,100% Angular coverage,108 domain+11security+2 PostgreSQL image tests. No combined local full-build passing claim follows. Added pinned upload of only synthetic Angular JUnit and coverageJSON receipts under the mandatory build job.
+
+Final P12 integration: P48 suite-inventory foundationf3a4841 merged; Angular activated atomically as implemented/build while release still rejects planned categories.99 strict root Python+31 delivery-policy tests, inventory/docs/commit policy/live protection and whitespace passed. Final secret scan passed full history+145 tracked files with zero findings. Only AngularJUnit and coverageJSON are retained by a pinned always-running upload step; mandatory build execution is unconditional. ExistingMacIntel/Tailscale/public-ingress and proposedLinuxbackup decisions were preserved. Local actual-container limitation remains as recorded above; require exact-head remote build before merge.

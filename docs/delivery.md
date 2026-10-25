@@ -16,7 +16,7 @@ P01/concurrency establishes this coordination model and validator. P40/coverage-
 
 Coverage is at least 90% lines and branches per backend production module and Angular; domain/application retain 95% lines. Never use aggregate coverage to hide a failing module. Generated-code exclusions must be identifiable and reviewed. Require complete reports and source correspondence. Unit/integration execution data may combine against identical compiled classes. No threshold reduction or integrity exclusions.
 
-Every PR runs every implemented automated category, including documentation changes. Activate applicable categories with implementation, not after it. Missing dependencies/suites/reports and skipped/cancelled checks fail. An explicit inventory distinguishes not-yet-implemented categories from enabled mandatory categories; release requires all categories. Main requires PRs, up-to-date base and successful aggregate verify without bypass. Full browser/load/security/restore suites remain mandatory once implemented despite runtime cost.
+Every PR runs every implemented automated category, including documentation changes. Activate applicable categories with implementation, not after it. Missing dependencies/suites/reports and skipped/cancelled checks fail. The explicit scripts/ci/suites.json inventory distinguishes not-yet-implemented categories from enabled mandatory categories; update it atomically with suite activation; release requires all categories. Main requires PRs, up-to-date base and successful aggregate verify without bypass. Full browser/load/security/restore suites remain mandatory once implemented despite runtime cost.
 
 ## Dependency queue
 
