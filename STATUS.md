@@ -11,11 +11,11 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Draft PR; https://github.com/Laymer/purpuragenda/pull/18; transaction-core slice only; booking/policy persistence pending |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Draft PR; https://github.com/Laymer/purpuragenda/pull/16; contract foundation merged bc64f01; shell013ae2c; exact-head CI pending |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation bc64f01 and Angular shell verified |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | Recovered WIP; dependencies in docs/delivery.md;  |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,15 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P12/angular-shell: agent=Codex-p12-shell; branch=task/p12-angular-shell; base=main; handoff=docs/handoffs/p12-angular-shell.md
+- P08/transaction-core: agent=Codex-p08; branch=task/p08-transaction-core; base=main; handoff=docs/handoffs/p08-transaction-core.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p12-shell, 2026-10-25T08:49:57Z.
-- Current task: P12/angular-shell; branch: task/p12-angular-shell; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/16.
-- Last pushed implementation commit: 013ae2c; uncommitted changes: final integrated evidence before publication; P48 inventory and pinned Angular receipt upload included.
-- What works: contracts merged bc64f01; standing authorization04282fa; P13 merged with source-complete coverage gates.
-- What remains: final exact-head CI and coordinator merge; P07 now makes real PostgreSQL verification mandatory.
-- Decisions: minimal accessible home/not-found shell only; no links to unavailable product flows; all handwritten TS incl bootstrap covered90/90.
-- Verification: before P07 adoption full build passed6 Angular+108domain+11security+3architecture tests; after P07 mandatory full command fails Docker startup without skips;6Angular/108domain/11security/2image tests pass and99 root Python pass; Angular22/22 lines30/30branches; contracts/31policy/live protection/secret scan passed; final scan covered145 tracked files plus full history, zero findings; suite inventory passed.
-- Next concrete action: push final integrated checkpoint and require exact-head actual-container CI plus coordinator review/merge.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P12 contract foundation merged; P43 8f5ed62 and P07 ff3b33b integrated; P48 inventory f3a4841 integrated; Angular activated as implemented jobbuild.
+- Agent and UTC checkpoint: Codex-p08, 2026-10-25T08:46:12Z.
+- Current task: P08/transaction-core; branch: task/p08-transaction-core; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/18.
+- Last pushed implementation commit: 646aa50; uncommitted changes: correct PostgreSQL JDBC JSON operator binding and add opaque-key replay regression.
+- What works: P07 merged ff3b33b; actual-container CI40177367926 passed11 migration +11 security +2 parser +108 domain +3 architecture tests, zero skips; all implemented categories green. What remains: minimal transaction/idempotency port and JDBC core; booking/policy persistence remains second P08 slice.
+- Decisions: explicit READ COMMITTED, resource lock then one database time, savepoint validation before returning success, only known conflicts translated; no operational test clock or network effects under lock.
+- Verification: 100 root Python and31 policy tests, docs/suite inventory/whitespace passed;6 Angular tests/build passed with22/22lines30/30branches; targeted108 domain+4 application tests passed, application29/30 lines and48/48 branches; full local build fails at unavailable Docker as required; P07 domain276/277 lines478/489 branches, adapters70/73 lines52/52 branches. Local Docker unavailable; real CI remains mandatory.
+- Next concrete action: push draft transaction-core PR, require actual PostgreSQL CI/coverage and independent review.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none; P07 prerequisite merged. Preserve old transaction adapter only as review reference.
