@@ -38,6 +38,17 @@ class CustomerQuotaPostgresTest {
     void cancel(Booking value){f.unit.execute(f.key(),tx->{tx.save(tx.booking(value.id()).orElseThrow().cancel(tx.now(),false));return ok();});}
     void legacy(){f.fixture.newSchema();f.fixture.migrate(7);Properties p=new Properties();p.setProperty("currentSchema",f.fixture.schema+",public");f.source.setConnectionProperties(p);f.customer=f.customer();}
     void rawCharge(Booking b,UUID customer,LocalDate day){f.jdbc.update("INSERT INTO request_charge VALUES(?,?,?,'CUSTOMER')",b.id(),customer,day);}
+    void badShape(Booking b,UUID customer,LocalDate day) {
+        try(Connection c=f.fixture.connection(MigrationTest.APP)){
+            c.setAutoCommit(false);
+            AssertionError failure=assertThrows(AssertionError.class,()->{
+                MigrationTest.execute(c,"INSERT INTO customer_request_day VALUES(?,?,1) ON CONFLICT(customer_id,submission_day) DO UPDATE SET count=customer_request_day.count+1",customer,day);
+                MigrationTest.execute(c,"INSERT INTO request_charge VALUES(?,?,?,'CUSTOMER')",b.id(),customer,day);
+                MigrationTest.execute(c,"SET CONSTRAINTS ALL IMMEDIATE");
+            });
+            assertEquals("SQLSTATE=23514",failure.getMessage());c.rollback();
+        }catch(SQLException failure){throw MigrationTest.safe(failure);}
+    }
     @Test void immutableChargeUsesCreationDayStableIdentityAndIsIdempotentAcrossContactChanges() {
         Booking b=create(0,Booking.Origin.CUSTOMER,true,false);assertEquals(1,quota().requests());assertEquals(1,quota().active());
         assertEquals(CustomerQuota.dayAt(b.createdAt()),quota().submissionDay());
@@ -69,9 +80,11 @@ class CustomerQuotaPostgresTest {
         assertEquals(0,f.count("booking"));assertEquals(0,f.count("request_charge"));assertEquals(0,f.count("customer_request_day"));
     }
     @Test void usageMatchesExactPendingExpiryAndOngoingConfirmedSessionEndBoundaries() {
+        UUID id=f.fixture.booking(Instant.now().minusSeconds(1800),"CONFIRMED",MigrationTest.snapshot());
         f.unit.execute(f.key(),tx->{
-            UUID id=f.fixture.booking(tx.now().minusSeconds(1800),"CONFIRMED",MigrationTest.snapshot());
-            f.jdbc.update("UPDATE booking SET customer_id=? WHERE id=?",f.customer,id);
+            Instant boundary=tx.now().minusSeconds(1800);
+            f.jdbc.update("UPDATE booking SET customer_id=?,start_at=?,session_end=?,reserved_end=?,business_date=? WHERE id=?",f.customer,Timestamp.from(boundary),Timestamp.from(tx.now()),Timestamp.from(boundary.plusSeconds(7200)),CustomerQuota.dayAt(boundary),id);
+            f.jdbc.update("UPDATE booking_occupancy SET occupied=tstzrange(?,?,'[)') WHERE booking_id=?",Timestamp.from(boundary),Timestamp.from(boundary.plusSeconds(7200)),id);
             assertEquals(0,tx.quota(f.customer).active()); // sessionEnd == captured now
             Instant start=tx.now().minusSeconds(900);
             f.jdbc.update("UPDATE booking SET start_at=?,session_end=?,reserved_end=?,business_date=? WHERE id=?",Timestamp.from(start),Timestamp.from(start.plusSeconds(1800)),Timestamp.from(start.plusSeconds(7200)),CustomerQuota.dayAt(start),id);
@@ -133,7 +146,11 @@ class CustomerQuotaPostgresTest {
             else if(defect.equals("date")){rawCharge(b,f.customer,day.minusDays(1));f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day.minusDays(1));}
             else if(defect.equals("origin")){f.jdbc.update("UPDATE booking SET origin='ADMINISTRATOR' WHERE id=?",b.id());rawCharge(b,f.customer,day);f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day);}
             else if(defect.equals("missing-counter"))rawCharge(b,f.customer,day);
-            else f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,?)",f.customer,day,defect.equals("counter")?1:4);
+            else if(defect.equals("overlimit")){
+                rawCharge(b,f.customer,day);
+                for(int slot=1;slot<4;slot++)rawCharge(create(slot,Booking.Origin.CUSTOMER,false,false),f.customer,day);
+                f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,4)",f.customer,day);
+            } else f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,day);
             assertEquals("MIGRATION_FAILED",assertThrows(AssertionError.class,()->f.fixture.migrate(0)).getMessage());
             assertEquals(7,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         }
@@ -148,6 +165,8 @@ class CustomerQuotaPostgresTest {
             c.commit();
         }catch(SQLException failure){throw MigrationTest.safe(failure);}
         assertEquals(2,quota().requests());
+        Booking uncharged=create(2,Booking.Origin.CUSTOMER,false,false),admin=create(3,Booking.Origin.ADMINISTRATOR,false,false);
+        badShape(uncharged,f.customer(),day);badShape(uncharged,f.customer,day.plusDays(1));badShape(admin,f.customer,day);
         f.fixture.denied("23514","UPDATE customer_request_day SET count=1");
         f.fixture.denied("23514","DELETE FROM customer_request_day");
         f.fixture.denied("23514","UPDATE customer_request_day SET submission_day=submission_day+1");
