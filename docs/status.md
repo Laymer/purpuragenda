@@ -81,3 +81,59 @@ Selectively adopted public service/availability schemas from recovery into an Op
 Local checks on2026-10-25: 46 Python tests passed (15 ledger,24 coverage including generated-only scaffolding,7 contract); full build passed108 domain+3 architecture tests with zero failures/errors/skips and276/277 lines,478/489 branches. Fresh SDK generation and independent second generation byte comparison passed. Initial generator config warned that validateSpec was unknown; inspected the plugin's own descriptor and replaced it with explicit skipValidateSpec=false, then regenerated successfully. Generated-only source exemption retains a negative test requiring a report as soon as any handwritten TypeScript exists. Exact-head CI and independent review remain pending.
 
 P12 independent review found and resolved SDK write-path failures: reject symlinked ancestors/destination and invalid/empty fresh output before modifying the committed SDK; stage replacement and restore the prior SDK if installation fails. Four regression tests cover preservation/escape/stale removal/rollback; all50 Python tests and full108+3 build passed. Independent re-review approved. Initial PR11 CI passed all then-implemented categories before prerequisite P48 integration.
+
+## P48 merge-protection foundation evidence
+
+Implemented a managed main ruleset, default-read-only API checker/application command,
+per-commit test-source gate and mandatory delivery-policy CI job. The worker did not
+apply live rules. Existing nodelete rules remain untouched; live enforcement is a
+coordinator action after review. P48 publication and final inventory remain unfinished.
+
+`python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py' -v` passed 21 tests.
+`bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests,
+zero skips, domain 276/277 lines (99.64%) and 478/489 branches (97.75%).
+`git diff --check` passed. No PostgreSQL, browser, load, security or restore suite
+was added or certified. An ignored local toolchain symlink supplies pinned tools.
+
+The initial negative rename test exposed an unchanged-rename loophole, fixed with
+rename-aware old/new content comparison. The initial pagination fixture matched
+`page=1` inside `per_page=100`, looped, and was interrupted; matching the final page
+query fixed the test. Both corrected cases pass. Historical commits through exact
+P07 head dd482e3 are grandfathered; all later commits require test-source changes.
+Semantic test relevance still requires independent review.
+
+P48 foundation published as draft PR8 at 74aa161; follow-up adds an ineffective-API-write readback regression. Live rules remain unapplied by this worker.
+
+P48 independent review found that explicit application could remove extra required
+checks despite preserving stronger review counts. The guard now preserves each
+existing required check and source-app pin, strict checks, branch-creation checks,
+merge restrictions and stronger/unknown managed parameters before writing. Added
+eight negative API subcases and a positive unpinned-to-pinned strengthening case.
+
+After the review fix, 23 delivery-policy tests and the full 108-domain/three-architecture build passed with no skips; domain coverage remains 99.64% lines/97.75% branches.
+
+## P01 concurrent delivery evidence
+
+Reconciled remote main 8d7f62d, merged P01–P06, clean existing worktrees and sole preexisting draft P07 dd482e3. Added tested concurrent claims/handoffs and the approved dependency queue, coverage/commit/review/launch decisions. No recovered feature code adopted.
+
+`python3 -m unittest discover -s scripts/ci -p 'test_*.py'` passed 15 synthetic ledger tests. `python3 scripts/ci/check-docs.py` and `git diff --check` passed. `bash scripts/ci/verify-build.sh` passed 108 domain and three architecture tests with zero failures/errors/skips; domain coverage 276/277 lines (99.64%) and 478/489 branches (97.75%). Independent agent review found and verified fixes for idle claims, mandatory dependency documentation and claim/state mismatch. Exact-head remote CI remains required. PostgreSQL/Angular/browser/security/recovery suites are not yet implemented; no application/release completion is claimed.
+
+P48 integrated merged P01/concurrency15ba8b4, preserving its validator/tests, delivery dependency document and workflow documentation suite. Integrated verification passed 15 ledger tests, 23 delivery-policy tests and the full 108-domain/three-architecture build with unchanged coverage and no skips.
+
+Coordinator applied live ruleset25814212; initial readback exposed GitHub-added required_reviewers=[] and require_extra_approval_for_unattributed_changes=true. Both are now explicit in managed configuration. A regression verifies provider defaults and refusal to relax the extra-approval requirement. Worker made no live settings changes.
+
+## P40 coverage foundation evidence
+
+Implemented inherited JaCoCo instrumentation/report/check for all Maven modules with independent backend production-module thresholds: domain/application 95% lines and 90% branches, adapters/bootstrap 90% lines and branches. One append-only execution file per module combines unit/integration forks without summing duplicate counters. The shared post-build validator rejects missing reports/counters and omitted source files; it also requires complete Angular coverage-final JSON once handwritten frontend sources exist. Generated exclusions require individual generator-manifest entries and version provenance.
+
+`bash scripts/ci/verify-build.sh` passed locally on 2026-10-25: 108 domain tests, three architecture tests, zero failures/errors/skips; domain 276/277 lines (99.64%) and 478/489 branches (97.75%). The final full build included all 23 new synthetic gate tests, including zero-branch report edge cases. Negative cases include below-boundary line/branch thresholds, per-module masking, omitted production sources, missing reports/counters, invalid counters, Angular map truncation and generated-manifest path traversal. `git diff --check` passed. Final exact-head CI remains required.
+
+Limits: application/adapters/bootstrap are empty scaffolds, and Angular is not yet adopted on this branch; no application or Angular coverage result is claimed. Real PostgreSQL, external acceptance-process coverage merging, browser, load, security and recovery suites remain their owning tasks. Full-project P40 completion remains pending.
+
+P01 concurrency prerequisite merged at 15ba8b4 and was integrated without history rewriting. Its delivery dependency map, validator and test suite are preserved. Integrated local checks passed: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'` ran 38 tests (15 ledger + 23 coverage); documentation validation, whitespace and the full implemented build passed (108 domain + 3 architecture, zero skips; domain 276/277 lines and 478/489 branches). Remote exact-head CI remains required.
+
+P48 integrated P40 foundationbb7d4cf and replaced Python discovery entry points with a tested runner that rejects empty, skipped, failed and expected-failure suites. Guarded root suite runs 15 ledger plus 23 coverage tests; delivery-policy runs 31 tests. Live protection readback passed; coordinator recorded an administrator-verified id/version/config-hash receipt for read-only CI, which omits bypass metadata; absent/stale receipts fail.
+
+P48 public CI exposed equivalent UTC/offset spellings of updated_at; version comparison now normalizes aware ISO timestamps to UTC and rejects missing/malformed/naive values. Millisecond-change and equivalent-offset regressions pass; the administrator receipt remains unchanged.
+
+P12 prerequisite integration: P48 PR8 merge0c3ae04 reconciled; all50 root+31 delivery Python tests, full108domain+3architecture build and whitespace passed. Independent reviewed SDK safety fixes retained. Exact-head combined CI required before merge.
