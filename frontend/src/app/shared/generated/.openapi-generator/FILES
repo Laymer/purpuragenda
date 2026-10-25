@@ -5,6 +5,7 @@ api.base.service.ts
 api.module.ts
 api/api.ts
 api/catalog.service.ts
+api/session.service.ts
 configuration.ts
 encoder.ts
 git_push.sh
@@ -13,6 +14,8 @@ model/availability.ts
 model/models.ts
 model/problem.ts
 model/service.ts
+model/sessionBootstrap.ts
+model/sessionState.ts
 model/slot.ts
 param.ts
 provide-api.ts

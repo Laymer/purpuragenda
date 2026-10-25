@@ -1,6 +1,6 @@
 # Executable backend foundation
 
-The backend packages as `backend/bootstrap/target/bootstrap-0.1.0-SNAPSHOT.jar`. The serving entry point composes the current scheduling, private administrator factor, durable authentication delivery and SMTP ports. It exposes generic Actuator health only. Customer/admin HTTP, session protections, automatic worker ticks and the private operator CLI are later slices; there is no public administrator registration or authentication bypass.
+The backend packages as `backend/bootstrap/target/bootstrap-0.1.0-SNAPSHOT.jar`. The serving entry point composes the current scheduling, private administrator factor, durable authentication delivery and SMTP ports. It exposes generic Actuator health and the session bootstrap, status and logout endpoints described in docs/sessions.md. Customer/admin HTTP, login/email endpoints, request throttles, automatic worker ticks and the private operator CLI are later slices; there is no public administrator registration or authentication bypass.
 
 Use the app database role for serving and the migrator role only for the separate command:
 
@@ -21,6 +21,7 @@ Supply configuration through environment variables. The migration command needs 
 | `APP_TOTP_KEY_FILE`, `APP_DELIVERY_KEY_FILE` | Distinct 32-byte keys; final symlinks and reused material are refused |
 | `APP_TOTP_KEY_ID`, `APP_DELIVERY_KEY_ID` | Distinct safe version IDs, preserving the corresponding persistent ciphertext versions |
 | `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_MAIL_FROM` | Local/test capture transport only; restore requires no SMTP settings |
+| `APP_SECURITY_TRUSTED_PROXY_PEERS` | Optional comma-separated exact literal IPs (maximum 16, no names, ranges or spaces) whose `X-Purpuragenda-Client-IP` header is trusted; default empty |
 | Operational additions | `APP_NOTICE_VERSION`, `APP_SMTP_SECURITY`, `APP_SMTP_USER`, `APP_SMTP_PASSWORD_FILE`; TLS security is `STARTTLS_REQUIRED` or `IMPLICIT_TLS` |
 
 Local/test permits `meetings.example.invalid` only as a synthetic demonstration meeting host. It never resolves or contacts a meeting URL. This default is unavailable operationally. Runtime configuration does not constitute legal review or approval for deployment/live mail.

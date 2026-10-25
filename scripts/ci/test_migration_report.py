@@ -133,11 +133,11 @@ class MigrationReportTest(unittest.TestCase):
         report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
         report.parent.mkdir(parents=True)
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
-        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 5, 'errors="1"'),
-                                  ('<testcase><skipped/></testcase>' * 5, ''), ('<testcase><error/></testcase>' * 5, '')):
-            report.write_text(f'<testsuite name="{qualified}" tests="5" {attributes}>{cases}</testsuite>')
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 9, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 9, ''), ('<testcase><error/></testcase>' * 9, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="9" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text(f'<testsuite name="{qualified}" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        report.write_text(f'<testsuite name="{qualified}" tests="9">' + '<testcase/>' * 9 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_operator_migration_requires_its_own_database_report(self):
@@ -239,13 +239,13 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic session adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.SessionDatabaseTest.xml')
-        for count, cases, nested in ((0,0,''), (29,29,''), (30,29,''), (31,30,''),
-                                     (30,30,'<failure/>'), (30,30,'<error/>'), (30,30,'<skipped/>')):
+        for count, cases, nested in ((0,0,''), (34,34,''), (35,34,''), (36,35,''),
+                                     (35,35,'<failure/>'), (35,35,'<error/>'), (35,35,'<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="30">'
-                          + '<testcase/>' * 30 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SessionDatabaseTest" tests="35">'
+                          + '<testcase/>' * 35 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
