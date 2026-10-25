@@ -1,0 +1,11 @@
+# Guest email redemption
+
+- Agent and UTC checkpoint: Codex-worker-a, 2026-10-25T14:12:12Z.
+- Current task: P15/email-redemption; branch: task/p15-email-redemption; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/40.
+- Last pushed implementation commit:09fdd30; uncommitted changes: current-main0cbfc88 integration, production-master011activation,14-case strict-expiry regression and final evidence.
+- What works: transactional guest proof consumption, stable identity, browser-bound CREATE/exact-booking MANAGE grants and constrained derivation; current migration master orders010then011 with no temporary test execution.
+- What remains: exact published-head CI/review; P15management recovery issuance, P17atomic session exchange and P09creation consumption follow.
+- Decisions: original CREATE remains immutable except one booking/consumption binding; derived MANAGE is unique and capped at original issuance+2h. MANAGE never transfers identity. P17 will share the connection through a package-private adapter helper, with no inner commit/JDBC in application. No public endpoint or bypass.
+- Verification:09fdd30 CI40200101623 allimplemented jobs passed. Earlier native full build108domain/54application/155adapters/3architecture+6Angular+185Python passed with allcoverage. Review-requested captured-time−1µs/equality/+1µs test passes with all14realPG guest cases and rejects a temporary strict-expiry mutation; production source restored.14merged report-regression cases/docs/whitespace pass. Final actual-master native build passed108domain/64application/175adapters/3architecture,6Angular and198Python with zero failures/skips; allcoverage gates passed.31policy/contracts/protection/docs/inventory/whitespace passed. WorkerB reviewed final tree without remaining blockers; exact published-head hosted results pending. Native scanners absent; hosted results never claim local execution.
+- Next concrete action: publish tested checkpoint, request workerB exact-head review and allCI; coordinator alone merges, then claim the P15recovery-issuance follow-up.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; worktree/private/tmp/purpuragenda-p15-guest-access; sanitized failed/mutation receipts artifacts/p15-failure; stacked PR dependencies: P16PR41 merged0cbfc88; P17session/P09booking integration remain separate.

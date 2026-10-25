@@ -79,3 +79,11 @@ databaseChangeLog:
             path: 010-admin-recovery.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 011-guest-access-grants
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 011-guest-access-grants.sql
+            relativeToChangelogFile: true
+            splitStatements: false

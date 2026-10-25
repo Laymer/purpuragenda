@@ -163,6 +163,22 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.DeferredBookingIntegrityTest" tests="8"/>')
         GATE.validate(self.root)
 
+    def test_guest_access_requires_executed_redemption_binding_replay_race_and_upgrade_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestAccess.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic guest proof adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.GuestAccessDatabaseTest.xml')
+        for count, cases, nested in ((0,0,''), (13,13,''), (14,13,''), (15,14,''),
+                                     (14,14,'<failure/>'), (14,14,'<error/>'), (14,14,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.GuestAccessDatabaseTest" tests="14">'
+                          + '<testcase/>' * 14 + '</testsuite>')
+        GATE.validate(self.root)
+
+
     def test_recovery_requires_real_atomic_revocation_and_reenrollment_cases(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAdminRecovery.java'
