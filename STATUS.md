@@ -10,7 +10,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P04 — Complete scheduling policies, availability windows, exceptions, DST and horizon rules | Merged; https://github.com/Laymer/purpuragenda/pull/4; 06f829a;  |
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d;  |
-| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | In progress; claimed by Codex; P06 merged; migration review checkpoint only;  |
+| P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Draft PR; https://github.com/Laymer/purpuragenda/pull/7; P06 merged; migration review checkpoint only;  |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; depends on P07;  |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; depends on P08;  |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; depends on P09;  |
@@ -59,11 +59,11 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex, 2026-10-25T07:43:35Z.
-- Current task: P07; branch: task/p07-migrations; base: main; PR URL: pending draft creation.
-- Last pushed implementation commit: 8d7f62d on main (P06 squash); uncommitted changes: ledger and docs/handoffs/p07-migrations.md review checkpoint in the original repository checkout.
+- Agent and UTC checkpoint: Codex, 2026-10-25T07:44:41Z.
+- Current task: P07; branch: task/p07-migrations; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/7.
+- Last pushed implementation commit: 8d7f62d on main (P06 squash); last pushed P07 review checkpoint: 80f7c8c. No P07 implementation yet. uncommitted changes: none after this ledger checkpoint is committed/pushed; original checkout is on task/p07-migrations.
 - What works: P01–P06 merged; existing documentation/build/domain/architecture/coverage gates passed on their final PR heads. What remains: P07 SQL adoption/additive fixes, real PostgreSQL suite, roles/upgrade/constraint/seed checks; P08–P50 remain as recorded above.
 - Decisions: preserve recovered changesets 001–006; use additive fixes for the payment amount ceiling, nullable pending ceiling and null-sensitive snapshot agreement. No unverified SQL adopted in this checkpoint. Details and exact next command are in docs/handoffs/p07-migrations.md.
-- Verification: P06 final head 0318f1a passed documentation/build/aggregate CI, no reviews/comments blockers, merge 8d7f62d confirmed. Latest full build: 108 domain plus three architecture tests, zero skips; 276/277 lines (99.64%), 478/489 branches (97.75%). Local docker version exited 1 inside/outside sandbox: daemon unavailable. No PostgreSQL/Compose passing claim; no application milestone certified.
+- Verification: P06 final head 0318f1a passed documentation/build/aggregate CI, no reviews/comments blockers, merge 8d7f62d confirmed. Latest full build: 108 domain plus three architecture tests, zero skips; 276/277 lines (99.64%), 478/489 branches (97.75%). Local docker version exited 1 inside/outside sandbox: daemon unavailable. Original-checkout bash scripts/ci/verify-build.sh passed with the same 108+3 tests and coverage; documentation, staged whitespace and secret checks passed. P07 final checkpoint CI pending; even green existing checks do not complete P07. No PostgreSQL/Compose passing claim; no application milestone certified.
 - Next concrete action: git restore --source=recovery/2026-10-25-prototype --worktree backend/adapters/src/main/resources/db/changelog; then implement the additive fixes and mandatory real-PostgreSQL suite described in the handoff.
 - Recovery: recovery/2026-10-25-prototype at 6f9405b; ignored private secrets/toolchains/build outputs remain local in the original checkout, preserved and excluded from publication. No stacked PR dependencies; P07 starts from merged main. All prior task worktrees are clean checkpoints under /tmp/purpuragenda-p01 through /tmp/purpuragenda-p06.
