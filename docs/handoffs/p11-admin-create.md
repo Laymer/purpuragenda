@@ -1,0 +1,11 @@
+# P11 administrator booking creation with explicit overrides
+
+- Agent and UTC checkpoint: Claude-workerE, 2026-10-25T21:30:00Z.
+- Current task: P11/admin-create; branch: task/p11-admin-create; base: main (7523709); PR URL: recorded on the draft PR once opened.
+- Last pushed implementation commit: none yet; uncommitted changes: AdminBookingUnitOfWork port, AdminBooking command, PostgresAdminBooking adapter, application and actual-container tests, scheduling documentation and this handoff.
+- What works: administrator creation derives authority only from the locked persisted ADMIN session (enabled, enrolled, matching security epoch, not revoked, MFA within ten minutes, 15 minute idle, 8 hour absolute) before any receipt replay. It reuses the shared resource lock, captured database time, expiry reclamation, savepoint failure receipts and idempotency storage; stores immutable snapshots, audit, outbox and (when used) the immutable booking_override row; never charges the submission quota; and never overrides reservation overlap or nonfuture starts.
+- What remains: slice 2 configuration conflict assessment (read-only query for P31), HTTP exposure (P22), independent review and hosted checks.
+- Decisions: no migration (013 stays reserved). The administrator supplies a customer email; the stable identity is found or created in the transaction (verified_at records the administrator attestation only; no access is granted). Overrides name rules plus a reason; named blackouts need every intersecting identifier. A participant URL confirms immediately with MANUAL_APPROVAL basis, otherwise a pending hold is created and an impossible short-notice hold fails with IMPOSSIBLE_PENDING_HOLD. The reviewed calendar version is checked (additive CALENDAR_CHANGED receipt). Outbox/audit type ADMIN_CREATED is additive for P36 audience mapping.
+- Verification: native verify-build green (125 application, 357 adapters, coverage in docs/status.md); hosted checks on the draft PR.
+- Next concrete action: run the full native verification, push the draft PR and wait for hosted checks.
+- Recovery: origin/recovery/2026-10-25-prototype at 6f9405b; worktree /private/tmp/purpuragenda-p11-admin-create; stacked PR dependencies: none.
