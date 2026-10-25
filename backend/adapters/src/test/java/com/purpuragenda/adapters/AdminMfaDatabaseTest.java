@@ -136,6 +136,7 @@ class AdminMfaDatabaseTest {
             return null;
         });
         assertEquals(1,clocks.get());assertThrows(IllegalStateException.class,()->escaped.get().now());assertThrows(IllegalStateException.class,()->escaped.get().credential());
+        assertThrows(IllegalStateException.class,()->escaped.get().initialEnrollment());
         assertThrows(IllegalStateException.class,()->escaped.get().acceptStep(7));assertThrows(IllegalStateException.class,()->escaped.get().enroll(7,List.of()));
     }
     @Test void auditFailureRollsBackEnrollmentAndErasesIssuedCodeBuffers() throws Exception {
@@ -177,4 +178,19 @@ class AdminMfaDatabaseTest {
         assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{admin.enroll(7,hashes);return null;}));
         assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{admin.acceptStep(previous());return null;}));
     }
+    @Test void recoveryAndImmutableAuditHistoryPreventPasswordOnlyReenrollmentForever() throws Exception {
+        enroll();jdbc.update("UPDATE admin_user SET enrolled=false,last_totp_step=-1");
+        String value=freshCode();assertTrue(mfa.provision("owner@example.test",password()).isEmpty());
+        assertTrue(mfa.enroll("owner@example.test",password(),value).isEmpty());assertEquals(10,count("admin_recovery_code"));
+        jdbc.update("UPDATE admin_recovery_code SET consumed_at=clock_timestamp()");
+        assertTrue(mfa.provision("owner@example.test",password()).isEmpty());
+        jdbc.update("DELETE FROM admin_recovery_code");
+        assertTrue(mfa.provision("owner@example.test",password()).isEmpty());assertTrue(mfa.enroll("owner@example.test",password(),value).isEmpty());
+        assertThrows(IllegalStateException.class,()->store.locked("owner@example.test",admin->{
+            assertFalse(admin.initialEnrollment());List<String> hashes=new ArrayList<>();for(int i=0;i<10;i++)hashes.add(String.format("%064x",i));admin.enroll(7,hashes);return null;
+        }));
+        assertFalse(enrolled());assertEquals(-1,previous());assertEquals(0,count("admin_recovery_code"));assertEquals(2,count("audit_event"));
+        jdbc.update("UPDATE admin_user SET enrolled=true");assertTrue(mfa.authenticate("owner@example.test",password(),freshCode()));
+    }
+
 }

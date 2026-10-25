@@ -6,8 +6,8 @@ supply sessions, throttles and CSRF before exposing an authentication flow. P16
 recovery redemption/forced reenrollment remains a separate required slice.
 
 Password-proven provisioning returns a private copy of the encrypted-at-rest TOTP
-secret only for an enabled, unenrolled administrator. Provisioning does not enroll
-or authenticate. Enrollment requires password plus a valid6-digit TOTP; it records
+secret only for an enabled, unenrolled administrator with no recovery rows or immutable enrollment audit history. Provisioning does not enroll
+or authenticate. Ordinary enrollment has the same initial-bootstrap-only guard and requires password plus a valid6-digit TOTP; it records
 the accepted step, enables MFA and inserts exactly10 SHA256 recovery-code hashes
 atomically. The random256-bit/43-character URL-safe plaintext codes are returned
 once in a redacted, closeable value. No plaintext code enters database/audit rows.
@@ -30,7 +30,7 @@ a future private owner interface, close values promptly and never log/serialize
 these objects into general artifacts. Managed-runtime copies cannot be promised
 erased. No real owner secret or credentials are provisioned by implementation/tests.
 
-Ten real PostgreSQL cases cover independent blocked enrollment/auth races,
+Eleven real PostgreSQL cases cover independent blocked enrollment/auth races,
 monotonic replay, wrong factors/states, initial recovery hashing, audit rollback,
 one captured DB time, context lifetime/thread guards and malformed storage. Their
 own complete report is mandatory; unrelated tests cannot substitute for it.

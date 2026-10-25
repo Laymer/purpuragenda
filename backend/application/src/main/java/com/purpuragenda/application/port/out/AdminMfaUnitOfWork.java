@@ -10,6 +10,7 @@ public interface AdminMfaUnitOfWork {
     interface Admin {
         Instant now();
         Optional<Credential> credential();
+        boolean initialEnrollment();
         void enroll(long acceptedStep,List<String> recoveryHashes);
         void acceptStep(long acceptedStep);
     }
