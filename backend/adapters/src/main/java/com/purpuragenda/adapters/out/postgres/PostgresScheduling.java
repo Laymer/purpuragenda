@@ -21,11 +21,13 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
     private final TransactionTemplate transaction;
     private final TransactionTemplate reader;
     private final PostgresBookingStore store;
+    private final PostgresQuotaStore quotas;
     public PostgresScheduling(DataSource source) { this(source,Set.of("zoom.us")); }
     public PostgresScheduling(DataSource source,Set<String> meetingHosts) {
         jdbc=new JdbcTemplate(Objects.requireNonNull(source));
         if(meetingHosts==null || meetingHosts.isEmpty()) throw new IllegalArgumentException("MEETING_HOSTS_REQUIRED");
         store=new PostgresBookingStore(jdbc,Set.copyOf(meetingHosts));
+        quotas=new PostgresQuotaStore(jdbc,store);
         DataSourceTransactionManager manager=new DataSourceTransactionManager(source); manager.setEnforceReadOnly(true);
         transaction=new TransactionTemplate(manager);
         transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
@@ -104,6 +106,8 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
     private final class Tx extends ViewState implements Transaction {
         Tx(Instant now,TransactionStatus status) { super(now,status); }
         public void save(Booking booking) { active();store.save(booking,now()); }
+        public com.purpuragenda.application.scheduling.CustomerQuota quota(UUID customer) { active();return quotas.quota(customer,now()); }
+        public boolean chargeCreated(Booking booking) { active();return quotas.chargeCreated(booking,now()); }
         public List<Booking> duePending() { active();return store.duePending(now()); }
         public void expiryEffects(UUID bookingId,long expiredVersion) {
             active();

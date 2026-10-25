@@ -12,7 +12,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Draft PR; https://github.com/Laymer/purpuragenda/pull/26; availability merged PR24 at8d2ecf6; expiry slice active; creation and quotas remain |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability PR24 8d2ecf6 and expiry PR26 04d982d merged; quota slice active; creation remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P09/expiry: agent=Codex-p09; branch=task/p09-expiry; base=main; handoff=docs/handoffs/p09-expiry.md
+- P09/quotas: agent=Codex-p09; branch=task/p09-quotas; base=main; handoff=docs/handoffs/p09-quotas.md
 
 ## Active handoff
 
