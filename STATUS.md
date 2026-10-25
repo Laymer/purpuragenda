@@ -11,13 +11,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P05 — Complete immutable booking snapshots and state transitions | Merged; https://github.com/Laymer/purpuragenda/pull/5; 1470d88;  |
 | P06 — Complete external receipt, refund and reconciliation calculations | Merged; https://github.com/Laymer/purpuragenda/pull/6; 8d7f62d |
 | P07 — Adopt PostgreSQL migrations, constraints, roles and insert-only seeds | Merged; https://github.com/Laymer/purpuragenda/pull/7; ff3b33b; actual-container CI passed |
-| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Recovered WIP; transaction/idempotency core merged https://github.com/Laymer/purpuragenda/pull/18 at6c1f96f; booking/policy persistence slice pending |
-| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Recovered WIP; dependencies in docs/delivery.md;  |
+| P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
+| P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | Draft PR; https://github.com/Laymer/purpuragenda/pull/24; public availability slice; creation, quotas and expiry remain |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | Recovered WIP; dependencies in docs/delivery.md;  |
 | P11 — Complete administrator creation, overrides and configuration conflict assessment | Recovered WIP; dependencies in docs/delivery.md;  |
-| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16 atc1151b2; contract foundation PR11 bc64f01 |
+| P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
-| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundation merged PR19 e917ee3; SMTP transport claimed; encrypted-auth worker pending |
+| P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue foundations PR19 e917ee3 and PR23 6afe0e1 merged; SMTP transport claimed; auth worker pending |
 | P15 — Complete guest email proof, scoped management access and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | Recovered WIP; dependencies in docs/delivery.md;  |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -46,13 +46,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
-| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret foundation PR13 8f5ed62 and dependency foundation https://github.com/Laymer/purpuragenda/pull/17 at2c896ff merged; remaining scans pending |
+| P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; secret/dependency foundations merged; SAST merged https://github.com/Laymer/purpuragenda/pull/21 at0454505; remaining scans pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
 | P45 — Build and verify hardened local, test, operational and restore Compose profiles | Recovered WIP; dependencies in docs/delivery.md; configuration WIP; historical Docker daemon unavailable |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
-| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 atf3a4841; release publication pending |
-| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Not started; dependencies in docs/delivery.md;  |
+| P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
+| P49 — Complete Windows/WSL, development, operations, recovery and release runbooks | Recovered WIP; Mac bootstrap merged https://github.com/Laymer/purpuragenda/pull/22 at4233afd; full runbooks pending |
 | P50 — Record owner acceptance and resolve live-use prerequisites | Blocked; requires real-client/host acceptance and external settings; Intel i9 macOS MacBook host, automatic Tailscale setup requested, public medinavie.com ingress still unprovisioned; current Linux computer proposed encrypted off-host backup; existing Zoom/SMTP settings later |
 
 Delivery prerequisites and concurrent task lanes are specified in docs/delivery.md. P40 coverage foundation merged at bb7d4cf; P48 protection foundation merged at0c3ae04; P43 secret scanning foundation merged at8f5ed62; P48 suite inventory merged at f3a4841. Full P40 application-wide acceptance and P48 release publication remain pending.
@@ -65,7 +65,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-p14, 2026-10-25T09:44:19Z.
+- Agent and UTC checkpoint: Codex-p14, 2026-10-25T10:21:07Z.
 - Current task: P14/smtp-transport; branch: task/p14-smtp-transport; base: main; PR URL: pending.
 - Last pushed implementation commit: none for SMTP slice; uncommitted changes: MailDelivery port/Message tests, SmtpDelivery adapter and adapter POM plus this claim; all local only, no SMTP PR yet.
 - What works: queue foundation PR19 mergede917ee3, exact real PostgreSQL/coverage CI green.
@@ -73,4 +73,4 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - Decisions: pure-JDK redacted message/result port; restore zero network; capture only loopback or literal private mailpit; operational required TLS/identity/timeouts/debug-off; no P36 templates.
 - Verification: preserved SMTP source compiles; targeted domain/application tests including two MailDelivery tests passed; no SMTP transport passing claim until actual TLS tests/gates.
 - Next concrete action: checkpoint tested port/WIP, integrate current main, implement actual TLS tests and privacy acceptance.
-- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P13/P07/P08/P14 queue merged; P43 dependency gate mandatory.
+- Recovery: recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: P13/P07/P08/P14 queue merged; P43 dependency/SAST, Mac bootstrap and P09 availability gates preserved from current main; queue correction6afe0e1 merged.

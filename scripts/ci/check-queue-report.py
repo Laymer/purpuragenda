@@ -11,7 +11,7 @@ def validate(root):
     suite = ET.parse(report).getroot()
     count = int(suite.get('tests', '0'))
     if (suite.get('name') != 'com.purpuragenda.adapters.NotificationQueueDatabaseTest'
-            or count < 10 or count != len(list(suite.iter('testcase')))):
+            or count < 11 or count != len(list(suite.iter('testcase')))):
         raise ValueError('Incomplete mandatory PostgreSQL queue suite')
     if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
         raise ValueError('Failed or skipped PostgreSQL queue checks')

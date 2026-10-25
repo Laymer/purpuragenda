@@ -8,6 +8,10 @@ def validate(root):
     suites = [('MigrationTest', 11)]
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresScheduling.java').is_file():
         suites.append(('TransactionCoreTest', 11))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresBookingStore.java').is_file():
+        suites.append(('BookingPersistenceTest', 10))
+    if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java').is_file():
+        suites.append(('PublicSchedulingPostgresTest', 1))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
