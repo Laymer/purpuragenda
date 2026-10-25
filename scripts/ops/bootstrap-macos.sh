@@ -35,7 +35,7 @@ verify_installed() {
     [[ ! -L "$MAC_TAILSCALE_APP" && -d "$MAC_TAILSCALE_APP" && -x "$MAC_TAILSCALE_CLI" ]] || { fail UNSAFE_TAILSCALE_INSTALLATION; return 1; }
     [[ ! -e "$MAC_TAILSCALE_APP/Contents/_MASReceipt" ]] || { fail TAILSCALE_VARIANT_REVIEW_REQUIRED; return 1; }
     [[ "$(installed_version)" == "$(pin version)" ]] || { fail TAILSCALE_VERSION_REVIEW_REQUIRED; return 1; }
-    /usr/bin/codesign --verify --deep --strict -R "anchor apple generic and certificate leaf[subject.OU] = \"$(pin teamId)\"" "$MAC_TAILSCALE_APP" >/dev/null 2>&1 || { fail TAILSCALE_APP_SIGNATURE_FAILED; return 1; }
+    /usr/bin/codesign --verify --deep --strict -R "=anchor apple generic and certificate leaf[subject.OU] = \"$(pin teamId)\"" "$MAC_TAILSCALE_APP" >/dev/null 2>&1 || { fail TAILSCALE_APP_SIGNATURE_FAILED; return 1; }
 }
 
 package_hash() { /usr/bin/shasum -a 256 "$1" | /usr/bin/awk '{print $1}'; }

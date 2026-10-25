@@ -195,6 +195,11 @@ open_docker() { :; }
             self.assertNotEqual(0, result.returncode)
             self.assertFalse(marker.exists())
 
+    def test_app_verifier_passes_inline_requirement_to_codesign(self):
+        # codesign interprets a requirement without '=' as a file path.
+        self.assertIn('-R "=anchor apple generic and certificate leaf[subject.OU]', SCRIPT.read_text())
+        self.assertNotIn('-R "anchor apple generic', SCRIPT.read_text())
+
     def test_failed_admin_install_stops_before_onboarding_or_readiness(self):
         overrides = 'source ' + shlex.quote(str(SCRIPT)) + '\n'
         overrides += "platform_name() { printf Darwin; }\nhost_architecture() { printf x86_64; }\nmacos_version() { printf 15.7.8; }\npin() { return 0; }\nvalidate_pin() { return 0; }\ninstalled() { return 1; }\ndownload_package() { printf synthetic > \"$1\"; }\n"
@@ -212,6 +217,9 @@ open_docker() { :; }
         helper = (ROOT / 'scripts/ci/verify-macos-package.sh').read_text()
         self.assertIn('verify_package "$native_package_tmp/tailscale.pkg"', helper)
         self.assertIn('/usr/bin/osacompile', helper)
+        self.assertIn('/usr/sbin/pkgutil --expand-full', helper)
+        self.assertIn('verify_installed', helper)
+        self.assertIn("'appSignatureVerified':True", helper)
         self.assertNotIn('elevated_install ', helper)
 
 
