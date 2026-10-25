@@ -56,5 +56,36 @@
       "tag": "v3",
       "sha": "4bfa242aa49c5f7c6770b98670d354a7dfac05f8"
     }
+  },
+  "platforms": {
+    "linux-x86_64": {
+      "python": {
+        "version": "3.12.15",
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-unknown-linux-gnu-install_only.tar.gz",
+        "sha256": "5ff9f0602ce964a529ed1e8555d3abab6341926d724402ba9a15e9e877191124",
+        "archive": "tar.gz"
+      }
+    },
+    "macos-x86_64": {
+      "jdk": {
+        "version": "25.0.5+8",
+        "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5_8.tar.gz",
+        "sha256": "32cd4d2151c91aa00d0fc911edfd05245ed40fa6b1aa894d5f35c928cd67a59d",
+        "archive": "tar.gz",
+        "home": "Contents/Home"
+      },
+      "node": {
+        "version": "24.22.1",
+        "url": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-darwin-x64.tar.gz",
+        "sha256": "d132557e7ee2b85af08b0c8c34338e65c6430f2238d01f727728ef42dc83b035",
+        "archive": "tar.gz"
+      },
+      "python": {
+        "version": "3.12.15",
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-apple-darwin-install_only.tar.gz",
+        "sha256": "869e0b30959beccc616ce14907439f4d0b3170c5830a2362dade07f07b0ed3b8",
+        "archive": "tar.gz"
+      }
+    }
   }
 }

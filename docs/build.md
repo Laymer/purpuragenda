@@ -1,13 +1,13 @@
 # Pinned build
 
-Run on Linux x86_64; the supported Windows environment is Ubuntu 24.04 under WSL2. Installation changes only ignored repository-local tool directories. Python 3.12 or newer, HTTPS access, bash and unzip are prerequisites.
+Run on Linux x86_64 or Intel macOS; the supported Windows environment is Ubuntu 24.04 under WSL2. Installation changes only ignored repository-local tool directories. Python 3.9 or newer, HTTPS access and bash bootstrap the installer; it selects pinned Python 3.12.15 for verification without changing system Python. Apple Silicon is not yet a supported native target.
 
 ```sh
 bash scripts/dev/install-toolchain.sh
 bash scripts/ci/verify-build.sh
 ```
 
-The installer validates every archive against ops/toolchain.lock.json before extraction, including cached archives. Existing installations are rebuilt from verified archives rather than trusted through a marker file. Do not run installation concurrently with a build. The wrapper separately validates its Maven download against the committed SHA256. Run `source scripts/dev/toolchain-env.sh` in bash to use the pinned tools interactively.
+The installer validates every archive against ops/toolchain.lock.json before extraction, including cached archives. Linux JDK/Node/Maven pins are unchanged; macOS selects the same versions from native Intel archives and normalizes the JDK bundle home. Python 3.12.15 uses the Astral python-build-standalone 20261021 distribution on both platforms. The bootstrap extractor supports Apple Python 3.9 without unsafe extractall defaults: it rejects traversal, special files and external links, and creates regular files before internal links. Caches are separated by platform. Existing installations are rebuilt from verified archives rather than trusted through a marker file. Do not run installation concurrently with a build. The wrapper separately validates its Maven download against the committed SHA256. Run `source scripts/dev/toolchain-env.sh` in bash to use the pinned tools interactively. This also discovers Docker Desktop at its conventional macOS application path when Docker is absent from PATH and canonicalizes TMPDIR to avoid macOS /tmp alias discrepancies in strict artifact tests. It does not install Docker, alter its context or modify data volumes.
 
 The six Maven modules establish the domain → application → adapters → bootstrap dependency direction; acceptance-tests and quality are separate test modules. Only architecture tests exist in P02. Empty feature modules are build scaffolding and have no passing feature-test claim. Production classes trigger a required test-suite guard and report check. Missing or skipped architecture reports fail verification. PostgreSQL, HTTP, browser, coverage and operational suites are adopted and made mandatory by their assigned tasks; they are not implemented by this build checkpoint.
 
@@ -28,3 +28,9 @@ Run the isolated synthetic gate tests with `python3 -m unittest discover -s scri
 ## Angular category
 
 The adopted P12 Angular shell now runs mandatory `npm ci`, Angular tests, production build and fail-closed report/coverage checks inside every full build. See frontend.md for commands, exact pins, generated-file exclusions and evidence paths. No missing dependency/report or skipped test may pass. All handwritten frontend TS, including bootstrap, is covered independently at90% lines/branches; this does not certify later feature journeys or the real-browser matrix.
+
+## Native artifact provenance
+
+Native Temurin25.0.5+8 SHA256 was compared with both official GitHub release metadata and the [release sidecar](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5_8.tar.gz.sha256.txt). Native Node24.22.1 is pinned from the official [SHASUMS256](https://nodejs.org/dist/v24.22.1/SHASUMS256.txt). Python3.12.15 Mac/Linux hashes agree with distribution-maintainer [release metadata](https://github.com/astral-sh/python-build-standalone/releases/tag/20261021) and [SHA256SUMS](https://github.com/astral-sh/python-build-standalone/releases/download/20261021/SHA256SUMS). No system-wide package installation or version substitution is used.
+
+The existing mandatory macos-bootstrap job now installs the native tools, checks all selected versions and runs both strict Python suites in addition to native signed-package verification. Full PostgreSQL/application acceptance still runs in the mandatory build category and is exercised locally when Docker is available. Linux-only security scanner binaries and hosted CodeQL/Windows checks are not represented as locally executed Mac checks.
