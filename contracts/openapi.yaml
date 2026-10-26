@@ -30,10 +30,35 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-cache"
+                  ]
+                }
+              }
             }
           },
           "default": {
-            "description": "Safe business or transport problem",
+            "description": "Safe problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -41,9 +66,28 @@
                 }
               }
             }
+          },
+          "304": {
+            "description": "Unchanged since the supplied ETag",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-cache"
+                  ]
+                }
+              }
+            }
           }
         },
-        "security": []
+        "security": [],
+        "description": "Active catalog. Revalidated on every use (Cache-Control: no-cache) with a strong ETag; send If-None-Match to receive 304. Each service carries the version later bound by booking review."
       }
     },
     "/availability": {
@@ -60,7 +104,8 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Active service; archived or unknown services are 404."
           },
           {
             "name": "from",
@@ -85,8 +130,11 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "description": "IANA zone identifier selecting the display zone."
           }
         ],
         "responses": {
@@ -98,10 +146,117 @@
                   "$ref": "#/components/schemas/Availability"
                 }
               }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
             }
           },
           "default": {
-            "description": "Safe business or transport problem",
+            "description": "Safe problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, INVALID_ZONE, INVALID_DATE_RANGE or RANGE_TOO_WIDE",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SERVICE_UNAVAILABLE",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Whole seconds until the fixed throttle window ends (at least 1).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "TEMPORARILY_UNAVAILABLE (retryable)",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -112,7 +267,7 @@
           }
         },
         "security": [],
-        "description": "Inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Revalidate all availability during booking mutations."
+        "description": "Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled to 120 requests per minute per client address; malformed requests are charged too."
       }
     },
     "/session/bootstrap": {

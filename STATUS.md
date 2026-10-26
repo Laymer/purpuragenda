@@ -22,7 +22,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; JDBC sessions/atomic factor-proof handoff additive012 https://github.com/Laymer/purpuragenda/pull/45 confirmed merged a6a62fa after426Java/6Angular/202Python and all13checks; HTTP/CSRF/origin/throttles/cleanup remain; HTTP session/origin/CSRF foundation slice claimed by Claude-worker-b in draft https://github.com/Laymer/purpuragenda/pull/53 (native 578Java/7Angular/220Python and all coverage passed at the pushed head; hosted state on GitHub); login/email endpoints, throttles and cleanup remain |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
-| P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
+| P19 — Complete public service and availability HTTP contracts | In progress; public catalog and advisory availability GET endpoints with throttle, contract and generated SDK in draft task/p19-public-http (PR pending); dependencies in docs/delivery.md |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; Claude-workerF slice 1 receipts/reconciliation merged https://github.com/Laymer/purpuragenda/pull/56 at 2f9c894; approval/confirmation in draft slice task/p21-approval-confirmation; refunds remain; no migration; HTTP remains P22/P29 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P17/throttles: agent=Claude-workerD; branch=task/p17-throttles; base=main; handoff=docs/handoffs/p17-throttles.md
+- P19/public-http: agent=Claude-workerD; branch=task/p19-public-http; base=main; handoff=docs/handoffs/p19-public-http.md
 - P11/conflict-assessment: agent=Claude-workerE; branch=task/p11-conflict-assessment; base=main; handoff=docs/handoffs/p11-conflict-assessment.md
 - P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
 - P21/finance-commands: agent=Claude-workerF; branch=task/p21-approval-confirmation; base=main; handoff=docs/handoffs/p21-finance-commands.md
