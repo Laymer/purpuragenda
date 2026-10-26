@@ -19,11 +19,31 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
-        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession'},
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)
         self.assertEqual(len(operations), len({op['operationId'] for op in operations}))
+
+    def test_administrator_login_requires_session_csrf_and_exact_write_only_factors(self):
+        operation = self.document['paths']['/admin/login']['post']
+        self.assertEqual([{'sessionCookie': []}], operation['security'])
+        self.assertEqual(['X-CSRF-Token'], [header['name'] for header in operation['parameters']])
+        schema = self.document['components']['schemas']['AdministratorLoginRequest']
+        self.assertFalse(schema['additionalProperties'])
+        self.assertEqual({'email', 'password', 'totp'}, set(schema['required']))
+        self.assertEqual(set(schema['required']), set(schema['properties']))
+        self.assertTrue(schema['properties']['password']['writeOnly'])
+        self.assertTrue(schema['properties']['totp']['writeOnly'])
+        self.assertEqual((15, 128), (schema['properties']['password']['minLength'], schema['properties']['password']['maxLength']))
+        self.assertEqual('^[0-9]{6}$', schema['properties']['totp']['pattern'])
+        self.assertEqual('#/components/schemas/SessionBootstrap', operation['responses']['200']['content']['application/json']['schema']['$ref'])
+        self.assertIn('Set-Cookie', operation['responses']['200']['headers'])
+        self.assertIn('AUTHENTICATION_FAILED', operation['responses']['401']['description'])
+        self.assertIn('Retry-After', operation['responses']['429']['headers'])
+        for response in operation['responses'].values():
+            self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
 
     def test_all_references_resolve(self):
         def visit(value):
