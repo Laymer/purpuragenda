@@ -1,8 +1,8 @@
 # P18 password change clean replacement
 
 - Agent and UTC checkpoint: Codex-worker-a, 2026-10-26T22:37:30Z.
-- Current task: P18/password-change; branch: task/p18-password-change-v2; base: main; PR URL: not yet created.
-- Last pushed implementation commit: preserved predecessor77 d099fecd0c20499ebbe55d705b020555b9f4961a; uncommitted changes: selective tested password feature adoption onto confirmed main87021617ed3c041f458e6c567501dedf89d1433c; no published history rewritten.
+- Current task: P18/password-change; branch: task/p18-password-change-v2; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/81.
+- Last pushed implementation commit: 054db9649cdc514d08da41ea4ddc5bbc7171de30; uncommitted changes: append-only main538e335 recovery75 integration; password feature unchanged.
 - What works: same reviewed password-change source as98737/d099; prelock Argon2 derivation, current persisted account session/epoch and old-password verification under account then session locks, one postlock time, atomic credential epoch advancement/session+proof revocation/audit, ordinary login required afterward. No invented account age cutoff, HTTP or migration added.
 - What remains: newhead targeted and full native/coverage/hosted/cleanCompose/exactreview. Preserve old77 as failed policy evidence; no merge or complete milestone claim.
 - Decisions: existing77 historical merge d099 had no substantive test delta vs first parent; checker correctly rejects every such commit. Later tests cannot repair that history. Coordinator approved a clean replacement from updated main after72, selectively adopting real feature and tests in one coherent checkpoint, without weakening policy. Root72 includes diagnosed SERVER_PORT=0/Order18 test isolation correction.
@@ -11,3 +11,5 @@
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; old77worktree/private/tmp/purpuragenda-p18-password-change and branch task/p18-password-change unchanged. AccountHTTP local unpublished work preserved /private/tmp/purpuragenda-p18-account-http for later clean ancestry adoption. stacked PR dependencies: none; base confirmedmain8702161.
 
 Clean-main target now passes17domain/5application/28actual PostgreSQL, zero failures/errors/skips,95seconds;27mandatory-report regressions/docs/diff pass. Five adopted source/test files are byte-identical to independently reviewed prior77 final source. Initial handoff preflight caught capitalization of mandatory stacked dependencies field, corrected before executing tests. First coherent checkpoint includes real feature tests; verify per-commit policy immediately after commit, then publish replacement and run fresh all categories.
+
+Exact054 baseline passed1065Java/30Angular/246Python, all coverage/14hosted/cleanCompose6 and independent review.75 now confirmed main538e335; this merge has genuine new recovery tests relative first parent, unlike old77. Guard union recovery11/password28/customerHTTP6/query22/runtime14 retained;28report regressions/docs/diff pass. Fresh integrated fullnative/hosted/Compose/exactreview required.
