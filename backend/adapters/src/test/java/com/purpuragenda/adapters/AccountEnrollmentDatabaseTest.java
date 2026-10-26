@@ -72,7 +72,7 @@ class AccountEnrollmentDatabaseTest {
         assertTrue(store.enroll(new Enrollment(Secrets.token(),BROWSER,encoded)).isEmpty());
         var create=c.f.issue(Purpose.CREATE,"synthetic@example.test",null);assertTrue(enrollHashed(store,create).isEmpty());
         assertEquals(0,count("customer_account"));assertEquals(0,count("customer_identity"));assertNull(value("SELECT consumed_at FROM email_challenge WHERE id=?",proof.id()));
-        char[] secret=password();assertTrue(command.enroll(proof.token(),BROWSER,secret).isPresent());assertArrayEquals(new char[secret.length],secret);
+        char[] secret=password();assertTrue(command.enroll(proof.token(),BROWSER,secret).isPresent());assertTrue(Arrays.equals(new char[secret.length],secret));
         assertTrue(enroll(proof).isEmpty());assertEquals(1,count("customer_account"));
         c.jdbc.update("UPDATE email_challenge SET consumed_at=NULL WHERE purpose='CREATE'");
     }
@@ -88,7 +88,7 @@ class AccountEnrollmentDatabaseTest {
     @Test void anIdentityThatAlreadyHasAnAccountIsNeverReplacedAndTheNewProofIsNotConsumed() {
         assertTrue(enroll(proof("synthetic@example.test")).isPresent());String hash=value("SELECT password_hash FROM customer_account");
         var second=proof("synthetic@example.test");assertTrue(enrollHashed(store,second).isEmpty());
-        assertEquals(1,count("customer_account"));assertEquals(hash,value("SELECT password_hash FROM customer_account"));assertNull(value("SELECT consumed_at FROM email_challenge WHERE id=?",second.id()));
+        assertEquals(1,count("customer_account"));assertTrue(hash.equals(value("SELECT password_hash FROM customer_account")));assertNull(value("SELECT consumed_at FROM email_challenge WHERE id=?",second.id()));
     }
 
     @Test void invalidPasswordIsRejectedBeforeAnyProofIsConsumed() {
@@ -177,6 +177,23 @@ class AccountEnrollmentDatabaseTest {
             try(var rows=query.executeQuery()) { assertTrue(rows.next());assertTrue(rows.getBoolean(1)); }
         }
         c.f.database.denied("23514","INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_changed_at) VALUES(gen_random_uuid(),?,clock_timestamp(),'incomplete@example.test',clock_timestamp())",incomplete);
+    }
+
+    @Test void additiveUpgradeRejectsExistingIncompleteCredentialsWithoutInventingOrErasingData() throws Exception {
+        c.f.database.newSchema();c.f.database.migrate(14);
+        UUID customer=UUID.randomUUID(),account=UUID.randomUUID();
+        try(var connection=c.f.database.connection(MigrationTest.APP)) {
+            MigrationTest.execute(connection,"INSERT INTO customer_identity VALUES(?,'incomplete@example.test',clock_timestamp())",customer);
+            MigrationTest.execute(connection,"""
+                INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_changed_at)
+                VALUES(?,?,clock_timestamp(),'incomplete@example.test',clock_timestamp())
+                """,account,customer);
+        }
+        var failure=assertThrows(AssertionError.class,()->c.f.database.migrate(0));
+        assertEquals("MIGRATION_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(14,c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(1,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account WHERE password_hash IS NULL AND login_email='incomplete@example.test'"));
+        assertEquals(0,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='customer_account'::regclass AND conname='account_credential_shape_v2'"));
     }
 
     @ParameterizedTest @ValueSource(strings={"customer_profile","customer_account","audit_event"})

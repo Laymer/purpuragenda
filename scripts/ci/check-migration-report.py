@@ -42,7 +42,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSecurityCleanup.java').is_file():
         suites.append(('SecurityCleanupDatabaseTest', 18))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountEnrollment.java').is_file():
-        suites.append(('AccountEnrollmentDatabaseTest', 19))
+        suites.append(('AccountEnrollmentDatabaseTest', 20))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')

@@ -284,13 +284,13 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True); source.write_text('synthetic account enrollment adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountEnrollmentDatabaseTest.xml')
-        for count, cases, nested in ((0, 0, ''), (18, 18, ''), (19, 18, ''), (20, 19, ''),
-                                     (19, 19, '<failure/>'), (19, 19, '<error/>'), (19, 19, '<skipped/>')):
+        for count, cases, nested in ((0, 0, ''), (19, 19, ''), (20, 19, ''), (21, 20, ''),
+                                     (20, 20, '<failure/>'), (20, 20, '<error/>'), (20, 20, '<skipped/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="{count}">'
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="19">'
-                          + '<testcase/>' * 19 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="20">'
+                          + '<testcase/>' * 20 + '</testsuite>')
         GATE.validate(self.root)
 
 

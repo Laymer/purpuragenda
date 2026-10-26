@@ -23,7 +23,7 @@ class AccountEnrollmentTest {
     @Test void validPasswordIsHashedOnceBeforeTheStoreSeesOnlyTheEncodedValueAndTheBufferIsCleared() {
         result=Optional.of(new Enrolled(UUID.randomUUID(),UUID.randomUUID(),Instant.EPOCH));char[] password=password(15);
         assertEquals(result,command.enroll(TOKEN,BROWSER,password));
-        assertEquals(1,hashes);assertEquals("encoded-15",stored.getFirst().passwordHash());assertArrayEquals(new char[15],password);
+        assertEquals(1,hashes);assertEquals("encoded-15",stored.getFirst().passwordHash());assertTrue(Arrays.equals(new char[15],password));
         assertEquals("AccountEnrollment[REDACTED]",stored.getFirst().toString());assertEquals("AccountEnrolled[REDACTED]",result.get().toString());
     }
 
@@ -31,7 +31,7 @@ class AccountEnrollmentTest {
         for(char[] invalid:new char[][]{password(14),password(129),"short".toCharArray(),(("a".repeat(20))+"\u0007").toCharArray(),(("a".repeat(20))+"\ud800").toCharArray()}) {
             char[] copy=invalid.clone();
             assertEquals("INVALID_ACCOUNT_PASSWORD",assertThrows(DomainFailure.class,()->command.enroll(TOKEN,BROWSER,invalid)).code());
-            assertArrayEquals(new char[copy.length],invalid);
+            assertTrue(Arrays.equals(new char[copy.length],invalid));
         }
         assertEquals("INVALID_ACCOUNT_PASSWORD",assertThrows(DomainFailure.class,()->command.enroll(TOKEN,BROWSER,null)).code());
         assertEquals(0,hashes);assertTrue(stored.isEmpty());
