@@ -1,0 +1,11 @@
+# Booking review context
+
+The public `GET /api/v1/booking-context?serviceId=<UUID>` endpoint returns one read-only snapshot of the current service, scheduling policy, authoritative server time, Brussels calendar-month horizon and configured notice. It never reserves capacity or reads customer details. Unknown and archived services return the same404; malformed or duplicate parameters return400. Responses and fixed safe errors use `Cache-Control: no-store`.
+
+The review screen must compare returned service/policy versions with the selected slot, display actual duration and price, explain the pending hold and show the customer cutoff. `pendingLifetimeSeconds` and `expiryBufferSeconds` describe the hold rule: expiry is the earlier of creation plus lifetime and start minus buffer. Submission computes the actual deadline using its own captured transaction time. `customerCutoffSeconds` is elapsed time before the start, with equality allowed. The horizon uses a calendar month in Europe/Brussels. The120-minute reservation is separate from the actual service duration.
+
+Notice text is plaintext. Render it through text binding, never as HTML. Before submission, show the returned notice and send its exact version with the reviewed service/policy versions. Commands revalidate all three versions atomically; any change requires refreshed review. The context response is advisory and does not guarantee slot availability.
+
+Local, test and restore modes use a clearly labelled synthetic notice. Operational serving additionally requires `APP_NOTICE_FILE`, a regular non-symlink UTF-8 file of at most65536bytes and16000Unicode code points, and an explicit non-local `APP_NOTICE_VERSION`. CRLF is normalized to LF. Invalid/missing/oversized configuration fails without exposing the file path or provider exception. Review and submission use the same immutable configured notice during one process lifetime; deploying a new notice requires a new version and process restart. The private administrator operator does not serve this endpoint.
+
+Loading configured text does not establish legal approval. Reviewed privacy, retention, business, cancellation and payment language remain manual release evidence. Local fixtures must never be presented as approved notices or live supplier acceptance.

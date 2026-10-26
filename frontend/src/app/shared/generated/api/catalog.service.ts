@@ -19,6 +19,8 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 // @ts-ignore
 import { Availability } from '../model/availability';
 // @ts-ignore
+import { BookingReviewContext } from '../model/bookingReviewContext';
+// @ts-ignore
 import { Problem } from '../model/problem';
 // @ts-ignore
 import { Service } from '../model/service';
@@ -134,6 +136,75 @@ export class CatalogService extends BaseService {
         let localVarPath = `/availability`;
         const { basePath, withCredentials } = this.configuration;
         return this.httpClient.request<Availability>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Retrieve current active service, policy and configured notice in one anonymous database snapshot. Exactly one canonical serviceId parameter is required; unknown parameters are rejected. No customer data, session touch, reservation or mutation.
+     * @endpoint get /booking-context
+     * @param serviceId Canonical UUID of the selected active service.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getBookingContext(serviceId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<BookingReviewContext>;
+    public getBookingContext(serviceId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<BookingReviewContext>>;
+    public getBookingContext(serviceId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<BookingReviewContext>>;
+    public getBookingContext(serviceId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (serviceId === null || serviceId === undefined) {
+            throw new Error('Required parameter serviceId was null or undefined when calling getBookingContext.');
+        }
+
+        let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'serviceId',
+            <any>serviceId,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        let localVarHeaders = this.defaultHeaders;
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/booking-context`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<BookingReviewContext>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters.toHttpParams(),
