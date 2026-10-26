@@ -1,0 +1,9 @@
+{
+  "suite": "CustomerBookingQueryPostgresTest",
+  "tests": 22,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "cause": "Read snapshot accepted session activity after captured database time",
+  "status": "failed-before-fix"
+}

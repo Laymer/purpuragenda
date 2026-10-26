@@ -60,9 +60,9 @@ public final class PostgresCustomerBooking implements CustomerBookingUnitOfWork 
             }
             actor=grant.id();
         } else if(initial.kind().equals("ACCOUNT")) {
-            List<UUID> accounts=jdbc.query("SELECT id FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
-                    (r,n)->r.getObject(1,UUID.class),initial.account(),initial.customer());
-            if(accounts.size()!=1)throw denied();actor=accounts.getFirst();
+            List<Long> accounts=jdbc.query("SELECT credential_version FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
+                    (r,n)->r.getLong(1),initial.account(),initial.customer());
+            if(accounts.size()!=1 || !Objects.equals(accounts.getFirst(),initial.accountVersion()))throw denied();actor=initial.account();
         } else throw denied();
         // Lock order: resource -> grant/account -> session -> booking/customer. Recheck after the lock.
         PersistedSession current=PersistedSession.find(jdbc,binding,true);

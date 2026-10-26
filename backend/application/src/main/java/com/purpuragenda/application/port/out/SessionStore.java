@@ -43,6 +43,7 @@ public interface SessionStore {
     /** Verifies both current persisted session and current CSRF digest. Input CSRF buffer is consumed. */
     boolean csrf(SessionReference session,char[] csrf);
     Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken);
+    Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken);
     Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof);
     boolean revoke(SessionReference session);
     private static void digest(String value) {
