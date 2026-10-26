@@ -107,6 +107,12 @@ class AdministratorConfigurationTest {
         assertThrows(NullPointerException.class,()->new AdministratorConfiguration(null));
     }
 
+    @Test void reviewsCopyTheirAcknowledgementsAndBoundTheReason() {
+        var ids=new HashSet<>(Set.of(UUID.randomUUID()));var review=new Review(REASON,ids);ids.clear();
+        assertEquals(1,review.acknowledgedBookingIds().size());assertThrows(UnsupportedOperationException.class,()->review.acknowledgedBookingIds().clear());
+        assertThrows(DomainFailure.class,()->new Review("x".repeat(501),Set.of()));assertThrows(NullPointerException.class,()->new Review(REASON,null));
+    }
+
     PolicyValues values(int grid,int capacity){return new PolicyValues(grid,capacity,Duration.ZERO,Duration.ofDays(400),Duration.ZERO,Duration.ZERO);}
 
     static class Fixture extends PublicSchedulingTest.Fixture implements ConfigurationUnitOfWork,Configuration {
