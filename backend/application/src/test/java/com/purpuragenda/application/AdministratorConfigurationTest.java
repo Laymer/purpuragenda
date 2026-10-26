@@ -1,0 +1,185 @@
+package com.purpuragenda.application;
+
+import com.purpuragenda.application.port.out.ConfigurationUnitOfWork;
+import com.purpuragenda.application.port.out.ConfigurationUnitOfWork.*;
+import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
+import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
+import com.purpuragenda.application.scheduling.*;
+import com.purpuragenda.application.scheduling.AdministratorConfiguration.*;
+import com.purpuragenda.application.scheduling.ConfigurationConflicts.Conflict;
+import com.purpuragenda.application.scheduling.ConfigurationConflicts.Reason;
+import com.purpuragenda.domain.DomainFailure;
+import com.purpuragenda.domain.booking.Booking;
+import com.purpuragenda.domain.scheduling.*;
+import java.time.*;
+import java.util.*;
+import java.util.function.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class AdministratorConfigurationTest {
+    final Fixture f=new Fixture();
+    final AdministratorConfiguration config=new AdministratorConfiguration(f);
+    final SessionBinding session=new SessionBinding(UUID.randomUUID(),"e".repeat(64));
+    static final String REASON="Synthetic configuration reason";
+    Review review(UUID... acknowledged){return new Review(REASON,Set.of(acknowledged));}
+    Map<DayOfWeek,List<AvailabilityCalendar.Window>> weekly(int from,int to){Map<DayOfWeek,List<AvailabilityCalendar.Window>> days=new EnumMap<>(DayOfWeek.class);for(var day:DayOfWeek.values())days.put(day,List.of(new AvailabilityCalendar.Window(from,to)));return days;}
+    Receipt replace(long version,Review review,int from,int to){return config.replaceWeekly(session,"synthetic-key",version,weekly(from,to),review);}
+    Booking futureBooking(int hourUtc){f.policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);Booking b=f.pending(Instant.parse(String.format("2026-01-05T%02d:00:00Z",hourUtc)));f.bookings=List.of(b);return b;}
+
+    @Test void weeklyReplacementAdvancesTheVersionAndRecordsExactlyOneSaveAndEffect() {
+        Receipt receipt=replace(1,review(),600,1000);
+        assertEquals(new Receipt(Code.OK,AdministratorConfiguration.CALENDAR_ID,2),receipt);
+        assertEquals(List.of("expiry","attempt","save-calendar","effects"),f.steps);assertEquals(2,f.calendar.version());
+        assertEquals(Operation.REPLACE_WEEKLY,f.operation);assertEquals(2,f.effectVersion);assertEquals(REASON,f.effectReason);assertTrue(f.acknowledged.isEmpty());
+        assertSame(session,f.command.session());assertEquals("ConfigurationCommand[REDACTED]",f.command.toString());assertEquals("ConfigurationReview[REDACTED]",review().toString());
+        // A day omitted from the map becomes closed.
+        f.reset();var monday=new EnumMap<DayOfWeek,List<AvailabilityCalendar.Window>>(DayOfWeek.class);monday.put(DayOfWeek.MONDAY,List.of(new AvailabilityCalendar.Window(540,600)));
+        assertTrue(config.replaceWeekly(session,"k2",2,monday,review()).success());assertTrue(f.calendar.weekly().get(DayOfWeek.TUESDAY).isEmpty());
+    }
+
+    @Test void staleVersionsAndNoOpsAreExpectedReceiptsWithoutWrites() {
+        assertEquals(Receipt.failure(Code.CALENDAR_CHANGED),replace(9,review(),600,1000));
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.replaceWeekly(session,"k",1,new EnumMap<>(f.calendar.weekly()),review()));
+        assertEquals(Receipt.failure(Code.POLICY_CHANGED),config.updatePolicy(session,"k",9,values(60,3),review()));
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.updatePolicy(session,"k",1,new PolicyValues(f.policy.gridMinutes(),f.policy.dailyCapacity(),f.policy.minimumNotice(),f.policy.pendingLifetime(),f.policy.expiryBuffer(),f.policy.customerCutoff()),review()));
+        assertEquals(0,f.saves);assertEquals(1,f.calendar.version());
+    }
+
+    @Test void futureConflictsNeedTheExactReasonedAcknowledgement() {
+        Booking late=futureBooking(8);Booking other=f.pending(Instant.parse("2026-01-06T07:00:00Z"));
+        f.bookings=List.of(late);
+        // 09:00 Brussels is outside 10:00-12:00, so the booking conflicts.
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),replace(1,review(),600,720));
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),replace(1,review(late.id(),other.id()),600,720));
+        assertEquals(0,f.saves);
+        assertTrue(replace(1,review(late.id()),600,720).success());
+        assertEquals(List.of(late.id()),f.acknowledged.stream().map(Conflict::bookingId).toList());assertEquals(1,f.saves);
+        // Acknowledging a booking that does not conflict is refused as stale review.
+        f.reset();assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),replace(2,review(late.id()),0,1440));
+    }
+
+    @Test void dateExceptionsAreSetReplacedAndRemovedOnlyForTodayOrLaterBrusselsDates() {
+        var closed=new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.CLOSED,List.of());LocalDate today=LocalDate.of(2026,1,1);
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.setDateException(session,"k",1,today.minusDays(1),closed,review()));
+        assertTrue(config.setDateException(session,"k1",1,today,closed,review()).success());assertEquals(closed,f.calendar.exceptions().get(today));
+        var replaced=new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.REPLACE,List.of(new AvailabilityCalendar.Window(600,700)));
+        assertTrue(config.setDateException(session,"k2",2,today,replaced,review()).success());assertEquals(replaced,f.calendar.exceptions().get(today));
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.removeDateException(session,"k3",3,today.plusDays(1),review()));
+        assertTrue(config.removeDateException(session,"k4",3,today,review()).success());assertTrue(f.calendar.exceptions().isEmpty());
+        assertThrows(DomainFailure.class,()->config.setDateException(session,"k",4,null,closed,review()));
+        assertThrows(DomainFailure.class,()->config.removeDateException(session,"k",4,null,review()));
+    }
+
+    @Test void blackoutsAreAddedOnceRemovedByIdAndConflictWithFutureBookings() {
+        Booking booking=futureBooking(8);UUID id=UUID.randomUUID();Instant start=booking.start();
+        var blackout=new AvailabilityCalendar.Blackout(id,new ReservationInterval(start.plusSeconds(60),start.plusSeconds(600)),"Synthetic closure reason");
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.addBlackout(session,"k",1,blackout,review()));
+        assertTrue(config.addBlackout(session,"k",1,blackout,review(booking.id())).success());assertEquals(Set.of(Reason.HARD_BLACKOUT),f.acknowledged.getFirst().reasons());
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.addBlackout(session,"dup",2,blackout,review()));
+        var past=new AvailabilityCalendar.Blackout(UUID.randomUUID(),new ReservationInterval(f.now.minusSeconds(600),f.now),"Synthetic closure reason");
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.addBlackout(session,"past",2,past,review()));
+        assertEquals(Receipt.failure(Code.INVALID_CONFIGURATION),config.removeBlackout(session,"unknown",2,UUID.randomUUID(),review()));
+        f.bookings=List.of();assertTrue(config.removeBlackout(session,"rm",2,id,review()).success());assertTrue(f.calendar.blackouts().isEmpty());
+        assertThrows(DomainFailure.class,()->config.removeBlackout(session,"rm2",3,null,review()));
+        assertThrows(NullPointerException.class,()->config.addBlackout(session,"k",3,null,review()));
+    }
+
+    @Test void policyEditsAppendTheNextVersionAndLoweredCapacityConflictsNeedAcknowledgement() {
+        Booking a=futureBooking(8);f.now=f.now.plusSeconds(1);Booking b=f.pending(Instant.parse("2026-01-05T11:00:00Z"));f.now=f.now.minusSeconds(1);f.bookings=List.of(a,b);
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.updatePolicy(session,"k",1,values(30,1),review()));
+        assertTrue(config.updatePolicy(session,"k",1,values(30,1),review(b.id())).success());
+        assertEquals(2,f.policy.version());assertEquals(Operation.UPDATE_POLICY,f.operation);assertEquals(1,f.policy.dailyCapacity());
+        assertEquals(new Receipt(Code.OK,AdministratorConfiguration.POLICY_ID,3),config.updatePolicy(session,"k2",2,values(30,2),review()));
+        assertThrows(DomainFailure.class,()->config.updatePolicy(session,"k",3,values(0,1),review()));
+        assertThrows(DomainFailure.class,()->config.updatePolicy(session,"k",0,values(30,1),review()));
+        assertThrows(DomainFailure.class,()->new Review("short",Set.of()));
+    }
+
+    @Test void requestFingerprintsCoverEveryFieldAndUnexpectedFailuresPropagate() {
+        Set<String> seen=new HashSet<>();
+        for(Runnable call:List.<Runnable>of(()->replace(1,review(),600,1000),()->replace(1,review(),600,1001),()->replace(1,new Review("Another synthetic reason",Set.of()),600,1000),
+                ()->replace(1,review(UUID.randomUUID()),600,1000),()->replace(2,review(),600,1000),()->config.updatePolicy(session,"synthetic-key",1,values(60,3),review()))) {
+            f.reset();f.command=null;call.run();assertNotNull(f.command);seen.add(f.command.fingerprint());
+        }
+        assertEquals(6,seen.size());
+        f.reset();f.effectFailure=new IllegalStateException("SYNTHETIC");assertSame(f.effectFailure,assertThrows(IllegalStateException.class,()->replace(f.calendar.version(),review(),100,200)));
+        assertThrows(NullPointerException.class,()->new AdministratorConfiguration(null));
+    }
+
+    @Test void reviewsCopyTheirAcknowledgementsAndBoundTheReason() {
+        var ids=new HashSet<>(Set.of(UUID.randomUUID()));var review=new Review(REASON,ids);ids.clear();
+        assertEquals(1,review.acknowledgedBookingIds().size());assertThrows(UnsupportedOperationException.class,()->review.acknowledgedBookingIds().clear());
+        assertThrows(DomainFailure.class,()->new Review("x".repeat(501),Set.of()));assertThrows(NullPointerException.class,()->new Review(REASON,null));
+    }
+
+    @Test void policyCapsAreValidatedBeforeAnyTransactionAtTheBoundaryAndOneBeyond() {
+        var max=AdministratorConfiguration.MAX_DURATION;int cap=AdministratorConfiguration.MAX_DAILY_CAPACITY;
+        assertEquals(Duration.ofDays(366),max);assertEquals(100,cap);
+        assertTrue(config.updatePolicy(session,"at-cap",1,new PolicyValues(30,cap,max,max,max,max),review()).success());
+        assertEquals(cap,f.policy.dailyCapacity());f.command=null;
+        for(Supplier<PolicyValues> beyond:List.<Supplier<PolicyValues>>of(
+                ()->new PolicyValues(30,cap+1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,max.plusNanos(1),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,max.plusNanos(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ofDays(1),max.plusNanos(1),Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,max.plusNanos(1)),
+                ()->new PolicyValues(30,0,Duration.ofDays(Long.MAX_VALUE/86400),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,-1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(0,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(121,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ofSeconds(-1),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ZERO,Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,null,Duration.ofDays(1),Duration.ZERO,Duration.ZERO)))
+            assertEquals("INVALID_CONFIGURATION",assertThrows(DomainFailure.class,beyond::get).code());
+        assertNull(f.command);   // nothing reached the unit of work
+    }
+
+    /** Mutation paths on real calendar dates: spring-forward day, fall-back day and a month-end reservation crossing midnight. */
+    void openAllDay(){f.calendar=new AvailabilityCalendar(weekly(0,1440),Map.of(),List.of(),1);}
+    Booking at(String start){f.now=f.now.plusSeconds(1);try{return f.pending(Instant.parse(start));}finally{f.now=f.now.minusSeconds(1);}}
+
+    @Test void dateExceptionOnTheSpringForwardDayNeedsTheExactAcknowledgement() {
+        Booking nine=at("2027-03-28T07:00:00Z");Booking noon=at("2027-03-28T10:00:00Z");f.bookings=List.of(nine,noon);   // 09:00 and 12:00 at +02:00
+        LocalDate day=LocalDate.of(2027,3,28);var window=new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.REPLACE,List.of(new AvailabilityCalendar.Window(600,1200)));
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.setDateException(session,"k",1,day,window,review()));
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.setDateException(session,"k2",1,day,window,review(nine.id(),noon.id())));
+        assertTrue(config.setDateException(session,"k3",1,day,window,review(nine.id())).success());
+        assertEquals(List.of(nine.id()),f.acknowledged.stream().map(Conflict::bookingId).toList());assertEquals(window,f.calendar.exceptions().get(day));
+    }
+
+    @Test void weeklyReplacementOnTheFallBackDayTreatsTheRepeatedHourByLocalMinute() {
+        openAllDay();Booking first=at("2027-10-31T00:30:00Z");f.bookings=List.of(first);   // 02:30 at +02:00, minute 150
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),replace(1,review(),0,150));
+        assertTrue(replace(1,review(first.id()),0,150).success());assertEquals(first.id(),f.acknowledged.getFirst().bookingId());
+        f.reset();assertTrue(replace(2,review(),0,151).success());assertTrue(f.acknowledged.isEmpty());   // minute 150 is inside again
+    }
+
+    @Test void blackoutOnAMonthEndReservationCrossingMidnightNeedsTheExactAcknowledgement() {
+        openAllDay();Booking late=at("2027-01-31T22:30:00Z");Booking next=at("2027-02-01T08:00:00Z");f.bookings=List.of(late,next);   // 23:30 on 31 Jan until 01:30 on 1 Feb
+        Instant midnight=Instant.parse("2027-01-31T23:30:00Z");
+        var blackout=new AvailabilityCalendar.Blackout(UUID.randomUUID(),new ReservationInterval(midnight,midnight.plusSeconds(600)),"Synthetic closure reason");
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.addBlackout(session,"k",1,blackout,review(next.id())));
+        assertTrue(config.addBlackout(session,"k2",1,blackout,review(late.id())).success());
+        assertEquals(Set.of(blackout.id()),f.acknowledged.getFirst().blackoutIds());
+    }
+
+    PolicyValues values(int grid,int capacity){return new PolicyValues(grid,capacity,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);}
+
+    static class Fixture extends PublicSchedulingTest.Fixture implements ConfigurationUnitOfWork,Configuration {
+        Command command;Operation operation;long effectVersion;String effectReason;List<Conflict> acknowledged=List.of();RuntimeException effectFailure;
+        final List<String> steps=new ArrayList<>();int saves;
+        Fixture(){policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);}
+        void reset(){steps.clear();saves=0;effectFailure=null;acknowledged=List.of();}
+        public Receipt execute(Command supplied,Function<Configuration,Receipt> work){command=supplied;steps.clear();return work.apply(this);}
+        public List<Booking> duePending(){steps.add("expiry");return List.of();}
+        public void expiryEffects(UUID id,long version){throw new AssertionError("nothing is due");}
+        public Receipt attempt(Supplier<Receipt> mutation){steps.add("attempt");return mutation.get();}
+        public CustomerQuota quota(UUID customer){throw new AssertionError("configuration never reads quotas");}
+        public boolean chargeCreated(Booking value){throw new AssertionError("configuration never charges");}
+        public void save(Booking value){throw new AssertionError("configuration never saves bookings");}
+        public void saveCalendar(AvailabilityCalendar next){steps.add("save-calendar");saves++;assertEquals(calendar.version()+1,next.version());calendar=next;}
+        public void savePolicy(SchedulingPolicy next){steps.add("save-policy");saves++;assertEquals(policy.version()+1,next.version());policy=next;}
+        public void changedEffects(Operation op,long version,String reason,List<Conflict> conflicts){steps.add("effects");operation=op;effectVersion=version;effectReason=reason;acknowledged=conflicts;if(effectFailure!=null)throw effectFailure;}
+    }
+}
