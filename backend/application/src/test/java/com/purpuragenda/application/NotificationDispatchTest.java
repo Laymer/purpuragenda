@@ -173,4 +173,9 @@ class NotificationDispatchTest {
             assertThrows(IllegalArgumentException.class,()->new BookingNotificationWorker(p,p,p,false,bad));
         assertThrows(NullPointerException.class,()->new BookingNotificationWorker(null,p,p,false));
     }
+
+    @Test void planSpecsAreImmutableCopies() {
+        var specs=new ArrayList<>(List.of(new Spec("OWNER","OWNER_ACTION_REFUND")));var jobs=new Jobs(specs);specs.clear();
+        assertEquals(1,jobs.specs().size());assertThrows(UnsupportedOperationException.class,()->jobs.specs().clear());
+    }
 }
