@@ -7,10 +7,11 @@ import com.purpuragenda.application.port.out.*;
 import com.purpuragenda.application.port.out.MailDelivery.Result;
 import com.purpuragenda.application.port.out.OutboxStore.Outcome;
 import java.nio.file.Path;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -201,6 +202,78 @@ class BookingNotificationDatabaseTest {
         assertEquals(BookingNotificationWorker.Outcome.STALE,guarded.tick());
         assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
         assertEquals(1,count("notification_job WHERE booking_id='"+id+"' AND state='LEASED'"));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"lease_token","lease_until"})
+    void incompleteLeaseMetadataCannotDiscloseFactsOrAcknowledgeDelivery(String missing) {
+        book("customer@example.test",3,9);expander.drain(10);var lease=queue.claimBooking().orElseThrow();
+        c.jdbc.update("UPDATE notification_job SET "+missing+"=NULL WHERE id=?",lease.id());
+        assertTrue(store.load(lease).isEmpty());assertFalse(queue.renew(lease));assertFalse(queue.sent(lease));
+        assertFalse(queue.failed(lease));assertFalse(queue.suppressed(lease,"SUPERSEDED"));assertEquals(0,attempts("TRUE"));
+        var replacement=queue.claimBooking().orElseThrow();assertEquals(lease.id(),replacement.id());
+        assertFalse(lease.token().equals(replacement.token()));assertTrue(store.load(replacement).isPresent());
+    }
+
+    @Test void missingOperatorControlFailsClosedForClaimsAndRenewals() {
+        book("customer@example.test",3,9);expander.drain(10);var lease=queue.claimBooking().orElseThrow();
+        c.jdbc.update("DELETE FROM operation_control");assertFalse(queue.renew(lease));
+        var failure=assertThrows(IllegalStateException.class,()->worker().tick());
+        assertEquals("NOTIFICATION_WORKER_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
+        c.jdbc.update("INSERT INTO operation_control(id) VALUES(1)");assertTrue(queue.renew(lease));
+        assertThrows(IllegalArgumentException.class,()->queue.suppressed(lease,null));
+        assertThrows(IllegalArgumentException.class,()->queue.suppressed(lease,"A".repeat(65)));
+        assertTrue(store.load(lease).isPresent());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"outbox_event","notification_job"})
+    void driverReadFailureRollsBackAndReleasesTheLockedRowWithoutPrivateErrors(String table) throws Exception {
+        book("customer@example.test",3,9);NotificationQueue.Lease lease=null;
+        if(table.equals("notification_job")){expander.drain(10);lease=queue.claimBooking().orElseThrow();}
+        var current=lease;var source=brokenRead(table);
+        var failure=assertThrows(IllegalStateException.class,()->{
+            if(current==null)new PostgresOutboxStore(source).expandNext(NotificationPlanner::plan);
+            else new PostgresBookingNotificationStore(source).load(current);
+        });
+        assertEquals("NOTIFICATION_STORAGE_FAILED",failure.getMessage());assertNull(failure.getCause());assertEquals(0,failure.getSuppressed().length);
+        assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
+        try(var connection=c.f.source.getConnection()) {
+            connection.setAutoCommit(false);
+            MigrationTest.execute(connection,"SELECT id FROM "+table+" FOR UPDATE NOWAIT");connection.rollback();
+        }
+        if(lease==null){assertEquals(0,count("notification_job WHERE template<>'AUTH'"));assertEquals(1,expander.drain(10));}
+        else assertTrue(store.load(lease).isPresent());
+    }
+
+    DataSource brokenRead(String table) {
+        return GuestAccessDatabaseTest.proxy(DataSource.class,(p,m,a)->{
+            Object connection=GuestAccessDatabaseTest.invoke(c.f.source,m,a);
+            if(!m.getName().equals("getConnection"))return connection;
+            return GuestAccessDatabaseTest.proxy(Connection.class,(cp,cm,ca)->{
+                Object query=GuestAccessDatabaseTest.invoke(connection,cm,ca);
+                if(!cm.getName().equals("prepareStatement") || !((String)ca[0]).contains("FROM "+table))return query;
+                return GuestAccessDatabaseTest.proxy(PreparedStatement.class,(qp,qm,qa)->{
+                    Object rows=GuestAccessDatabaseTest.invoke(query,qm,qa);
+                    if(!qm.getName().equals("executeQuery"))return rows;
+                    return GuestAccessDatabaseTest.proxy(ResultSet.class,(rp,rm,ra)->{
+                        if(rm.getName().equals("getObject"))throw new SQLException("SYNTHETIC_READ_FAILURE");
+                        return GuestAccessDatabaseTest.invoke(rows,rm,ra);
+                    });
+                });
+            });
+        });
+    }
+
+    @Test void secondAudienceInsertFailureRollsBackTheFirstJobAndExpansionMark() throws Exception {
+        book("customer@example.test",3,9);
+        try(var connection=c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"CREATE FUNCTION reject_owner_notification() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.audience='OWNER' THEN RAISE EXCEPTION 'SYNTHETIC_FAILURE'; END IF; RETURN NEW; END $$");
+            MigrationTest.execute(connection,"CREATE TRIGGER reject_owner_notification BEFORE INSERT ON notification_job FOR EACH ROW EXECUTE FUNCTION reject_owner_notification()");
+        }
+        assertEquals("OUTBOX_EXPANSION_FAILED",assertThrows(IllegalStateException.class,expander::tick).getMessage());
+        assertEquals(0,count("notification_job WHERE template<>'AUTH'"));assertEquals(1,count("outbox_event WHERE expanded_at IS NULL"));
+        try(var connection=c.f.database.connection(MigrationTest.MIGRATOR)) {MigrationTest.execute(connection,"DROP TRIGGER reject_owner_notification ON notification_job");}
+        assertEquals(1,expander.drain(10));assertEquals(2,drainWorker().size());assertEquals(2,mail.sent.size());
     }
 
     @Test void expansionRollsBackWhenTheStoreFailsAndTwentyIndependentExpandersExpandEachEventExactlyOnce() throws Exception {

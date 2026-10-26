@@ -4,7 +4,7 @@ import com.purpuragenda.application.port.out.OutboxStore;
 import com.purpuragenda.application.port.out.OutboxStore.Outcome;
 import java.util.*;
 
-/** Bounded expansion: one failing or unknown event never prevents the others from being expanded. */
+/** Bounded expansion: unknown types are consumed visibly; a storage failure leaves its event retryable. */
 public final class OutboxExpander {
     private final OutboxStore store;
     public OutboxExpander(OutboxStore store) { this.store=Objects.requireNonNull(store); }
