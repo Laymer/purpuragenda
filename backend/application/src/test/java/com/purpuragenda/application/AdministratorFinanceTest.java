@@ -156,17 +156,85 @@ class AdministratorFinanceTest {
     }
     String capture(AdministratorFinance.Confirmation request) { finance.approve(session,f.current.id(),"k",request);return f.command.fingerprint(); }
 
+    PaymentLedger.Entry receiptFor(Booking b,long minor,String currency) { return entry(b,minor,currency,"r-"+UUID.randomUUID()); }
+    AdministratorFinance.RefundRequest refund(UUID receipt,long minor,String currency,String reference) {
+        return new AdministratorFinance.RefundRequest(receipt,new Money(minor,currency),"bank",reference,f.now);
+    }
+
+    @Test void refundsAreBoundedByTheirReceiptAtEveryMinorUnitAndNeedNoBookingVersion() {
+        Booking b=f.current;var receipt=receiptFor(b,1000,"EUR");f.ledger=f.ledger.append(receipt);
+        assertTrue(finance.recordRefund(session,b.id(),"k",refund(receipt.id(),400,"EUR","a")).success());
+        assertEquals(Receipt.failure(Code.REFUND_EXCEEDS_RECEIPT),finance.recordRefund(session,b.id(),"k",refund(receipt.id(),601,"EUR","b")));
+        assertTrue(finance.recordRefund(session,b.id(),"k",refund(receipt.id(),600,"EUR","c")).success());
+        assertEquals(Receipt.failure(Code.REFUND_EXCEEDS_RECEIPT),finance.recordRefund(session,b.id(),"k",refund(receipt.id(),1,"EUR","d")));
+        assertEquals(2,f.recorded);assertEquals(FinanceUnitOfWork.Operation.RECORD_REFUND,f.command.operation());
+        assertTrue(f.steps.containsAll(List.of("expiry","attempt","authorized","reference","ledger","refund")));
+    }
+
+    @Test void refundsNeverInferOrConvertCurrenciesAndRejectUnknownReceiptsFutureFactsAndDuplicates() {
+        Booking b=f.current;var eur=receiptFor(b,1000,"EUR");f.ledger=f.ledger.append(eur);
+        assertEquals(Receipt.failure(Code.INVALID_REFUND),finance.recordRefund(session,b.id(),"k",refund(eur.id(),10,"USD","a")));
+        assertEquals(Receipt.failure(Code.INVALID_REFUND),finance.recordRefund(session,b.id(),"k",refund(UUID.randomUUID(),10,"EUR","b")));
+        assertEquals(Receipt.failure(Code.INVALID_REFUND),finance.recordRefund(session,b.id(),"k",new AdministratorFinance.RefundRequest(eur.id(),new Money(10,"EUR"),"bank","c",f.now.plusNanos(1000))));
+        f.referenceUsed=true;assertEquals(Receipt.failure(Code.DUPLICATE_PAYMENT),finance.recordRefund(session,b.id(),"k",refund(eur.id(),10,"EUR","d")));
+        assertEquals(0,f.recorded);
+    }
+
+    @Test void refundsApplyToTerminalBookingsAndConsumeTheirObligations() {
+        f.reset(terminal(Booking.State.CANCELLED));Booking b=f.current;var receipt=receiptFor(b,500,"EUR");
+        f.ledger=f.ledger.append(receipt).requireRefunds("CUSTOMER_CANCELLED");
+        assertTrue(finance.recordRefund(session,b.id(),"k",refund(receipt.id(),200,"EUR","a")).success());
+        assertEquals(Map.of("EUR",300L),f.ledger.summary(b.snapshot().service().price()).refundDueByCurrency());
+        assertTrue(finance.recordRefund(session,b.id(),"k",refund(receipt.id(),300,"EUR","b")).success());
+        assertEquals(PaymentLedger.Status.REFUNDED_EXTERNAL,f.ledger.summary(b.snapshot().service().price()).status());
+        assertSame(b,f.current);
+    }
+
+    @Test void requirementIsIdempotentValidatedAndOnlyForReceipts() {
+        Booking b=f.current;var receipt=receiptFor(b,500,"EUR");f.ledger=f.ledger.append(receipt);
+        var requirement=new AdministratorFinance.RefundRequirement(receipt.id(),"Provider cancelled the session");
+        var first=finance.requireRefund(session,b.id(),"k",requirement);
+        assertEquals(new Receipt(Code.OK,receipt.id(),b.version()),first);assertEquals(1,f.requirements);
+        assertEquals(first,finance.requireRefund(session,b.id(),"k2",requirement));assertEquals(1,f.requirements);
+        assertEquals(Receipt.failure(Code.INVALID_REFUND),finance.requireRefund(session,b.id(),"k3",new AdministratorFinance.RefundRequirement(UUID.randomUUID(),"Provider cancelled the session")));
+        assertThrows(DomainFailure.class,()->new AdministratorFinance.RefundRequirement(receipt.id(),"short"));
+        assertThrows(DomainFailure.class,()->new AdministratorFinance.RefundRequirement(null,"Provider cancelled the session"));
+        assertEquals("RefundRequirement[REDACTED]",requirement.toString());
+        assertThrows(NullPointerException.class,()->finance.requireRefund(session,b.id(),"k",null));
+    }
+
+    @Test void refundRequestsValidateShapeRedactAndFingerprintEveryField() {
+        UUID receipt=UUID.randomUUID();
+        for(Supplier<AdministratorFinance.RefundRequest> invalid:List.<Supplier<AdministratorFinance.RefundRequest>>of(
+                ()->new AdministratorFinance.RefundRequest(null,new Money(1,"EUR"),"bank","r",f.now),
+                ()->new AdministratorFinance.RefundRequest(receipt,new Money(0,"EUR"),"bank","r",f.now),
+                ()->new AdministratorFinance.RefundRequest(receipt,null,"bank","r",f.now),
+                ()->new AdministratorFinance.RefundRequest(receipt,new Money(1,"EUR"),"bank","r",null),
+                ()->new AdministratorFinance.RefundRequest(receipt,new Money(1,"EUR"),"bank","r",f.now.plusNanos(1)),
+                ()->new AdministratorFinance.RefundRequest(receipt,new Money(1,"EUR"),"","r",f.now)))
+            assertThrows(DomainFailure.class,invalid::get);
+        assertEquals("RefundRequest[REDACTED]",refund(receipt,1,"EUR","secret").toString());
+        Booking b=f.current;var entry=receiptFor(b,1000,"EUR");f.ledger=f.ledger.append(entry);
+        finance.recordRefund(session,b.id(),"k",refund(entry.id(),1,"EUR","a"));String first=f.command.fingerprint();
+        for(var changed:List.of(refund(entry.id(),2,"EUR","a"),refund(entry.id(),1,"EUR","b"),refund(UUID.randomUUID(),1,"EUR","a"))) {
+            finance.recordRefund(session,b.id(),"k",changed);assertNotEquals(first,f.command.fingerprint());
+        }
+        assertThrows(NullPointerException.class,()->finance.recordRefund(session,b.id(),"k",null));
+    }
+
     static class Fixture extends PublicSchedulingTest.Fixture implements FinanceUnitOfWork,Finance {
-        Booking current;Command command;PaymentLedger ledger=PaymentLedger.empty();boolean late,referenceUsed,attempting,meetingInUse;int confirmations;
+        Booking current;Command command;PaymentLedger ledger=PaymentLedger.empty();boolean late,referenceUsed,attempting,meetingInUse;int confirmations,requirements;
         int recorded,expiryEffects;final List<String> steps=new ArrayList<>();
         Fixture(){current=pending(now.plusSeconds(7200));}
-        void reset(Booking value){current=value;ledger=PaymentLedger.empty();late=referenceUsed=attempting=meetingInUse=false;recorded=expiryEffects=confirmations=0;steps.clear();now=Instant.parse("2026-01-01T00:00:00Z");}
+        void reset(Booking value){current=value;ledger=PaymentLedger.empty();late=referenceUsed=attempting=meetingInUse=false;recorded=expiryEffects=confirmations=requirements=0;steps.clear();now=Instant.parse("2026-01-01T00:00:00Z");}
         public Receipt execute(Command supplied,Function<Finance,Receipt> work){command=supplied;return work.apply(this);}
         public Optional<Booking> booking(UUID id){return Optional.of(current);}
         public Booking authorizedBooking(){steps.add("authorized");assertTrue(attempting);return current;}
         public PaymentLedger ledger(){steps.add("ledger");return ledger;}
         public boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference){steps.add("reference");return referenceUsed;}
         public void receiptRecorded(PaymentLedger.Entry entry,boolean isLate){steps.add("record");recorded++;late=isLate;ledger=ledger.append(entry);if(isLate)ledger=ledger.requireRefund(entry.id(),"LATE_RECEIPT");}
+        public void refundRecorded(PaymentLedger.Entry refund){steps.add("refund");recorded++;ledger=ledger.append(refund);}
+        public void refundRequired(UUID receiptId,String reason){steps.add("require");requirements++;ledger=ledger.requireRefund(receiptId,reason);}
         public boolean meetingInUse(Meeting meeting,UUID booking){steps.add("meeting");return meetingInUse;}
         public void confirmedEffects(Booking original,Booking confirmed){steps.add("confirm-effects");confirmations++;}
         public void save(Booking value){steps.add(attempting?"save":"reclaim");current=value;}
