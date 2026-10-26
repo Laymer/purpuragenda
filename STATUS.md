@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P20/customer-view: agent=Codex-coordinator; branch=task/p20-customer-view; base=main; handoff=docs/handoffs/p20-customer-view.md
+- P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
 - P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
 - P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
@@ -70,12 +70,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:42:00Z.
-- Current task: P20/customer-view; branch: task/p20-customer-view; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/69.
-- Last pushed implementation commit: c02ddb3; uncommitted changes: append-only main integration with confirmed enrollment66 and administrator login71; production query unchanged.
-- What works: PR67 durable AUTH, PR68 guest HTTP, PR66 enrollment and PR71 administrator login are confirmed merged. Query19 actual PostgreSQL cases and4application cases previously passed at c02ddb3.
-- What remains: fresh integrated query gates, stacked customer HTTP, account authentication, notification delivery and remaining local v1 workflows/acceptance.
-- Decisions: preserve every authority report guard and both evidence histories; no migration or contract change in this query slice. Customer HTTP remains separately stacked and unpublished.
-- Verification: old-head c02ddb3 native876Java/6Angular/234Python, all14hosted checks, clean localCompose6 and exact independent review passed. These are not evidence for the new integration head. PR71 exact ba8e1f0 fresh native921Java/11Angular/237Python plus all14hosted/Compose6/review passed before confirmed merged d96e0a6.
-- Next concrete action: publish integration, run all implemented categories and obtain fresh exact-head review before merge.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: none for query; HTTP depends on this query and merged PR71; account-auth017 also stacks query.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T19:21:20Z.
+- Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: none yet.
+- Last pushed implementation commit: parent notification26a6367; uncommitted changes: shared maintenance transaction port/adapter, DueBookingExpiry application hook and six real PostgreSQL cases.
+- What works: query69 is confirmed merged; notification64 confirmed merged669bc5b after all required gates. Public context74 targets and source review pass, full final gates pending.
+- What remains: runtime composition of both notification audiences, bounded outbox expansion and periodic expiry under the shared scheduling transaction, restart/restore/durable delivery evidence; no full local milestone claimed.
+- Decisions: separate maintenance port shares the same resource lock, one database time and transaction without creating artificial customer idempotency receipts. Runtime work lanes remain independent, readiness-gated, fixed-delay, restore-suppressed and gracefully stopped. No live SMTP or authentication bypass. Runtime Order14 reserved; admin HTTP worker owns15.
+- Verification: maintenance target47Java (17domain/1application/29actual PostgreSQL) passes, including20-way two-adapter race, rollback, post-lock database time, maintenance fail-closed and no synthetic idempotency records.25strict report regressions pass; lifecycle/SMTP composition and full gates pending.
+- Next concrete action: add scheduling maintenance adapter/application hook and real-PG tests, compose expiry/outbox/booking lanes with lifecycle and realSMTP/restart/restore tests.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: notificationPR64 before this slice merges; current-main integration and every gate/review remain mandatory.

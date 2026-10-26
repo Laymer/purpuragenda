@@ -1,6 +1,7 @@
 package com.purpuragenda.adapters.out.postgres;
 
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork;
+import com.purpuragenda.application.port.out.SchedulingMaintenanceUnitOfWork;
 import com.purpuragenda.domain.booking.*;
 import com.purpuragenda.domain.scheduling.*;
 import java.sql.*;
@@ -16,7 +17,7 @@ import org.springframework.transaction.*;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** Only PostgreSQL time is authoritative; there is no operational clock override. */
-public final class PostgresScheduling implements SchedulingUnitOfWork {
+public final class PostgresScheduling implements SchedulingUnitOfWork, SchedulingMaintenanceUnitOfWork {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaction;
     private final TransactionTemplate reader;
@@ -54,6 +55,29 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
     }
     Receipt resolved(Function<Instant,Resolved> authorize) {
         Objects.requireNonNull(authorize);
+        return locked(tx->{
+            Instant now=tx.now();Resolved resolved=Objects.requireNonNull(authorize.apply(now));CommandKey key=resolved.key();
+            List<Receipt> existing=jdbc.query("""
+                SELECT fingerprint,receipt->>'code' AS code,receipt->>'entityId' AS entity,
+                  receipt->>'version' AS version,jsonb_exists_all(receipt,ARRAY['code','entityId','version']) AS complete
+                FROM idempotency_record WHERE scope=? AND key=?
+                """,(row,n)->decode(row,key),key.scope().storageKey(),key.key());
+            if(!existing.isEmpty())return Objects.requireNonNull(resolved.replay().apply(existing.getFirst()));
+            Receipt receipt=Objects.requireNonNull(resolved.work().apply(tx));
+            jdbc.update("""
+                INSERT INTO idempotency_record(scope,key,fingerprint,receipt,created_at)
+                VALUES(?,?,?,jsonb_build_object('code',?::text,'entityId',?::text,'version',?::bigint),?)
+                """,key.scope().storageKey(),key.key(),key.fingerprint(),receipt.code().name(),
+                    receipt.entityId()==null?null:receipt.entityId().toString(),receipt.version(),Timestamp.from(now));
+            return receipt;
+        });
+    }
+    @Override public int maintain(ToIntFunction<Transaction> work) {
+        Objects.requireNonNull(work);
+        return locked(tx->work.applyAsInt(tx));
+    }
+    /** Commands and maintenance cannot diverge in lock order, authoritative time, retry or rollback behavior. */
+    private <T>T locked(Function<Transaction,T> work) {
         for(int attempt=0;;attempt++) {
             try {
                 return transaction.execute(status->{
@@ -62,20 +86,7 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
                     Instant now=capture();
                     if(Boolean.TRUE.equals(jdbc.queryForObject("SELECT maintenance FROM operation_control WHERE id=1",Boolean.class)))
                         throw new Failure(Failure.Kind.MAINTENANCE);
-                    Resolved resolved=Objects.requireNonNull(authorize.apply(now));CommandKey key=resolved.key();
-                    List<Receipt> existing=jdbc.query("""
-                        SELECT fingerprint,receipt->>'code' AS code,receipt->>'entityId' AS entity,
-                          receipt->>'version' AS version,jsonb_exists_all(receipt,ARRAY['code','entityId','version']) AS complete
-                        FROM idempotency_record WHERE scope=? AND key=?
-                        """,(row,n)->decode(row,key),key.scope().storageKey(),key.key());
-                    if(!existing.isEmpty()) return Objects.requireNonNull(resolved.replay().apply(existing.getFirst()));
-                    Receipt receipt=Objects.requireNonNull(resolved.work().apply(new Tx(now,status)));
-                    jdbc.update("""
-                        INSERT INTO idempotency_record(scope,key,fingerprint,receipt,created_at)
-                        VALUES(?,?,?,jsonb_build_object('code',?::text,'entityId',?::text,'version',?::bigint),?)
-                        """,key.scope().storageKey(),key.key(),key.fingerprint(),receipt.code().name(),
-                            receipt.entityId()==null?null:receipt.entityId().toString(),receipt.version(),Timestamp.from(now));
-                    return receipt;
+                    return work.apply(new Tx(now,status));
                 });
             } catch(RuntimeException failure) {
                 SQLException sql=sql(failure);
