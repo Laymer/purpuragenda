@@ -95,6 +95,14 @@ class AdministratorBookingQueryPostgresTest {
         var future=reader(c.clock(issued.minusNanos(1000),new AtomicInteger()));assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,c.failure(()->future.detail(fixture.session,id)).kind());
         var ordinary=reader(c.clock(issued.plusSeconds(601),new AtomicInteger()));assertTrue(ordinary.detail(fixture.session,id).isPresent());
     }
+    @Test void futureLastSeenCannotExtendAuthorityAcrossAClockRollback() {
+        UUID id=book(MigrationTest.START,"CONFIRMED");
+        Instant issued=c.jdbc.queryForObject("SELECT issued_at FROM app_session WHERE id=?",(row,n)->row.getTimestamp(1).toInstant(),fixture.session.sessionId());
+        c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(issued.plusSeconds(10)),fixture.session.sessionId());
+        var rolledBack=reader(c.clock(issued.plusSeconds(5),new AtomicInteger()));
+        assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,c.failure(()->rolledBack.detail(fixture.session,id)).kind());
+        assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,c.failure(()->rolledBack.agenda(fixture.session,window(),null,1)).kind());
+    }
     @Test void stableStartIdCursorIncludesEverySameTimeCancelledRowWithoutRepeatingOrSkipping() {
         var expected=new ArrayList<UUID>();for(int i=0;i<4;i++)expected.add(book(MigrationTest.START,"CANCELLED"));
         expected.sort(Comparator.comparing(UUID::toString));var first=query.agenda(fixture.session,window(),null,2);assertEquals(expected.subList(0,2),first.entries().stream().map(Entry::id).toList());assertNotNull(first.next());
