@@ -3,6 +3,7 @@
 README.md
 api.base.service.ts
 api.module.ts
+api/administrator.service.ts
 api/api.ts
 api/catalog.service.ts
 api/guest.service.ts
@@ -11,6 +12,7 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/administratorLoginRequest.ts
 model/availability.ts
 model/createProofRequest.ts
 model/managementProofRequest.ts

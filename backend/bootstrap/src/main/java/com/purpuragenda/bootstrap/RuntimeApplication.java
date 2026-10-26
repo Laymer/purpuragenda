@@ -65,6 +65,12 @@ public class RuntimeApplication {
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AdministratorLogin administratorLogin(RequestThrottle throttle,PrivateAdminMfa factors,SessionStore sessions) {
+        return new AdministratorLogin(throttle,factors,sessions,new AdminCrypto());
+    }
+    @Bean AdministratorLoginController administratorLoginController(AdministratorLogin login,SessionCookies cookies) {
+        return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
+    }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));

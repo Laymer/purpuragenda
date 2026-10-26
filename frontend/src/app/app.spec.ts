@@ -4,7 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { appConfig } from './app.config';
-import { CatalogService, GuestService, Problem, RedeemProofRequestPurposeEnum, Service, ServiceCurrencyEnum, SessionService, SessionStateRoleEnum } from './shared/generated';
+import { AdministratorLoginRequest, AdministratorService, CatalogService, GuestService, Problem, RedeemProofRequestPurposeEnum, Service, ServiceCurrencyEnum, SessionService, SessionStateRoleEnum } from './shared/generated';
 
 describe('Application shell and typed API boundary', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -81,6 +81,27 @@ describe('Application shell and typed API boundary', () => {
     const logout = http.expectOne('/api/v1/session/logout');
     expect(logout.request.method).toBe('POST'); expect(logout.request.headers.get('X-CSRF-Token')).toBe(csrfToken);
     logout.flush(null, { status: 204, statusText: 'No content' });
+  });
+
+  it('posts exact administrator factors with CSRF and consumes a typed session or safe failure', () => {
+    const http = TestBed.inject(HttpTestingController); const administrator = TestBed.inject(AdministratorService);
+    const csrf = 'c'.repeat(43); const credentials: AdministratorLoginRequest = {
+      email: 'synthetic@example.test', password: 'synthetic private admin phrase', totp: '123456'
+    };
+    let role: string | undefined;
+    administrator.loginAdministrator(csrf, credentials).subscribe(session => role = session.role);
+    const request = http.expectOne('/api/v1/admin/login');
+    expect(request.request.method).toBe('POST'); expect(request.request.headers.get('X-CSRF-Token') === csrf).toBe(true);
+    expect(Object.keys(request.request.body).sort()).toEqual(['email', 'password', 'totp']);
+    expect(request.request.body.password === credentials.password).toBe(true); expect(request.request.body.totp === credentials.totp).toBe(true);
+    request.flush({ role: SessionStateRoleEnum.Admin, idleExpiresAt: '2026-10-26T10:15:00Z', absoluteExpiresAt: '2026-10-26T18:00:00Z', csrfToken: csrf });
+    expect(role).toBe('ADMIN');
+    let code: string | undefined;
+    administrator.loginAdministrator(csrf, credentials).subscribe({ error: (failure: HttpErrorResponse) => code = (failure.error as Problem).code });
+    http.expectOne('/api/v1/admin/login').flush({ type: 'about:blank', title: 'Authentication failed', status: 401,
+      code: 'AUTHENTICATION_FAILED', correlationId: '00000000-0000-4000-8000-000000000001', retryable: false, refreshAvailability: false
+    }, { status: 401, statusText: 'Unauthorized' });
+    expect(code).toBe('AUTHENTICATION_FAILED');
   });
 
   it('sends guest proof requests and redemptions as JSON bodies with the CSRF header and typed replies', () => {

@@ -15,6 +15,7 @@ final class Problems {
         INVALID_DATE_RANGE(400,"Date range is invalid",false),RANGE_TOO_WIDE(400,"Date range is too wide",false),
         SERVICE_UNAVAILABLE(404,"Service is not available",false),RATE_LIMITED(429,"Too many requests",true),
         PROOF_INVALID(400,"Proof is invalid or expired",false),
+        AUTHENTICATION_FAILED(401,"Authentication failed",false),
         TEMPORARILY_UNAVAILABLE(503,"Service temporarily unavailable",true);
         final int status;final String title;final boolean retryable;
         Code(int status,String title,boolean retryable) { this.status=status;this.title=title;this.retryable=retryable; }
