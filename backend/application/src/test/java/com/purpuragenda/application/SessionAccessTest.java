@@ -24,6 +24,7 @@ class SessionAccessTest {
         @Override public Optional<Snapshot> resolve(char[] token) { calls.add("resolve");if(unavailable)throw new IllegalStateException("SESSION_UNAVAILABLE");return token[0]=='L'?Optional.of(live):Optional.empty(); }
         @Override public Optional<Snapshot> inspect(char[] token) { calls.add("inspect");return token[0]=='L'?Optional.of(live):Optional.empty(); }
         @Override public boolean csrf(SessionReference session,char[] csrf) { calls.add("csrf");lastBuffer=csrf;return csrfMatches; }
+        public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) { return Optional.empty(); }
         @Override public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError(); }
         Optional<Issued> guestResult=Optional.empty();SessionReference exchanged;
         @Override public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { calls.add("exchangeGuest");exchanged=previous;return guestResult; }
