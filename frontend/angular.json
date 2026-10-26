@@ -89,7 +89,10 @@
               "src/app/shared/generated/model/administratorRecoveryRequest.ts",
               "src/app/shared/generated/model/administratorRecoverySetup.ts",
               "src/app/shared/generated/model/administratorReenrollmentRequest.ts",
-              "src/app/shared/generated/model/administratorReenrollmentResult.ts"
+              "src/app/shared/generated/model/administratorReenrollmentResult.ts",
+              "src/app/shared/generated/model/bookingReviewContext.ts",
+              "src/app/shared/generated/model/bookingReviewNotice.ts",
+              "src/app/shared/generated/model/bookingReviewPolicy.ts"
             ],
             "coverageReporters": [
               "text",
