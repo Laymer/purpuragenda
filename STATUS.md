@@ -30,7 +30,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78 and verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83;109Angular tests/build pass, real browser/full integrated gates pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
-| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | In progress; administrator MFA login/logout UI slice claimed; agenda and pending queue remain |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -60,6 +60,8 @@ Delivery prerequisites and concurrent task lanes are specified in docs/delivery.
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
+
+- P27/admin-auth-ui: agent=Codex-worker-c; branch=task/p27-admin-auth-ui; base=main; handoff=docs/handoffs/p27-admin-auth-ui.md
 
 - P24/booking-flow: agent=Codex-coordinator; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/p24-booking-flow.md
 
