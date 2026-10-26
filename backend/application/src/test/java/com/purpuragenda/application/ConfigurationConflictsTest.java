@@ -112,4 +112,11 @@ class ConfigurationConflictsTest {
         assertEquals(Set.of(Reason.START_RULES,Reason.HARD_BLACKOUT,Reason.DAILY_CAPACITY),conflicts.getFirst().reasons());
         assertEquals(Set.of(Reason.START_RULES,Reason.HARD_BLACKOUT),conflicts.getLast().reasons());
     }
+
+    @Test void resultsAreImmutableCopies() {
+        var reasons=new HashSet<>(Set.of(Reason.START_RULES));var conflict=new Conflict(UUID.randomUUID(),"SYNTHETIC1",MONDAY,Booking.State.CONFIRMED,reasons,Set.of());
+        reasons.add(Reason.HARD_BLACKOUT);assertEquals(Set.of(Reason.START_RULES),conflict.reasons());
+        var list=new ArrayList<>(List.of(conflict));var assessment=new Assessment(f.now,1,1,list);list.clear();
+        assertEquals(1,assessment.conflicts().size());assertThrows(UnsupportedOperationException.class,()->assessment.conflicts().clear());
+    }
 }
