@@ -22,6 +22,9 @@ model/availability.ts
 model/bookingIntake.ts
 model/bookingPaymentSummary.ts
 model/bookingReceipt.ts
+model/bookingReviewContext.ts
+model/bookingReviewNotice.ts
+model/bookingReviewPolicy.ts
 model/bookingServiceSnapshot.ts
 model/createBookingRequest.ts
 model/createProofRequest.ts

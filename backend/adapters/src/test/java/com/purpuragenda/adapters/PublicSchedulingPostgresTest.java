@@ -28,6 +28,29 @@ class PublicSchedulingPostgresTest {
             assertEquals(1,fixture.count("booking"));assertEquals(1,fixture.count("idempotency_record"));
         } finally {fixture.cleanup();}
     }
+    @Test void publicReadKeepsOneSnapshotAcrossConcurrentAtomicServiceAndPolicyChange() throws Exception {
+        BookingPersistenceTest fixture=new BookingPersistenceTest();fixture.prepare();
+        try(var writer=java.util.concurrent.Executors.newSingleThreadExecutor()) {
+            var versions=fixture.unit.read(view->{
+                var service=view.services().getFirst();var now=view.now();
+                try {
+                    writer.submit(()->fixture.unit.execute(fixture.key(),tx->{
+                        fixture.jdbc.update("INSERT INTO policy_version(version,document) SELECT 2,jsonb_set(document,'{version}','2') FROM policy_version WHERE version=1");
+                        fixture.jdbc.update("UPDATE business_settings SET policy_version=2 WHERE id=1");
+                        fixture.jdbc.update("UPDATE service SET version=2,price_minor=price_minor+1 WHERE id=?",service.id());
+                        return new com.purpuragenda.application.port.out.SchedulingUnitOfWork.Receipt(
+                                com.purpuragenda.application.port.out.SchedulingUnitOfWork.Code.OK,null,0);
+                    })).get(10,java.util.concurrent.TimeUnit.SECONDS);
+                } catch(Exception failure) { throw new AssertionError("CONCURRENT_CONFIGURATION_DID_NOT_COMMIT"); }
+                assertEquals(now,view.now());
+                return java.util.List.of(service.version(),view.policy().version(),view.services().getFirst().version());
+            });
+            assertEquals(java.util.List.of(1L,1L,1L),versions);
+            assertEquals(2L,fixture.unit.<Long>read(view->view.policy().version()).longValue());
+            assertEquals(2L,fixture.unit.<Long>read(view->view.services().getFirst().version()).longValue());
+            assertEquals(0,fixture.count("booking"));assertEquals(1,fixture.count("idempotency_record"));
+        } finally { fixture.cleanup(); }
+    }
     @Test void lateWindowIncludesNextDateOccupancyAndAllowsExactTwoHourAdjacency() {
         BookingPersistenceTest fixture=new BookingPersistenceTest();fixture.prepare();
         try {
