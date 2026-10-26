@@ -1,7 +1,7 @@
 # Administrator password/TOTP login HTTP
 
 - Agent and UTC checkpoint: Codex-worker-b, 2026-10-26T15:59:52Z.
-- Current task: P17/admin-login; branch: task/p17-admin-login; base: main; PR URL: not yet created.
+- Current task: P17/admin-login; branch: task/p17-admin-login; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/71.
 - Last pushed implementation commit: predecessor guest8c96c10a121c48ddf4bbdeec83fa3eff66d666ed confirmed merged8f346ad7155ddee2d76906e491c5154e68298af5 in PR68 at15:28:32Z; uncommitted changes: complete login application/controller/tests, OpenAPI/client generation and implementation evidence; current-main5d7d8be integration is applied, retaining account and admin report guards; final verification remains.
 - What works: merged guest proof HTTP, durable AUTH delivery, JDBC sessions, factor-bound proof/session handoff and distributed attempt reservations.
 - What remains: integrate current main, complete full native/coverage/Compose/hosted categories, independently review exact published head and coordinator merge. Recovery HTTP is a later separately bounded slice and never ordinary authorization.

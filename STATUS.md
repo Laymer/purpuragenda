@@ -21,13 +21,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
-| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authentication draft https://github.com/Laymer/purpuragenda/pull/73 implements017 proofs/epochs; current-main verification pending; profile/history and HTTP remain |
+| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; queryPR69 confirmed mergedf99a8dd; coordinator claims stacked customer-http slice |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTPPR72 confirmed merged8702161 after1032Java/30Angular/245Python/all14hosted/Compose6/review |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
-| P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
-| P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
+| P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,20 +61,20 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
-- P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
-- P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
-
-- P23/service-time: agent=Codex-worker-c; branch=task/p23-service-time; base=main; handoff=docs/handoffs/p23-service-time.md
+- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
+- P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
+- P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:01:00Z.
 - Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/79.
-- Last pushed implementation commit: d109082; uncommitted changes: five-lane runtime composition, lifecycle and actual Mailpit/restart/expiry/restore regressions.
+- Last pushed implementation commit: ce73357; uncommitted changes: required unrelated-delivery assertion and deterministic two-context ephemeral-port regression/fix.
 - What works: query69 is confirmed merged; notification64 confirmed merged669bc5b after all required gates. Public context74 targets and source review pass, full final gates pending.
 - What remains: current-main integration, full native/coverage/hosted/Compose/exact review; no full local milestone claimed.
-- Decisions: separate maintenance port shares the same resource lock, one database time and transaction without creating artificial customer idempotency receipts. Runtime work lanes remain independent, readiness-gated, fixed-delay, restore-suppressed and gracefully stopped. No live SMTP or authentication bypass. Runtime Order14 reserved; admin HTTP worker owns15.
-- Verification: maintenance target47Java (17domain/1application/29actual PostgreSQL) passes, including20-way two-adapter race, rollback, post-lock database time, maintenance fail-closed and no synthetic idempotency records.Five-lane lifecycle12 and real runtime12 cases now pass, with17domain/1application/6maintenancePG (48targetJava total,72seconds).25strict report regressions pass. Core d109082 independently source approved by workerB; full composition review/gates pending.
+- Decisions: separate maintenance port shares the same resource lock, one database time and transaction without creating artificial customer idempotency receipts. Runtime work lanes remain independent, readiness-gated, fixed-delay, restore-suppressed and gracefully stopped. No live SMTP or authentication bypass. Runtime Order14 reserved; admin HTTP worker owns15, account16, finance17; coordinator reserves18 for two-context isolation.
+- Verification: maintenance target47Java (17domain/1application/29actual PostgreSQL) passes, including20-way two-adapter race, rollback, post-lock database time, maintenance fail-closed and no synthetic idempotency records.Five-lane lifecycle12 and real runtime13 cases now pass, with17domain/1application/6maintenancePG (49targetJava total,122seconds after deterministic port-isolation correction).25strict report regressions pass. Core d109082 independently source approved by workerB; full composition review/gates pending.
 - Next concrete action: publish composition checkpoint, integrate current main and obtain exact review/all implemented gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: notificationPR64 before this slice merges; current-main integration and every gate/review remain mandatory.

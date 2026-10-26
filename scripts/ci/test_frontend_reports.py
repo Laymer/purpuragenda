@@ -17,7 +17,7 @@ class FrontendReportsTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.report = self.write('frontend/coverage/junit.xml',
             '<testsuites><testsuite tests="1" failures="0" errors="0" skipped="0"><testcase name="synthetic"/></testsuite></testsuites>')
-        self.write('frontend/dist/purpuragenda/browser/index.html', '<app-root></app-root>')
+        self.write('frontend/dist/purpuragenda/browser/index.html', '<link rel="stylesheet" href="styles.css"><app-root></app-root>')
         self.bundle = self.write('frontend/dist/purpuragenda/browser/main-synthetic.js', 'synthetic();')
         source = self.write('frontend/src/main.ts', 'synthetic();')
         self.coverage = self.write('frontend/coverage/coverage-final.json', json.dumps({str(source): {
@@ -31,6 +31,15 @@ class FrontendReportsTest(unittest.TestCase):
 
     def test_complete_reports_pass(self):
         self.assertEqual(['Angular LINE: 1/1', 'Angular BRANCH: 0/0'], CHECK.validate(self.root))
+
+    def test_production_styles_require_no_inline_script_activation(self):
+        for html in ('<link rel="stylesheet" href="styles.css" media="print"><script>activate()</script>',
+                     '<link rel="stylesheet" href="styles.css"><script>activate()</script>',
+                     '<link rel="stylesheet" href="styles.css" media="print">'):
+            with self.subTest(html=html):
+                self.write('frontend/dist/purpuragenda/browser/index.html', html)
+                with self.assertRaisesRegex(ValueError, 'under CSP'):
+                    CHECK.validate(self.root)
 
     def test_missing_junit_fails(self):
         self.report.unlink()
