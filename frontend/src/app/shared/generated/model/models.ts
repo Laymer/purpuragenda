@@ -1,3 +1,4 @@
+export * from './administratorLoginRequest';
 export * from './availability';
 export * from './createProofRequest';
 export * from './managementProofRequest';

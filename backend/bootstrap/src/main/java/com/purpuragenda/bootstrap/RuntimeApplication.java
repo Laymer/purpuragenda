@@ -71,6 +71,12 @@ public class RuntimeApplication {
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AdministratorLogin administratorLogin(RequestThrottle throttle,PrivateAdminMfa factors,SessionStore sessions) {
+        return new AdministratorLogin(throttle,factors,sessions,new AdminCrypto());
+    }
+    @Bean AdministratorLoginController administratorLoginController(AdministratorLogin login,SessionCookies cookies) {
+        return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
+    }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
     @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,Environment environment,SessionAccess access,SessionCookies cookies) {
         // Operational settings already require an explicit non-local notice version before this bean is composed.
