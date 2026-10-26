@@ -74,6 +74,17 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(any('not active in ledger' in error for error in self.validate(ledger)))
         self.assertEqual([], self.validate(ledger.replace(self.claim, 'None.')))
 
+    def test_handoff_progress_notes_keep_the_required_field_delimiter(self):
+        path = self.root / 'docs/handoffs/p01.md'
+        for field in ('What remains:', 'Verification:'):
+            with self.subTest(field=field):
+                decorated = field[:-1] + ' (pending follow-up):'
+                path.write_text(self.handoff.replace(field, decorated))
+                self.assertIn('P01/concurrency: missing handoff field: ' + field, self.validate())
+                path.write_text(self.handoff.replace(field, field + ' (pending follow-up)'))
+                self.assertEqual([], self.validate())
+        path.write_text(self.handoff)
+
     def test_delivery_document_required(self):
         path = self.root / 'docs/delivery.md'
         path.write_text('')
