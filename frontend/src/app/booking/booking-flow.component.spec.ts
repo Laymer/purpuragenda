@@ -201,4 +201,14 @@ describe('Real typed booking flow and private state', () => {
     expect(flow.message()).toContain('Check your inbox');
   });
 
+  it('does not apply the email resend cooldown to verified intake review', async () => {
+    await enter('ANONYMOUS'); flow.email.setValue('synthetic@example.test'); const email = flow.requestEmail(); await settle();
+    http.expectOne('/api/v1/guest/create-proofs').flush({ accepted: true }); await email; expect(flow.retrySeconds()).toBe(60);
+    const verified = flow.begin(true); await settle(); http.expectOne('/api/v1/session/bootstrap').flush(session()); await verified;
+    expect(flow.retrySeconds()).toBe(0);
+    flow.intake.setValue(intake); const pending = flow.reviewRequest();
+    http.expectOne(request => request.url === '/api/v1/booking-context').flush(terms); await pending;
+    expect(flow.phase()).toBe('review');
+  });
+
 });

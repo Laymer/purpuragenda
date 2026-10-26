@@ -71,6 +71,7 @@ export class BookingFlowComponent {
       const context = refresh || this.sessions.state() === null ? await this.sessions.bootstrap() : this.sessions.state()!;
       if (!this.active || this.selection() !== chosen || this.sessions.state() !== context) return;
       if (context.role === 'ADMIN') { this.message.set('Sign out of the administrator session before making a customer request.'); return; }
+      if (context.role !== 'ANONYMOUS') this.cooldown(0);
       this.phase.set(context.role === 'ANONYMOUS' ? 'email' : 'intake');
       if (refresh && context.role === 'ANONYMOUS') this.message.set('Open the email link in this browser and choose Verify email, then return here.');
     } catch (error) { this.failure(error, false); }
