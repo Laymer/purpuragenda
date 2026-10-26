@@ -1,6 +1,8 @@
 package com.purpuragenda.bootstrap;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.BooleanSupplier;
@@ -106,4 +108,43 @@ class RuntimeWorkersTest {
             assertThrows(IllegalArgumentException.class, () -> new RuntimeWorkers(noop, noop, yes, false, Duration.ofSeconds(1), Duration.ofSeconds(1), invalid));
         }
     }
+    @Test void allFiveLanesRemainIndependentWhenBothMailSendersBlock() {
+        var entered = new CountDownLatch(2); var release = new CountDownLatch(1);
+        var maintenance = new CountDownLatch(3);
+        Runnable mail = () -> { entered.countDown(); await(release); };
+        var lanes = List.of(new RuntimeWorkers.Lane(mail,0,5),new RuntimeWorkers.Lane(mail,0,5),
+                new RuntimeWorkers.Lane(maintenance::countDown,0,5),new RuntimeWorkers.Lane(maintenance::countDown,0,5),
+                new RuntimeWorkers.Lane(maintenance::countDown,0,5));
+        var worker = new RuntimeWorkers(lanes,()->true,false,Duration.ofSeconds(2));
+        try { worker.start(); await(entered); await(maintenance); }
+        finally { release.countDown(); worker.stop(); }
+    }
+    @Test void eachLaneRecoversFromFailureAndTheLaneListIsDefensivelyCopied() {
+        var recovered = new CountDownLatch(5); var lanes = new ArrayList<RuntimeWorkers.Lane>();
+        for(int i=0;i<5;i++) {
+            var attempts = new AtomicInteger();
+            lanes.add(new RuntimeWorkers.Lane(()-> {
+                if(attempts.incrementAndGet()==1)throw new IllegalStateException("synthetic-private-detail");
+                if(attempts.get()==2)recovered.countDown();
+            },0,5));
+        }
+        var worker = new RuntimeWorkers(lanes,()->true,false,Duration.ofSeconds(2)); lanes.clear();
+        try { worker.start(); await(recovered); } finally { worker.stop(); }
+    }
+    @Test void productionFiveLaneConfigurationSuppressesEveryPortInRestore() {
+        Runnable forbidden = () -> fail("Restore invoked a work port");
+        var worker = new RuntimeWorkers(forbidden,forbidden,forbidden,forbidden,forbidden,
+                ()->{fail("Restore checked readiness");return true;},true);
+        worker.start(); assertFalse(worker.isRunning()); worker.stop();
+    }
+    @Test void laneBoundsAreValidatedBeforeScheduling() {
+        Runnable noop=()->{};
+        assertThrows(IllegalArgumentException.class,()->new RuntimeWorkers.Lane(noop,-1,1));
+        assertThrows(IllegalArgumentException.class,()->new RuntimeWorkers.Lane(noop,0,0));
+        assertThrows(NullPointerException.class,()->new RuntimeWorkers.Lane(null,0,1));
+        assertThrows(IllegalArgumentException.class,()->new RuntimeWorkers(null,()->true,false,Duration.ofSeconds(1)));
+        assertThrows(IllegalArgumentException.class,()->new RuntimeWorkers(List.of(),()->true,false,Duration.ofSeconds(1)));
+        assertThrows(IllegalArgumentException.class,()->new RuntimeWorkers(java.util.Collections.nCopies(6,new RuntimeWorkers.Lane(noop,0,1)),()->true,false,Duration.ofSeconds(1)));
+    }
+
 }
