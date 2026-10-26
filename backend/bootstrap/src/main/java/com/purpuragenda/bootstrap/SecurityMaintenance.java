@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Overlap-safe entry point for the hourly retention job. No scheduler invokes it yet; an external or later
- * in-process scheduler calls {@link #tick()}. Failures are reduced to step names and never logged with details.
+ * Overlap-safe entry point for the hourly retention job. RuntimeWorkers invokes {@link #tick()}.
+ * Failures are reduced to step names and never logged with details.
  */
 final class SecurityMaintenance {
     private final SecurityCleanup cleanup;
