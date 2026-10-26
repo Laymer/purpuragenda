@@ -41,7 +41,7 @@ class RuntimeDatabaseTest {
                     "app.database-password-file",directory.resolve("app").toString(),"app.mode","local",
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
-                    "app.delivery-key-id","delivery-test-v1","server.port","0"));
+                    "app.delivery-key-id","delivery-test-v1","SERVER_PORT","0"));
             properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
@@ -341,6 +341,7 @@ class RuntimeDatabaseTest {
                 while((count("SELECT count(*)"+jobs+" AND state='SENT'")<4 ||
                         count("SELECT count(*) FROM notification_job WHERE booking_id='"+unrelated+"' AND state='SENT'")<2) && System.nanoTime()<deadline)Thread.sleep(25);
                 assertEquals(4,count("SELECT count(*)"+jobs+" AND state='SENT' AND attempts=1"));
+                assertEquals(2,count("SELECT count(*) FROM notification_job WHERE booking_id='"+unrelated+"' AND state='SENT'"));
                 assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='CUSTOMER'"));
                 assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='OWNER'"));
                 assertEquals("EXPIRED",text("SELECT state FROM booking WHERE id='"+due+"'"));
@@ -372,6 +373,15 @@ class RuntimeDatabaseTest {
                 assertEquals(1,count("SELECT count(*) FROM outbox_event WHERE booking_id='"+restore+"' AND expanded_at IS NULL"));
                 assertEquals(0,count("SELECT count(*) FROM notification_job WHERE booking_id='"+restore+"'"));
             }
+        }
+    }
+    @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
+        var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
+        try(var first=Purpuragenda.launch(new String[0],isolated);
+            var second=Purpuragenda.launch(new String[0],isolated)) {
+            assertNotEquals(port(first),port(second));
+            assertEquals(200,get(port(first),"/actuator/health/readiness").statusCode());
+            assertEquals(200,get(port(second),"/actuator/health/readiness").statusCode());
         }
     }
     // Synthetic durable-work fixtures use the real resource-locked persistence port; no HTTP authorization bypass.
