@@ -100,14 +100,18 @@ class AccountEnrollmentDatabaseTest {
 
     @Test void accountIdentityAndCredentialHistoryAreImmutableAndConsistentInTheDatabase() {
         var enrolled=enroll(proof("synthetic@example.test")).orElseThrow();UUID id=enrolled.accountId();
+        String changedHash=encoded.substring(0,encoded.length()-1)+(encoded.endsWith("A")?"E":"A");
+        assertFalse(encoded.equals(changedHash));assertTrue(Argon2PasswordHash.validEncoding(changedHash));
         UUID other=UUID.randomUUID();c.jdbc.update("INSERT INTO customer_identity VALUES(?,?,clock_timestamp())",other,"other@example.test");
         for(String change:List.of("login_email='other@example.test'","customer_id='"+other+"'","enrolled_at=enrolled_at+interval '1 second'","id='"+UUID.randomUUID()+"'",
                 "password_hash=NULL","login_email=NULL,password_hash=NULL,password_changed_at=NULL","credential_version=credential_version-1",
-                "password_hash='"+encoded.substring(0,encoded.length()-1)+"A'"))
+                "password_hash='"+changedHash+"'"))
             c.f.database.denied("23514","UPDATE customer_account SET "+change+" WHERE id=?",id);
         c.f.database.denied("23514","UPDATE customer_account SET password_hash='not-an-encoding',credential_version=2 WHERE id=?",id);
         // Only an explicit version advance may replace the credential.
-        c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=2,password_changed_at=clock_timestamp() WHERE id=?",encoded.replace("$argon2id","$argon2id"),id);
+        c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=2,password_changed_at=clock_timestamp() WHERE id=?",changedHash,id);
+        assertTrue(changedHash.equals(value("SELECT password_hash FROM customer_account WHERE id=?",id)));
+        assertEquals("2",value("SELECT credential_version FROM customer_account WHERE id=?",id));
         c.f.database.denied("23514","INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_hash,password_changed_at) VALUES(gen_random_uuid(),?,clock_timestamp(),'unrelated@example.test',?,clock_timestamp())",other,encoded);
         c.f.database.denied("23505","INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_hash,password_changed_at) VALUES(gen_random_uuid(),?,clock_timestamp(),'synthetic@example.test',?,clock_timestamp())",enrolled.customerId(),encoded);
         c.f.database.denied("23514","INSERT INTO customer_account(id,customer_id,enrolled_at,login_email) VALUES(gen_random_uuid(),?,clock_timestamp(),'other@example.test')",other);
