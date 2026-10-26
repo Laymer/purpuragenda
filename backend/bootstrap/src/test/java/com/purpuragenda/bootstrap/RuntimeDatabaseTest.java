@@ -36,11 +36,13 @@ class RuntimeDatabaseTest {
             assertEquals(0,postgres.execInContainer("bash","/tmp/init-database.sh").getExitCode(),"RUNTIME_ROLE_BOOTSTRAP_FAILED");
             Files.writeString(directory.resolve("app"),app);Files.writeString(directory.resolve("migrator"),migrator);
             Files.write(directory.resolve("totp"),SecureRandom.getSeed(32));Files.write(directory.resolve("delivery"),SecureRandom.getSeed(32));
+            Files.write(directory.resolve("rate"),SecureRandom.getSeed(32));
             properties=new HashMap<>(Map.of("app.database-url",postgres.getJdbcUrl().split("\\?")[0],"app.database-user","purpuragenda_app",
                     "app.database-password-file",directory.resolve("app").toString(),"app.mode","local",
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
                     "app.delivery-key-id","delivery-test-v1","server.port","0"));
+            properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
     }

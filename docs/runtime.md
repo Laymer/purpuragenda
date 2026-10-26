@@ -20,6 +20,7 @@ Supply configuration through environment variables. The migration command needs 
 | `APP_PUBLIC_ORIGIN` | Local/restore loopback HTTP origin; operational HTTPS without local/synthetic defaults |
 | `APP_TOTP_KEY_FILE`, `APP_DELIVERY_KEY_FILE` | Distinct 32-byte keys; final symlinks and reused material are refused |
 | `APP_TOTP_KEY_ID`, `APP_DELIVERY_KEY_ID` | Distinct safe version IDs, preserving the corresponding persistent ciphertext versions |
+| `APP_SECURITY_RATE_KEY_FILE`, `APP_SECURITY_RATE_KEY_ID` | Third independent 32-byte HMAC key for throttle identifiers and its version; distinct from TOTP/delivery material and IDs. Non-local modes reject any `local-` key ID |
 | `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_MAIL_FROM` | Local/test capture transport only; restore requires no SMTP settings |
 | `APP_SECURITY_TRUSTED_PROXY_PEERS` | Optional comma-separated exact literal IPs (maximum 16, no names, ranges or spaces) whose `X-Purpuragenda-Client-IP` header is trusted; default empty |
 | Operational additions | `APP_NOTICE_VERSION`, `APP_SMTP_SECURITY`, `APP_SMTP_USER`, `APP_SMTP_PASSWORD_FILE`; TLS security is `STARTTLS_REQUIRED` or `IMPLICIT_TLS` |
