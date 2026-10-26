@@ -398,6 +398,7 @@ class RuntimeDatabaseTest {
         }
     }
 
+
     @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
         var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
         try(var first=Purpuragenda.launch(new String[0],isolated);

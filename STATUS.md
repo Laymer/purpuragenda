@@ -27,7 +27,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78 and verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83;108Angular tests/build pass, real browser/full integrated gates pending |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78 and verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83;109Angular tests/build pass, real browser/full integrated gates pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -63,7 +63,6 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - P24/booking-flow: agent=Codex-coordinator; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/p24-booking-flow.md
 
-- P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
 
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
 - P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
@@ -71,12 +70,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:00:44Z.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:38:25Z.
 - Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/83.
-- Last pushed implementation commit: f463b64; uncommitted changes: email cooldown ends when verification succeeds, with a regression for immediate intake review.
+- Last pushed implementation commit: de64c04; uncommitted changes: append-only confirmed main74 integration and a real DOM reactive-intake submission regression.
 - What works: real typed email issuance/redemption, memory-only fragment capture before router startup, intake validation, authoritative plaintext review/consent, immutable submission with explicit uncertain retries, and actual booking status rendering are implemented.
-- What remains: independent source review, actual PostgreSQL/Mailpit browser journey, current-main full native/hosted/Compose gates. Customer management/account/admin UI remain separate slices.
+- What remains: fresh integrated source review and current-main full native/hosted/Compose gates. Exactde64 real PostgreSQL/Mailpit full journey passed3Chromium viewports, final source review approved. Customer management/account/admin UI remain separate slices.
 - Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits. Account/admin UI and management changes remain separate slices.
-- Verification: full frontend verifier passes108Angular tests and production build; complete handwritten coverage406/409lines393/416branches, strict CSP passes. Log /private/tmp/p24-cooldown-after.log. 248strictPython, documentation and regenerated contract checks pass at the implementation checkpoint. Independent findings reproduced99tests/7failures for late private responses, cleared selection during bootstrap and wrong-path fragments; keyboard91tests/1failure and IDNA100tests/1failure separately reproduced, then all100pass. Sanitized failure counts retained. Full backend/browser checks are not yet claimed.
-- Next concrete action: publish corrected implementation checkpoint, obtain fresh independent review and run isolated real browser journey, then all exact-revision gates after dependencies merge.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies:74,75,78;72 confirmed merged8702161; public selection70 confirmed merged6fc7e0a.
+- Verification: full frontend verifier passes109Angular tests and production build; complete handwritten coverage406/409lines393/416branches, strict CSP passes. Log /private/tmp/p24-main74-frontend.log. 248strictPython, documentation and regenerated contract checks pass at the implementation checkpoint. Independent findings reproduced99tests/7failures for late private responses, cleared selection during bootstrap and wrong-path fragments; keyboard91tests/1failure and IDNA100tests/1failure separately reproduced, then all100pass. Sanitized failure counts retained. Full backend/browser checks are not yet claimed.
+- Next concrete action: publish current-main integration, run fresh full native/hosted/Compose gates and obtain exact review; shared-access78 remains the unmerged prerequisite.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies:78;74 confirmed mergedaffe433,75 merged538e335,72 merged8702161; public selection70 confirmed merged6fc7e0a.

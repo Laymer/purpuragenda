@@ -211,4 +211,16 @@ describe('Real typed booking flow and private state', () => {
     expect(flow.phase()).toBe('review');
   });
 
+  it('submits the rendered reactive intake form into the current review-context contract', async () => {
+    await enter(); flow.intake.setValue(intake); fixture.detectChanges();
+    const event = new Event('submit', { bubbles: true, cancelable: true });
+    fixture.nativeElement.querySelector('form').dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    const request = http.expectOne(request => request.url === '/api/v1/booking-context');
+    expect(request.request.params.get('serviceId')).toBe(choice.service.id);
+    request.flush(terms); await settle(); fixture.detectChanges();
+    expect(flow.phase()).toBe('review'); expect(document.activeElement?.textContent).toBe('Review your request');
+    expect(fixture.nativeElement.querySelector('input[type="checkbox"]').checked).toBe(false);
+  });
+
 });
