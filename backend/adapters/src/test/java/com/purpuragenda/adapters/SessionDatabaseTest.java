@@ -352,8 +352,11 @@ class SessionDatabaseTest {
     @Test void accountStorageKeepsItsIdentityAndTwelveHourAbsoluteLimit() {
         UUID owner=UUID.randomUUID(),account=UUID.randomUUID();f.jdbc.update("INSERT INTO customer_identity VALUES (?,'account@example.test',clock_timestamp())",owner);
         f.jdbc.update("INSERT INTO customer_account VALUES (?,?,clock_timestamp())",account,owner);
-        f.jdbc.update("UPDATE app_session SET kind='ACCOUNT',customer_id=?,account_id=?,authenticated_at=issued_at,absolute_expires_at=issued_at+interval '12 hours' WHERE id=?",owner,account,ref().id());
+        f.jdbc.update("UPDATE app_session SET kind='ACCOUNT',customer_id=?,account_id=?,account_credential_version=1,authenticated_at=issued_at,absolute_expires_at=issued_at+interval '12 hours' WHERE id=?",owner,account,ref().id());
         var value=sessions.resolve(browser.token()).orElseThrow();assertEquals(Kind.ACCOUNT,value.kind());assertEquals(owner,value.customerId());assertEquals(account,value.accountId());assertEquals(Duration.ofHours(12),Duration.between(value.issuedAt(),value.absoluteExpiresAt()));
         f.fixture.denied("23514","UPDATE app_session SET csrf_hash='invalid'");f.fixture.denied("23514","UPDATE app_session SET absolute_expires_at=issued_at+interval '13 hours'");
+        f.fixture.denied("23514","UPDATE app_session SET account_credential_version=NULL");
+        f.jdbc.update("UPDATE customer_account SET credential_version=credential_version+1 WHERE id=?",account);
+        assertTrue(sessions.resolve(browser.token()).isEmpty());
     }
 }
