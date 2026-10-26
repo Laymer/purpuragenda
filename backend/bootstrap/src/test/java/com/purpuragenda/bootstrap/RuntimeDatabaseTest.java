@@ -293,6 +293,12 @@ class RuntimeDatabaseTest {
             cookie=redeemed.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];csrf=field(redeemed.body(),"csrfToken");
             var day=java.time.LocalDate.parse(text("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Brussels')::date")).plusDays(5);
             String start=day.atTime(9,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            var terms=call(port,"GET","/api/v1/booking-context?serviceId=10000000-0000-0000-0000-000000000001");
+            assertEquals(200,terms.statusCode());assertEquals("no-store",terms.headers().firstValue("Cache-Control").orElseThrow());
+            var reviewed=new com.fasterxml.jackson.databind.ObjectMapper().readTree(terms.body());
+            assertEquals(1,reviewed.at("/service/version").asLong());assertEquals(1,reviewed.at("/policy/version").asLong());
+            assertEquals("local-v1",reviewed.at("/notice/version").asText());assertTrue(reviewed.at("/notice/synthetic").asBoolean());
+            assertEquals(86400,reviewed.at("/policy/customerCutoffSeconds").asLong());
             String body="""
                 {"serviceId":"10000000-0000-0000-0000-000000000001","serviceVersion":1,"policyVersion":1,
                  "startInstant":"%s","displayZone":"Europe/Brussels","noticeVersion":"local-v1",
