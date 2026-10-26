@@ -19,7 +19,8 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
-        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession'},
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)

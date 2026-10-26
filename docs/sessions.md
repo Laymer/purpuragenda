@@ -87,3 +87,7 @@ throttle state effectively resets and the old rows are removed by cleanup one ho
 013 deletes existing `rate_limit_bucket` rows by design: no earlier code wrote them and they are ephemeral. A
 `SecurityMaintenance.tick()` skipped because another sweep is running reports `failed={overlap}`; that is expected
 and not an error.
+
+## Guest proof endpoints
+
+`POST /api/v1/guest/create-proofs` (`{email}`) and `/guest/management-proofs` (`{reference,email}`) require a live session, the exact Origin and CSRF like every unsafe route. The distributed email limits are charged before any lookup; the reply is `202 {"accepted":true}` for known and unknown contacts alike, after a fixed minimum latency that hides delivery work. `POST /guest/redemptions` (`{token,purpose}`) consumes the proof and rotates the session in one transaction (new cookie and CSRF proof, same browser binding). Every failure is `400 PROOF_INVALID`. Bodies must be strict flat JSON of at most 2 KiB. The emailed link keeps the proof in a URL fragment so it never reaches a server log; the landing page strips the fragment and redeems by POST.

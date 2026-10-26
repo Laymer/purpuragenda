@@ -1,0 +1,11 @@
+# Administrator password/TOTP login HTTP
+
+- Agent and UTC checkpoint: Codex-worker-b, 2026-10-26T15:32:43Z.
+- Current task: P17/admin-login; branch: task/p17-admin-login; base: main; PR URL: not yet created.
+- Last pushed implementation commit: predecessor guest8c96c10a121c48ddf4bbdeec83fa3eff66d666ed confirmed merged8f346ad7155ddee2d76906e491c5154e68298af5 in PR68 at15:28:32Z; uncommitted changes: this claim before administrator-login implementation.
+- What works: merged guest proof HTTP, durable AUTH delivery, JDBC sessions, factor-bound proof/session handoff and distributed attempt reservations.
+- What remains: bounded admin login application/HTTP orchestration, normalized account/IP reservation before factor work, server-internal request-bound proof exchange, generic failures, fresh cookie/CSRF, meaningful real MFA/replay/revocation tests, contract/client generation and all mandatory verification/review. Recovery HTTP is a later separately bounded slice and never ordinary authorization.
+- Decisions: POST /api/v1/admin/login accepts only email/password/totp behind existing Origin/session/CSRF guard. Application invokes authenticateForSession then atomically consumes the persisted proof via exchangeAdmin; standalone boolean factor success never authorizes. Canonical Input.email is the attempt subject; password/proof buffers are wiped. No migration anticipated. Coordinator granted the admin contract slot; P20 query work does not edit OpenAPI yet.
+- Verification: predecessor PR68 exact8c96c10 passed875Java (108domain/187application/540adapters/37bootstrap/3architecture),10Angular,234strictPython, all coverage, all14hosted, clean localCompose6 and independent exact integration review. New admin-login code/tests not yet implemented or verified.
+- Next concrete action: implement application orchestration with tests, controller and actual PostgreSQL MFA/session tests, then contract/SDK and full mandatory gates on the published head; request clean Compose slot and independent review before any merge.
+- Recovery: predecessor worktree/private/tmp/purpuragenda-p17-throttles and branch task/p17-auth-http remain clean/pushed; new worktree/private/tmp/purpuragenda-p17-admin-login. origin/recovery/2026-10-25-prototype6f9405b and all secrets/volumes/stashes preserved. stacked PR dependencies: none; PR67/68 confirmed merged.
