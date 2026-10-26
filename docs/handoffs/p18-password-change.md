@@ -1,8 +1,8 @@
 # P18 password change backend
 
-- Agent and UTC checkpoint: Codex-worker-a, 2026-10-26T19:14:00Z.
+- Agent and UTC checkpoint: Codex-worker-a, 2026-10-26T21:54:42Z.
 - Current task: P18/password-change; branch: task/p18-password-change; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/77.
-- Last pushed implementation commit: dda622e1fa2decbe36ab693ced234eb971b0825e; uncommitted changes: append-only predecessor73 integration3d8da93, including current main669bc5b.
+- Last pushed implementation commit: 4419542151f4cfbc5d41eb822da799363bfee27f; uncommitted changes: predecessor73 coverage correction34ec525, future-lastSeen denial and28-case account boundary suite.
 - What works: predecessor account authentication proofs, session epochs and read/mutation authority are implemented, with final current-main full gates pending on PR73. Password-change orchestration now passes5application and20actual PostgreSQL cases.
 - What remains: explicit old-password verification under account lock, authoritative current session/epoch verification, new password hash computed before locks, transactional credential version advancement, all account sessions and unconsumed proofs revoked, audit, rollback/concurrency/privacy tests. No HTTP or OpenAPI in this slice.
 - Decisions: coordinator approved current persisted session plus old password as fresh credential proof; do not invent an account age cutoff. Successful change signs out all sessions and requires normal login. Lock account before sessions; capture one authoritative time after required locks. Preserve applied migrations017/016/015 and014 reservation.
@@ -11,3 +11,5 @@
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b; predecessor worktree /private/tmp/purpuragenda-p18-account-auth preserved; stacked PR dependencies: PR73 account authentication.
 
 Integrated predecessor73 current-main head3d8da93 append-only; password-change production/tests unchanged. Both histories and guard union preserved,26mandatory report regressions/docs/diff pass. Full exact-head native/coverage/hosted/Compose and independent review remain required.
+
+Latest targeted17domain/5application/28actual PostgreSQL passes73seconds, zero failures/errors/skips;26mandatory report regressions/docs/diff pass. Added genuine cross-account, future credential, noncanonical storage, zero-row update and absent-authority cases. A mismatched-customer fixture correctly failed existing compositeFK23503; now explicitly asserts that database boundary instead of fabricating impossible authority. New postlock authority also rejects future lastSeen consistently with SessionStore. Diagnostic password-store branch coverage52/58 (not aggregate acceptance). Old hosted4419542 mandatory coverage failure and Docker interruption receipts retained. Full native remains held until predecessor73 final main merge per coordinator; no current fullpass claimed.

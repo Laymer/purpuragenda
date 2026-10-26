@@ -54,7 +54,7 @@ public final class PostgresAccountPassword implements AccountPasswordUnitOfWork 
         try(var query=connection.createStatement();var row=query.executeQuery("SELECT clock_timestamp()")) { row.next();now=row.getTimestamp(1).toInstant(); }
         if(credential!=null && (!"ACCOUNT".equals(kind) || !credential.accountId().equals(owner) || !credential.customerId().equals(customer)
                 || epoch==null || epoch!=credential.version() || revoked!=null || issued.isAfter(now) || !now.isBefore(expires)
-                || !now.isBefore(seen.plusSeconds(1800)) || authenticated==null || authenticated.isAfter(now)
+                || seen.isAfter(now) || !now.isBefore(seen.plusSeconds(1800)) || authenticated==null || authenticated.isAfter(now)
                 || enrolled==null || enrolled.isAfter(now) || changed==null || changed.isAfter(now)))credential=null;
         if(credential!=null && !Argon2PasswordHash.validEncoding(credential.passwordHash()))throw unavailable();
         return new Context(connection,credential,now);

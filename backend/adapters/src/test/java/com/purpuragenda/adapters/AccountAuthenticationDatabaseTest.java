@@ -269,4 +269,29 @@ class AccountAuthenticationDatabaseTest {
             assertTrue(sessions.inspect(session.token()).isPresent());assertNull(value("SELECT consumed_at FROM account_authentication_proof"));
         }
     }
+    @Test void noncanonicalStoredArgonEncodingNeverProducesAProofOrAccountSession() {
+        try(var proof=proof()) {
+            String original=value("SELECT password_hash FROM customer_account");
+            String invalid=original.substring(0,original.length()-1)+"B";
+            e.c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=credential_version+1,password_changed_at=clock_timestamp()",invalid);
+            assertTrue(exchange(sessions,proof).isEmpty());
+            unavailable(()->store.locked(EMAIL,context->context.credential()),"ACCOUNT_AUTHENTICATION_UNAVAILABLE");
+            assertEquals(0,count("app_session WHERE kind='ACCOUNT'"));assertNull(value("SELECT consumed_at FROM account_authentication_proof"));
+        }
+    }
+    @ParameterizedTest @ValueSource(strings={"revoked-browser","future-enrollment","future-password"})
+    void exchangeRechecksBrowserLifetimeAndCredentialNotBeforeAfterAllLocks(String boundary) {
+        try(var proof=proof()) {
+            PostgresSessions adapter=sessions;
+            if(boundary.equals("revoked-browser"))e.c.jdbc.update("UPDATE app_session SET revoked_at=clock_timestamp() WHERE id=?",browser.session().reference().id());
+            else if(boundary.equals("future-password"))e.c.jdbc.update("UPDATE customer_account SET password_changed_at=clock_timestamp()+interval '1 day'");
+            else {
+                e.c.jdbc.update("UPDATE app_session SET issued_at=issued_at-interval '1 minute',last_seen_at=issued_at-interval '1 minute',absolute_expires_at=issued_at+interval '119 minutes' WHERE id=?",browser.session().reference().id());
+                adapter=new PostgresSessions(e.c.clock(account.enrolledAt().minusNanos(1000),new AtomicInteger()));
+            }
+            assertTrue(exchange(adapter,proof).isEmpty());assertNull(value("SELECT consumed_at FROM account_authentication_proof"));
+            assertEquals(0,count("app_session WHERE kind='ACCOUNT'"));
+        }
+    }
+
 }

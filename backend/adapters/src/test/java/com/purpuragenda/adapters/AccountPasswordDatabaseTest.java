@@ -64,7 +64,7 @@ class AccountPasswordDatabaseTest {
         assertTrue(change().retryAfterSeconds()>0);assertEquals("1",value("SELECT credential_version FROM customer_account"));
         assertTrue(a.sessions.inspect(logged.token()).isPresent());assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
     }
-    @ParameterizedTest @ValueSource(strings={"browser","missing","revoked","epoch","anonymous","email"})
+    @ParameterizedTest @ValueSource(strings={"browser","missing","revoked","epoch","anonymous","email","other-account","wrong-customer","future-seen"})
     void onlyCurrentPersistedAccountOwnershipCanReplace(String mutation) {
         SessionBinding binding=binding();String email=a.EMAIL;
         switch(mutation) {
@@ -74,6 +74,15 @@ class AccountPasswordDatabaseTest {
             case "epoch" -> a.epoch();
             case "anonymous" -> binding=new SessionBinding(a.browser.session().reference().id(),a.browser.session().reference().browserHash());
             case "email" -> email="unknown@example.test";
+            case "other-account" -> {
+                try(var other=otherAccountLogin()) { var ref=other.session().reference();binding=new SessionBinding(ref.id(),ref.browserHash()); }
+            }
+            case "wrong-customer" -> {
+                var other=a.e.enroll(a.e.proof("another@example.test")).orElseThrow();
+                a.e.c.f.database.denied("23503","UPDATE app_session SET customer_id=? WHERE id=?",other.customerId(),binding.sessionId());
+                assertTrue(a.sessions.inspect(logged.token()).isPresent());return;
+            }
+            case "future-seen" -> a.e.c.jdbc.update("UPDATE app_session SET last_seen_at=clock_timestamp()+interval '1 hour' WHERE id=?",binding.sessionId());
         }
         assertFalse(command.change(email,binding,AccountEnrollmentDatabaseTest.password(),next(),a.IP).changed());
         assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
@@ -142,6 +151,44 @@ class AccountPasswordDatabaseTest {
             blocker.commit();assertFalse(future.get(10,TimeUnit.SECONDS));assertEquals(1,reads.get());
             assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
         }
+    }
+
+    Issued otherAccountLogin() {
+        String email="another@example.test";a.e.enroll(a.e.proof(email)).orElseThrow();
+        try(var browser=a.sessions.anonymous();var proof=a.command.authenticate(email,AccountEnrollmentDatabaseTest.password(),a.IP,
+                new SessionStore.ProofBinding(browser.session().reference().browserHash(),a.REQUEST))) {
+            return a.sessions.exchangeAccount(browser.session().reference(),a.REQUEST,proof.proof().orElseThrow().token().value()).orElseThrow();
+        }
+    }
+    @ParameterizedTest @ValueSource(strings={"enrolled","password"})
+    void futureCredentialTimestampsRejectEvenWhenTheCurrentSessionIsLive(String field) {
+        PostgresAccountPassword adapter=store;
+        if(field.equals("password"))a.e.c.jdbc.update("UPDATE customer_account SET password_changed_at=clock_timestamp()+interval '1 day'");
+        else {
+            a.e.c.jdbc.update("UPDATE app_session SET issued_at=issued_at-interval '1 minute',last_seen_at=issued_at-interval '1 minute',authenticated_at=issued_at-interval '1 minute',absolute_expires_at=issued_at+interval '719 minutes' WHERE id=?",binding().sessionId());
+            adapter=new PostgresAccountPassword(a.e.c.clock(a.account.enrolledAt().minusNanos(1000),new AtomicInteger()));
+        }
+        boolean present=adapter.locked(a.EMAIL,binding(),account->account.credential().isPresent());assertFalse(present);
+        assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+    }
+    @Test void noncanonicalStoredCredentialCannotAuthorizeAnOtherwiseMatchingRestoredSession() {
+        String original=value("SELECT password_hash FROM customer_account");String invalid=original.substring(0,original.length()-1)+"B";
+        a.e.c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=credential_version+1,password_changed_at=clock_timestamp()",invalid);
+        a.e.c.jdbc.update("UPDATE app_session SET account_credential_version=2 WHERE id=?",binding().sessionId());
+        unavailable(this::change);assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+    }
+    @Test void aTriggerSuppressingTheCredentialWriteCannotCommitRevocationOrSuccess() throws Exception {
+        try(var connection=a.e.c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"CREATE FUNCTION suppress_password() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$");
+            MigrationTest.execute(connection,"CREATE TRIGGER suppress_password BEFORE UPDATE ON customer_account FOR EACH ROW EXECUTE FUNCTION suppress_password()");
+        }
+        unavailable(this::change);assertEquals("1",value("SELECT credential_version FROM customer_account"));
+        assertTrue(a.sessions.inspect(logged.token()).isPresent());assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+    }
+    @Test void absentCredentialCannotBeReplacedThroughTheTransactionalPort() {
+        String hash=new Argon2PasswordHash().hash(next());
+        unavailable(()->store.locked("unknown@example.test",binding(),account->{account.replacePassword(hash);return null;}));
+        assertEquals("1",value("SELECT credential_version FROM customer_account"));assertTrue(a.sessions.inspect(logged.token()).isPresent());
     }
 
 }
