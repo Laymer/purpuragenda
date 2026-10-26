@@ -76,7 +76,7 @@ def validate(root):
             raise ValueError('Missing mandatory runtime PostgreSQL report')
         suite = ET.parse(report).getroot()
         cases = suite.findall('testcase')
-        if (suite.get('name') != qualified or len(cases) < 13 or int(suite.get('tests', '0')) != len(cases)
+        if (suite.get('name') != qualified or len(cases) < 14 or int(suite.get('tests', '0')) != len(cases)
                 or any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
                 or any(suite.findall('.//' + key) for key in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed runtime PostgreSQL suite')
