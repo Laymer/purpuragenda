@@ -63,6 +63,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
         // A concurrent guarded request can touch activity after resource time was captured, before this row lock.
         // That newer activity is legitimate; issued/expiry/fresh-factor bounds still use the one command time.
         if(row.revoked()!=null || row.issued().isAfter(now) || !now.isBefore(row.expires())
+                || (row.authenticated()!=null && row.authenticated().isAfter(now))
                 || !now.isBefore(row.lastSeen().plusSeconds(ADMIN_IDLE_SECONDS)) || row.epoch()==null || row.epoch()!=admin.getFirst()[0])throw unauthenticated();
         // Idle activity never extends the absolute lifetime; stale MFA is distinguishable so the UI can re-authenticate.
         if(row.authenticated()==null || !now.isBefore(row.authenticated().plusSeconds(FRESH_MFA_SECONDS)))

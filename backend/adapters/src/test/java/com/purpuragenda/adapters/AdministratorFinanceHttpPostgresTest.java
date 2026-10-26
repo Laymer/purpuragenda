@@ -158,6 +158,14 @@ class AdministratorFinanceHttpPostgresTest {
         try(var connection=f.fixture.connection(MigrationTest.MIGRATOR)) { MigrationTest.execute(connection,"DROP TRIGGER fail_finance_http ON outbox_event"); }
         entry(receipt(admin,id,"retry",100));assertEquals(1,count("payment_entry"));
     }
+    @Test void futureFactorTimeCannotBecomeAuthorizedWhenOnlyOrdinaryConcurrentActivityIsAllowed() throws Exception {
+        UUID id=booking(false,false);var admin=admin();var actual=unit;
+        build((command,work)->{
+            f.jdbc.update("UPDATE app_session SET authenticated_at=t,last_seen_at=t FROM (SELECT clock_timestamp()+interval '1 hour' t) captured WHERE id=?",admin.reference().id());
+            return actual.execute(command,work);
+        });
+        login.problem(receipt(admin,id,"future-factor",100),401,"SESSION_REQUIRED");assertEquals(0,count("payment_entry"));
+    }
     @Test void aConcurrentRealSessionTouchAfterResourceTimeCaptureDoesNotInvalidateTheCommand() throws Exception {
         UUID id=booking(false,false);var admin=admin();var captured=new CountDownLatch(1);var touched=new CountDownLatch(1);var time=new AtomicReference<Instant>();var captures=new AtomicInteger();
         build(new PostgresFinance(clock(now->{
