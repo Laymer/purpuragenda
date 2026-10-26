@@ -110,7 +110,12 @@ class MigrationReportTest(unittest.TestCase):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="{count}" skipped="{skipped}"/>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="2"/>')
+        for cases, nested in ((2, ''), (3, '<failure/>'), (3, '<error/>'), (3, '<skipped/>')):
+            report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="3">' +
+                              '<testcase/>' * (cases - 1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="3">' + '<testcase/>' * 3 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_expiry_requires_its_own_complete_unskipped_database_suite(self):

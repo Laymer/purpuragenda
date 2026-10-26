@@ -72,7 +72,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T19:07:45Z.
 - Current task: P19/booking-context; branch: task/p19-booking-context; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/74.
-- Last pushed implementation commit: context8de0390; uncommitted changes: completed context contract/generated client/typed protocol tests after local recovery integration a3ea561.
+- Last pushed implementation commit: contract343cce4; uncommitted changes: repeatable-read public snapshot correction, real concurrent configuration regression and strict report evidence.
 - What works: new public context targeted17domain/4application/3HTTP/3configuration/12actual runtime cases passed. Current main includes confirmed administrator login PR71 and customer query PR69.
 - What remains: public authoritative service/policy/notice context for the review step, local synthetic notice and explicit operational notice configuration; all full v1 gates remain mandatory.
 - Decisions: separate worktree while earlier PRs verify. Read-only advisory context; customer creation still checks exact service/policy/notice versions atomically. Notice content is plaintext, never HTML. Recovery checkpoint ef679f2 integrated; coordinator owns context contract until publication. Service wire shape reuses the existing typed Service including active=true.
