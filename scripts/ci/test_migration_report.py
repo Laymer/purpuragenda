@@ -170,11 +170,13 @@ class MigrationReportTest(unittest.TestCase):
         report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
         report.parent.mkdir(parents=True)
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
-        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 13, ''), ('<testcase/>' * 14, 'errors="1"'),
-                                  ('<testcase><skipped/></testcase>' * 14, ''), ('<testcase><error/></testcase>' * 14, '')):
-            report.write_text(f'<testsuite name="{qualified}" tests="14" {attributes}>{cases}</testsuite>')
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 14, ''), ('<testcase/>' * 15, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 15, ''), ('<testcase><error/></testcase>' * 15, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="15" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text(f'<testsuite name="{qualified}" tests="14">' + '<testcase/>' * 14 + '</testsuite>')
+        with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="15">' + '<testcase/>' * 15 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_operator_migration_requires_its_own_database_report(self):
@@ -350,6 +352,19 @@ class MigrationReportTest(unittest.TestCase):
                               + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
+        GATE.validate(self.root)
+
+    def test_admin_finance_http_requires_actual_mfa_money_races_and_rollback_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorFinanceController.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator finance controller')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorFinanceHttpPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (15,15,''), (16,15,''), (17,16,''), (16,16,'<failure/>'), (16,16,'<error/>'), (16,16,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorFinanceHttpPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorFinanceHttpPostgresTest" tests="16">' + '<testcase/>' * 16 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):

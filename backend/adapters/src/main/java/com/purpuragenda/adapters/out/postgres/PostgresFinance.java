@@ -60,7 +60,9 @@ public final class PostgresFinance implements FinanceUnitOfWork {
         List<long[]> admin=jdbc.query("SELECT security_version FROM admin_user WHERE id=? AND enabled AND enrolled FOR UPDATE",(r,n)->new long[]{r.getLong(1)},initial.admin());
         Row row=session(binding,true);
         if(admin.size()!=1 || row==null || !"ADMIN".equals(row.kind()) || !initial.admin().equals(row.admin()))throw unauthenticated();
-        if(row.revoked()!=null || row.issued().isAfter(now) || !now.isBefore(row.expires()) || now.isBefore(row.lastSeen())
+        // A concurrent guarded request can touch activity after resource time was captured, before this row lock.
+        // That newer activity is legitimate; issued/expiry/fresh-factor bounds still use the one command time.
+        if(row.revoked()!=null || row.issued().isAfter(now) || !now.isBefore(row.expires())
                 || !now.isBefore(row.lastSeen().plusSeconds(ADMIN_IDLE_SECONDS)) || row.epoch()==null || row.epoch()!=admin.getFirst()[0])throw unauthenticated();
         // Idle activity never extends the absolute lifetime; stale MFA is distinguishable so the UI can re-authenticate.
         if(row.authenticated()==null || !now.isBefore(row.authenticated().plusSeconds(FRESH_MFA_SECONDS)))
