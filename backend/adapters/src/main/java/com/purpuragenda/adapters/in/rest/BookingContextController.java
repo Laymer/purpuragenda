@@ -31,7 +31,7 @@ public final class BookingContextController {
             body.put("businessZone",SchedulingPolicy.BUSINESS_ZONE.getId());body.put("reservationMinutes",120);
             var selected=body.putObject("service");selected.put("id",service.id().toString());selected.put("version",service.version());
             selected.put("name",service.name());selected.put("durationMinutes",service.durationMinutes());
-            selected.put("priceMinor",service.price().minor());selected.put("currency",service.price().currency());
+            selected.put("active",service.active());selected.put("priceMinor",service.price().minor());selected.put("currency",service.price().currency());
             var rules=body.putObject("policy");rules.put("version",policy.version());rules.put("gridMinutes",policy.gridMinutes());rules.put("dailyCapacity",policy.dailyCapacity());
             rules.put("minimumNoticeSeconds",policy.minimumNotice().getSeconds());rules.put("pendingLifetimeSeconds",policy.pendingLifetime().getSeconds());
             rules.put("expiryBufferSeconds",policy.expiryBuffer().getSeconds());rules.put("customerCutoffSeconds",policy.customerCutoff().getSeconds());

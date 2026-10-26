@@ -23,9 +23,9 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account login/profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | In progress; booking review context claimed in task/p19-booking-context; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query draftPR69 c02ddb3 passes exact-head checks, awaits main integration; coordinator claims stacked customer-http slice |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd after all required gates; customer HTTP draftPR72 and public review context74 remain |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
-| P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
+| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; Codex-worker-b claims persisted administrator agenda/detail reads on task/p22-admin-view; mutation HTTP remains |
 | P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
-- P17/admin-recovery: agent=Codex-worker-b; branch=task/p17-admin-recovery; base=main; handoff=docs/handoffs/p17-admin-recovery.md
+- P22/admin-view: agent=Codex-worker-b; branch=task/p22-admin-view; base=main; handoff=docs/handoffs/p22-admin-view.md
 - P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
 
@@ -70,12 +70,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:48:00Z.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T19:07:45Z.
 - Current task: P19/booking-context; branch: task/p19-booking-context; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/74.
-- Last pushed implementation commit: context8de0390; uncommitted changes: append-only recovery contract checkpoint ef679f2 integration, preserving all runtime13 cases.
-- What works: new public context targeted17domain/4application/3HTTP/3configuration/12actual runtime cases passed. Current main includes confirmed administrator login PR71.
+- Last pushed implementation commit: context8de0390; uncommitted changes: completed context contract/generated client/typed protocol tests after local recovery integration a3ea561.
+- What works: new public context targeted17domain/4application/3HTTP/3configuration/12actual runtime cases passed. Current main includes confirmed administrator login PR71 and customer query PR69.
 - What remains: public authoritative service/policy/notice context for the review step, local synthetic notice and explicit operational notice configuration; all full v1 gates remain mandatory.
-- Decisions: separate worktree while earlier PRs verify. Read-only advisory context; customer creation still checks exact service/policy/notice versions atomically. Notice content is plaintext, never HTML. Recovery worker released contract checkpoint ef679f2; coordinator now owns public-context contract extension.
-- Verification: targeted39Java cases passed; final focused27Java and240strictPython cases pass after unknown-mode regression. Initial selector omitted domain tests and failed rather than skipping them; claim metadata corrected from prior completed public catalog state to active context work. Parent72 native running; query69 all14hosted/Compose6/source review pass, native pending.
-- Next concrete action: rerun final focused configuration checks, publish backend checkpoint and integrate recovery contract after slot release; full native/current-main/Compose/review mandatory.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every worktree/secret/volume preserved; stacked PR dependencies: PR69, PR72 and recovery PR75 before this slice merges.
+- Decisions: separate worktree while earlier PRs verify. Read-only advisory context; customer creation still checks exact service/policy/notice versions atomically. Notice content is plaintext, never HTML. Recovery checkpoint ef679f2 integrated; coordinator owns context contract until publication. Service wire shape reuses the existing typed Service including active=true.
+- Verification: targeted39Java cases passed; final focused27Java and240strictPython cases pass after unknown-mode regression. Initial selector omitted domain tests and failed rather than skipping them; claim metadata corrected from prior completed public catalog state to active context work. Integrated40Java,17Angular,243Python and16contract/regeneration cases pass; parent72 baseline958Java/14Angular/240Python passes. Query69 confirmed merged after all required gates.
+- Next concrete action: publish contract checkpoint/release ownership; integrate updated72/main and forthcoming notification/account foundations before final native/Compose/hosted/exact review.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every worktree/secret/volume preserved; stacked PR dependencies: PR69 confirmed merged; PR72 and recovery PR75 must merge before this slice.

@@ -19,7 +19,7 @@ class BookingContextHttpTest {
         assertEquals("no-store",response.getHeader("Cache-Control"));assertNull(response.getHeader("ETag"));
         var body=JsonMapper.builder().build().readTree(response.getContentAsString());
         assertEquals(7,body.size());assertEquals("Europe/Brussels",body.get("businessZone").asText());assertEquals(120,body.get("reservationMinutes").asInt());
-        assertEquals(3,body.at("/service/version").asLong());assertEquals(1500,body.at("/service/priceMinor").asLong());
+        assertTrue(body.at("/service/active").asBoolean());assertEquals(3,body.at("/service/version").asLong());assertEquals(1500,body.at("/service/priceMinor").asLong());
         assertEquals(60,body.at("/service/durationMinutes").asInt());assertEquals("EUR",body.at("/service/currency").asText());
         assertEquals(7,body.at("/policy/version").asLong());assertEquals(86400,body.at("/policy/pendingLifetimeSeconds").asLong());
         assertEquals(notice.text(),body.at("/notice/text").asText());assertEquals(notice.version(),body.at("/notice/version").asText());assertTrue(body.at("/notice/synthetic").asBoolean());
