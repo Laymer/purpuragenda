@@ -23,6 +23,8 @@ public interface AdminBookingUnitOfWork {
     interface Creation extends Transaction {
         /** Find or create the stable customer identity for a normalized email; rolls back with a failed attempt. */
         Customer customer(String email);
+        /** True when another booking already holds this participant meeting id (unique across all bookings). */
+        boolean meetingInUse(String meetingId);
         /** Persist audit, outbox and (when an override was used) the immutable override record for the saved booking. */
         void createdEffects(Booking booking,SchedulingRules.Override override);
     }
