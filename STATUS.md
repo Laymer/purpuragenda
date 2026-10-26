@@ -26,7 +26,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTP draftPR72 verifies current integration |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
-| P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
+| P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selectionPR70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -70,12 +70,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:03:00Z.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:22:00Z.
 - Current task: P20/customer-http; branch: task/p20-customer-http; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/72.
-- Last pushed implementation commit: b5077ae; uncommitted changes: confirmed account73/main integration and read-snapshot future-activity boundary regression/fix.
+- Last pushed implementation commit: ce0a1c2; uncommitted changes: confirmed public selection70/main integration and reviewed deterministic runtime-port isolation regression/fix.
 - What works: protected create/GET/cancel/reschedule composition and explicit strict wire models; real proof/session/CSRF/transaction tests; four OpenAPI operations and regenerated typed client.
 - What remains: full integrated native/coverage/hosted/Compose/exact review; public reviewed terms and all customer UI remain separate required slices. Query PR69 is confirmed merged f99a8dd; notification64 confirmed merged669bc5b and integrated; account73 confirmed mergedcde517c and integrated before final HTTP gates.
-- Decisions: runtime combines customerOrder11 and administratorOrder12 with strict12-case guard. Credentials/intake remain in memory and request-only models. Generated allowedActions uses Array matching JSON; no unhydrated Set. Existing coverage thresholds and source completeness remain unchanged.
-- Verification: corrected snapshot boundary target43Java (17domain/4application/22actualPG) passes, mandatory query22; targeted5wire/3controller/6actualPGHTTP and12runtimePG pass after Docker recovery; fresh14Angular tests/build pass with handwritten22/22lines30/30branches.14contract cases and regeneration pass. Earlier Docker interruption and contract assertion/generator mismatch remain documented failures; full current-head gates pending. PR71 confirmed merged d96e0a6 after921Java/11Angular/237Python,14hosted/Compose6/exact review.
+- Decisions: runtime combines customerOrder11, administratorOrder12 and independent port-isolationOrder18 with strict13-case guard. Credentials/intake remain in memory and request-only models. Generated allowedActions uses Array matching JSON; no unhydrated Set. Existing coverage thresholds and source completeness remain unchanged.
+- Verification: ce0 baseline fullnative/coverage/14Angular/244Python plus all14hosted/cleanCompose6/exactreview pass; new integration requires fresh gates. Corrected snapshot boundary target43Java (17domain/4application/22actualPG) passes, mandatory query22; targeted5wire/3controller/6actualPGHTTP and12runtimePG pass after Docker recovery; fresh14Angular tests/build pass with handwritten22/22lines30/30branches.14contract cases and regeneration pass. Earlier Docker interruption and contract assertion/generator mismatch remain documented failures; full current-head gates pending. PR71 confirmed merged d96e0a6 after921Java/11Angular/237Python,14hosted/Compose6/exact review.
 - Next concrete action: publish current-main integration, run all implemented categories, clean Compose and exact review.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: PR69 and PR71 confirmed merged; notification64 confirmed merged; fresh integrated gates remain. No full local milestone claimed.

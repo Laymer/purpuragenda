@@ -41,7 +41,7 @@ class RuntimeDatabaseTest {
                     "app.database-password-file",directory.resolve("app").toString(),"app.mode","local",
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
-                    "app.delivery-key-id","delivery-test-v1","server.port","0"));
+                    "app.delivery-key-id","delivery-test-v1","SERVER_PORT","0"));
             properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
@@ -359,6 +359,15 @@ class RuntimeDatabaseTest {
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
 
+    @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
+        var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
+        try(var first=Purpuragenda.launch(new String[0],isolated);
+            var second=Purpuragenda.launch(new String[0],isolated)) {
+            assertNotEquals(port(first),port(second));
+            assertEquals(200,get(port(first),"/actuator/health/readiness").statusCode());
+            assertEquals(200,get(port(second),"/actuator/health/readiness").statusCode());
+        }
+    }
     static HttpResponse<String> login(int port,String body,String cookie,String csrf) throws Exception {
         try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
             return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/admin/login")).timeout(Duration.ofSeconds(5))
