@@ -38,17 +38,19 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBooking.java').is_file():
         suites.append(('CustomerCreationPostgresTest', 43))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBookingQuery.java').is_file():
-        suites.append(('CustomerBookingQueryPostgresTest', 19))
+        suites.append(('CustomerBookingQueryPostgresTest', 22))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresRateLimits.java').is_file():
         suites.append(('RateLimitDatabaseTest', 17))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSecurityCleanup.java').is_file():
         suites.append(('SecurityCleanupDatabaseTest', 18))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountEnrollment.java').is_file():
         suites.append(('AccountEnrollmentDatabaseTest', 20))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountAuthentication.java').is_file():
+        suites.append(('AccountAuthenticationDatabaseTest', 26))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CustomerBookingController.java').is_file():
-        suites.append(('CustomerBookingHttpPostgresTest', 5))
+        suites.append(('CustomerBookingHttpPostgresTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():
         suites.append(('AdministratorLoginPostgresTest', 12))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorRecoveryController.java').is_file():
@@ -63,7 +65,7 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AccountEnrollmentDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AccountEnrollmentDatabaseTest', 'AccountAuthenticationDatabaseTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed authority cases')
 
@@ -74,7 +76,7 @@ def validate(root):
             raise ValueError('Missing mandatory runtime PostgreSQL report')
         suite = ET.parse(report).getroot()
         cases = suite.findall('testcase')
-        if (suite.get('name') != qualified or len(cases) < 13 or int(suite.get('tests', '0')) != len(cases)
+        if (suite.get('name') != qualified or len(cases) < 14 or int(suite.get('tests', '0')) != len(cases)
                 or any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
                 or any(suite.findall('.//' + key) for key in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed runtime PostgreSQL suite')

@@ -50,8 +50,9 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
         UUID actor;
         if(initial.kind().equals("GUEST")) actor=manageGrant(initial,binding.browserHash(),bookingId,now);
         else if(initial.kind().equals("ACCOUNT")) {
-            actor=jdbc.query("SELECT id FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
-                    (r,n)->r.getObject(1,UUID.class),initial.account(),initial.customer()).stream().findFirst().orElseThrow(PostgresBookingChanges::denied);
+            var version=jdbc.query("SELECT credential_version FROM customer_account WHERE id=? AND customer_id=? FOR UPDATE",
+                    (r,n)->r.getLong(1),initial.account(),initial.customer()).stream().findFirst().orElseThrow(PostgresBookingChanges::denied);
+            if(!Objects.equals(version,initial.accountVersion()))throw denied();actor=initial.account();
         } else throw denied();
         // Lock order: resource -> grant/account -> session -> booking/customer. Recheck after the lock.
         PersistedSession current=PersistedSession.find(jdbc,binding,true);

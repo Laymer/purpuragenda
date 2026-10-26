@@ -36,10 +36,11 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery 
                     SELECT EXISTS (
                       SELECT 1 FROM app_session s JOIN booking b ON b.customer_id=s.customer_id
                       WHERE s.id=? AND s.browser_hash=? AND b.id=? AND s.revoked_at IS NULL
-                        AND s.issued_at<=? AND s.absolute_expires_at>? AND s.last_seen_at+interval '30 minutes'>?
+                        AND s.issued_at<=? AND s.last_seen_at<=? AND s.absolute_expires_at>? AND s.last_seen_at+interval '30 minutes'>?
                         AND (
                           (s.kind='ACCOUNT' AND EXISTS (
-                            SELECT 1 FROM customer_account a WHERE a.id=s.account_id AND a.customer_id=s.customer_id))
+                            SELECT 1 FROM customer_account a WHERE a.id=s.account_id AND a.customer_id=s.customer_id
+                              AND a.credential_version=s.account_credential_version))
                           OR (s.kind='GUEST' AND EXISTS (
                             SELECT 1 FROM access_grant g WHERE g.id=s.grant_id AND g.customer_id=s.customer_id
                               AND g.browser_hash=s.browser_hash AND g.booking_id=b.id AND g.revoked_at IS NULL AND g.issued_at<=?
@@ -55,7 +56,7 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery 
                     )
                     """,Boolean.class,session.sessionId(),session.browserHash(),bookingId,
                         Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),
-                        Timestamp.from(now),Timestamp.from(now),Timestamp.from(now)));
+                        Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now)));
                 if(!permitted)return Optional.empty();
                 var booking=bookings.booking(bookingId).orElseThrow();
                 var entries=jdbc.query("SELECT id,kind,amount_minor,currency,method,reference,verified_at,receipt_id FROM payment_entry WHERE booking_id=? ORDER BY verified_at,id",
