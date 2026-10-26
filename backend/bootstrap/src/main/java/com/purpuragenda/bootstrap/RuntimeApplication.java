@@ -12,6 +12,8 @@ import com.purpuragenda.application.*;
 import com.purpuragenda.application.port.out.*;
 import com.purpuragenda.application.scheduling.PublicScheduling;
 import com.purpuragenda.application.scheduling.CustomerBooking;
+import com.purpuragenda.application.scheduling.BookingNotice;
+import com.purpuragenda.application.scheduling.PublicBookingContext;
 import com.purpuragenda.application.scheduling.CustomerBookingChanges;
 import com.purpuragenda.application.scheduling.CustomerBookingView;
 import javax.sql.DataSource;
@@ -84,9 +86,13 @@ public class RuntimeApplication {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
-    @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,Environment environment,SessionAccess access,SessionCookies cookies) {
-        // Operational settings already require an explicit non-local notice version before this bean is composed.
-        var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),environment.getProperty("app.notice-version","local-v1"));
+    @Bean BookingNotice bookingNotice(Environment environment) { return RuntimeNotice.read(environment); }
+    @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {
+        return new BookingContextController(new PublicBookingContext(work,notice));
+    }
+    @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,BookingNotice notice,SessionAccess access,SessionCookies cookies) {
+        // Review and submission share the same immutable configured notice.
+        var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),notice.version());
         var changes=new CustomerBookingChanges(new PostgresBookingChanges(source,settings.meetingHosts()));
         var views=new CustomerBookingView(new PostgresCustomerBookingQuery(source,settings.meetingHosts()));
         return new CustomerBookingController(create,changes,views,access,cookies);

@@ -1849,6 +1849,137 @@
           }
         }
       }
+    },
+    "/booking-context": {
+      "get": {
+        "operationId": "getBookingContext",
+        "tags": [
+          "Catalog"
+        ],
+        "security": [],
+        "description": "Retrieve current active service, policy and configured notice in one anonymous database snapshot. Exactly one canonical serviceId parameter is required; unknown parameters are rejected. No customer data, session touch, reservation or mutation.",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical UUID of the selected active service."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current review content. Refresh and require review again if selected service/policy/notice versions change.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingReviewContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST: malformed, duplicate or unexpected query parameter.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SERVICE_UNAVAILABLE: unknown and archived services are indistinguishable.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "TEMPORARILY_UNAVAILABLE; no provider details.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe noncacheable problem.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2657,6 +2788,125 @@
           }
         },
         "description": "Show the ten new recovery codes once. No session is issued. Sign in with fresh password/TOTP after reenrollment."
+      },
+      "BookingReviewContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
+        "required": [
+          "serverNow",
+          "horizon",
+          "businessZone",
+          "reservationMinutes",
+          "service",
+          "policy",
+          "notice"
+        ],
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horizon": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "description": "Europe/Brussels civil business zone."
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 120,
+            "maximum": 120
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BookingReviewPolicy"
+          },
+          "notice": {
+            "$ref": "#/components/schemas/BookingReviewNotice"
+          }
+        }
+      },
+      "BookingReviewNotice": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
+        "required": [
+          "version",
+          "text",
+          "synthetic"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16000
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BookingReviewPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Current immutable policy. Hold expiry is min(creation plus pending lifetime, start minus expiry buffer). Customer cutoff equality is allowed; all durations are elapsed seconds.",
+        "required": [
+          "version",
+          "gridMinutes",
+          "dailyCapacity",
+          "minimumNoticeSeconds",
+          "pendingLifetimeSeconds",
+          "expiryBufferSeconds",
+          "customerCutoffSeconds"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "gridMinutes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "dailyCapacity": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "minimumNoticeSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "pendingLifetimeSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "expiryBufferSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "customerCutoffSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       }
     },
     "securitySchemes": {
