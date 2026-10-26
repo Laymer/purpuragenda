@@ -109,6 +109,13 @@ class AccountHttpPostgresTest {
             var fresh=boot();problem(send(fresh,LOGIN,loginBody()),401,"AUTHENTICATION_FAILED");assertEquals(200,send(fresh,LOGIN,loginBody(aEmail(),newPassword())).getStatus());
         }
     }
+    @Test void aKnownOtherPasswordCannotChangeAnotherAccountThroughTheCurrentSession() throws Exception {
+        var current=login();String other="other-credential@example.test";a.e.enroll(a.e.proof(other)).orElseThrow();
+        String body=JsonMapper.builder().build().createObjectNode().put("email",other).put("currentPassword",new String(AccountEnrollmentDatabaseTest.password())).put("newPassword",newPassword()).toString();
+        problem(send(current,PASSWORD,body),401,"AUTHENTICATION_FAILED");
+        assertTrue(a.sessions.inspect(current.cookie().toCharArray()).isPresent());assertEquals(2,count("customer_account WHERE credential_version=1"));
+        assertEquals(0,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+    }
     @Test void wrongOldPasswordAndInvalidReplacementPreserveTheCurrentSessionAndCredential() throws Exception {
         var current=login();problem(send(current,PASSWORD,passwordBody("synthetic-wrong-password",newPassword())),401,"AUTHENTICATION_FAILED");
         problem(send(current,PASSWORD,passwordBody(new String(AccountEnrollmentDatabaseTest.password()),"short")),400,"INVALID_REQUEST");
