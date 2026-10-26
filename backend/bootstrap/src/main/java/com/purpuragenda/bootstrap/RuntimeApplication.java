@@ -55,6 +55,13 @@ public class RuntimeApplication {
     @Bean SessionAccess sessionAccess(SessionStore sessions) { return new SessionAccess(sessions); }
     @Bean SessionCookies sessionCookies(RuntimeSettings settings) { return settings.localCookies()?SessionCookies.local():SessionCookies.operational(); }
     @Bean SessionController sessionController(SessionAccess access,SessionCookies cookies) { return new SessionController(access,cookies); }
+    @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
+    @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
+        var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));
+        registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+20);
+        registration.addUrlPatterns("/*"); // the filter itself decides on the normalized path
+        return registration;
+    }
     @Bean FilterRegistrationBean<ApiGuardFilter> apiGuard(RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
         var registration=new FilterRegistrationBean<>(new ApiGuardFilter(settings.canonicalOrigin(),access,cookies,new ClientAddress(settings.trustedProxyPeers())));
         registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+10);

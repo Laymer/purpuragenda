@@ -40,12 +40,12 @@ export class CatalogService extends BaseService {
     }
 
     /**
-     * Inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Revalidate all availability during booking mutations.
+     * Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled (by a servlet filter, before the handler) to 120 requests per minute per client address; malformed requests are charged too.
      * @endpoint get /availability
-     * @param serviceId 
+     * @param serviceId Active service; archived or unknown services are 404.
      * @param from 
      * @param to 
-     * @param displayZone 
+     * @param displayZone IANA zone identifier selecting the display zone.
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
@@ -148,6 +148,7 @@ export class CatalogService extends BaseService {
     }
 
     /**
+     * Active catalog. Revalidated on every use (Cache-Control: no-cache) with a strong ETag; send If-None-Match to receive 304. Each service carries the version later bound by booking review.
      * @endpoint get /services
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
