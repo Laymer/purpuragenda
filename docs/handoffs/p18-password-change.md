@@ -1,0 +1,11 @@
+# P18 password change backend
+
+- Agent and UTC checkpoint: Codex-worker-a, 2026-10-26T19:14:00Z.
+- Current task: P18/password-change; branch: task/p18-password-change; base: main; PR URL: not yet created.
+- Last pushed implementation commit: stacked predecessor PR73 7f7c13a; uncommitted changes: application/port/JDBC and test slice ready for first published checkpoint.
+- What works: predecessor account authentication proofs, session epochs and read/mutation authority are implemented, with final current-main full gates pending on PR73. Password-change orchestration now passes5application and20actual PostgreSQL cases.
+- What remains: explicit old-password verification under account lock, authoritative current session/epoch verification, new password hash computed before locks, transactional credential version advancement, all account sessions and unconsumed proofs revoked, audit, rollback/concurrency/privacy tests. No HTTP or OpenAPI in this slice.
+- Decisions: coordinator approved current persisted session plus old password as fresh credential proof; do not invent an account age cutoff. Successful change signs out all sessions and requires normal login. Lock account before sessions; capture one authoritative time after required locks. Preserve applied migrations017/016/015 and014 reservation.
+- Verification: corrected targeted run passes17domain/5application/20actual PostgreSQL cases, zero failures/errors/skips,75seconds;26mandatory report regressions and docs validator pass. Initial assertion overload compilation fixture corrected; rollback-injection DDL role fixture initially failed42501 and now uses isolated migrator (count-only evidence artifacts/p18-password-failure/fixture-role.json). No production privilege changed; predecessor corrected session fixture target passes17domain/7application/35actual PostgreSQL cases. No full aggregate acceptance claimed.
+- Next concrete action: publish draft and run all implemented categories with independent exact-head review; final integration waits predecessor73/current-main after prioritized64. Final merge waits PR73 and current-main gates.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b; predecessor worktree /private/tmp/purpuragenda-p18-account-auth preserved; stacked PR dependencies: PR73 account authentication.
