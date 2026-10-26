@@ -207,8 +207,21 @@ class LedgerTest(unittest.TestCase):
     def test_published_handoff_branch_and_pr_agree_between_ledger_and_record(self):
         root = Path(__file__).resolve().parents[2]
         line = 'branch: task/p01-claude-handoff-v2; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/50'
-        for name in ('STATUS.md', 'docs/handoffs/p01-claude-handoff.md'):
-            self.assertIn(line, (root / name).read_text())
+        self.assertIn(line, (root / 'docs/handoffs/p01-claude-handoff.md').read_text())
+        # The archived handoff remains immutable; the live coordinator must be free to resume development.
+        row = next(line for line in (root / 'STATUS.md').read_text().splitlines() if line.startswith('| P01 — '))
+        self.assertIn('https://github.com/Laymer/purpuragenda/pull/50', row)
+
+    def test_coordinator_can_resume_another_task_while_preserving_the_archived_handoff(self):
+        resumed = self.handoff.replace('P01/concurrency', 'P45/durable-workers').replace('task/p01;', 'task/p45;')
+        (self.root / 'docs/handoffs/p45.md').write_text(resumed)
+        claim = self.claim.replace('P01/concurrency', 'P45/durable-workers').replace('task/p01;', 'task/p45;').replace('p01.md', 'p45.md')
+        ledger = self.ledger.replace('| P01 — Task | In progress |',
+                                    '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/50 |')
+        ledger = ledger.replace('| P45 — Task | Not started |', '| P45 — Task | In progress |').replace(self.claim, claim)
+        ledger = ledger.split('## Active handoff\n')[0] + '## Active handoff\n\n' + resumed
+        self.assertEqual([], self.validate(ledger))
+        self.assertEqual(self.handoff, (self.root / 'docs/handoffs/p01.md').read_text())
 
     def test_local_testing_guide_names_real_commands_and_forbids_volume_deletion(self):
         text = (Path(__file__).resolve().parents[2] / 'docs/local-testing.md').read_text()

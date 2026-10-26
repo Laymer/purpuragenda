@@ -43,9 +43,13 @@ public class RuntimeApplication {
     @Bean RateLimitStore rateLimits(DataSource source,RuntimeSettings settings) { return new PostgresRateLimits(source,settings.rate()); }
     @Bean RequestThrottle requestThrottle(RateLimitStore limits) { return new RequestThrottle(limits); }
     @Bean SecurityCleanupStore securityCleanupStore(DataSource source) { return new PostgresSecurityCleanup(source); }
-    /** Scheduling is deliberately inert until the HTTP surface is composed; the hook is invoked by a later scheduler. */
     @Bean SecurityMaintenance securityMaintenance(AuthDeliveryStore delivery,SecurityCleanupStore store) {
         return new SecurityMaintenance(new SecurityCleanup(delivery,store));
+    }
+    @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,
+                                       DatabaseReadiness readiness,RuntimeSettings settings) {
+        return new RuntimeWorkers(delivery::tick,maintenance::tick,
+                () -> org.springframework.boot.health.contributor.Status.UP.equals(readiness.health().getStatus()),settings.suppressed());
     }
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }
     @Bean AuthDeliveryWorker authWorker(NotificationQueue queue,AuthDeliveryStore store,MailDelivery mail,RuntimeSettings settings) {
