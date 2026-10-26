@@ -168,4 +168,28 @@ describe('Real typed booking flow and private state', () => {
     expect(request.request.body.email).toBe('synthetic@bücher.example'); request.flush({ accepted: true }); await pending;
   });
 
+  it('does not enter intake when the bootstrap context is invalidated at its consumer handoff', async () => {
+    const bootstrap = sessions.bootstrap.bind(sessions);
+    vi.spyOn(sessions, 'bootstrap').mockImplementationOnce(async () => {
+      const context = await bootstrap(); sessions.invalidate(); return context;
+    });
+    await enter(); expect(flow.phase()).toBe('choose'); expect(flow.message()).toContain('session changed');
+  });
+  it.each([
+    ['2026-10-25T00:30:00Z', '+02:00'], ['2026-10-25T01:30:00Z', '+01:00'],
+  ])('keeps the repeated Brussels hour unambiguous in review and status formatting (%s)', async (instant, offset) => {
+    flow.choose({ ...choice, slot: { ...choice.slot, startInstant: instant, offset } });
+    await review(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('UTC' + offset);
+    expect(flow.inZone(instant, 'Europe/Brussels')).toContain('UTC' + offset);
+  });
+
+  it.each([404, 503, 429])('recovers an unavailable review service without trapping intake (status=%s)', async status => {
+    await enter(); flow.intake.setValue(intake); const pending = flow.reviewRequest();
+    http.expectOne(request => request.url === '/api/v1/booking-context').flush({}, { status, statusText: 'Synthetic failure' }); await pending;
+    expect(flow.phase()).toBe(status === 404 ? 'choose' : 'intake');
+    expect(flow.selection()).toEqual(status === 404 ? null : choice);
+    expect(flow.intake.getRawValue()).toEqual(intake);
+  });
+
 });

@@ -4,7 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { firstValueFrom, timeout } from 'rxjs';
 import { ServiceTimeComponent } from '../public/service-time.component';
-import { ConsultationSelection, slotLabel } from '../public/selection-model';
+import { ConsultationSelection, offsetLabel, slotLabel } from '../public/selection-model';
 import { BookingReceipt, BookingReviewContext, BookingsService, CatalogService, CustomerBookingStatus, GuestService } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
@@ -45,7 +45,12 @@ export class BookingFlowComponent {
     message: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(1000)] }),
   });
   readonly label = slotLabel;
-  readonly inZone = (instant: string, zone: string) => new Intl.DateTimeFormat('en', { dateStyle: 'full', timeStyle: 'short', timeZone: zone }).format(new Date(instant));
+  readonly offset = offsetLabel;
+  readonly inZone = (instant: string, zone: string) => {
+    const date = new Date(instant);
+    const offset = new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'longOffset' }).formatToParts(date).find(part => part.type === 'timeZoneName')!.value.replace(/^GMT$/, 'UTC+00:00').replace(/^GMT/, 'UTC');
+    return new Intl.DateTimeFormat('en', { dateStyle: 'full', timeStyle: 'short', timeZone: zone }).format(date) + ' · ' + offset;
+  };
   constructor() {
     let previousStep = this.phase();
     afterRenderEffect(() => {
@@ -64,7 +69,7 @@ export class BookingFlowComponent {
     this.busy.set(true); this.message.set('');
     try {
       const context = refresh || this.sessions.state() === null ? await this.sessions.bootstrap() : this.sessions.state()!;
-      if (!this.active || this.selection() !== chosen) return;
+      if (!this.active || this.selection() !== chosen || this.sessions.state() !== context) return;
       if (context.role === 'ADMIN') { this.message.set('Sign out of the administrator session before making a customer request.'); return; }
       this.phase.set(context.role === 'ANONYMOUS' ? 'email' : 'intake');
       if (refresh && context.role === 'ANONYMOUS') this.message.set('Open the email link in this browser and choose Verify email, then return here.');
@@ -100,8 +105,15 @@ export class BookingFlowComponent {
         this.phase.set('choose'); this.selection.set(null); this.message.set('Consultation terms changed. Choose a current time and review them again.'); return;
       }
       this.review.set(context); this.agreed.setValue(false); this.phase.set('review');
-    } catch (error) { this.failure(error, false); }
-    finally { if (this.active) this.busy.set(false); }
+    } catch (error) {
+      if (this.active && this.sessions.invalidations() === generation) {
+        const failure = safeFailure(error, false);
+        if (failure.status === 404) {
+          this.review.set(null); this.selection.set(null); this.phase.set('choose');
+          this.message.set('This consultation is no longer available. Choose another consultation and review its current terms.');
+        } else this.failure(failure, false);
+      }
+    } finally { if (this.active) this.busy.set(false); }
   }
   edit(): void { if (!this.busy() && this.phase() === 'review') { this.review.set(null); this.agreed.setValue(false); this.phase.set('intake'); } }
   async submit(): Promise<void> {

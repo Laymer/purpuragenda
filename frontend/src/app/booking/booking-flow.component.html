@@ -38,7 +38,7 @@
     @if (review(); as terms) {
       <h2 tabindex="-1">Review your request</h2>
       <p><strong>{{ terms.service.name }}</strong> · {{ terms.service.durationMinutes }} minutes · {{ terms.service.priceMinor / 100 | currency:terms.service.currency }}</p>
-      <p>{{ label(selection()!.slot, selection()!.displayZone) }} · {{ selection()!.displayZone }}</p>
+      <p>{{ label(selection()!.slot, selection()!.displayZone) }} · {{ offset(selection()!.slot.offset) }} · {{ selection()!.displayZone }}</p>
       <p>{{ intake.controls.firstName.value }} {{ intake.controls.lastName.value }} · {{ intake.controls.telephone.value }}</p>
       <p>Birth: {{ intake.controls.birthDate.value }} at {{ intake.controls.birthTime.value }} · {{ intake.controls.birthplace.value }}</p>
       <p class="plain-text">{{ intake.controls.message.value }}</p>
