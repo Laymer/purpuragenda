@@ -119,3 +119,11 @@ databaseChangeLog:
             path: 016-account-credential-shape.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 017-account-authentication
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 017-account-authentication.sql
+            relativeToChangelogFile: true
+            splitStatements: false

@@ -1,0 +1,10 @@
+{
+  "revision": "ff40e2ab0f2390b2c5a20b785bfe8f82466dbc0a",
+  "suite": "SessionDatabaseTest",
+  "tests": 35,
+  "failures": 0,
+  "errors": 1,
+  "skipped": 0,
+  "cause": "Legacy synthetic account-session storage fixture omitted required account_credential_version; PostgreSQL rejected account_session_epoch_shape.",
+  "resolution": "Set explicit fixture epoch, reject NULL epoch, assert credential version advancement invalidates session."
+}
