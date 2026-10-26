@@ -23,7 +23,6 @@ public final class PostgresFinance implements FinanceUnitOfWork {
     static final long ADMIN_IDLE_SECONDS=900,FRESH_MFA_SECONDS=600;
     private final PostgresScheduling scheduling;
     private final JdbcTemplate jdbc;
-    public PostgresFinance(DataSource source) { this(source,Set.of("zoom.us")); }
     public PostgresFinance(DataSource source,Set<String> meetingHosts) {
         scheduling=new PostgresScheduling(source,meetingHosts);jdbc=new JdbcTemplate(source);
     }
@@ -35,7 +34,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
             var key=new CommandKey(new Scope(admin,command.operation().name(),command.bookingId()),command.key(),command.fingerprint());
             // A stored success for a booking command must name the booking it was issued for.
             return new PostgresScheduling.Resolved(key,stored -> {
-                if(stored.success() && command.operation()!=Operation.RECORD_RECEIPT && !command.bookingId().equals(stored.entityId()))
+                if(stored.success() && confirming(command.operation()) && !command.bookingId().equals(stored.entityId()))
                     throw new Failure(Failure.Kind.STORAGE_FAILURE);
                 return stored;
             },tx -> {
@@ -87,6 +86,20 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                 return new PaymentLedger(entries,obligations);
             } catch(RuntimeException invalid) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
         }
+        public void refundRecorded(PaymentLedger.Entry refund) {
+            if(baseline==null || operation!=Operation.RECORD_REFUND || effects++>0 || refund.kind()!=PaymentLedger.Kind.REFUND
+                    || !refund.bookingId().equals(bookingId))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            insert(refund);
+            event("refund-recorded","REFUND_RECORDED",refund.id(),baseline.version(),"",
+                    "{\"currency\":\""+refund.amount().currency()+"\",\"amountMinor\":"+refund.amount().minor()+"}");
+        }
+        public void refundRequired(UUID receiptId,String reason) {
+            if(baseline==null || operation!=Operation.REQUIRE_REFUND || effects++>0)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            // The obligation always covers the whole receipt; the ledger projection subtracts what was refunded.
+            int rows=jdbc.update("INSERT INTO refund_obligation(receipt_id,due_minor,reason) SELECT id,amount_minor,'ADMIN_REQUIRED' FROM payment_entry WHERE id=? AND booking_id=? AND kind='RECEIPT'",receiptId,bookingId);
+            if(rows!=1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            event("refund-required","REFUND_REQUIRED",receiptId,baseline.version(),reason,"{}");
+        }
         public boolean meetingInUse(Meeting meeting,UUID booking) {
             return jdbc.queryForObject("SELECT count(*) FROM booking WHERE meeting_id=? AND id<>?",Integer.class,meeting.meetingId(),booking)>0;
         }
@@ -95,7 +108,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
             if(baseline==null || operation==Operation.RECORD_RECEIPT || effects++>0 || !baseline.equals(original) || confirmed.state()!=Booking.State.CONFIRMED
                     || confirmed.confirmationBasis()!=basis || confirmed.version()!=original.version()+1
                     || !tx.booking(bookingId).filter(confirmed::equals).isPresent())throw new Failure(Failure.Kind.STORAGE_FAILURE);
-            event("booking-confirmed",basis==Booking.ConfirmationBasis.MANUAL_APPROVAL?"APPROVED":"CONFIRMED_EXTERNAL_PAYMENT",confirmed.id(),confirmed.version(),
+            event("booking-confirmed",basis==Booking.ConfirmationBasis.MANUAL_APPROVAL?"APPROVED":"CONFIRMED_EXTERNAL_PAYMENT",confirmed.id(),confirmed.version(),"",
                     "{\"basis\":\""+basis+"\"}");
         }
         public boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference) {
@@ -106,7 +119,7 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                     || !receipt.bookingId().equals(bookingId))throw new Failure(Failure.Kind.STORAGE_FAILURE);
             insert(receipt);
             if(late)jdbc.update("INSERT INTO refund_obligation(receipt_id,due_minor,reason) VALUES(?,?,'LATE_RECEIPT')",receipt.id(),receipt.amount().minor());
-            event(late?"payment-reconciliation":"payment-recorded",late?"PAYMENT_RECONCILIATION_REQUIRED":"PAYMENT_RECORDED",receipt.id(),baseline.version(),
+            event(late?"payment-reconciliation":"payment-recorded",late?"PAYMENT_RECONCILIATION_REQUIRED":"PAYMENT_RECORDED",receipt.id(),baseline.version(),"",
                     "{\"currency\":\""+receipt.amount().currency()+"\",\"amountMinor\":"+receipt.amount().minor()+"}");
         }
         private void insert(PaymentLedger.Entry entry) {
@@ -115,22 +128,24 @@ public final class PostgresFinance implements FinanceUnitOfWork {
                     Timestamp.from(entry.verifiedAt()),entry.receiptId());
         }
         /** Audit and outbox share one deterministic id; the booking version stays that of the locked row. */
-        private void event(String prefix,String type,UUID subject,long version,String metadata) {
+        private void event(String prefix,String type,UUID subject,long version,String reason,String metadata) {
             UUID event=UUID.nameUUIDFromBytes((prefix+"/"+bookingId+"/"+subject).getBytes(StandardCharsets.UTF_8));
-            jdbc.update("INSERT INTO audit_event(id,booking_id,actor_id,actor_kind,type,occurred_at,version,metadata) VALUES(?,?,?,'ADMIN',?,?,?,?::jsonb)",
-                    event,bookingId,admin,type,Timestamp.from(now()),version,metadata);
+            jdbc.update("INSERT INTO audit_event(id,booking_id,actor_id,actor_kind,type,reason,occurred_at,version,metadata) VALUES(?,?,?,'ADMIN',?,?,?,?,?::jsonb)",
+                    event,bookingId,admin,type,reason,Timestamp.from(now()),version,metadata);
             jdbc.update("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES(?,?,?,?,?)",event,bookingId,type,version,Timestamp.from(now()));
         }
         /** A committed command carries exactly its financial effects and never changes the booking by itself. */
         void verifyEffects(Receipt receipt) {
             // Expected failures roll the attempted mutation back to its savepoint, so they can never carry effects.
             if(!receipt.success()) { if(effects!=0)throw new Failure(Failure.Kind.STORAGE_FAILURE);return; }
-            if(baseline==null || effects!=1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            // Re-requiring an existing obligation is the only command that may legitimately carry no effect.
+            if(baseline==null || effects>1 || (effects==0 && operation!=Operation.REQUIRE_REFUND))throw new Failure(Failure.Kind.STORAGE_FAILURE);
             Booking stored=tx.booking(bookingId).orElseThrow(() -> new Failure(Failure.Kind.STORAGE_FAILURE));
-            long expected=operation==Operation.RECORD_RECEIPT?baseline.version():baseline.version()+1;
+            long expected=confirming(operation)?baseline.version()+1:baseline.version();
             if(stored.version()!=expected || receipt.version()!=expected
-                    || (operation!=Operation.RECORD_RECEIPT && !bookingId.equals(receipt.entityId())))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                    || (confirming(operation) && !bookingId.equals(receipt.entityId())))throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
     }
+    private static boolean confirming(Operation operation) { return operation==Operation.APPROVE_BOOKING || operation==Operation.CONFIRM_BOOKING; }
     private static Failure unauthenticated() { return PersistedSession.unauthenticated(); }
 }
