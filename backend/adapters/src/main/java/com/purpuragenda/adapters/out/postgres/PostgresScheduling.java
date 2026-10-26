@@ -35,7 +35,7 @@ public final class PostgresScheduling implements SchedulingUnitOfWork, Schedulin
         transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transaction.setTimeout(15);
         reader=new TransactionTemplate(manager);
-        reader.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        reader.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
         reader.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         reader.setReadOnly(true); reader.setTimeout(15);
     }
