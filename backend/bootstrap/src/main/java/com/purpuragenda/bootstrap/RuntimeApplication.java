@@ -115,6 +115,10 @@ public class RuntimeApplication {
         return new GuestBookingController(new com.purpuragenda.application.scheduling.GuestBookingView(
                 new PostgresCustomerBookingQuery(source,settings.meetingHosts())),access,cookies);
     }
+    @Bean CustomerAvailabilityController customerAvailability(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        return new CustomerAvailabilityController(new com.purpuragenda.application.scheduling.CustomerReschedulingAvailability(
+                new PostgresCustomerBookingQuery(source,settings.meetingHosts())),access,cookies);
+    }
     @Bean BookingNotice bookingNotice(Environment environment) { return RuntimeNotice.read(environment); }
     @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {
         return new BookingContextController(new PublicBookingContext(work,notice));
