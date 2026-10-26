@@ -185,6 +185,8 @@ class MigrationReportTest(unittest.TestCase):
                                   ('<testcase><skipped/></testcase>' * 15, ''), ('<testcase><error/></testcase>' * 15, '')):
             report.write_text(f'<testsuite name="{qualified}" tests="15" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="14">' + '<testcase/>' * 14 + '</testsuite>')
+        with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text(f'<testsuite name="{qualified}" tests="15">' + '<testcase/>' * 15 + '</testsuite>')
         GATE.validate(self.root)
 
