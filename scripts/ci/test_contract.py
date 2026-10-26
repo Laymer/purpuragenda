@@ -20,12 +20,27 @@ class ContractTest(unittest.TestCase):
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
-                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator',
-                          'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking'},
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator',
+                          'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
-        self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)
         self.assertEqual(len(operations), len({op['operationId'] for op in operations}))
+
+    def test_public_review_context_has_exact_current_versions_and_plaintext_notice(self):
+        operation = self.document['paths']['/booking-context']['get']
+        self.assertEqual([], operation['security'])
+        self.assertEqual(['serviceId'], [value['name'] for value in operation['parameters']])
+        self.assertTrue(operation['parameters'][0]['required'])
+        for response in operation['responses'].values():
+            self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+        schemas = self.document['components']['schemas']
+        self.assertEqual({'serverNow', 'horizon', 'businessZone', 'reservationMinutes', 'service', 'policy', 'notice'}, set(schemas['BookingReviewContext']['required']))
+        self.assertEqual('#/components/schemas/Service', schemas['BookingReviewContext']['properties']['service']['$ref'])
+        self.assertEqual({'version', 'text', 'synthetic'}, set(schemas['BookingReviewNotice']['required']))
+        self.assertEqual(16000, schemas['BookingReviewNotice']['properties']['text']['maxLength'])
+        self.assertEqual({'type': 'boolean'}, schemas['BookingReviewNotice']['properties']['synthetic'])
+        self.assertEqual({'version', 'gridMinutes', 'dailyCapacity', 'minimumNoticeSeconds', 'pendingLifetimeSeconds', 'expiryBufferSeconds', 'customerCutoffSeconds'}, set(schemas['BookingReviewPolicy']['required']))
 
     def test_administrator_login_requires_session_csrf_and_exact_write_only_factors(self):
         operation = self.document['paths']['/admin/login']['post']
@@ -80,6 +95,23 @@ class ContractTest(unittest.TestCase):
         self.assertFalse(projection['allowedActions'].get('uniqueItems', False), 'The pinned Angular generator otherwise emits an unhydrated Set for a JSON array')
         self.assertEqual('#/components/schemas/CustomerBookingStatus', paths['/bookings/{bookingId}']['get']['responses']['200']['content']['application/json']['schema']['$ref'])
         self.assertIn('Location', paths['/bookings']['post']['responses']['201']['headers'])
+
+    def test_recovery_contract_only_returns_restricted_setup_and_requires_fresh_mfa(self):
+        schemas = self.document['components']['schemas']
+        for path, request, result in (('/admin/recovery', 'AdministratorRecoveryRequest', 'AdministratorRecoverySetup'), ('/admin/recovery/reenrollment', 'AdministratorReenrollmentRequest', 'AdministratorReenrollmentResult')):
+            operation = self.document['paths'][path]['post']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertTrue(operation['parameters'][0]['required'])
+            self.assertEqual('#/components/schemas/' + request, operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertEqual('#/components/schemas/' + result, operation['responses']['200']['content']['application/json']['schema']['$ref'])
+            self.assertNotIn('Set-Cookie', operation['responses']['200']['headers'])
+            self.assertFalse(schemas[request]['additionalProperties'])
+            self.assertTrue(schemas[request]['properties']['password']['writeOnly'])
+        self.assertEqual({'token', 'expiresAt', 'totpSecret', 'provisioningUri'}, set(schemas['AdministratorRecoverySetup']['required']))
+        result = schemas['AdministratorReenrollmentResult']['properties']
+        self.assertEqual('boolean', result['requiresFreshMfa']['type'])
+        self.assertEqual(10, result['recoveryCodes']['minItems'])
+        self.assertFalse(result['recoveryCodes'].get('uniqueItems', False), 'Pinned client must hydrate JSON as an array')
 
     def test_all_references_resolve(self):
         def visit(value):

@@ -12,9 +12,13 @@ public interface AdminRecoveryUnitOfWork {
     interface Admin {
         Instant now();
         Optional<Identity> identity();
-        Optional<Secret> begin(String recoveryHash,Binding binding,String tokenHash);
+        Optional<Setup> begin(String recoveryHash,Binding binding,String tokenHash);
         Optional<Secret> prove(String tokenHash,Binding binding);
         void reenroll(long acceptedStep,List<String> recoveryHashes);
+    }
+    record Setup(Secret secret,Instant expiresAt) {
+        public Setup { Objects.requireNonNull(secret);Objects.requireNonNull(expiresAt); }
+        @Override public String toString() { return "AdminRecoverySetup[REDACTED]"; }
     }
     record Identity(UUID id,String passwordHash) {
         @Override public String toString() { return "AdminRecoveryIdentity[REDACTED]"; }

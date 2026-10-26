@@ -10,8 +10,12 @@ import com.purpuragenda.adapters.out.postgres.PostgresCustomerBookingQuery;
 import com.purpuragenda.adapters.out.security.*;
 import com.purpuragenda.application.*;
 import com.purpuragenda.application.port.out.*;
+import com.purpuragenda.application.notification.*;
+import com.purpuragenda.application.scheduling.DueBookingExpiry;
 import com.purpuragenda.application.scheduling.PublicScheduling;
 import com.purpuragenda.application.scheduling.CustomerBooking;
+import com.purpuragenda.application.scheduling.BookingNotice;
+import com.purpuragenda.application.scheduling.PublicBookingContext;
 import com.purpuragenda.application.scheduling.CustomerBookingChanges;
 import com.purpuragenda.application.scheduling.CustomerBookingView;
 import javax.sql.DataSource;
@@ -28,7 +32,7 @@ public class RuntimeApplication {
     @Bean String databaseRole() { return "purpuragenda_app"; }
     @Bean DatabaseReadiness applicationSchema(DataSource source,SchedulingUnitOfWork scheduling) { return new DatabaseReadiness(source,scheduling); }
     @Bean RuntimeSettings settings(Environment environment) { return RuntimeSettings.read(environment); }
-    @Bean SchedulingUnitOfWork scheduling(DataSource source,RuntimeSettings settings) {
+    @Bean PostgresScheduling scheduling(DataSource source,RuntimeSettings settings) {
         return new PostgresScheduling(source,settings.meetingHosts());
     }
     @Bean PublicScheduling publicScheduling(SchedulingUnitOfWork work) { return new PublicScheduling(work); }
@@ -52,9 +56,14 @@ public class RuntimeApplication {
     @Bean SecurityMaintenance securityMaintenance(AuthDeliveryStore delivery,SecurityCleanupStore store) {
         return new SecurityMaintenance(new SecurityCleanup(delivery,store));
     }
-    @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,
+    @Bean DueBookingExpiry dueBookingExpiry(SchedulingMaintenanceUnitOfWork work) { return new DueBookingExpiry(work); }
+    @Bean OutboxExpander outboxExpander(DataSource source) { return new OutboxExpander(new PostgresOutboxStore(source)); }
+    @Bean BookingNotificationWorker bookingNotificationWorker(DataSource source,NotificationQueue queue,MailDelivery mail,RuntimeSettings settings) {
+        return new BookingNotificationWorker(queue,new PostgresBookingNotificationStore(source),mail,settings.suppressed());
+    }
+    @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,DueBookingExpiry expiry,OutboxExpander outbox,BookingNotificationWorker booking,
                                        DatabaseReadiness readiness,RuntimeSettings settings) {
-        return new RuntimeWorkers(delivery::tick,maintenance::tick,
+        return new RuntimeWorkers(delivery::tick,maintenance::tick,expiry::tick,()->outbox.drain(100),booking::tick,
                 () -> org.springframework.boot.health.contributor.Status.UP.equals(readiness.health().getStatus()),settings.suppressed());
     }
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }
@@ -71,6 +80,12 @@ public class RuntimeApplication {
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AdministratorRecovery administratorRecovery(PrivateAdminRecovery recovery,RequestThrottle throttle) {
+        return new AdministratorRecovery(recovery,throttle,new SessionRecoveryBinding());
+    }
+    @Bean AdministratorRecoveryController administratorRecoveryController(AdministratorRecovery recovery) {
+        return new AdministratorRecoveryController(recovery,java.time.Duration.ofMillis(300));
+    }
     @Bean AdministratorLogin administratorLogin(RequestThrottle throttle,PrivateAdminMfa factors,SessionStore sessions) {
         return new AdministratorLogin(throttle,factors,sessions,new AdminCrypto());
     }
@@ -78,9 +93,13 @@ public class RuntimeApplication {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
-    @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,Environment environment,SessionAccess access,SessionCookies cookies) {
-        // Operational settings already require an explicit non-local notice version before this bean is composed.
-        var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),environment.getProperty("app.notice-version","local-v1"));
+    @Bean BookingNotice bookingNotice(Environment environment) { return RuntimeNotice.read(environment); }
+    @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {
+        return new BookingContextController(new PublicBookingContext(work,notice));
+    }
+    @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,BookingNotice notice,SessionAccess access,SessionCookies cookies) {
+        // Review and submission share the same immutable configured notice.
+        var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),notice.version());
         var changes=new CustomerBookingChanges(new PostgresBookingChanges(source,settings.meetingHosts()));
         var views=new CustomerBookingView(new PostgresCustomerBookingQuery(source,settings.meetingHosts()));
         return new CustomerBookingController(create,changes,views,access,cookies);
