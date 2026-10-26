@@ -1,12 +1,11 @@
-# Protected authentication HTTP
+# Protected guest authentication HTTP
 
-- Agent and UTC checkpoint: Claude-workerD, 2026-10-26T14:00:00Z.
-- Current task: P17/auth-http; branch: task/p17-auth-http; base: main; PR URL: recorded on GitHub (draft slices).
-- Last pushed implementation commit: see the draft PR head; uncommitted changes: none intended.
-- What works: POST /api/v1/guest/create-proofs, /guest/management-proofs and /guest/redemptions in GuestAuthController behind ApiGuardFilter, with GuestProofs charging the email limits before any lookup, 202 identical for known and unknown contacts, a fixed minimum latency, strict JSON bodies, atomic session rotation through the existing exchange, OpenAPI plus generated SDK, MockMvc and real PostgreSQL tests.
-- Not started (honest status): administrator login endpoint (attempt reservation before factor work, server-internal MFA proof, same-handler exchange), administrator recovery request/redemption with persisted binding, and the Angular landing page that strips the email fragment. Only guest proofs are implemented in this slice.
-- What remains: slice 2 administrator login (attempt reservation before factor work, server-internal proof and same-handler exchange) and slice 3 recovery request/redemption with persisted binding; the Angular landing page that strips the email fragment and posts the proof is frontend work (P24/P26).
-- Decisions: the proof is redeemed only from a POST body; the emailed link keeps it in the URL fragment that never reaches the server; no test bypass or public registration.
-- Verification: see docs/status.md and the draft PR.
-- Next concrete action: independent review of the exact head, then administrator login slice.
-- Recovery: worktree /private/tmp/purpuragenda-p17-throttles on branch task/p17-auth-http; no stashes; stacked PR dependencies: none (PR53, PR57, PR61 merged).
+- Agent and UTC checkpoint: Codex-worker-b, 2026-10-26T14:54:00Z. Prior author Claude-workerD; resumed under coordinator claim.
+- Current task: P17/auth-http; branch: task/p17-auth-http; base: main; PR URL: not yet created.
+- Last pushed implementation commit: none for this unpublished branch; local32675ea6dc8afdc19a1a37980ac0d1c3b33e7548 and3831e79 retained; uncommitted changes: append-only integration of main7f0c4a7, canonical-recipient throttle fix/regressions, safe assertion messages, report minimum7 and this checkpoint.
+- What works: POST /api/v1/guest/create-proofs, /guest/management-proofs and /guest/redemptions behind exact Origin/session/CSRF, persisted email limits before lookup, uniform202 and300ms minimum issuance latency, strict bounded JSON, atomic one-use proof/session exchange, OpenAPI and regenerated SDK plus Angular seam tests.
+- What remains: corrected final full native verification, clean-commit Compose gate, all implemented hosted categories and independent review. Administrator login/recovery endpoints and Angular fragment landing remain later slices; no full P17 or browser journey completion claimed.
+- Decisions: normalized recipient from Issue/GuestRecoveryLookup.Request is also the email throttle subject, preventing Unicode IDNA and punycode variants from splitting the same mailbox budget. No new migration. Cookie/proof values never in assertion failure messages. Parent coordinator owns root STATUS and merge; this local branch only reconciles its own claim.
+- Verification: initial inherited implementation passed864Java (108domain/186application/539adapters/28bootstrap/3architecture), full Angular tests/build and232strictPython with coverage domain276/277lines478/489branches, application823/825647/668, adapters1778/18031404/1553, bootstrap210/224184/198, Angular22/2230/30. The added canonical-recipient unit test then failed before correction (5cases/1failure/0errors/0skips); sanitized evidence artifacts/p17-auth-http-failure/idna-throttle-before.json retained. Corrected targeted run passed5application/7actualPG cases (54.862s reactor), and233strictPython cases pass; no failed receipt counts as acceptance.
+- Next concrete action: run final full native/policy/contract gates, publish this targeted-tested draft, request serialized Compose slot and independent review of exact head.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b, existing worktrees/stashes/secrets/volumes preserved; worktree/private/tmp/purpuragenda-p17-throttles. stacked PR dependencies: merged53/57/61/65 foundations; no unmerged prerequisite.

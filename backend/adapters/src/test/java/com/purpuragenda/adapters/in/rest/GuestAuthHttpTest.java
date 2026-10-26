@@ -72,7 +72,7 @@ class GuestAuthHttpTest {
     void problem(MockHttpServletResponse response,int status,String code) throws Exception {
         assertEquals(status,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));
         String body=response.getContentAsString();
-        assertTrue(body.contains("\"code\":\""+code+"\""),body);
+        assertTrue(body.contains("\"code\":\""+code+"\""),"Expected safe problem code");
         assertFalse(body.contains("synthetic-private-detail") || body.contains("guest@example.test") || body.contains(PROOF));
         assertNull(response.getHeader("Set-Cookie"));
     }
@@ -157,7 +157,7 @@ class GuestAuthHttpTest {
         assertEquals(200,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));
         assertTrue(response.getHeader("Set-Cookie").startsWith("__Host-purpuragenda="+"g".repeat(43)+"; Path=/; Secure; HttpOnly; SameSite=Lax"));
         String body=response.getContentAsString();
-        assertTrue(body.startsWith("{\"role\":\"GUEST\""),body);assertTrue(body.contains("\"csrfToken\":\""+"h".repeat(43)+"\""));
+        assertTrue(body.startsWith("{\"role\":\"GUEST\""),"Expected guest session projection");assertTrue(body.contains("\"csrfToken\":\""+"h".repeat(43)+"\""));
         assertFalse(body.contains(guest.grantId().toString()) || body.contains(guest.customerId().toString()));
         var seen=sessions.redeemed.getFirst();
         assertEquals(BROWSER,seen.proof().browserHash());assertEquals(GuestAccessStore.Kind.MANAGE,seen.proof().purpose());assertEquals(PROOF,seen.proof().token());

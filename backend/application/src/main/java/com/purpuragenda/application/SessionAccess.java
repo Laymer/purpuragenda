@@ -8,8 +8,8 @@ import java.util.*;
 
 /**
  * Cookie-neutral session use cases for the HTTP edge. Every method consumes the borrowed secret
- * buffers it receives, and none acquires grant or administrator locks: those belong to authority
- * handoffs and scheduling mutations, never to bootstrap, status or logout.
+ * buffers it receives. Bootstrap, status and logout acquire no grant or administrator locks;
+ * authority handoffs deliberately delegate to their transaction-bound exchange ports.
  */
 public final class SessionAccess {
     private final SessionStore sessions;

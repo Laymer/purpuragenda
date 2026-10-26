@@ -77,10 +77,10 @@ class GuestAuthPostgresTest {
         var redeemed=send(json(browser,"/api/v1/guest/redemptions",redeemBody(token,"CREATE")));
         assertEquals(200,redeemed.getStatus());
         String header=redeemed.getHeader("Set-Cookie");String rotated=header.substring(header.indexOf('=')+1,header.indexOf(';'));
-        assertNotEquals(browser.cookie(),rotated);
+        assertFalse(browser.cookie().equals(rotated),"Authentication must replace the bearer cookie");
         String body=redeemed.getContentAsString();
         assertTrue(body.startsWith("{\"role\":\"GUEST\""),body);
-        String newCsrf=body.replaceAll(".*\"csrfToken\":\"([^\"]+)\".*","$1");assertNotEquals(browser.csrf(),newCsrf);
+        String newCsrf=body.replaceAll(".*\"csrfToken\":\"([^\"]+)\".*","$1");assertFalse(browser.csrf().equals(newCsrf),"Authentication must replace the CSRF proof");
         assertEquals(browser.browserHash(),jdbc.queryForObject("SELECT browser_hash FROM app_session WHERE kind='GUEST'",String.class));
         assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM app_session WHERE revoked_at IS NOT NULL",Integer.class));
         // The old bearer is dead; the replayed proof is indistinguishable from any other invalid proof.
@@ -139,6 +139,21 @@ class GuestAuthPostgresTest {
         assertEquals(202,send(json(b,create,"{\"email\":\"other@example.test\"}").with(r -> { r.setRemoteAddr("10.0.0.2"); return r; }).header(ClientAddress.HEADER,"203.0.113.9")).getStatus());
         assertEquals(429,send(json(b,create,"{\"email\":\"spoof@example.test\"}").header(ClientAddress.HEADER,"203.0.113.10")).getStatus());
         for(String row:jdbc.queryForList("SELECT key||kind||key_id FROM rate_limit_bucket",String.class)) assertFalse(row.contains("example.test") || row.contains("198.51.100"));
+    }
+    @Test void equivalentUnicodeAndAsciiDomainsShareCooldownAndHourlyLimitsAcrossGuestPurposes() throws Exception {
+        var browser=boot();String create="/api/v1/guest/create-proofs",manage="/api/v1/guest/management-proofs";
+        String unicode="{\"email\":\"Guest@BÜCHER.example\"}",ascii="{\"email\":\"guest@xn--bcher-kva.example\"}";
+        assertEquals(202,send(json(browser,create,unicode)).getStatus());
+        assertEquals(429,send(json(browser,create,ascii)).getStatus());
+        assertEquals(1,count("email_challenge"));
+        for(int attempt=1;attempt<5;attempt++) {
+            rateClock.set(T0.plusSeconds(60L*attempt));
+            String email=attempt%2==0?"Guest@BÜCHER.example":"guest@xn--bcher-kva.example";
+            assertEquals(202,send(json(browser,manage,"{\"reference\":\"UNKNOWN0001\",\"email\":\""+email+"\"}")).getStatus());
+        }
+        rateClock.set(T0.plusSeconds(300));
+        for(String body:List.of(unicode,ascii)) assertEquals(429,send(json(browser,create,body)).getStatus());
+        assertEquals(1,count("email_challenge"));assertEquals(3,count("rate_limit_bucket"));
     }
     @Test void managementRequestsAreIndistinguishableAndOnlyAnExactCurrentContactQueuesAProof() throws Exception {
         UUID booking=f.database.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());

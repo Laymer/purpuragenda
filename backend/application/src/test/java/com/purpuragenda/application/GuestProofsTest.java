@@ -10,11 +10,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class GuestProofsTest {
     static final String BROWSER="b".repeat(64);
     final List<String> events=new ArrayList<>();
+    final List<Charge> charged=new ArrayList<>();
     final List<AuthDeliveryStore.Issue> issued=new ArrayList<>();
     Decision decision=Decision.allow(List.of(new Reservation(Kind.EMAIL_IP,"a".repeat(64),Instant.EPOCH)));
     Optional<UUID> found=Optional.empty();boolean deliveryFails;
     final RateLimitStore limits=new RateLimitStore() {
-        public Decision admit(List<Charge> charges) { events.add("throttle:"+charges.stream().map(c->c.kind().name()).toList());return decision; }
+        public Decision admit(List<Charge> charges) { charged.addAll(charges);events.add("throttle:"+charges.stream().map(c->c.kind().name()).toList());return decision; }
         public boolean release(Reservation reservation) { return false; }
     };
     final AuthDeliveryStore delivery=new AuthDeliveryStore() {
@@ -38,6 +39,16 @@ class GuestProofsTest {
         var manage=proofs.requestManage("SYNTHETIC1","guest@example.test","203.0.113.9");
         assertFalse(create.accepted());assertEquals(42,create.retryAfterSeconds());assertEquals(42,manage.retryAfterSeconds());
         assertTrue(issued.isEmpty());assertFalse(events.contains("lookup"));assertFalse(events.contains("issue"));
+    }
+    @Test void equivalentIdnaDomainsChargeTheSameCanonicalRecipientForBothPurposes() {
+        String canonical="guest@xn--bcher-kva.example";
+        for(String email:List.of("Guest@BÜCHER.example",canonical)) {
+            charged.clear();proofs.requestCreate(email,"203.0.113.9",BROWSER);
+            assertEquals(canonical,issued.getLast().email());
+            assertEquals(List.of(canonical,canonical),charged.stream().filter(c->c.kind()!=Kind.EMAIL_IP).map(Charge::subject).toList());
+            charged.clear();proofs.requestManage("SYNTHETIC1",email,"203.0.113.9");
+            assertEquals(List.of(canonical,canonical),charged.stream().filter(c->c.kind()!=Kind.EMAIL_IP).map(Charge::subject).toList());
+        }
     }
     @Test void knownAndUnknownManagementRequestsAreIndistinguishableToTheCaller() {
         var unknown=proofs.requestManage("SYNTHETIC1","guest@example.test","203.0.113.9");

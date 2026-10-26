@@ -22,7 +22,7 @@ public final class GuestProofs {
     /** Booking-creation proof, bound to the requesting browser's server-owned hash. */
     public Outcome requestCreate(String email,String clientAddress,String browserHash) {
         var issue=new AuthDeliveryStore.Issue(email,AuthDeliveryStore.Purpose.CREATE,null,browserHash);
-        var admission=throttle.emailIssuance(email,clientAddress);
+        var admission=throttle.emailIssuance(issue.email(),clientAddress);
         if(!admission.allowed()) return new Outcome(false,admission.retryAfterSeconds());
         delivery.issue(issue);
         return Outcome.ACCEPTED;
@@ -30,7 +30,7 @@ public final class GuestProofs {
     /** Exact booking reference plus current delivery contact; unknown pairs are indistinguishable from known ones. */
     public Outcome requestManage(String reference,String email,String clientAddress) {
         var request=new GuestRecoveryLookup.Request(reference,email);
-        var admission=throttle.emailIssuance(email,clientAddress);
+        var admission=throttle.emailIssuance(request.email(),clientAddress);
         if(!admission.allowed()) return new Outcome(false,admission.retryAfterSeconds());
         recovery.request(request);
         return Outcome.ACCEPTED;
