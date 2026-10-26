@@ -84,7 +84,7 @@ describe('Real catalog-backed service and time selection', () => {
     ready(); choose().flush(available({ slots: [...slots, { ...slots[0], startInstant: '2026-10-26T08:00:00Z', sessionEndInstant: '2026-10-26T08:30:00Z', displayLocalTime: '2026-10-26T09:00', offset: '+01:00' }] })); render();
     expect(root().querySelectorAll('input[name=time]').length).toBe(2); component.chooseTime(slots[0]); render();
     const day = root().querySelector<HTMLSelectElement>('#available-day')!;
-    expect(day.options.length).toBe(2); expect(day.options[0].textContent).toBe('Sunday 25 October');
+    expect(day.labels![0].textContent).toBe('Available day'); expect(day.options.length).toBe(2); expect(day.options[0].textContent).toBe('Sunday 25 October');
     day.value = '2026-10-26'; day.dispatchEvent(new Event('change')); render();
     expect(component.choice()).toBeNull(); expect(root().querySelectorAll('input[name=time]').length).toBe(1);
     expect(text()).toContain('09:00'); http.expectNone(request => request.url === '/api/v1/availability');

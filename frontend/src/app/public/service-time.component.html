@@ -54,11 +54,11 @@
       @if (times.slots.length === 0) { <p>No times are available in this range. Try another date range or consultation.</p> }
       @if (times.restrictions.length > 0) { <p>Availability is limited by the practice’s booking policies. Try a different date range if no times suit you.</p> }
       @if (times.slots.length > 0) {
-        <label class="day-picker" for="available-day">Available day
+        <div class="day-picker"><label for="available-day">Available day</label>
           <select id="available-day" [value]="day()" (change)="chooseDay($any($event.target).value)">
             @for (day of days(); track day) { <option [value]="day">{{ date(day) }}</option> }
           </select>
-        </label>
+        </div>
         <fieldset class="times"><legend>Choose an available time</legend>
           @for (slot of shownSlots(); track slot.startInstant) {
             <label class="time-option" [class.is-selected]="choice()?.startInstant === slot.startInstant">
