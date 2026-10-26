@@ -48,12 +48,12 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingHttpPostgresTest.xml')
-        for count, actual, nested in ((4, 4, ''), (5, 4, ''), (5, 5, '<failure/>'), (5, 5, '<skipped/>'), (5, 5, '<error/>')):
+        for count, actual, nested in ((5, 5, ''), (6, 5, ''), (6, 6, '<failure/>'), (6, 6, '<skipped/>'), (6, 6, '<error/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="{count}">' +
                               '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_unrelated_passing_suite_cannot_replace_missing_migrations(self):

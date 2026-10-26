@@ -75,6 +75,27 @@ class CustomerBookingHttpPostgresTest {
         var conflict=create(browser,"create",body(4));assertEquals(409,conflict.getStatus());assertTrue(conflict.getContentAsString().contains("IDEMPOTENCY_KEY_REUSED"));
         assertEquals(403,create(browser,"new-booking",body(4)).getStatus());
     }
+    @Test void conditionalHeadersCannotHideIndependentMoneyAtAnUnchangedBookingVersion() throws Exception {
+        var browser=guest("conditional@example.test");String id=booking(create(browser,"conditional",body(3)));
+        assertEquals(0,json.readTree(view(browser,id).getContentAsString()).at("/payment/receivedMinor").asLong());
+        var scope=new com.purpuragenda.application.port.out.SchedulingUnitOfWork.Scope(UUID.randomUUID(),"SYNTHETIC_RECEIPT",UUID.fromString(id));
+        var key=new com.purpuragenda.application.port.out.SchedulingUnitOfWork.CommandKey(scope,"conditional", "a".repeat(64));
+        new PostgresScheduling(c.f.source).execute(key,tx->{
+            c.jdbc.update("INSERT INTO payment_entry(id,booking_id,kind,amount_minor,currency,method,reference,verified_at) VALUES(?,?,'RECEIPT',100,'EUR','SYNTHETIC','conditional',?)",
+                    UUID.randomUUID(),UUID.fromString(id),java.sql.Timestamp.from(tx.now()));
+            return new com.purpuragenda.application.port.out.SchedulingUnitOfWork.Receipt(
+                    com.purpuragenda.application.port.out.SchedulingUnitOfWork.Code.OK,null,0);
+        });
+        String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE kind='GUEST'");
+        for(String tag:List.of("\"1\"","*","W/\"1\"")) {
+            var response=g.send(get("/api/v1/bookings/"+id).cookie(new Cookie("__Host-purpuragenda",browser.cookie()))
+                    .header("If-None-Match",tag).header("If-Modified-Since","Wed, 01 Jan 2099 00:00:00 GMT"));
+            assertEquals(200,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));assertEquals("\"1\"",response.getHeader("ETag"));
+            var body=json.readTree(response.getContentAsString());assertEquals(1,body.get("version").asLong());
+            assertEquals(100,body.at("/payment/receivedMinor").asLong());
+        }
+        assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE kind='GUEST'"));
+    }
     @Test void unknownUnownedAndSameIdentityOutsideTheGrantAreIndistinguishable() throws Exception {
         var a=guest("one@example.test");String mine=booking(create(a,"a",body(3)));
         var b=guest("two@example.test");String theirs=booking(create(b,"b",body(4)));

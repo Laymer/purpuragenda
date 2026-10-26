@@ -48,7 +48,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CustomerBookingController.java').is_file():
-        suites.append(('CustomerBookingHttpPostgresTest', 5))
+        suites.append(('CustomerBookingHttpPostgresTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():
         suites.append(('AdministratorLoginPostgresTest', 12))
     for name, minimum in suites:
