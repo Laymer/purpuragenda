@@ -25,7 +25,10 @@ describe('Civil display dates and advisory selection', () => {
     expect(retryDelay('30', now)).toBe(30); expect(retryDelay('0', now)).toBe(1);
     expect(retryDelay('Sun, 01 Nov 2026 12:01:00 GMT', now)).toBe(60);
     expect(retryDelay('Sun, 01 Nov 2026 11:00:00 GMT', now)).toBe(1);
-    expect(retryDelay('9'.repeat(400), now)).toBe(60); expect(retryDelay(null, now)).toBe(60); expect(retryDelay('invalid', now)).toBe(60);
+    expect(retryDelay('9'.repeat(400), now)).toBe(60);
+    expect(retryDelay('1' + '0'.repeat(100), now)).toBe(60);
+    expect(retryDelay('1000000000000000', now)).toBe(60);
+    expect(retryDelay('8639999999000', now)).toBe(60); expect(retryDelay(null, now)).toBe(60); expect(retryDelay('invalid', now)).toBe(60);
   });
 
   it('renders elapsed consultation duration rather than the reservation length', () => {

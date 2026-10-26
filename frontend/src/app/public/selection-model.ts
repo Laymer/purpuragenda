@@ -31,7 +31,10 @@ export function validRange(from: string, to: string): boolean {
 }
 
 export function retryDelay(header: string | null, now: number): number {
-  if (header !== null && /^\d+$/.test(header) && Number.isFinite(Number(header))) return Math.max(1, Number(header));
+  if (header !== null && /^\d+$/.test(header)) {
+    const seconds = Number(header), deadline = now + seconds * 1000;
+    return Number.isSafeInteger(seconds) && Number.isSafeInteger(deadline) && Number.isFinite(new Date(deadline).getTime()) ? Math.max(1, seconds) : 60;
+  }
   const deadline = header === null ? NaN : Date.parse(header);
   return Number.isFinite(deadline) ? Math.max(1, Math.ceil((deadline - now) / 1000)) : 60;
 }

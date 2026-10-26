@@ -30,9 +30,9 @@
       <p>Times are shown in your selected zone. The practice uses Europe/Brussels.</p>
       @if (formError()) { <p id="search-error" role="alert">{{ formError() }}</p> }
       <div class="search-fields">
-        <label for="from-date">From<input id="from-date" type="date" formControlName="from" aria-describedby="date-help"></label>
-        <label for="to-date">Through<input id="to-date" type="date" formControlName="to" aria-describedby="date-help"></label>
-        <label for="display-zone">Display time zone<input id="display-zone" formControlName="zone" list="zone-options" aria-describedby="zone-help"></label>
+        <label for="from-date">From<input id="from-date" type="date" formControlName="from" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'date-help search-error' : 'date-help'"></label>
+        <label for="to-date">Through<input id="to-date" type="date" formControlName="to" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'date-help search-error' : 'date-help'"></label>
+        <label for="display-zone">Display time zone<input id="display-zone" formControlName="zone" list="zone-options" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'zone-help search-error' : 'zone-help'"></label>
       </div>
       <datalist id="zone-options">@for (zone of zones; track zone) { <option [value]="zone"></option> }</datalist>
       <p id="date-help" class="hint">Choose up to 31 calendar days.</p>

@@ -95,9 +95,16 @@ describe('Real catalog-backed service and time selection', () => {
     const focus = vi.spyOn(root().querySelector<HTMLInputElement>('#from-date')!, 'focus');
     component.form.setValue({ from: '2026-01-01', to: '2026-02-01', zone: 'Europe/Brussels' }); component.search(); render();
     expect(text()).toContain('no more than 31 days'); expect(focus).toHaveBeenCalled();
+    const from = root().querySelector<HTMLInputElement>('#from-date')!;
+    expect(from.getAttribute('aria-invalid')).toBe('true'); expect(from.getAttribute('aria-describedby')).toContain('search-error');
     const zoneFocus = vi.spyOn(root().querySelector<HTMLInputElement>('#display-zone')!, 'focus');
     component.form.setValue({ from: '2026-01-01', to: '2026-01-31', zone: 'not-a-zone' }); component.search(); render();
-    expect(zoneFocus).toHaveBeenCalled(); http.expectNone(request => request.url === '/api/v1/availability');
+    expect(zoneFocus).toHaveBeenCalled();
+    const zone = root().querySelector<HTMLInputElement>('#display-zone')!;
+    expect(zone.getAttribute('aria-invalid')).toBe('true'); expect(zone.getAttribute('aria-describedby')).toContain('search-error');
+    component.form.controls.zone.setValue('Europe/Brussels'); render();
+    expect(zone.getAttribute('aria-invalid')).toBeNull(); expect(root().querySelector('#search-error')).toBeNull();
+    http.expectNone(request => request.url === '/api/v1/availability');
   });
 
   it('renders empty catalogs and advisory restrictions without inventing slots', () => {
