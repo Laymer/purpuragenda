@@ -1,0 +1,14 @@
+{
+  "revision": "3d8da93ff0ef5e4549d2af5becb90842821ef1b8",
+  "run": 40400920483,
+  "adapters": {
+    "tests": 640,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "branchesCovered": 1548,
+    "branchesTotal": 1733
+  },
+  "cause": "Mandatory90percent branch gate failed; nested raw JDBC resource returns added unreachable cleanup branches.",
+  "resolution": "Use JdbcTemplate resource ownership on same transaction connection and add genuine malformed-storage/revoked-browser/future-credential authorization regressions. Threshold unchanged."
+}
