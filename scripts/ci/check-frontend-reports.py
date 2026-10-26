@@ -2,6 +2,7 @@
 """Require real Angular tests, production output and source-complete coverage."""
 import argparse
 import importlib.util
+from html.parser import HTMLParser
 import os
 import shutil
 import stat
@@ -36,6 +37,20 @@ def cleanup(root):
         os.close(root_fd)
 
 
+class ProductionHtml(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.inline_script = False
+        self.stylesheet = False
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag == "script" and "src" not in attributes:
+            self.inline_script = True
+        if tag == "link" and attributes.get("rel") == "stylesheet" and attributes.get("media", "all") in ("all", "screen"):
+            self.stylesheet = True
+
+
 def validate(root):
     report = root / 'frontend/coverage/junit.xml'
     if not report.is_file():
@@ -58,6 +73,10 @@ def validate(root):
     output = root / 'frontend/dist/purpuragenda/browser'
     if not (output / 'index.html').is_file() or not list(output.glob('main-*.js')):
         raise ValueError('Missing Angular production build')
+    html = ProductionHtml()
+    html.feed((output / 'index.html').read_text())
+    if html.inline_script or not html.stylesheet:
+        raise ValueError('Production styles must load without inline scripts under CSP')
     spec = importlib.util.spec_from_file_location('coverage_gate', ROOT / 'scripts/ci/check-coverage.py')
     gate = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gate)

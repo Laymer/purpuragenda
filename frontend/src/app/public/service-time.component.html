@@ -1,0 +1,81 @@
+<section class="booking-start" aria-labelledby="booking-title">
+  <p class="eyebrow">Private consultations with Medina</p>
+  <h1 id="booking-title">Choose a consultation.</h1>
+  <p class="intro">Find a time that suits you. Choosing a time does not reserve it.</p>
+
+  @if (catalogLoading()) { <p role="status">Loading consultations…</p> }
+  @if (catalogError()) {
+    <div role="alert"><p>{{ catalogError() }}</p><button mat-stroked-button (click)="loadServices()" [disabled]="retrySeconds() > 0">Retry consultations</button></div>
+  }
+  @if (!catalogLoading() && !catalogError() && services().length === 0) {
+    <p role="status">No consultations are available right now. Please check again later.</p>
+  }
+  @if (services().length > 0) {
+    <fieldset class="services"><legend>1. Select your consultation</legend>
+      @for (item of services(); track item.id) {
+        <label class="service-option" [class.is-selected]="service()?.id === item.id">
+          <mat-card appearance="outlined"><mat-card-content>
+            <input type="radio" name="consultation" [value]="item.id" [checked]="service()?.id === item.id" (change)="chooseService(item)">
+            <span class="service-name">{{ item.name }}</span>
+            <span class="service-details">{{ item.durationMinutes }} minutes · {{ item.priceMinor / 100 | currency:item.currency }}</span>
+          </mat-card-content></mat-card>
+        </label>
+      }
+    </fieldset>
+  }
+
+  @if (service()) {
+    <form [formGroup]="form" (ngSubmit)="search()" class="search" aria-labelledby="search-title">
+      <h2 id="search-title">2. Find a time</h2>
+      <p>Times are shown in your selected zone. The practice uses Europe/Brussels.</p>
+      @if (formError()) { <p id="search-error" role="alert">{{ formError() }}</p> }
+      <div class="search-fields">
+        <label for="from-date">From<input id="from-date" type="date" formControlName="from" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'date-help search-error' : 'date-help'"></label>
+        <label for="to-date">Through<input id="to-date" type="date" formControlName="to" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'date-help search-error' : 'date-help'"></label>
+        <label for="display-zone">Display time zone<input id="display-zone" formControlName="zone" list="zone-options" [attr.aria-invalid]="formError() ? 'true' : null" [attr.aria-describedby]="formError() ? 'zone-help search-error' : 'zone-help'"></label>
+      </div>
+      <datalist id="zone-options">@for (zone of zones; track zone) { <option [value]="zone"></option> }</datalist>
+      <p id="date-help" class="hint">Choose up to 31 calendar days.</p>
+      <p id="zone-help" class="hint">Use an IANA zone, such as Europe/Brussels or America/New_York.</p>
+      <button mat-flat-button type="submit" [disabled]="loading() || retrySeconds() > 0">Show available times</button>
+    </form>
+  }
+  @if (retrySeconds() > 0) { <p role="status">Please wait {{ retrySeconds() }} seconds before checking again.</p> }
+  @if (loading()) { <p role="status">Checking available times…</p> }
+  @if (error()) {
+    <div role="alert"><p>{{ error() }}</p>
+      <button mat-stroked-button (click)="search()" [disabled]="retrySeconds() > 0">Retry times</button>
+      <button mat-button (click)="loadServices()" [disabled]="retrySeconds() > 0">Reload consultations</button>
+    </div>
+  }
+  @if (availability(); as times) {
+    <div class="results" aria-live="polite" aria-atomic="false">
+      <h2>Times in {{ times.displayZone }}</h2>
+      @if (times.slots.length === 0) { <p>No times are available in this range. Try another date range or consultation.</p> }
+      @if (times.restrictions.length > 0) { <p>Availability is limited by the practice’s booking policies. Try a different date range if no times suit you.</p> }
+      @if (times.slots.length > 0) {
+        <div class="day-picker"><label for="available-day">Available day</label>
+          <select id="available-day" [value]="day()" (change)="chooseDay($any($event.target).value)">
+            @for (day of days(); track day) { <option [value]="day">{{ date(day) }}</option> }
+          </select>
+        </div>
+        <fieldset class="times"><legend>Choose an available time</legend>
+          @for (slot of shownSlots(); track slot.startInstant) {
+            <label class="time-option" [class.is-selected]="choice()?.startInstant === slot.startInstant">
+              <input type="radio" name="time" [value]="slot.startInstant" [checked]="choice()?.startInstant === slot.startInstant" (change)="chooseTime(slot)">
+              <span>{{ time(slot, times.displayZone) }}</span><small>{{ offset(slot.offset) }} · {{ duration(slot) }} min</small>
+            </label>
+          }
+        </fieldset>
+      }
+    </div>
+  }
+  @if (choice(); as slot) {
+    <section class="selection" aria-labelledby="selection-title" role="status">
+      <h2 id="selection-title">Your selection</h2>
+      <p>{{ service()!.name }} · {{ duration(slot) }} minutes · {{ service()!.priceMinor / 100 | currency:service()!.currency }}</p>
+      <p>{{ label(slot, availability()!.displayZone) }} · {{ offset(slot.offset) }} · {{ availability()!.displayZone }}</p>
+      <p class="hint">This time remains available to others until you submit a booking request.</p>
+    </section>
+  }
+</section>

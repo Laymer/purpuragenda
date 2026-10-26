@@ -61,23 +61,24 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P24/booking-flow: agent=Codex-coordinator; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/p24-booking-flow.md
+
 - P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
 
 - P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
 - P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
 - P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
-- P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 - P23/service-time: agent=Codex-worker-c; branch=task/p23-service-time; base=main; handoff=docs/handoffs/p23-service-time.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:06:00Z.
-- Current task: P19/booking-context; branch: task/p19-booking-context; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/74.
-- Last pushed implementation commit: 876c77f; uncommitted changes: append-only customer72/account73 integration; reviewed context/snapshot production unchanged.
-- What works: new public context targeted17domain/4application/3HTTP/3configuration/12actual runtime cases passed. Current main includes confirmed administrator login PR71 and customer query PR69.
-- What remains: final current-main full gates, exact review and clean Compose after72/75 merge; public context/local notice/operational notice configuration are implemented.
-- Decisions: separate worktree while earlier PRs verify. Read-only advisory context; customer creation still checks exact service/policy/notice versions atomically. Notice content is plaintext, never HTML. Recovery checkpoint ef679f2 integrated; contract released; workerB owns admin HTTP contract until its publication. Service wire shape reuses the existing typed Service including active=true.
-- Verification: targeted39Java cases passed; final focused27Java and240strictPython cases pass after unknown-mode regression. Initial selector omitted domain tests and failed rather than skipping them; claim metadata corrected from prior completed public catalog state to active context work. Integrated40Java,17Angular,243Python and16contract/regeneration cases pass; parent72 baseline958Java/14Angular/240Python passes. Query69 confirmed merged after all required gates.
-- Next concrete action: publish integration retaining query22/HTTP6/account26/recovery11/public3/runtime13 guards; final gates after72/75 merge.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every worktree/secret/volume preserved; stacked PR dependencies: PR69 confirmed merged; PR72 and recovery PR75 must merge before this slice.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:28:04Z.
+- Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: none yet.
+- Last pushed implementation commit: parent public-context62c2ea7 and shared-access73cb4fc; uncommitted changes: dependency integration and task claim only.
+- What works: reviewed public selection, shared session/CSRF/immutable command layer, public review context and customer create/read/change APIs exist in stacked dependencies.
+- What remains: real email verification, intake, authoritative review, submission/conflict recovery and resulting status UI; all current-main full gates and browser acceptance remain required.
+- Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits. Account/admin UI and management changes remain separate slices.
+- Verification: no new UI implementation or passing checks claimed; dependencies have separately recorded targeted/full evidence.
+- Next concrete action: integrate72's reviewed ephemeral-port fix, implement bounded real booking flow and meaningful Angular protocol/privacy/interaction tests, then actual backend preview and all gates.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies:72,74,75,78; public selection70 confirmed merged6fc7e0a.
