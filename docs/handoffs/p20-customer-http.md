@@ -1,11 +1,11 @@
-# Protected customer HTTP
+# Customer booking HTTP
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T15:35:00Z.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:45:00Z.
 - Current task: P20/customer-http; branch: task/p20-customer-http; base: main; PR URL: none yet.
-- Last pushed implementation commit: query PR69 c02ddb3; uncommitted changes: customer controller/strict wire parser, real PostgreSQL HTTP and runtime tests implemented after local integrationf886204; publication pending.
-- What works: PR67 automatic AUTH/cleanup and PR68 guest proof HTTP are confirmed merged. Query PR69 passes all implemented checks at its own head; it remains unmerged pending current-main integration after enrollment/notification drafts.
-- What remains: protected customer create/view/cancel/reschedule HTTP, reviewed booking context, frontend workflow and full localv1 gates.
-- Decisions: preserve clean root PR69 checkout while implementing HTTP in this separate worktree. Actual mutation authority/idempotency stays in existing application commands; GET uses read-only query. Admin worker temporarily owns OpenAPI; no concurrent contract edits.
-- Verification: exact query c02ddb3 passes876Java/6Angular/234Python with all coverage gates,14hosted checks,6clean localCompose checks and independent exact-head review. PR68 exact8c96 passed875Java/10Angular/234Python plus14hosted/Compose6/review and merged8f346ad at2026-10-26T15:28:32Z. HTTP targeted5wire/3controller/5actualPGHTTP plus11runtimePG cases pass, including20wayrace and actualHTTP proof/create/read/move/cancel.236Python passed before the latest strict-time regression; full checks and contract/client extension pending.
-- Next concrete action: publish tested backend checkpoint; integrate administrator contract checkpoint after ownership release, extend/regenerate customer contracts, and run all implemented categories plus exact review.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: query PR69 and administrator login PR71 must merge before this HTTP slice; current-main checks/review remain mandatory for both.
+- Last pushed implementation commit: none for HTTP; local commits79786ce/666f4d7; uncommitted changes: contract/client and protocol tests awaiting publication.
+- What works: protected create/GET/cancel/reschedule composition and explicit strict wire models; real proof/session/CSRF/transaction tests; four OpenAPI operations and regenerated typed client.
+- What remains: full integrated native/coverage/hosted/Compose/exact review; public reviewed terms and all customer UI remain separate required slices. Query PR69 must merge first.
+- Decisions: runtime combines customerOrder11 and administratorOrder12 with strict12-case guard. Credentials/intake remain in memory and request-only models. Generated allowedActions uses Array matching JSON; no unhydrated Set. Existing coverage thresholds and source completeness remain unchanged.
+- Verification: targeted5wire/3controller/5actualPGHTTP and12runtimePG pass after Docker recovery; fresh14Angular tests/build pass with handwritten22/22lines30/30branches.14contract cases and regeneration pass. Earlier Docker interruption and contract assertion/generator mismatch remain documented failures; full current-head gates pending. PR71 confirmed merged d96e0a6 after921Java/11Angular/237Python,14hosted/Compose6/exact review.
+- Next concrete action: publish draft, run all implemented categories and exact review; integrate confirmed query main before final acceptance.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: PR69 and already merged PR71. No full local milestone claimed.

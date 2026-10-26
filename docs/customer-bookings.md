@@ -1,6 +1,6 @@
 # Customer booking HTTP
 
-This document describes the P20 implementation slice. Its draft is stacked on the authorized-query PR69; merged status and exact verification are recorded in STATUS.md and the PR. OpenAPI/client extension is required before this slice can merge.
+This document describes the P20 implementation slice. Its draft is stacked on the authorized-query PR69; merged status and exact verification are recorded in STATUS.md and the PR. The OpenAPI contract and regenerated Angular client describe all four operations; typed protocol tests exercise their headers, receipts and safe failures.
 
 The routes are /api/v1/bookings (POST), /api/v1/bookings/{bookingId} (GET), and the /cancel and /reschedule POST suffixes. A public reference is never authority. A live customer session must derive from an actual email proof or account authentication. Guest access is restricted to one booking; account ownership follows the stable customer identity.
 
