@@ -85,7 +85,15 @@
               "src/app/shared/generated/param.ts",
               "src/app/shared/generated/provide-api.ts",
               "src/app/shared/generated/query.params.ts",
-              "src/app/shared/generated/variables.ts"
+              "src/app/shared/generated/variables.ts",
+              "src/app/shared/generated/api/bookings.service.ts",
+              "src/app/shared/generated/model/bookingIntake.ts",
+              "src/app/shared/generated/model/bookingPaymentSummary.ts",
+              "src/app/shared/generated/model/bookingReceipt.ts",
+              "src/app/shared/generated/model/bookingServiceSnapshot.ts",
+              "src/app/shared/generated/model/createBookingRequest.ts",
+              "src/app/shared/generated/model/customerBookingStatus.ts",
+              "src/app/shared/generated/model/rescheduleBookingRequest.ts"
             ],
             "coverageReporters": [
               "text",

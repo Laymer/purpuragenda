@@ -5,6 +5,7 @@ api.base.service.ts
 api.module.ts
 api/administrator.service.ts
 api/api.ts
+api/bookings.service.ts
 api/catalog.service.ts
 api/guest.service.ts
 api/session.service.ts
@@ -14,12 +15,19 @@ git_push.sh
 index.ts
 model/administratorLoginRequest.ts
 model/availability.ts
+model/bookingIntake.ts
+model/bookingPaymentSummary.ts
+model/bookingReceipt.ts
+model/bookingServiceSnapshot.ts
+model/createBookingRequest.ts
 model/createProofRequest.ts
+model/customerBookingStatus.ts
 model/managementProofRequest.ts
 model/models.ts
 model/problem.ts
 model/proofAccepted.ts
 model/redeemProofRequest.ts
+model/rescheduleBookingRequest.ts
 model/service.ts
 model/sessionBootstrap.ts
 model/sessionState.ts

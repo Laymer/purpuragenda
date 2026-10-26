@@ -1,8 +1,8 @@
 # Shared frontend access foundation
 
-- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T22:21:00Z.
+- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T22:36:00Z.
 - Current task: P24/shared-access; branch: task/p24-shared-access; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/78.
-- Last pushed implementation commit:a1098ed6a479ced5258e87b1d314010efcf6f8ab; uncommitted changes: append-only confirmed main70 integration and evidence union; shared source unchanged.
+- Last pushed implementation commit:73cb4fc; uncommitted changes: append-only main72 public/protected customer contracts, generated SDK and deterministic runtime-port fixture integration; shared source unchanged.
 - What works: merged session/CSRF HTTP and generated SDK are prerequisites; P23 source remains frozen separately at c112b0b.
 - What remains: implement and test in-memory bootstrap/serialized rotation, frozen command identities, explicit uncertain retries and expiry invalidation; independent review and all implemented gates.
 - Decisions: standalone shared services only; no route, OpenAPI, generated SDK or dependency changes. No persistent tokens, automatic mutation retries or authentication bypass. Frozen commands keep body/idempotency/version identity until explicitly discarded.
