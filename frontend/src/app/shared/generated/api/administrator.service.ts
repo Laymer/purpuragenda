@@ -19,6 +19,14 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 // @ts-ignore
 import { AdministratorLoginRequest } from '../model/administratorLoginRequest';
 // @ts-ignore
+import { AdministratorRecoveryRequest } from '../model/administratorRecoveryRequest';
+// @ts-ignore
+import { AdministratorRecoverySetup } from '../model/administratorRecoverySetup';
+// @ts-ignore
+import { AdministratorReenrollmentRequest } from '../model/administratorReenrollmentRequest';
+// @ts-ignore
+import { AdministratorReenrollmentResult } from '../model/administratorReenrollmentResult';
+// @ts-ignore
 import { Problem } from '../model/problem';
 // @ts-ignore
 import { SessionBootstrap } from '../model/sessionBootstrap';
@@ -37,6 +45,82 @@ export class AdministratorService extends BaseService {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);
+    }
+
+    /**
+     * Requires an anonymous persisted session, exact Origin and CSRF. Distributed normalized account/IP limits apply before factors. Purpose/session/browser binding is derived only by the server. Password plus single-use recovery code permits reenrollment only; an exact retry rotates the bearer without extending the original expiry. Completion consumes the restricted grant and revokes old credentials; fresh MFA is required for ordinary access. No session or Set-Cookie is returned.
+     * @endpoint post /admin/recovery
+     * @param xCSRFToken 
+     * @param administratorRecoveryRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public beginAdministratorRecovery(xCSRFToken: string, administratorRecoveryRequest: AdministratorRecoveryRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorRecoverySetup>;
+    public beginAdministratorRecovery(xCSRFToken: string, administratorRecoveryRequest: AdministratorRecoveryRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorRecoverySetup>>;
+    public beginAdministratorRecovery(xCSRFToken: string, administratorRecoveryRequest: AdministratorRecoveryRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorRecoverySetup>>;
+    public beginAdministratorRecovery(xCSRFToken: string, administratorRecoveryRequest: AdministratorRecoveryRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling beginAdministratorRecovery.');
+        }
+        if (administratorRecoveryRequest === null || administratorRecoveryRequest === undefined) {
+            throw new Error('Required parameter administratorRecoveryRequest was null or undefined when calling beginAdministratorRecovery.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/recovery`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorRecoverySetup>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorRecoveryRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
     }
 
     /**
@@ -105,6 +189,82 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorLoginRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Requires an anonymous persisted session, exact Origin and CSRF. Distributed normalized account/IP limits apply before factors. Purpose/session/browser binding is derived only by the server. Password plus single-use recovery code permits reenrollment only; an exact retry rotates the bearer without extending the original expiry. Completion consumes the restricted grant and revokes old credentials; fresh MFA is required for ordinary access. No session or Set-Cookie is returned.
+     * @endpoint post /admin/recovery/reenrollment
+     * @param xCSRFToken 
+     * @param administratorReenrollmentRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public reenrollAdministrator(xCSRFToken: string, administratorReenrollmentRequest: AdministratorReenrollmentRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorReenrollmentResult>;
+    public reenrollAdministrator(xCSRFToken: string, administratorReenrollmentRequest: AdministratorReenrollmentRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorReenrollmentResult>>;
+    public reenrollAdministrator(xCSRFToken: string, administratorReenrollmentRequest: AdministratorReenrollmentRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorReenrollmentResult>>;
+    public reenrollAdministrator(xCSRFToken: string, administratorReenrollmentRequest: AdministratorReenrollmentRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling reenrollAdministrator.');
+        }
+        if (administratorReenrollmentRequest === null || administratorReenrollmentRequest === undefined) {
+            throw new Error('Required parameter administratorReenrollmentRequest was null or undefined when calling reenrollAdministrator.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/recovery/reenrollment`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorReenrollmentResult>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorReenrollmentRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

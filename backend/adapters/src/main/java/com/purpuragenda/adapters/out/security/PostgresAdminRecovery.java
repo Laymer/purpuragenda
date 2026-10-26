@@ -43,7 +43,7 @@ public final class PostgresAdminRecovery implements AdminRecoveryUnitOfWork {
         private void check() { if(!active || owner!=Thread.currentThread())throw new IllegalStateException("ADMIN_RECOVERY_CONTEXT_CLOSED"); }
         @Override public Instant now() { check();return captured; }
         @Override public Optional<Identity> identity() { check();return Optional.ofNullable(identity); }
-        @Override public Optional<Secret> begin(String recoveryHash,Binding binding,String tokenHash) {
+        @Override public Optional<Setup> begin(String recoveryHash,Binding binding,String tokenHash) {
             check();if(identity==null)return Optional.empty();
             try(var query=connection.prepareStatement("SELECT id,consumed_at,revoked_at FROM admin_recovery_code WHERE admin_id=? AND code_hash=? FOR UPDATE")) {
                 query.setObject(1,identity.id());query.setString(2,recoveryHash);
@@ -52,8 +52,8 @@ public final class PostgresAdminRecovery implements AdminRecoveryUnitOfWork {
                     UUID codeId=row.getObject(1,UUID.class);
                     if(row.getTimestamp(2)!=null) {
                         var grant=grant("recovery_code_id",codeId,binding);if(grant.isEmpty())return Optional.empty();
-                        update("UPDATE admin_reenrollment_grant SET token_hash=? WHERE id=?",tokenHash,grant.get());
-                        audit("ADMIN_RECOVERY_RESUMED");return Optional.of(secret());
+                        update("UPDATE admin_reenrollment_grant SET token_hash=? WHERE id=?",tokenHash,grant.get().id());
+                        audit("ADMIN_RECOVERY_RESUMED");return Optional.of(new Setup(secret(),grant.get().expiresAt()));
                     }
                     byte[] raw=Totp.newSecret();
                     try { encrypted=secrets.encrypt(Base64.getEncoder().encodeToString(raw)); }
@@ -64,16 +64,16 @@ public final class PostgresAdminRecovery implements AdminRecoveryUnitOfWork {
                     version++;enrolled=false;revokeSessions();
                     update("INSERT INTO admin_reenrollment_grant(id,admin_id,recovery_code_id,purpose,token_hash,browser_hash,request_hash,security_version,issued_at,expires_at) VALUES (?,?,?,'ADMIN_REENROLLMENT',?,?,?,?,?,?)",
                             UUID.randomUUID(),identity.id(),codeId,tokenHash,hex(binding.browserHash()),hex(binding.requestHash()),version,captured,captured.plus(ReenrollmentGrantPolicy.LIFETIME));
-                    audit("ADMIN_RECOVERY_STARTED");return Optional.of(secret());
+                    audit("ADMIN_RECOVERY_STARTED");return Optional.of(new Setup(secret(),captured.plus(ReenrollmentGrantPolicy.LIFETIME)));
                 }
             } catch(SQLException failure) { throw unavailable(); }
         }
         @Override public Optional<Secret> prove(String tokenHash,Binding binding) {
             check();if(identity==null)return Optional.empty();
             var grant=grant("token_hash",tokenHash,binding);if(grant.isEmpty())return Optional.empty();
-            proven=grant.get();return Optional.of(secret());
+            proven=grant.get().id();return Optional.of(secret());
         }
-        private Optional<UUID> grant(String column,Object value,Binding binding) {
+        private Optional<State> grant(String column,Object value,Binding binding) {
             if(enrolled)return Optional.empty();
             try(var query=connection.prepareStatement("SELECT id,purpose,browser_hash,request_hash,token_hash,issued_at,expires_at,consumed_at,revoked_at,security_version FROM admin_reenrollment_grant WHERE admin_id=? AND "+column+"=?")) {
                 query.setObject(1,identity.id());query.setObject(2,value);
@@ -81,7 +81,7 @@ public final class PostgresAdminRecovery implements AdminRecoveryUnitOfWork {
                     if(!row.next() || row.getLong(10)!=version)return Optional.empty();
                     var state=new State(row.getObject(1,UUID.class),identity.id(),Purpose.valueOf(row.getString(2)),
                             new Binding(unhex(row.getString(3)),unhex(row.getString(4))),unhex(row.getString(5)),time(row,6),time(row,7),time(row,8),time(row,9));
-                    return state.eligible(identity.id(),binding,Purpose.ADMIN_REENROLLMENT,captured,!enrolled)?Optional.of(state.id()):Optional.empty();
+                    return state.eligible(identity.id(),binding,Purpose.ADMIN_REENROLLMENT,captured,!enrolled)?Optional.of(state):Optional.empty();
                 }
             } catch(SQLException failure) { throw unavailable(); }
         }

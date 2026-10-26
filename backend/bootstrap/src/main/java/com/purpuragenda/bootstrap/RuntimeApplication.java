@@ -73,6 +73,12 @@ public class RuntimeApplication {
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AdministratorRecovery administratorRecovery(PrivateAdminRecovery recovery,RequestThrottle throttle) {
+        return new AdministratorRecovery(recovery,throttle,new SessionRecoveryBinding());
+    }
+    @Bean AdministratorRecoveryController administratorRecoveryController(AdministratorRecovery recovery) {
+        return new AdministratorRecoveryController(recovery,java.time.Duration.ofMillis(300));
+    }
     @Bean AdministratorLogin administratorLogin(RequestThrottle throttle,PrivateAdminMfa factors,SessionStore sessions) {
         return new AdministratorLogin(throttle,factors,sessions,new AdminCrypto());
     }
