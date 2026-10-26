@@ -2,6 +2,7 @@ package com.purpuragenda.bootstrap;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -9,10 +10,13 @@ import org.springframework.context.SmartLifecycle;
 
 /** Independent, bounded work lanes. Durable leases remain in PostgreSQL, never in this scheduler. */
 final class RuntimeWorkers implements SmartLifecycle {
-    private final Runnable delivery, cleanup;
+    record Lane(Runnable work,long initialDelay,long delay) {
+        Lane { Objects.requireNonNull(work);if(initialDelay<0 || delay<1)throw new IllegalArgumentException("INVALID_WORKER_INTERVAL"); }
+    }
+    private final List<Lane> lanes;
     private final BooleanSupplier ready;
     private final boolean suppressed;
-    private final long deliveryDelay, cleanupDelay, shutdownMillis;
+    private final long shutdownMillis;
     private final AtomicBoolean running = new AtomicBoolean();
     private ScheduledExecutorService executor;
 
@@ -22,13 +26,15 @@ final class RuntimeWorkers implements SmartLifecycle {
 
     RuntimeWorkers(Runnable delivery, Runnable cleanup, BooleanSupplier ready, boolean suppressed,
                    Duration deliveryDelay, Duration cleanupDelay, Duration shutdown) {
-        this.delivery = Objects.requireNonNull(delivery);
-        this.cleanup = Objects.requireNonNull(cleanup);
-        this.ready = Objects.requireNonNull(ready);
-        this.suppressed = suppressed;
-        this.deliveryDelay = positive(deliveryDelay);
-        this.cleanupDelay = positive(cleanupDelay);
-        this.shutdownMillis = positive(shutdown);
+        this(List.of(new Lane(delivery,positive(deliveryDelay),positive(deliveryDelay)),new Lane(cleanup,0,positive(cleanupDelay))),ready,suppressed,shutdown);
+    }
+    RuntimeWorkers(Runnable auth,Runnable cleanup,Runnable expiry,Runnable expand,Runnable booking,BooleanSupplier ready,boolean suppressed) {
+        this(List.of(new Lane(auth,1000,1000),new Lane(cleanup,0,3600000),new Lane(expiry,0,60000),
+                new Lane(expand,1000,1000),new Lane(booking,1000,1000)),ready,suppressed,Duration.ofSeconds(25));
+    }
+    RuntimeWorkers(List<Lane> lanes,BooleanSupplier ready,boolean suppressed,Duration shutdown) {
+        if(lanes==null || lanes.isEmpty() || lanes.size()>5)throw new IllegalArgumentException("INVALID_WORKER_LANES");
+        this.lanes=List.copyOf(lanes);this.ready=Objects.requireNonNull(ready);this.suppressed=suppressed;this.shutdownMillis=positive(shutdown);
     }
 
     private static long positive(Duration duration) {
@@ -38,10 +44,9 @@ final class RuntimeWorkers implements SmartLifecycle {
 
     @Override public synchronized void start() {
         if (suppressed || !running.compareAndSet(false, true)) return;
-        executor = Executors.newScheduledThreadPool(2, Thread.ofVirtual().name("durable-work-", 0).factory());
+        executor = Executors.newScheduledThreadPool(lanes.size(), Thread.ofVirtual().name("durable-work-", 0).factory());
         // Fixed delay prevents overlapping attempts and catch-up storms after a slow provider or host sleep.
-        executor.scheduleWithFixedDelay(() -> attempt(delivery), deliveryDelay, deliveryDelay, TimeUnit.MILLISECONDS);
-        executor.scheduleWithFixedDelay(() -> attempt(cleanup), 0, cleanupDelay, TimeUnit.MILLISECONDS);
+        for(var lane:lanes)executor.scheduleWithFixedDelay(() -> attempt(lane.work()),lane.initialDelay(),lane.delay(),TimeUnit.MILLISECONDS);
     }
 
     private void attempt(Runnable work) {
