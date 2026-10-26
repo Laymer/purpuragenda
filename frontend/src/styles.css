@@ -5,7 +5,7 @@
 body { margin: 0; }
 a { color: #68458c; text-underline-offset: 4px; }
 a:focus-visible { outline: 3px solid #68458c; outline-offset: 4px; }
-.site-header { height: auto; min-height: 80px; padding: 24px clamp(20px, 5vw, 64px); background: transparent; }
+.site-header.mat-toolbar { height: auto; min-height: 80px; padding: 24px clamp(20px, 5vw, 64px); background: transparent; }
 .brand { font-size: 1.6rem; font-weight: 650; letter-spacing: -.04em; text-decoration: none; color: #30263b; }
 .brand span { color: #68458c; }
 .skip-link { position: absolute; left: 12px; top: -80px; background: white; padding: 14px; z-index: 10; }
@@ -18,3 +18,5 @@ p { line-height: 1.65; }
 .business-zone, footer { color: #605568; font-size: .9rem; }
 footer { border-top: 1px solid #e3dde6; padding: 28px clamp(20px, 5vw, 64px); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+.welcome a[mat-flat-button] { background: #68458c; color: #fff; }

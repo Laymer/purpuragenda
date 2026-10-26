@@ -39,7 +39,8 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery 
                         AND s.issued_at<=? AND s.absolute_expires_at>? AND s.last_seen_at+interval '30 minutes'>?
                         AND (
                           (s.kind='ACCOUNT' AND EXISTS (
-                            SELECT 1 FROM customer_account a WHERE a.id=s.account_id AND a.customer_id=s.customer_id))
+                            SELECT 1 FROM customer_account a WHERE a.id=s.account_id AND a.customer_id=s.customer_id
+                              AND a.credential_version=s.account_credential_version))
                           OR (s.kind='GUEST' AND EXISTS (
                             SELECT 1 FROM access_grant g WHERE g.id=s.grant_id AND g.customer_id=s.customer_id
                               AND g.browser_hash=s.browser_hash AND g.booking_id=b.id AND g.revoked_at IS NULL AND g.issued_at<=?
