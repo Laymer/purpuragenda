@@ -18,7 +18,11 @@ public final class AvailabilityThrottleFilter extends OncePerRequestFilter {
 
     public AvailabilityThrottleFilter(RequestThrottle throttle) { this.throttle = Objects.requireNonNull(throttle); }
 
-    @Override protected boolean shouldNotFilter(HttpServletRequest request) { return !request.getRequestURI().equals(PATH); }
+    /** Registered for every path; the decision uses the normalized path and fails closed on undecodable input. */
+    @Override protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = RequestPaths.normalize(request.getRequestURI());
+        return path != null && !path.equals(PATH);
+    }
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         RequestThrottle.Admission admission;

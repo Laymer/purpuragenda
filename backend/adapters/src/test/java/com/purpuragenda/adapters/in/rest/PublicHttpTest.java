@@ -218,6 +218,38 @@ class PublicHttpTest {
         mvc.perform(get(good).with(r -> { r.setRemoteAddr("198.51.100.4"); return r; }).header(ClientAddress.HEADER, "203.0.113.200")).andExpect(status().isTooManyRequests());
     }
 
+    @Test void everySpellingThatCanReachTheHandlerIsChargedToTheSameBucketAndUnrelatedPathsAreNot() throws Exception {
+        String query = query("2027-01-05", "2027-01-05", "UTC");
+        String[] spellings = {"/api/v1/availability", "/api/v1/%61vailability", "/api/v1/%41vailability", "/api/v1/availability;x=1",
+                "/api/v1/availability/", "/api/v1//availability", "/API/v1/Availability", "/api/v1/availability;a=1;b=2"};
+        int expected = 0;
+        for (String spelling : spellings) {
+            mvc.perform(get(java.net.URI.create(spelling + "?" + query)).with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn();
+            assertEquals(++expected, limits.subjects.size(), spelling);
+        }
+        assertEquals(1, limits.counts.size());
+        assertEquals(spellings.length, limits.counts.get("198.51.100.4/32"));
+        mvc.perform(get("/api/v1/services").with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn();
+        mvc.perform(get("/api/v1/availability-other").with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn();
+        mvc.perform(get("/api/v1/session").with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn();
+        assertEquals(spellings.length, limits.subjects.size(), "unrelated paths never touch the availability bucket");
+        // Once the bucket is full every variant is denied before the handler, with a positive Retry-After.
+        limits.counts.put("198.51.100.4/32", 120);
+        for (String spelling : spellings) {
+            var response = mvc.perform(get(java.net.URI.create(spelling + "?" + query)).with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn().getResponse();
+            assertEquals(429, response.getStatus(), spelling);
+            assertEquals("60", response.getHeader("Retry-After"));
+        }
+        for (long wait : new long[]{0, -5}) {
+            var direct = new org.springframework.mock.web.MockHttpServletResponse();
+            Problems.reject(direct, Problems.Code.RATE_LIMITED, wait);
+            assertEquals("1", direct.getHeader("Retry-After"), "a 429 never carries a zero or negative wait");
+        }
+        var other = new org.springframework.mock.web.MockHttpServletResponse();
+        Problems.reject(other, Problems.Code.INVALID_REQUEST, 0);
+        assertNull(other.getHeader("Retry-After"));
+    }
+
     @Test void unsafeMethodsOnPublicRoutesStillRequireTheGuardAndGetNoSessionAccess() throws Exception {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/availability")).andExpect(status().isForbidden());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/services")).andExpect(status().isForbidden());

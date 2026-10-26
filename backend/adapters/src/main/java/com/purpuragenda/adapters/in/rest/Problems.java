@@ -28,7 +28,9 @@ final class Problems {
         response.reset();
         response.setStatus(code.status);
         response.setHeader("Cache-Control","no-store");
-        if(retryAfter>0) response.setHeader("Retry-After",Long.toString(retryAfter));
+        // A 429 must always tell the client when to return; never send zero or a negative wait.
+        long wait=code.status==429?Math.max(1,retryAfter):retryAfter;
+        if(wait>0) response.setHeader("Retry-After",Long.toString(wait));
         response.setContentType("application/problem+json");
         response.setCharacterEncoding("UTF-8");
         response.setContentLength(body.length);

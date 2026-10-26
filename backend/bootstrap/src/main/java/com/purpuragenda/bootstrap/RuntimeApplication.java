@@ -59,7 +59,7 @@ public class RuntimeApplication {
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));
         registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+20);
-        registration.addUrlPatterns(AvailabilityThrottleFilter.PATH);
+        registration.addUrlPatterns("/*"); // the filter itself decides on the normalized path
         return registration;
     }
     @Bean FilterRegistrationBean<ApiGuardFilter> apiGuard(RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {

@@ -113,4 +113,24 @@ class PublicHttpPostgresTest {
         mvc.perform(get("/api/v1/availability")).andExpect(status().isTooManyRequests());
         assertEquals(120, jdbc.queryForObject("SELECT count FROM rate_limit_bucket", Integer.class));
     }
+
+    @Test void encodedParameterisedAndMixedCaseVariantsShareTheDatabaseBucket() throws Exception {
+        clock.set(T0);
+        String query = path.substring(path.indexOf('?') + 1);
+        String[] spellings = {"/api/v1/availability", "/api/v1/%61vailability", "/api/v1/availability;x=1", "/api/v1/availability/",
+                "/api/v1//availability", "/API/v1/Availability"};
+        for (int i = 0; i < 120; i++) {
+            String spelling = spellings[i % spellings.length];
+            mvc.perform(get(java.net.URI.create(spelling + "?" + query)).with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn();
+        }
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM rate_limit_bucket", Integer.class));
+        assertEquals(120, jdbc.queryForObject("SELECT count FROM rate_limit_bucket", Integer.class));
+        for (String spelling : spellings) {
+            var denied = mvc.perform(get(java.net.URI.create(spelling + "?" + query)).with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andReturn().getResponse();
+            assertEquals(429, denied.getStatus(), spelling);
+            assertEquals("60", denied.getHeader("Retry-After"));
+        }
+        mvc.perform(get("/api/v1/services").with(r -> { r.setRemoteAddr("198.51.100.4"); return r; })).andExpect(status().isOk());
+        assertEquals(120, jdbc.queryForObject("SELECT count FROM rate_limit_bucket", Integer.class), "the catalog never touches the bucket");
+    }
 }

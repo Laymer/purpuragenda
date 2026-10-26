@@ -31,7 +31,7 @@ public final class ApiGuardFilter extends OncePerRequestFilter {
             if(origins.size()!=1 || !origins.get(0).equals(origin)) { Problems.reject(response,Problems.Code.ORIGIN_REJECTED);return; }
             var site=Collections.list(request.getHeaders("Sec-Fetch-Site"));
             if(site.size()>1 || site.size()==1 && !site.get(0).equals("same-origin")) { Problems.reject(response,Problems.Code.CROSS_SITE_REJECTED);return; }
-            if(method.equals("POST") && request.getRequestURI().equals(BOOTSTRAP)) { chain.doFilter(request,response);return; }
+            if(method.equals("POST") && BOOTSTRAP.equals(request.getRequestURI())) { chain.doFilter(request,response);return; }
             char[] cookie=cookies.read(request);
             var session=cookie==null?Optional.<com.purpuragenda.application.port.out.SessionStore.Snapshot>empty():access.current(cookie);
             if(session.isEmpty()) { Problems.reject(response,Problems.Code.SESSION_REQUIRED);return; }
