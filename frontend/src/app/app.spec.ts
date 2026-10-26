@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { appConfig } from './app.config';
-import { CatalogService, Problem, Service, ServiceCurrencyEnum, SessionService, SessionStateRoleEnum } from './shared/generated';
+import { CatalogService, GuestService, Problem, RedeemProofRequestPurposeEnum, Service, ServiceCurrencyEnum, SessionService, SessionStateRoleEnum } from './shared/generated';
 
 describe('Application shell and typed API boundary', () => {
   beforeEach(() => TestBed.configureTestingModule({
@@ -81,5 +81,63 @@ describe('Application shell and typed API boundary', () => {
     const logout = http.expectOne('/api/v1/session/logout');
     expect(logout.request.method).toBe('POST'); expect(logout.request.headers.get('X-CSRF-Token')).toBe(csrfToken);
     logout.flush(null, { status: 204, statusText: 'No content' });
+  });
+
+  it('sends guest proof requests and redemptions as JSON bodies with the CSRF header and typed replies', () => {
+    const http = TestBed.inject(HttpTestingController); const guests = TestBed.inject(GuestService);
+    const csrfToken = 'c'.repeat(43); const token = 'p'.repeat(43);
+    const accepted: unknown[] = [];
+    guests.requestCreateProof(csrfToken, { email: 'synthetic@example.test' }).subscribe(value => accepted.push(value));
+    const create = http.expectOne('/api/v1/guest/create-proofs');
+    expect(create.request.method).toBe('POST'); expect(create.request.headers.get('X-CSRF-Token')).toBe(csrfToken);
+    expect(create.request.body).toEqual({ email: 'synthetic@example.test' }); create.flush({ accepted: true });
+    guests.requestManagementProof(csrfToken, { reference: 'SYNTHETIC1', email: 'synthetic@example.test' }).subscribe(value => accepted.push(value));
+    const manage = http.expectOne('/api/v1/guest/management-proofs');
+    expect(manage.request.body).toEqual({ reference: 'SYNTHETIC1', email: 'synthetic@example.test' }); manage.flush({ accepted: true });
+    expect(accepted).toEqual([{ accepted: true }, { accepted: true }]);
+    let state: unknown;
+    guests.redeemGuestProof(csrfToken, { token, purpose: RedeemProofRequestPurposeEnum.Create }).subscribe(value => state = value);
+    const redeem = http.expectOne('/api/v1/guest/redemptions');
+    expect(redeem.request.method).toBe('POST'); expect(redeem.request.headers.get('X-CSRF-Token')).toBe(csrfToken);
+    expect(redeem.request.body).toEqual({ token, purpose: RedeemProofRequestPurposeEnum.Create });
+    redeem.flush({ role: SessionStateRoleEnum.Guest, idleExpiresAt: '2026-10-25T10:30:00Z', absoluteExpiresAt: '2026-10-25T12:00:00Z', csrfToken });
+    expect(state).toMatchObject({ role: 'GUEST' });
+  });
+
+  it('rejects missing required guest parameters before any request and honours per-call options', () => {
+    const http = TestBed.inject(HttpTestingController); const guests = TestBed.inject(GuestService);
+    const csrf = 'c'.repeat(43); const create = { email: 'synthetic@example.test' };
+    const manage = { reference: 'SYNTHETIC1', email: 'synthetic@example.test' };
+    const redeem = { token: 'p'.repeat(43), purpose: RedeemProofRequestPurposeEnum.Manage };
+    const nothing = null as unknown as string;
+    expect(() => guests.requestCreateProof(nothing, create)).toThrow(/xCSRFToken/);
+    expect(() => guests.requestCreateProof(csrf, null as never)).toThrow(/createProofRequest/);
+    expect(() => guests.requestManagementProof(nothing, manage)).toThrow(/xCSRFToken/);
+    expect(() => guests.requestManagementProof(csrf, null as never)).toThrow(/managementProofRequest/);
+    expect(() => guests.redeemGuestProof(nothing, redeem)).toThrow(/xCSRFToken/);
+    expect(() => guests.redeemGuestProof(csrf, null as never)).toThrow(/redeemProofRequest/);
+    const options = { httpHeaderAccept: 'application/problem+json' as const, context: new HttpContext(), transferCache: false };
+    guests.requestCreateProof(csrf, create, 'response', false, options).subscribe();
+    guests.requestManagementProof(csrf, manage, 'events', true, options).subscribe();
+    guests.redeemGuestProof(csrf, redeem, 'response', false, options).subscribe();
+    for (const url of ['/api/v1/guest/create-proofs', '/api/v1/guest/management-proofs', '/api/v1/guest/redemptions']) {
+      const request = http.expectOne(url); expect(request.request.headers.get('Accept')).toBe('application/problem+json');
+      request.flush({}, { status: 202, statusText: 'Accepted' });
+    }
+  });
+
+  it('selects text and binary response handling for unusual Accept overrides and covers every purpose', () => {
+    const http = TestBed.inject(HttpTestingController); const guests = TestBed.inject(GuestService);
+    expect(Object.values(RedeemProofRequestPurposeEnum)).toEqual(['CREATE', 'MANAGE']);
+    const csrf = 'c'.repeat(43); const body = { email: 'synthetic@example.test' };
+    for (const accept of ['text/plain', 'application/octet-stream']) {
+      guests.requestCreateProof(csrf, body, 'body', false, { httpHeaderAccept: accept as never }).subscribe();
+      guests.requestManagementProof(csrf, { reference: 'SYNTHETIC1', email: body.email }, 'body', false, { httpHeaderAccept: accept as never }).subscribe();
+      guests.redeemGuestProof(csrf, { token: 'p'.repeat(43), purpose: RedeemProofRequestPurposeEnum.Manage }, 'body', false, { httpHeaderAccept: accept as never }).subscribe();
+      for (const url of ['/api/v1/guest/create-proofs', '/api/v1/guest/management-proofs', '/api/v1/guest/redemptions']) {
+        const request = http.expectOne(url); expect(request.request.responseType).toBe(accept === 'text/plain' ? 'text' : 'blob');
+        request.flush(accept === 'text/plain' ? '' : new Blob([]), { status: 202, statusText: 'Accepted' });
+      }
+    }
   });
 });

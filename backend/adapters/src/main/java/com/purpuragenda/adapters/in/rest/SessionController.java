@@ -40,7 +40,7 @@ public final class SessionController {
         cookies.clear(response);
         return ResponseEntity.noContent().header(HttpHeaders.CACHE_CONTROL,"no-store").build();
     }
-    private static String state(SessionAccess.View view,String csrf) {
+    static String state(SessionAccess.View view,String csrf) {
         return "{\"role\":\""+view.role().name()+"\",\"idleExpiresAt\":\""+view.idleExpiresAt()+"\",\"absoluteExpiresAt\":\""+view.absoluteExpiresAt()+"\""
                 +(csrf==null?"":",\"csrfToken\":\""+csrf+"\"")+"}";
     }

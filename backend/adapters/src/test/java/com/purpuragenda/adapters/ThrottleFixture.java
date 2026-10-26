@@ -45,7 +45,8 @@ final class ThrottleFixture {
                     if (!m.getName().equals("createStatement")) return result;
                     return proxy(Statement.class, (sp, sm, sa) -> {
                         Object rows = invoke(result, sm, sa);
-                        if (!sm.getName().equals("executeQuery") || !"SELECT clock_timestamp()".equals(sa[0])) return rows;
+                        // A null reference passes the real database clock through.
+                        if (!sm.getName().equals("executeQuery") || !"SELECT clock_timestamp()".equals(sa[0]) || clock.get() == null) return rows;
                         return proxy(ResultSet.class, (rp, rm, ra) ->
                                 rm.getName().equals("getTimestamp") && Integer.valueOf(1).equals(ra[0])
                                         ? Timestamp.from(clock.get()) : invoke(rows, rm, ra));
