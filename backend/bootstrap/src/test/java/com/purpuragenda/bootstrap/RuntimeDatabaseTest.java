@@ -113,6 +113,7 @@ class RuntimeDatabaseTest {
     }
     @Test @Order(5) void readinessReleasesProbeConnectionBeforePolicyValidation() {
         try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop(); // Isolate the probe from scheduled users of the same pool.
             var pool=context.getBean(com.zaxxer.hikari.HikariDataSource.class);
             pool.setMinimumIdle(0);pool.setMaximumPoolSize(1);pool.getHikariPoolMXBean().softEvictConnections();
             var readiness=context.getBean(com.purpuragenda.adapters.out.postgres.DatabaseReadiness.class);
@@ -244,4 +245,38 @@ class RuntimeDatabaseTest {
         }
     }
 
+    @Test @Order(10) void durableAuthMailResumesAfterRestartAndRestoreNeverStartsDelivery() throws Exception {
+        AuthDeliveryStore.Receipt issued;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();
+            issued=context.getBean(AuthDeliveryStore.class).issue(new AuthDeliveryStore.Issue(
+                    "synthetic-worker@example.test",AuthDeliveryStore.Purpose.CREATE,null,"b".repeat(64)));
+        }
+        String job=" FROM notification_job WHERE id='"+issued.jobId()+"'";
+        assertEquals(1,count("SELECT count(*)"+job+" AND state='QUEUED' AND encrypted_envelope IS NOT NULL"));
+        try(var capture=new org.testcontainers.containers.GenericContainer<>(org.testcontainers.utility.DockerImageName.parse(
+                "axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498"))
+                .withEnv("MP_QUIET","true").withExposedPorts(1025)) {
+            capture.start();
+            var configured=new HashMap<>(properties);configured.put("app.smtp-port",Integer.toString(capture.getMappedPort(1025)));
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                assertTrue(context.getBean(RuntimeWorkers.class).isRunning());
+                long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
+                while(count("SELECT count(*)"+job+" AND state='SENT'")==0 && System.nanoTime()<deadline)Thread.sleep(25);
+                assertEquals(1,count("SELECT count(*)"+job+" AND state='SENT' AND encrypted_envelope IS NULL AND attempts=1"));
+            }
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                assertEquals(200,get(port(context),"/actuator/health/readiness").statusCode());
+                assertEquals(1,count("SELECT count(*)"+job+" AND state='SENT' AND attempts=1"));
+                context.getBean(RuntimeWorkers.class).stop();
+                context.getBean(AuthDeliveryStore.class).issue(new AuthDeliveryStore.Issue(
+                        "synthetic-restore@example.test",AuthDeliveryStore.Purpose.CREATE,null,"c".repeat(64)));
+            }
+            configured.put("app.mode","restore");
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                assertFalse(context.getBean(RuntimeWorkers.class).isRunning());
+                assertEquals(1,count("SELECT count(*) FROM notification_job WHERE state='QUEUED' AND template='AUTH' AND attempts=0"));
+            }
+        }
+    }
 }
