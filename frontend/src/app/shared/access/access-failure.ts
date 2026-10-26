@@ -21,6 +21,7 @@ export function retryAfter(header: string | null, now = Date.now()): number {
 export function safeFailure(error: unknown, mutation: boolean): AccessFailure {
   if (error instanceof AccessFailure) return error;
   if (!(error instanceof HttpErrorResponse)) return new AccessFailure(mutation ? 'UNCERTAIN' : 'UNAVAILABLE');
+  if (error.status === 401 && error.error?.code === 'AUTHENTICATION_FAILED') return new AccessFailure('REJECTED', 401);
   if (error.status === 401 || error.error?.code === 'SESSION_REQUIRED' || error.error?.code === 'CSRF_REJECTED') return new AccessFailure('SESSION_EXPIRED', error.status);
   if (error.status === 429) return new AccessFailure('THROTTLED', 429, retryAfter(error.headers.get('Retry-After')));
   if (error.status === 412) return new AccessFailure('VERSION_CONFLICT', 412);

@@ -34,13 +34,45 @@ describe('Shared in-memory session and frozen command access', () => {
 
   it('serializes rotation before subsequent work and borrows only the fresh proof', async () => {
     await ready();
-    const rotate = sessions.perform(csrf => TestBed.inject(AdministratorService).loginAdministrator(csrf, { email: 'owner@example.test', password: 'SYNTHETIC_PASSWORD', totp: '123456' }), value => value);
-    const mutation = sessions.perform(csrf => client.post('/api/v1/action', {}, { headers: { 'X-CSRF-Token': csrf } }));
+    const rotate = sessions.authenticate(csrf => TestBed.inject(AdministratorService).loginAdministrator(csrf, { email: 'owner@example.test', password: 'SYNTHETIC_PASSWORD', totp: '123456' }));
     await settle(); const auth = http.expectOne('/api/v1/admin/login'); http.expectNone('/api/v1/action');
     expect(auth.request.headers.get('X-CSRF-Token') === reply().csrfToken).toBe(true);
-    auth.flush(reply({ csrfToken: 'SYNTHETIC_PROOF_B', role: SessionBootstrapRoleEnum.Admin })); await rotate; await settle();
+    auth.flush(reply({ csrfToken: 'SYNTHETIC_PROOF_B', role: SessionBootstrapRoleEnum.Admin })); const context = await rotate; expect('csrfToken' in context).toBe(false);
+    const mutation = sessions.perform(csrf => client.post('/api/v1/action', {}, { headers: { 'X-CSRF-Token': csrf } })); await settle();
     const action = http.expectOne('/api/v1/action'); expect(action.request.headers.get('X-CSRF-Token') === 'SYNTHETIC_PROOF_B').toBe(true);
     action.flush({ ok: true }); await mutation; expect(sessions.state()?.role).toBe('ADMIN');
+  });
+
+  it('invalidates old intents on an explicit refresh that may observe another tab identity', async () => {
+    await ready(); const refresh = sessions.bootstrap(); const command = commands.prepare('POST', '/api/v1/bookings', { synthetic: true });
+    const queued = command.attempt(); const expired = expect(queued).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' }); await settle();
+    http.expectOne('/api/v1/session/bootstrap').flush(reply({ role: SessionBootstrapRoleEnum.Guest })); await refresh; await expired;
+    expect(sessions.state()?.role).toBe('GUEST'); expect(command.state()).toBe('expired'); http.expectNone('/api/v1/bookings');
+  });
+
+  it('clears prior identity commands when authentication succeeds, including unchanged roles', async () => {
+    await ready(); const authentication = sessions.authenticate(csrf => TestBed.inject(AdministratorService).loginAdministrator(csrf, { email: 'owner@example.test', password: 'SYNTHETIC_PASSWORD', totp: '123456' }));
+    const command = commands.prepare('POST', '/api/v1/bookings', { synthetic: true }); const attempt = command.attempt();
+    const expired = expect(attempt).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' });
+    await settle(); http.expectOne('/api/v1/admin/login').flush(reply({ csrfToken: 'SYNTHETIC_PROOF_B' }));
+    await authentication; await expired; expect(command.state()).toBe('expired'); expect(sessions.invalidations()).toBe(1);
+    http.expectNone('/api/v1/bookings'); expect(sessions.state()?.role).toBe('ANONYMOUS');
+  });
+
+  it('retains a valid context when the backend rejects authentication factors', async () => {
+    await ready(); const generation = sessions.invalidations();
+    const authentication = sessions.authenticate(csrf => TestBed.inject(AdministratorService).loginAdministrator(csrf, { email: 'owner@example.test', password: 'SYNTHETIC_PASSWORD', totp: '123456' }));
+    const rejected = expect(authentication).rejects.toMatchObject({ kind: 'REJECTED', status: 401 }); await settle();
+    http.expectOne('/api/v1/admin/login').flush({ code: 'AUTHENTICATION_FAILED' }, { status: 401, statusText: 'Unauthorized' }); await rejected;
+    expect(sessions.state()).not.toBeNull(); expect(sessions.invalidations()).toBe(generation);
+  });
+
+  it('invalidates uncertain authentication rotation without replaying queued work', async () => {
+    await ready(); const authentication = sessions.authenticate(csrf => TestBed.inject(AdministratorService).loginAdministrator(csrf, { email: 'owner@example.test', password: 'SYNTHETIC_PASSWORD', totp: '123456' }));
+    const rejected = expect(authentication).rejects.toMatchObject({ kind: 'UNCERTAIN' });
+    const mutation = commands.prepare('POST', '/api/v1/bookings', {}).attempt(); const expired = expect(mutation).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' });
+    await settle(); http.expectOne('/api/v1/admin/login').error(new ProgressEvent('error')); await rejected; await expired;
+    expect(sessions.state()).toBeNull(); http.expectNone('/api/v1/bookings'); http.expectNone('/api/v1/admin/login');
   });
 
   it('bootstraps automatically for a first unsafe operation without an authentication bypass', async () => {
@@ -89,6 +121,12 @@ describe('Shared in-memory session and frozen command access', () => {
     vi.advanceTimersByTime(59999); expect(sessions.state()).not.toBeNull(); vi.advanceTimersByTime(1);
     expect(sessions.state()).toBeNull(); expect(sessions.invalidations()).toBe(1); expect(command.state()).toBe('expired');
     await expect(command.attempt()).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' }); http.expectNone('/api/v1/bookings');
+  });
+
+  it('refuses old private commands when wall time expires before its timer callback', async () => {
+    await ready(); const command = commands.prepare('POST', '/api/v1/bookings', { synthetic: true });
+    vi.setSystemTime(now + 60000); await expect(command.attempt()).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' });
+    expect(sessions.state()).toBeNull(); http.expectNone('/api/v1/bookings'); http.expectNone('/api/v1/session/bootstrap');
   });
 
   it('honors the earlier absolute expiry and ignores a late bootstrap after invalidation', async () => {
@@ -142,8 +180,15 @@ describe('Shared in-memory session and frozen command access', () => {
     request.flush(null); await logout; expect(sessions.state()).toBeNull(); expect(command.state()).toBe('expired');
   });
 
+  it('clears private context even when logout acknowledgement is lost', async () => {
+    await ready(); const command = commands.prepare('POST', '/api/v1/bookings', { synthetic: true });
+    const logout = sessions.logout(); const rejected = expect(logout).rejects.toMatchObject({ kind: 'UNCERTAIN' }); await settle();
+    http.expectOne('/api/v1/session/logout').error(new ProgressEvent('error')); await rejected;
+    expect(sessions.state()).toBeNull(); expect(command.state()).toBe('expired');
+  });
+
   it('clears untrusted bootstrap state, then allows a deliberate fresh bootstrap', async () => {
-    for (const value of [reply({ csrfToken: '' }), reply({ idleExpiresAt: new Date(now).toISOString() }), reply({ absoluteExpiresAt: 'invalid' }), reply({ role: 'UNKNOWN' as SessionBootstrapRoleEnum }), reply({ idleExpiresAt: new Date(now + 3e9).toISOString(), absoluteExpiresAt: new Date(now + 3e9).toISOString() })]) {
+    for (const value of [reply({ csrfToken: '' }), reply({ idleExpiresAt: new Date(now).toISOString() }), reply({ absoluteExpiresAt: 'invalid' }), ...['UNKNOWN', 'toString', '__proto__'].map(role => reply({ role: role as SessionBootstrapRoleEnum })), reply({ idleExpiresAt: new Date(now + 3e9).toISOString(), absoluteExpiresAt: new Date(now + 3e9).toISOString() })]) {
       const boot = sessions.bootstrap(); const rejected = expect(boot).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' });
       await settle(); http.expectOne('/api/v1/session/bootstrap').flush(value); await rejected; expect(sessions.state()).toBeNull();
     }
