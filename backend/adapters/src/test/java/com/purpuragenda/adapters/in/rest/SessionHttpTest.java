@@ -212,4 +212,23 @@ class SessionHttpTest {
         mvc.perform(get("/x").header(ClientAddress.HEADER,"203.0.113.9").with(r->{r.setRemoteAddr("10.0.0.2");return r;})).andExpect(status().isOk());
         assertEquals("203.0.113.9",seen[0]);
     }
+    @Test void encodedParameterisedAndCaseVariantsOfBootstrapAreNotExemptFromSessionAndCsrf() throws Exception {
+        for (String variant : new String[]{"/api/v1/session/%62ootstrap", "/api/v1/session/bootstrap;x=1", "/api/v1/session/bootstrap/",
+                "/api/v1//session/bootstrap", "/api/v1/session/Bootstrap", "/API/v1/session/bootstrap", "/api/v1/session/bootstrap%3Bx=1"}) {
+            var response=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(java.net.URI.create(variant)).header("Origin",ORIGIN)).andReturn().getResponse();
+            assertEquals(401,response.getStatus(),variant);
+            assertTrue(response.getContentAsString().contains("SESSION_REQUIRED"),variant);
+            assertNull(response.getHeader("Set-Cookie"),variant);
+        }
+        assertTrue(store.byToken.isEmpty(),"no variant created a session");
+        // Every unsafe method on every spelling still needs the exact Origin before anything else.
+        for (String variant : new String[]{"/api/v1/session/logout","/api/v1/session/%6cogout","/api/v1/session/logout;x=1","/api/v1/availability","/api/v1/%61vailability","/api/v1/services"})
+            for (var request : java.util.List.<MockHttpServletRequestBuilder>of(
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(java.net.URI.create(variant)),
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(java.net.URI.create(variant)),
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(java.net.URI.create(variant)),
+                    org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(java.net.URI.create(variant))))
+                assertEquals(403,mvc.perform(request).andReturn().getResponse().getStatus(),variant);
+        assertEquals(200,mvc.perform(post("/api/v1/session/bootstrap")).andReturn().getResponse().getStatus(),"the exact route remains exempt");
+    }
 }
