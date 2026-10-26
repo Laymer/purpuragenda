@@ -22,7 +22,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account login/profile/history and HTTP remain |
-| P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
+| P19 — Complete public service and availability HTTP contracts | In progress; booking review context claimed in task/p19-booking-context; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query draftPR69 c02ddb3 passes exact-head checks, awaits main integration; coordinator claims stacked customer-http slice |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
+- P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
 - P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
 - P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
@@ -70,12 +70,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:45:00Z.
-- Current task: P20/customer-http; branch: task/p20-customer-http; base: main; PR URL: none yet.
-- Last pushed implementation commit: none for HTTP; local commits79786ce/666f4d7; uncommitted changes: contract/client and protocol tests awaiting publication.
-- What works: protected create/GET/cancel/reschedule composition and explicit strict wire models; real proof/session/CSRF/transaction tests; four OpenAPI operations and regenerated typed client.
-- What remains: full integrated native/coverage/hosted/Compose/exact review; public reviewed terms and all customer UI remain separate required slices. Query PR69 must merge first.
-- Decisions: runtime combines customerOrder11 and administratorOrder12 with strict12-case guard. Credentials/intake remain in memory and request-only models. Generated allowedActions uses Array matching JSON; no unhydrated Set. Existing coverage thresholds and source completeness remain unchanged.
-- Verification: targeted5wire/3controller/5actualPGHTTP and12runtimePG pass after Docker recovery; fresh14Angular tests/build pass with handwritten22/22lines30/30branches.14contract cases and regeneration pass. Earlier Docker interruption and contract assertion/generator mismatch remain documented failures; full current-head gates pending. PR71 confirmed merged d96e0a6 after921Java/11Angular/237Python,14hosted/Compose6/exact review.
-- Next concrete action: publish draft, run all implemented categories and exact review; integrate confirmed query main before final acceptance.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: PR69 and already merged PR71. No full local milestone claimed.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:48:00Z.
+- Current task: P19/booking-context; branch: task/p19-booking-context; base: main; PR URL: none yet.
+- Last pushed implementation commit: parent customer HTTP PR72 at1f4995b; uncommitted changes: application notice/context, public controller, runtime configuration/composition, protocol/config/runtime tests and documentation.
+- What works: new public context targeted17domain/4application/3HTTP/3configuration/12actual runtime cases passed. Current main includes confirmed administrator login PR71.
+- What remains: public authoritative service/policy/notice context for the review step, local synthetic notice and explicit operational notice configuration; all full v1 gates remain mandatory.
+- Decisions: separate worktree while earlier PRs verify. Read-only advisory context; customer creation still checks exact service/policy/notice versions atomically. Notice content is plaintext, never HTML. Recovery worker owns contract slot until release; no contract edits yet.
+- Verification: targeted39Java cases passed; final focused27Java and240strictPython cases pass after unknown-mode regression. Initial selector omitted domain tests and failed rather than skipping them; claim metadata corrected from prior completed public catalog state to active context work. Parent72 native running; query69 all14hosted/Compose6/source review pass, native pending.
+- Next concrete action: rerun final focused configuration checks, publish backend checkpoint and integrate recovery contract after slot release; full native/current-main/Compose/review mandatory.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every worktree/secret/volume preserved; stacked PR dependencies: PR69 and PR72 before this slice merges.
