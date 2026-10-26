@@ -27,14 +27,16 @@ public final class DatabaseReadiness implements HealthIndicator {
                 SELECT b.expiry_ceiling,o.released_at,n.lease_token,q.customer_id,
                   g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at,
                   s.id,s.token_hash,s.browser_hash,s.csrf_hash,s.kind,s.grant_id,s.customer_id,s.account_id,s.admin_id,
-                  s.admin_security_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
+                  s.admin_security_version,s.account_credential_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
                   a.id,a.admin_id,a.token_hash,a.purpose,a.browser_hash,a.request_hash,a.security_version,
                   a.issued_at,a.expires_at,a.consumed_at,a.revoked_at,
                   t.key,t.kind,t.key_id,t.count,t.window_started_at,t.reset_at,
-                  ca.login_email,ca.password_hash,ca.credential_version,ca.password_changed_at
+                  ca.login_email,ca.password_hash,ca.credential_version,ca.password_changed_at,
+                  ap.account_id,ap.token_hash,ap.purpose,ap.browser_hash,ap.request_hash,ap.credential_version,
+                  ap.issued_at,ap.expires_at,ap.consumed_at,ap.revoked_at
                 FROM booking b,booking_occupancy o,notification_job n,request_charge q,
                   access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c,
-                  app_session s,admin_authentication_proof a,rate_limit_bucket t,customer_account ca LIMIT 0
+                  app_session s,admin_authentication_proof a,rate_limit_bucket t,customer_account ca,account_authentication_proof ap LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }
             // 016 tightens an existing CHECK without adding columns. Read only
             // public catalog metadata so 015 cannot report ready before its fix.

@@ -63,7 +63,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - P45/durable-workers: agent=Codex-coordinator; branch=task/p45-durable-workers; base=main; handoff=docs/handoffs/p45-durable-workers.md
 - P17/auth-http: agent=Codex-worker-b; branch=task/p17-auth-http; base=main; handoff=docs/handoffs/p17-auth-http.md
-- P18/accounts: agent=Codex-worker-a; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
+- P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
 
 ## Active handoff
