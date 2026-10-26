@@ -193,4 +193,24 @@ class BookingNotificationDatabaseTest {
         assertEquals(10,mail.sent.size());assertEquals(10,new HashSet<>(mail.sent.stream().map(MailDelivery.Message::jobId).toList()).size());
         assertEquals(10,count("notification_job WHERE template<>'AUTH' AND state='SENT'"));assertEquals(10,attempts("a.success"));
     }
+
+    @Test void leasesThatAreNotLiveForTheJobCannotReadSuppressOrAcknowledgeAnything() {
+        UUID id=book("customer@example.test",3,9);event(id,"REFUND_RECORDED",1);c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");expander.drain(10);
+        var live=queue.claimBooking().orElseThrow();
+        var other=new NotificationQueue.Lease(live.id(),UUID.randomUUID(),live.expiresAt());
+        assertTrue(store.load(other).isEmpty());assertFalse(queue.suppressed(other,"SUPERSEDED"));assertFalse(queue.sent(other));
+        assertTrue(store.load(new NotificationQueue.Lease(UUID.randomUUID(),live.token(),live.expiresAt())).isEmpty());
+        // An authentication job is not a booking notification, even with a live lease.
+        c.f.delivery.issue(new AuthDeliveryStore.Issue("customer@example.test",AuthDeliveryStore.Purpose.CREATE,null,"a".repeat(64)));
+        var auth=queue.claimAuth().orElseThrow();assertTrue(store.load(auth).isEmpty());
+        assertEquals("REFUND_RECORDED",store.load(live).orElseThrow().template());
+        assertTrue(queue.suppressed(live,"SUPERSEDED"));assertEquals("SUPPRESSED",job("state"));assertEquals("SUPERSEDED",job("safe_error"));
+        assertFalse(queue.suppressed(live,"SUPERSEDED"));assertTrue(store.load(live).isEmpty());   // no longer leased
+        // An expired lease can neither read nor suppress.
+        event(id,"REFUND_RECORDED",1);expander.drain(10);var expired=queue.claimBooking().orElseThrow();
+        c.jdbc.update("UPDATE notification_job SET lease_until=clock_timestamp()-interval '1 second' WHERE id=?",expired.id());
+        assertTrue(store.load(expired).isEmpty());assertFalse(queue.suppressed(expired,"SUPERSEDED"));
+        assertThrows(NullPointerException.class,()->new PostgresBookingNotificationStore(null));assertThrows(NullPointerException.class,()->new PostgresOutboxStore(null));
+        assertThrows(NullPointerException.class,()->outbox.expandNext(null));assertThrows(NullPointerException.class,()->store.load(null));
+    }
 }

@@ -78,23 +78,8 @@ public final class PostgresNotificationQueue implements NotificationQueue {
     @Override public boolean failed(Lease lease) { return change(lease, "FAILED"); }
     /** Terminal and fenced: the job was stale, superseded or expired, so no message exists to retry. */
     @Override public boolean suppressed(Lease lease, String safeCode) {
-        Objects.requireNonNull(lease);
         if (safeCode == null || !safeCode.matches("[A-Z][A-Z0-9_]{0,63}")) throw new IllegalArgumentException("INVALID_SAFE_CODE");
-        return transaction(c -> {
-            UUID token; Instant until;
-            try (var query = c.prepareStatement("SELECT lease_token,lease_until FROM notification_job WHERE id=? AND state='LEASED' FOR UPDATE")) {
-                query.setObject(1, lease.id());
-                try (var result = query.executeQuery()) {
-                    if (!result.next()) return false;
-                    token = result.getObject(1, UUID.class);
-                    until = result.getTimestamp(2) == null ? null : result.getTimestamp(2).toInstant();
-                }
-            }
-            Instant now = now(c);
-            if (token == null || until == null || !token.equals(lease.token()) || !new Lease(lease.id(), token, until).liveAt(now)) return false;
-            update(c, "UPDATE notification_job SET state='SUPPRESSED',lease_until=NULL,lease_token=NULL,encrypted_envelope=NULL,safe_error=? WHERE id=?", safeCode, lease.id());
-            return true;
-        });
+        return change(lease, "SUPPRESSED:" + safeCode);
     }
 
     private boolean change(Lease lease, String operation) {
@@ -119,6 +104,11 @@ public final class PostgresNotificationQueue implements NotificationQueue {
                     if (!result.next() || result.getBoolean(1)) return false;
                 }
                 update(c, "UPDATE notification_job SET lease_until=? WHERE id=?", now.plusSeconds(60), lease.id());
+                return true;
+            }
+            if (operation.startsWith("SUPPRESSED:")) {
+                update(c, "UPDATE notification_job SET state='SUPPRESSED',lease_until=NULL,lease_token=NULL,encrypted_envelope=NULL,safe_error=? WHERE id=?",
+                        operation.substring("SUPPRESSED:".length()), lease.id());
                 return true;
             }
             boolean success = operation.equals("SENT");

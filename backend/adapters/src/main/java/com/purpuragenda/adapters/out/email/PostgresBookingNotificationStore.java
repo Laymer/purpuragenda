@@ -12,6 +12,8 @@ public final class PostgresBookingNotificationStore implements BookingNotificati
     private final DataSource source;
     public PostgresBookingNotificationStore(DataSource source) { this.source=Objects.requireNonNull(source); }
 
+    private static Instant instant(ResultSet r,int column) throws SQLException { Timestamp value=r.getTimestamp(column);return value==null?null:value.toInstant(); }
+
     @Override public Optional<Facts> load(Lease lease) {
         Objects.requireNonNull(lease);
         try(var c=source.getConnection()) {
@@ -25,22 +27,23 @@ public final class PostgresBookingNotificationStore implements BookingNotificati
                     query.setObject(1,lease.id());
                     try(var r=query.executeQuery()) {
                         if(!r.next()) { c.commit();return Optional.empty(); }
-                        token=r.getObject(1,UUID.class);until=r.getTimestamp(2)==null?null:r.getTimestamp(2).toInstant();
+                        token=r.getObject(1,UUID.class);until=instant(r,2);
                         booking=r.getObject(3,UUID.class);audience=r.getString(4);template=r.getString(5);version=r.getLong(6);
                     }
                 }
                 Instant now;
                 try(var query=c.createStatement();var r=query.executeQuery("SELECT clock_timestamp()")) { r.next();now=r.getTimestamp(1).toInstant(); }
-                if(token==null || until==null || !token.equals(lease.token()) || !until.isAfter(now)) { c.commit();return Optional.empty(); }
+                if(!lease.token().equals(token) || until==null || !until.isAfter(now)) { c.commit();return Optional.empty(); }
                 String reference,state,deliveryEmail,meeting,service;Instant start,expires;
                 try(var query=c.prepareStatement("""
                     SELECT b.reference,b.state,b.start_at,b.expires_at,b.delivery_email,b.meeting_url,s.document->'service'->>'name'
                     FROM booking b JOIN booking_snapshot s ON s.booking_id=b.id WHERE b.id=?
                     """)) {
                     query.setObject(1,booking);
+                    // The foreign key and snapshot join make a missing row an integrity failure, reported as a storage failure.
                     try(var r=query.executeQuery()) {
-                        if(!r.next()) { c.commit();return Optional.empty(); }
-                        reference=r.getString(1);state=r.getString(2);start=r.getTimestamp(3).toInstant();expires=r.getTimestamp(4)==null?null:r.getTimestamp(4).toInstant();
+                        r.next();
+                        reference=r.getString(1);state=r.getString(2);start=instant(r,3);expires=instant(r,4);
                         deliveryEmail=r.getString(5);meeting=r.getString(6);service=r.getString(7);
                     }
                 }
