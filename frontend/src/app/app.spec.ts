@@ -23,7 +23,16 @@ describe('Application shell and typed API boundary', () => {
     expect(root.querySelector('header mat-toolbar')).not.toBeNull();
     expect(root.querySelector('footer')?.textContent).toContain('Europe/Brussels');
     expect(root.querySelector('a.brand')?.getAttribute('href')).toBe('/');
-    expect(root.querySelectorAll('a').length).toBe(2);
+    expect(root.querySelectorAll('a').length).toBe(3);
+    expect(root.querySelector('main a')?.getAttribute('href')).toBe('/book');
+  });
+
+  it('lazy-loads public selection and reads consultations from the real API boundary', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    await TestBed.inject(Router).navigateByUrl('/book'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Choose a consultation.');
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/services').flush([]); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No consultations are available');
   });
 
   it('renders the unknown-route recovery action and returns home', async () => {

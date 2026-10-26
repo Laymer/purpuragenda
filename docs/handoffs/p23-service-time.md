@@ -1,11 +1,11 @@
 # Public service and time selection
 
-- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T15:30:00Z.
-- Current task: P23/service-time; branch: task/p23-service-time; base: main (7216986); PR URL: not yet created.
-- Last pushed implementation commit: none; uncommitted changes: claim before feature code.
-- What works: merged public catalog/availability HTTP and generated CatalogService SDK; English purple Angular shell.
-- What remains: lazy public service/time selection, explicit zones/offsets, current server data, loading/error/empty/retry states and meaningful frontend tests; full gates and independent review.
+- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T22:00:00Z.
+- Current task: P23/service-time; branch: task/p23-service-time; base: main (cde517c); PR URL: https://github.com/Laymer/purpuragenda/pull/70.
+- Last pushed implementation commit:c112b0bd69e64f7b8ce7ba782d0f42108bb8e259; uncommitted changes: append-only confirmed73main integration and distinct failed-native receipt evidence.
+- What works: real catalog/availability selection, canonical IANA zones and explicit UTCoffsets for repeated instants, versioned in-memory selection, stale-request cancellation and choices cleared on every parameter/version refresh. Safe loading/error/empty/retry/429 states and labelled native keyboard controls.
+- What remains: full implemented gates, current-main integration, fresh integrated all-category gates and exact integration review. Authenticated session/access/intake/submission remain later P17/P20/P24 slices; no fake final action.
 - Decisions: exclusively own handwritten frontend routes/home/public feature and tests; no OpenAPI/generated changes. Selection stays in memory; no fake booking submission. Shared authenticated access/intake follows coordinated P17/P20 work.
-- Verification: no new feature verification yet; predecessor checks are historical only.
-- Next concrete action: implement real SDK-backed /book public selection and targeted Angular tests, then all required gates and independent review.
-- Recovery: origin/recovery/2026-10-25-prototype at6f9405b; existing worktrees/volumes preserved; sibling P36 draft64 remains frozen at48705cd awaiting finalmainintegration; stacked PR dependencies: mergedP19 only.
+- Verification:26Angular cases, production build and source-complete coverage pass119/119lines87/88branches; initial339.66kB and lazy73.77kB. Real-backend Chromium1.64 preview of prior68bd passed all3viewports with keyboard selection and no overflow/runtime errors; exposed unwieldy110-slot mobile list and dark Material surfaces, corrected in this checkpoint. Two compact-grid fixture failures were locale punctuation expectations (en-GB omits the weekday comma), corrected against actual Intl output. Real953a preview passes all3viewports with keyboard skip/service/time, programmatic day change/focus, zone invalidation, styles loaded under strict CSP and zero runtime/console errors/overflow. Native day-menu keystrokes remain pending because the pinned macOS headless browser also fails on a plain standalone native select. Source953a independently approved by account worker. Earlierc112 allhostedpassed butnative32startup errors afterDockerloss; no acceptance. Full current73main native/hosted/Compose gates remain pending.
+- Next concrete action: publish coherent tested checkpoint, integrate current main without rewriting history, run all mandatory categories and independent review; browser/Compose resource slot coordinated by root.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b; existing worktrees/volumes preserved; sibling P36 draft64 atd431207 has fresh independent review after JDBC refactor; awaits main69 integration and full gates; stacked PR dependencies: mergedP19 only.
