@@ -24,6 +24,22 @@ class MigrationReportTest(unittest.TestCase):
         self.write()
         GATE.validate(self.root)
 
+    def test_customer_query_requires_complete_authority_and_snapshot_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBookingQuery.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic implemented query')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingQueryPostgresTest.xml')
+        for count, actual, nested in ((18, 18, ''), (19, 18, ''), (19, 19, '<failure/>'), (19, 19, '<skipped/>'), (19, 19, '<error/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="{count}">' +
+                              '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="19">' + '<testcase/>' * 19 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_unrelated_passing_suite_cannot_replace_missing_migrations(self):
         self.report.with_name('TEST-example.OtherTest.xml').write_text('<testsuite tests="100"/>')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):

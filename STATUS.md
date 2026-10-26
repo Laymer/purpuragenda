@@ -20,13 +20,13 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login code/real MFA tests/contract implemented by Codex-worker-b, full current-head verification/review pending; recovery HTTP remains |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account login/profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query draftPR69 c02ddb3 passes exact-head checks, awaits main integration; coordinator claims stacked customer-http slice |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
-| P23 — Complete public service selection and timezone-aware time selection | Recovered WIP; dependencies in docs/delivery.md;  |
+| P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -48,7 +48,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; SAST merged https://github.com/Laymer/purpuragenda/pull/21 at0454505 with12 green checks; secret/dependency foundations merged; full SBOM/container/config pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
-| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; ComposePR48 merged658ea9b and private admin operator https://github.com/Laymer/purpuragenda/pull/54 merged3c9b6de; durable AUTH/cleanup lifecycle claimed by coordinator; two-backend/operational/restore remain |
+| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; ComposePR48 merged658ea9b and private admin operator https://github.com/Laymer/purpuragenda/pull/54 merged3c9b6de; durable AUTH/cleanup lifecycle PR67 confirmed merged7216986; two-backend/operational/restore remain |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
@@ -61,19 +61,21 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P45/durable-workers: agent=Codex-coordinator; branch=task/p45-durable-workers; base=main; handoff=docs/handoffs/p45-durable-workers.md
+- P20/customer-view: agent=Codex-coordinator; branch=task/p20-customer-view; base=main; handoff=docs/handoffs/p20-customer-view.md
 - P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
-- P18/accounts: agent=Codex-worker-a; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
+- P18/account-auth: agent=Codex-worker-a; branch=task/p18-account-auth; base=main; handoff=docs/handoffs/p18-account-auth.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
+
+- P23/service-time: agent=Codex-worker-c; branch=task/p23-service-time; base=main; handoff=docs/handoffs/p23-service-time.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T14:43:26Z.
-- Current task: P45/durable-workers; branch: task/p45-durable-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/67.
-- Last pushed implementation commit: Claude main f654c53, documentation PR65 confirmed merged7f0c4a7 after independent review and all14checks; uncommitted changes: follow-up historical-handoff transition regression and current PR evidence. Runtime worker implementation b22672d is pushed.
-- What works: merged PostgreSQL scheduling/customer changes, public services/availability, session/origin/CSRF, throttles/cleanup, private admin operator, finance and schedule commands. Claude local proof/account and notification checkpoints are preserved in three separate worktrees.
-- What remains: automatic AUTH delivery and bounded security cleanup composition, lifecycle/failure tests and all required categories; protected business HTTP, workflow UI and remaining fullv1 are still incomplete.
-- Decisions: resume approved localv1, not the old handoff task; preserve secrets/volumes/history. WorkerB owns guest-auth OpenAPI, workerA account015/016, workerC notifications with014 reserved; root owns bootstrap lifecycle composition. SMTP remains localMailpit.
-- Verification: PR65 exact96384ee independent review and CI40336183781 all14green, GitHub confirms merge7f0c4a7 at2026-10-26T14:42:11Z. 8lifecycle/10actual runtimePG cases and233strictPython pass; full native/hosted/Compose/exact review remain pending.
-- Next concrete action: compose bounded AUTH worker ticks and cleanup with graceful lifecycle, add deterministic lifecycle/failure and actualPostgreSQL delivery tests, then full gates and independent review.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/stashes preserved; auth32675ea local, accountsae55b4b local, notificationsPR64 at5309317; stacked PR dependencies: none for initial AUTH composition.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T18:42:00Z.
+- Current task: P20/customer-view; branch: task/p20-customer-view; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/69.
+- Last pushed implementation commit: c02ddb3; uncommitted changes: append-only main integration with confirmed enrollment66 and administrator login71; production query unchanged.
+- What works: PR67 durable AUTH, PR68 guest HTTP, PR66 enrollment and PR71 administrator login are confirmed merged. Query19 actual PostgreSQL cases and4application cases previously passed at c02ddb3.
+- What remains: fresh integrated query gates, stacked customer HTTP, account authentication, notification delivery and remaining local v1 workflows/acceptance.
+- Decisions: preserve every authority report guard and both evidence histories; no migration or contract change in this query slice. Customer HTTP remains separately stacked and unpublished.
+- Verification: old-head c02ddb3 native876Java/6Angular/234Python, all14hosted checks, clean localCompose6 and exact independent review passed. These are not evidence for the new integration head. PR71 exact ba8e1f0 fresh native921Java/11Angular/237Python plus all14hosted/Compose6/review passed before confirmed merged d96e0a6.
+- Next concrete action: publish integration, run all implemented categories and obtain fresh exact-head review before merge.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: none for query; HTTP depends on this query and merged PR71; account-auth017 also stacks query.
