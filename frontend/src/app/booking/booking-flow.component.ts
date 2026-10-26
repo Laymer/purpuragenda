@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterRenderEffect, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,7 +34,7 @@ export class BookingFlowComponent {
   readonly message = signal('');
   readonly retrySeconds = signal(0);
   readonly agreed = new FormControl(false, { nonNullable: true });
-  readonly email = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email, Validators.maxLength(254)] });
+  readonly email = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u), Validators.maxLength(254)] });
   readonly intake = new FormGroup({
     firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
     lastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
@@ -47,16 +47,24 @@ export class BookingFlowComponent {
   readonly label = slotLabel;
   readonly inZone = (instant: string, zone: string) => new Intl.DateTimeFormat('en', { dateStyle: 'full', timeStyle: 'short', timeZone: zone }).format(new Date(instant));
   constructor() {
+    let previousStep = this.phase();
+    afterRenderEffect(() => {
+      const step = this.phase();
+      if (step === previousStep) return;
+      previousStep = step;
+      this.host.nativeElement.querySelector<HTMLElement>(step === 'choose' ? 'h1' : '.flow > h2')?.focus();
+    });
     const remove = this.sessions.onInvalidated(() => this.clearPrivate());
     inject(DestroyRef).onDestroy(() => { this.active = false; remove(); this.clearPrivate(); clearInterval(this.timer); });
   }
   choose(value: ConsultationSelection | null): void { this.selection.set(value); }
   async begin(refresh = false): Promise<void> {
     if (this.busy() || this.selection() === null) return;
+    const chosen = this.selection();
     this.busy.set(true); this.message.set('');
     try {
       const context = refresh || this.sessions.state() === null ? await this.sessions.bootstrap() : this.sessions.state()!;
-      if (!this.active) return;
+      if (!this.active || this.selection() !== chosen) return;
       if (context.role === 'ADMIN') { this.message.set('Sign out of the administrator session before making a customer request.'); return; }
       this.phase.set(context.role === 'ANONYMOUS' ? 'email' : 'intake');
       if (refresh && context.role === 'ANONYMOUS') this.message.set('Open the email link in this browser and choose Verify email, then return here.');
@@ -111,14 +119,15 @@ export class BookingFlowComponent {
     if (this.submission === null) return;
     this.busy.set(true); this.message.set('');
     const choiceForProof = this.selection();
+    const generation = this.sessions.invalidations();
     try {
       const receipt = await this.submission.attempt();
-      if (!this.active) return;
+      if (!this.active || this.sessions.invalidations() !== generation) return;
       this.bookingId = receipt.bookingId; this.intake.reset(); this.email.reset(); this.review.set(null); this.phase.set('status');
       await this.loadStatus();
     } catch (error) {
       const failure = safeFailure(error, true);
-      if (this.active) {
+      if (this.active && this.sessions.invalidations() === generation) {
         if (failure.kind === 'UNCERTAIN' || failure.kind === 'THROTTLED') this.phase.set('uncertain');
         else { this.submission?.discard(); this.submission = null; this.review.set(null); this.selection.set(null); this.phase.set('choose'); }
         this.failure(failure, true);
@@ -130,11 +139,13 @@ export class BookingFlowComponent {
   }
   async loadStatus(): Promise<void> {
     if (this.bookingId === null) return;
+    const bookingId = this.bookingId, generation = this.sessions.invalidations();
+    const current = () => this.active && this.bookingId === bookingId && this.sessions.invalidations() === generation;
     this.busy.set(true);
     try {
-      const value = await this.sessions.perform(() => this.bookings.getBooking(this.bookingId!));
-      if (this.active) { this.status.set(value); this.message.set(''); }
-    } catch (error) { if (this.active && this.bookingId !== null) this.message.set('Your request was recorded, but its current status could not be loaded. Try loading the status again.'); }
+      const value = await this.sessions.perform(() => this.bookings.getBooking(bookingId));
+      if (current()) { this.status.set(value); this.message.set(''); }
+    } catch (error) { if (current()) this.message.set('Your request was recorded, but its current status could not be loaded. Try loading the status again.'); }
     finally { if (this.active) this.busy.set(false); }
   }
   private clearPrivate(): void {

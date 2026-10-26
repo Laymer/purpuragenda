@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { BookingReviewContext, CustomerBookingStatus, BookingServiceSnapshotCurrencyEnum, CustomerBookingStatusStateEnum, CustomerBookingStatusAllowedActionsEnum, BookingPaymentSummaryStatusEnum, ServiceCurrencyEnum, provideApi } from '../shared/generated';
 import { ConsultationSelection } from '../public/selection-model';
+import { FrozenCommand } from '../shared/access/command-access';
+import { AccessFailure } from '../shared/access/access-failure';
 import { SessionAccess } from '../shared/access/session-access';
 import { BookingFlowComponent } from './booking-flow.component';
 
@@ -122,4 +124,48 @@ describe('Real typed booking flow and private state', () => {
     const refresh = flow.loadStatus(); await settle(); http.expectOne('/api/v1/bookings/' + booking.id).flush({ ...booking, state: 'CONFIRMED', pendingExpiresAt: null, meetingUrl: 'https://meeting.example.invalid/synthetic' }); await refresh; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('a[target="_blank"]').getAttribute('rel')).toBe('noopener noreferrer'); http.expectNone('/api/v1/bookings');
   });
+  it('moves keyboard focus to each new step without stealing focus during form edits', async () => {
+    await enter(); fixture.detectChanges();
+    expect(document.activeElement?.textContent).toBe('Your consultation details');
+    const firstName = fixture.nativeElement.querySelector('[formControlName="firstName"]') as HTMLInputElement;
+    firstName.focus(); firstName.value = 'Synthetic'; firstName.dispatchEvent(new Event('input')); fixture.detectChanges();
+    expect(document.activeElement).toBe(firstName);
+    flow.intake.setValue(intake); const pending = flow.reviewRequest();
+    http.expectOne(request => request.url === '/api/v1/booking-context').flush(terms); await pending; fixture.detectChanges();
+    expect(document.activeElement?.textContent).toBe('Review your request');
+    flow.edit(); fixture.detectChanges(); expect(document.activeElement?.textContent).toBe('Your consultation details');
+  });
+
+  it('stays at selection when the user clears the time while session bootstrap is pending', async () => {
+    const pending = flow.begin(); await settle(); flow.choose(null);
+    http.expectOne('/api/v1/session/bootstrap').flush(session()); await pending;
+    expect(flow.phase()).toBe('choose'); expect(flow.selection()).toBeNull();
+  });
+  it.each([false, true])('does not restore status or messages after invalidation at the read handoff (failure=%s)', async fail => {
+    await submitted();
+    vi.spyOn(sessions, 'perform').mockImplementationOnce(async () => {
+      sessions.invalidate(); if (fail) throw new AccessFailure('UNCERTAIN'); return booking as never;
+    });
+    await flow.loadStatus(); expect(flow.status()).toBeNull(); expect(flow.phase()).toBe('choose');
+    expect(flow.message()).toContain('session changed');
+  });
+  it.each([false, true])('does not restore a receipt or retry phase after invalidation at command handoff (failure=%s)', async fail => {
+    await review(); flow.agreed.setValue(true);
+    vi.spyOn(FrozenCommand.prototype, 'attempt').mockImplementationOnce(async () => {
+      sessions.invalidate(); if (fail) throw new AccessFailure('UNCERTAIN'); return { bookingId: booking.id, version: 1 };
+    });
+    await flow.submit(); expect(flow.phase()).toBe('choose'); expect(flow.status()).toBeNull();
+    expect(flow.message()).toContain('session changed'); http.expectNone('/api/v1/bookings/' + booking.id);
+  });
+
+  it('accepts an internationalized domain and leaves canonicalization to the backend', async () => {
+    await enter('ANONYMOUS'); fixture.detectChanges(); flow.email.setValue('synthetic@bücher.example');
+    expect(flow.email.valid).toBe(true);
+    const input = fixture.nativeElement.querySelector('#booking-email') as HTMLInputElement;
+    fixture.detectChanges(); expect(input.validity.typeMismatch).toBe(false);
+    const pending = flow.requestEmail(); await settle();
+    const request = http.expectOne('/api/v1/guest/create-proofs');
+    expect(request.request.body.email).toBe('synthetic@bücher.example'); request.flush({ accepted: true }); await pending;
+  });
+
 });

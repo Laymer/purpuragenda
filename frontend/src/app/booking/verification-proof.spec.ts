@@ -23,6 +23,11 @@ describe('Verification fragment privacy', () => {
     `#token=${token}&token=${token}&purpose=CREATE`, `#token=${token}&purpose=CREATE&next=/admin`, '#'+ 'x'.repeat(201)])('scrubs and rejects malformed fragments', fragment => {
     const scrub = vi.fn(); expect(captureVerificationProof('/verify', fragment, scrub).available).toBe(false); expect(scrub).toHaveBeenCalledOnce();
   });
+  it.each(['/book', '/verif', '/%76erify'])('scrubs a recognizable bearer on unsupported path %s without accepting it', path => {
+    const scrub = vi.fn();
+    expect(captureVerificationProof(path, `#token=${token}&purpose=CREATE`, scrub).available).toBe(false);
+    expect(scrub).toHaveBeenCalledOnce();
+  });
   it('leaves ordinary anchors alone and fails closed when history cannot be scrubbed', () => {
     const scrub = vi.fn(); expect(captureVerificationProof('/book', '#main-content', scrub).available).toBe(false); expect(scrub).not.toHaveBeenCalled();
     expect(captureVerificationProof('/verify', `#token=${token}&purpose=CREATE`, () => { throw Error('synthetic'); }).available).toBe(false);

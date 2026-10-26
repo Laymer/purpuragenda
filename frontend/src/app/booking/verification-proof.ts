@@ -15,7 +15,10 @@ export const VERIFICATION_PROOF = new InjectionToken<VerificationProof>('verific
 
 /** Called before router startup. Scrub even malformed links; a failed scrub never grants an attempt. */
 export function captureVerificationProof(path: string, fragment: string, scrub: () => void): VerificationProof {
-  if (path.replace(/\/+$/, '') !== '/verify') return new VerificationProof(null);
+  if (path.replace(/\/+$/, '') !== '/verify') {
+    if (new URLSearchParams(fragment.replace(/^#/, '')).has('token')) { try { scrub(); } catch { /* Reject even when history cannot be changed. */ } }
+    return new VerificationProof(null);
+  }
   try {
     scrub();
     if (fragment.length > 200) return new VerificationProof(null);

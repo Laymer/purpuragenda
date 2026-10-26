@@ -23,11 +23,11 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | In progress; public services/advisory availabilityPR61 mergedf654c53; public authoritative booking-contextPR74 implemented, final gates pending |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTP draftPR72 verifies current integration |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTP https://github.com/Laymer/purpuragenda/pull/72 confirmed merged8702161 after exact-head native1032Java/30Angular/245Python, all14hosted, cleanCompose6 and review |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78 and verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83;100Angular tests/build pass, real browser/full integrated gates pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -71,12 +71,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:02:00Z.
-- Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: none yet.
-- Last pushed implementation commit: parent integration2ff4f73; uncommitted changes: booking-flow implementation, regression tests and this evidence checkpoint.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:00:44Z.
+- Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/83.
+- Last pushed implementation commit: 351b50b; uncommitted changes: independently identified race/fragment/IDNA fixes, keyboard focus and regressions.
 - What works: real typed email issuance/redemption, memory-only fragment capture before router startup, intake validation, authoritative plaintext review/consent, immutable submission with explicit uncertain retries, and actual booking status rendering are implemented.
 - What remains: independent source review, actual PostgreSQL/Mailpit browser journey, current-main full native/hosted/Compose gates. Customer management/account/admin UI remain separate slices.
 - Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits. Account/admin UI and management changes remain separate slices.
-- Verification: full frontend verifier passes90Angular tests and production build; complete handwritten coverage383/387lines368/394branches, strict CSP passes. Log /private/tmp/p24-flow-frontend-final.log. Initial compile/fixture and stale shell assertions were corrected; final pass has no failures or skips. Full backend/browser checks are not yet claimed.
-- Next concrete action: publish tested implementation checkpoint, resolve independent review findings and run isolated real browser journey, then all exact-revision gates after dependencies merge.
+- Verification: full frontend verifier passes100Angular tests and production build; complete handwritten coverage395/399lines385/407branches, strict CSP passes. Log /private/tmp/p24-review-final.log. 248strictPython, documentation and regenerated contract checks pass at the implementation checkpoint. Independent findings reproduced99tests/7failures for late private responses, cleared selection during bootstrap and wrong-path fragments; keyboard91tests/1failure and IDNA100tests/1failure separately reproduced, then all100pass. Sanitized failure counts retained. Full backend/browser checks are not yet claimed.
+- Next concrete action: publish corrected implementation checkpoint, obtain fresh independent review and run isolated real browser journey, then all exact-revision gates after dependencies merge.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies:74,75,78;72 confirmed merged8702161; public selection70 confirmed merged6fc7e0a.
