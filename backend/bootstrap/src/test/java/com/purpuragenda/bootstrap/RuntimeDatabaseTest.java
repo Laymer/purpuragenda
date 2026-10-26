@@ -279,4 +279,51 @@ class RuntimeDatabaseTest {
             }
         }
     }
+
+    @Test @Order(12) void administratorLoginOverRealHttpRequiresFreshMfaAndRotatesPersistedSession() throws Exception {
+        sql("DELETE FROM app_session WHERE admin_id IS NOT NULL; DELETE FROM admin_authentication_proof; DELETE FROM admin_reenrollment_grant; DELETE FROM admin_recovery_code; DELETE FROM admin_user");
+        char[] password="synthetic runtime admin phrase".toCharArray();byte[] secret=null;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            var bootstrap=context.getBean(PrivateAdminBootstrap.class);var factors=context.getBean(PrivateAdminMfa.class);
+            assertEquals(PrivateAdminStore.Result.CREATED,bootstrap.create("http-admin@example.test",password.clone()));
+            try(var prepared=factors.provision("http-admin@example.test",password.clone()).orElseThrow()) { secret=prepared.bytes(); }
+            var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");
+            var key=new javax.crypto.spec.SecretKeySpec(secret,"HmacSHA1");
+            long step=java.time.Instant.now().getEpochSecond()/30;
+            String enrollment=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond(step*30)));
+            try(var issued=factors.enroll("http-admin@example.test",password.clone(),enrollment).orElseThrow()) { assertEquals(10,issued.codes().size()); }
+            String code=null;long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(35);
+            while(code==null && System.nanoTime()<deadline) {
+                long next=java.time.Instant.now().getEpochSecond()/30+1;
+                String candidate=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond(next*30)));
+                String previous=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond((next-1)*30)));
+                String adjacent=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond((next+1)*30)));
+                if(next>Long.parseLong(text("SELECT last_totp_step FROM admin_user")) && !candidate.equals(previous) && !candidate.equals(adjacent))code=candidate;
+                else Thread.sleep(100);
+            }
+            assertNotNull(code,"A fresh non-colliding synthetic TOTP window must be available");
+            int port=port(context);var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            assertEquals(200,boot.statusCode());
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            assertTrue(csrf.matches("[A-Za-z0-9_-]{43}"),"Expected bootstrap CSRF proof");
+            String body="{\"email\":\"http-admin@example.test\",\"password\":\""+new String(password)+"\",\"totp\":\""+code+"\"}";
+            var response=login(port,body,cookie,csrf);assertEquals(200,response.statusCode());assertTrue("ADMIN".equals(field(response.body(),"role")),"Expected administrator role");
+            assertEquals("no-store",response.headers().firstValue("Cache-Control").orElseThrow());
+            String rotated=response.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],nextCsrf=field(response.body(),"csrfToken");
+            assertTrue(nextCsrf.matches("[A-Za-z0-9_-]{43}"),"Expected rotated CSRF proof");
+            assertFalse(cookie.equals(rotated),"MFA must rotate the bearer cookie");assertFalse(csrf.equals(nextCsrf),"MFA must rotate the CSRF proof");
+            assertTrue("ADMIN".equals(field(call(port,"GET","/api/v1/session","Cookie",rotated).body(),"role")),"Expected safe administrator session view");
+            assertEquals(401,call(port,"GET","/api/v1/session","Cookie",cookie).statusCode());
+            var replay=login(port,body,rotated,nextCsrf);assertEquals(401,replay.statusCode());assertTrue("AUTHENTICATION_FAILED".equals(field(replay.body(),"code")),"Expected generic authentication failure");
+            assertEquals("1",text("SELECT count(*) FROM admin_authentication_proof WHERE consumed_at IS NOT NULL"));
+        } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
+    }
+
+    static HttpResponse<String> login(int port,String body,String cookie,String csrf) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/admin/login")).timeout(Duration.ofSeconds(5))
+                    .header("Origin",ORIGIN).header("Cookie",cookie).header("X-CSRF-Token",csrf).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
 }

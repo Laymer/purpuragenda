@@ -20,8 +20,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; session/origin/CSRF PR45/53 and throttle/cleanup PR57 merged; guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad after875Java/10Angular/234Python, all coverage, cleanCompose6 and all14hosted; administrator HTTP remains |
-| P18 — Complete optional accounts, immutable login identity and separate profile storage | Draft PR; https://github.com/Laymer/purpuragenda/pull/66 exact5bc10f9 passed868Java/6Angular/233Python and all14hosted; migration015 preserved plus016 correction; currentmain8f346ad integration/freshgates and deterministic credential fixture correction pending; login/profile/history/HTTP remain |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login code/real MFA tests/contract implemented by Codex-worker-b, full current-head verification/review pending; recovery HTTP remains |
+| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account login/profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P45/durable-workers: agent=Codex-coordinator; branch=task/p45-durable-workers; base=main; handoff=docs/handoffs/p45-durable-workers.md
-- P17/auth-http: agent=Codex-worker-b; branch=task/p17-auth-http; base=main; handoff=docs/handoffs/p17-auth-http.md
+- P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
 - P18/accounts: agent=Codex-worker-a; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
 
