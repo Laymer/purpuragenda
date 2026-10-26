@@ -359,6 +359,40 @@ class RuntimeDatabaseTest {
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
 
+    @Test @Order(13) void recoveryOverRealHttpReturnsOnlyRestrictedReenrollmentAndLeavesAnonymousSession() throws Exception {
+        sql("DELETE FROM app_session WHERE admin_id IS NOT NULL; DELETE FROM admin_authentication_proof; DELETE FROM admin_reenrollment_grant; DELETE FROM admin_recovery_code; DELETE FROM admin_user");
+        char[] password="synthetic runtime recovery phrase".toCharArray(),recoveryCode=null;
+        byte[] secret=null;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            assertEquals(PrivateAdminStore.Result.CREATED,context.getBean(PrivateAdminBootstrap.class).create("runtime-recovery@example.test",password.clone()));
+            var factors=context.getBean(PrivateAdminMfa.class);
+            try(var prepared=factors.provision("runtime-recovery@example.test",password.clone()).orElseThrow()) { secret=prepared.bytes(); }
+            var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");
+            String enrollment=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(new javax.crypto.spec.SecretKeySpec(secret,"HmacSHA1"),java.time.Instant.now()));
+            try(var issued=factors.enroll("runtime-recovery@example.test",password.clone(),enrollment).orElseThrow()) { recoveryCode=issued.codes().getFirst().value(); }
+            int port=port(context);var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            String begin="{\"email\":\"runtime-recovery@example.test\",\"password\":\""+new String(password)+"\",\"recoveryCode\":\""+new String(recoveryCode)+"\"}";
+            var setup=recoveryPost(port,"",begin,cookie,csrf);assertEquals(200,setup.statusCode());assertTrue(setup.headers().firstValue("Set-Cookie").isEmpty());
+            Arrays.fill(secret,(byte)0);secret=org.bouncycastle.util.encoders.Base32.decode(field(setup.body(),"totpSecret"));
+            String code=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(new javax.crypto.spec.SecretKeySpec(secret,"HmacSHA1"),java.time.Instant.now()));
+            String finish="{\"email\":\"runtime-recovery@example.test\",\"password\":\""+new String(password)+"\",\"token\":\""+field(setup.body(),"token")+"\",\"totp\":\""+code+"\"}";
+            var completed=recoveryPost(port,"/reenrollment",finish,cookie,csrf);assertEquals(200,completed.statusCode());assertTrue(completed.headers().firstValue("Set-Cookie").isEmpty());
+            assertTrue(completed.body().contains("\"requiresFreshMfa\":true"),"Recovery must require a fresh ordinary login");
+            assertTrue("ANONYMOUS".equals(field(call(port,"GET","/api/v1/session","Cookie",cookie).body(),"role")),"Recovery must preserve anonymous scope");
+            assertEquals("0",text("SELECT count(*) FROM app_session WHERE kind='ADMIN'"));
+            assertEquals(401,recoveryPost(port,"/reenrollment",finish,cookie,csrf).statusCode());
+        } finally { Arrays.fill(password,'\0');if(recoveryCode!=null)Arrays.fill(recoveryCode,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
+    }
+    static HttpResponse<String> recoveryPost(int port,String suffix,String body,String cookie,String csrf) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/admin/recovery"+suffix)).timeout(Duration.ofSeconds(5))
+                    .header("Origin",ORIGIN).header("Cookie",cookie).header("X-CSRF-Token",csrf).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
+
+
     @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
         var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
         try(var first=Purpuragenda.launch(new String[0],isolated);
