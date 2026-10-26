@@ -21,7 +21,7 @@ class NotificationDispatchTest {
     @Test void everyKnownOutboxTypeHasAnExplicitHandlerAndOthersAreUnknown() {
         Map<String,List<String>> expected=new LinkedHashMap<>();
         expected.put("REQUESTED",List.of("CUSTOMER:BOOKING_REQUESTED","OWNER:OWNER_REQUEST_RECEIVED"));
-        expected.put("ADMIN_CREATED",List.of("CUSTOMER:BOOKING_CREATED"));
+        expected.put("ADMIN_CREATED",List.of("CUSTOMER:BOOKING_CREATED","OWNER:OWNER_BOOKING_CREATED"));
         expected.put("APPROVED",List.of("CUSTOMER:BOOKING_CONFIRMED","OWNER:OWNER_BOOKING_CONFIRMED"));
         expected.put("CONFIRMED_EXTERNAL_PAYMENT",List.of("CUSTOMER:BOOKING_CONFIRMED","OWNER:OWNER_BOOKING_CONFIRMED"));
         expected.put("REJECTED",List.of("CUSTOMER:BOOKING_REJECTED","OWNER:OWNER_BOOKING_REJECTED"));
@@ -29,7 +29,7 @@ class NotificationDispatchTest {
         expected.put("CANCELLED",List.of("CUSTOMER:BOOKING_CANCELLED","OWNER:OWNER_BOOKING_CANCELLED"));
         expected.put("RESCHEDULED",List.of("CUSTOMER:BOOKING_RESCHEDULED","OWNER:OWNER_BOOKING_RESCHEDULED"));
         expected.put("PAYMENT_RECORDED",List.of("CUSTOMER:PAYMENT_RECORDED","OWNER:OWNER_PAYMENT_RECORDED"));
-        expected.put("REFUND_RECORDED",List.of("CUSTOMER:REFUND_RECORDED"));
+        expected.put("REFUND_RECORDED",List.of("CUSTOMER:REFUND_RECORDED","OWNER:OWNER_REFUND_RECORDED"));
         expected.put("PAYMENT_RECONCILIATION_REQUIRED",List.of("OWNER:OWNER_ACTION_RECONCILIATION"));
         expected.put("REFUND_REQUIRED",List.of("OWNER:OWNER_ACTION_REFUND"));
         expected.put("CONFIGURATION_CONFLICT",List.of());
@@ -92,6 +92,23 @@ class NotificationDispatchTest {
         assertEquals("RECIPIENT_UNAVAILABLE",code(NotificationContent.prepare(facts("OWNER","OWNER_ACTION_REFUND","CANCELLED",none,null,null))));
     }
 
+    @Test void supersededRequestsAndCompletedSessionsNeverSendActiveBookingNotices() {
+        for(String audience:List.of("CUSTOMER","OWNER")) {
+            String requested=audience.equals("CUSTOMER")?"BOOKING_REQUESTED":"OWNER_REQUEST_RECEIVED";
+            assertEquals("SUPERSEDED",code(prepare(audience,requested,"PENDING_CONFIRMATION",Set.of("RESCHEDULED"))));
+            for(String state:List.of("COMPLETED","NO_SHOW")) {
+                assertEquals("BOOKING_NOT_PENDING",code(prepare(audience,requested,state,Set.of())));
+                String prefix=audience.equals("OWNER")?"OWNER_":"";
+                assertEquals("BOOKING_NOT_ACTIVE",code(prepare(audience,prefix+"BOOKING_CREATED",state,Set.of())));
+                assertEquals("BOOKING_NOT_CONFIRMED",code(prepare(audience,prefix+"BOOKING_CONFIRMED",state,Set.of())));
+                assertEquals("BOOKING_NOT_ACTIVE",code(prepare(audience,prefix+"BOOKING_RESCHEDULED",state,Set.of())));
+            }
+        }
+        assertEquals("Refund recorded",message(prepare("OWNER","OWNER_REFUND_RECORDED","CANCELLED",Set.of("CANCELLED"))).subject());
+        assertEquals("Booking created",message(prepare("OWNER","OWNER_BOOKING_CREATED","CONFIRMED",Set.of())).subject());
+        assertEquals("Booking created",message(prepare("OWNER","OWNER_BOOKING_CREATED","PENDING_CONFIRMATION",Set.of())).subject());
+    }
+
     @Test void currentStateDecidesWhichMessageIsSentAndMessagesCarryOnlySafeFacts() {
         var none=Set.<String>of();
         var requested=message(prepare("CUSTOMER","BOOKING_REQUESTED","PENDING_CONFIRMATION",none));
@@ -123,7 +140,7 @@ class NotificationDispatchTest {
     // ---- worker ----
     static class Ports implements NotificationQueue,BookingNotificationStore,MailDelivery {
         final List<String> calls=Collections.synchronizedList(new ArrayList<>());final AtomicInteger renewals=new AtomicInteger();
-        Runnable onSend=()->{},onHeartbeat=()->{};
+        Runnable onSend=()->{},onHeartbeat=()->{},onLoad=()->{};
         final Lease lease=new Lease(UUID.randomUUID(),UUID.randomUUID(),Instant.MAX);
         Optional<Lease> claimed=Optional.of(lease);Optional<Facts> facts;Result result=Result.SENT;
         boolean renewed=true,acknowledged=true,transportThrows,storeThrows;String suppressedWith;
@@ -131,17 +148,17 @@ class NotificationDispatchTest {
         @Override public Optional<Lease> claim() { throw new AssertionError("The general claim could lease AUTH jobs"); }
         @Override public Optional<Lease> claimAuth() { throw new AssertionError("Authentication jobs are not booking notifications"); }
         @Override public Optional<Lease> claimBooking() { calls.add("claim");return claimed; }
-        @Override public boolean renew(Lease l) { calls.add("renew");if(renewals.incrementAndGet()>1)onHeartbeat.run();return renewed; }
+        @Override public boolean renew(Lease l) { calls.add("renew");if(renewals.incrementAndGet()>2)onHeartbeat.run();return renewed; }
         @Override public boolean sent(Lease l) { calls.add("sent");return acknowledged; }
         @Override public boolean failed(Lease l) { calls.add("failed");return acknowledged; }
         @Override public boolean suppressed(Lease l,String code) { calls.add("suppressed");suppressedWith=code;return acknowledged; }
-        @Override public Optional<Facts> load(Lease l) { calls.add("load");if(storeThrows)throw new IllegalArgumentException("SYNTHETIC_PRIVATE");return facts; }
+        @Override public Optional<Facts> load(Lease l) { calls.add("load");onLoad.run();if(storeThrows)throw new IllegalArgumentException("SYNTHETIC_PRIVATE");return facts; }
         @Override public Result send(Message m) { calls.add("send");onSend.run();if(transportThrows)throw new IllegalArgumentException("SYNTHETIC_PRIVATE");return result; }
         BookingNotificationWorker worker(boolean suppressed) { return new BookingNotificationWorker(this,this,this,suppressed); }
     }
     @Test void successfulTickClaimsBookingJobsRenewsLoadsCurrentFactsThenSendsAndAcknowledges() {
         var p=new Ports();assertEquals(BookingNotificationWorker.Outcome.SENT,p.worker(false).tick());
-        assertEquals(List.of("claim","renew","load","send","sent"),p.calls);assertTrue(p.worker(false).toString().contains("REDACTED"));
+        assertEquals(List.of("claim","renew","load","renew","send","sent"),p.calls);assertTrue(p.worker(false).toString().contains("REDACTED"));
     }
     @Test void idleOperatorSuppressionLostLeaseVanishedBookingAndStaleJobsNeverSend() {
         var p=new Ports();assertEquals(BookingNotificationWorker.Outcome.SUPPRESSED_BY_OPERATOR,p.worker(true).tick());assertEquals(List.of(),p.calls);
@@ -152,6 +169,12 @@ class NotificationDispatchTest {
         assertEquals(BookingNotificationWorker.Outcome.DISCARDED,p.worker(false).tick());assertEquals("BOOKING_NOT_CANCELLED",p.suppressedWith);assertEquals(List.of("claim","renew","load","suppressed"),p.calls);
         p.acknowledged=false;assertEquals(BookingNotificationWorker.Outcome.STALE,p.worker(false).tick());
     }
+    @Test void suppressionOrLeaseLossDuringPreparationPreventsNetworkDelivery() {
+        var p=new Ports();p.onLoad=()->p.renewed=false;
+        assertEquals(BookingNotificationWorker.Outcome.STALE,p.worker(false).tick());
+        assertEquals(List.of("claim","renew","load","renew"),p.calls);
+    }
+
     @Test void everyNonSentOutcomeUsesTheDurableFailurePolicyAndFailuresAreFixedAndCauseFree() {
         for(var result:Result.values())if(result!=Result.SENT) {
             var p=new Ports();p.result=result;assertEquals(BookingNotificationWorker.Outcome.RETRY_LATER,p.worker(false).tick());assertEquals("failed",p.calls.getLast());

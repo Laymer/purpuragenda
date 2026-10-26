@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P19/public-http: agent=Claude-workerD; branch=task/p19-public-http; base=main; handoff=docs/handoffs/p19-public-http.md
-- P36/notifications: agent=Codex-notifications; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
+- P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
 
 ## Active handoff
 

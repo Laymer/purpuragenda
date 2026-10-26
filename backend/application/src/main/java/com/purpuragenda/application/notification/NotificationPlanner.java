@@ -15,14 +15,14 @@ public final class NotificationPlanner {
         if(type==null)return new Unknown();
         return switch(type) {
             case "REQUESTED" -> new Jobs(List.of(customer("BOOKING_REQUESTED"),owner("OWNER_REQUEST_RECEIVED")));
-            case "ADMIN_CREATED" -> new Jobs(List.of(customer("BOOKING_CREATED")));
+            case "ADMIN_CREATED" -> new Jobs(List.of(customer("BOOKING_CREATED"),owner("OWNER_BOOKING_CREATED")));
             case "APPROVED","CONFIRMED_EXTERNAL_PAYMENT" -> new Jobs(List.of(customer("BOOKING_CONFIRMED"),owner("OWNER_BOOKING_CONFIRMED")));
             case "REJECTED" -> new Jobs(List.of(customer("BOOKING_REJECTED"),owner("OWNER_BOOKING_REJECTED")));
             case "EXPIRED" -> new Jobs(List.of(customer("BOOKING_EXPIRED"),owner("OWNER_BOOKING_EXPIRED")));
             case "CANCELLED" -> new Jobs(List.of(customer("BOOKING_CANCELLED"),owner("OWNER_BOOKING_CANCELLED")));
             case "RESCHEDULED" -> new Jobs(List.of(customer("BOOKING_RESCHEDULED"),owner("OWNER_BOOKING_RESCHEDULED")));
             case "PAYMENT_RECORDED" -> new Jobs(List.of(customer("PAYMENT_RECORDED"),owner("OWNER_PAYMENT_RECORDED")));
-            case "REFUND_RECORDED" -> new Jobs(List.of(customer("REFUND_RECORDED")));
+            case "REFUND_RECORDED" -> new Jobs(List.of(customer("REFUND_RECORDED"),owner("OWNER_REFUND_RECORDED")));
             case "PAYMENT_RECONCILIATION_REQUIRED" -> new Jobs(List.of(owner("OWNER_ACTION_RECONCILIATION")));
             case "REFUND_REQUIRED" -> new Jobs(List.of(owner("OWNER_ACTION_REFUND")));
             // Administrator follow-up only: no customer notification and no job.

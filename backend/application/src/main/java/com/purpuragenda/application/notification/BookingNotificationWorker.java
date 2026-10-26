@@ -40,6 +40,8 @@ public final class BookingNotificationWorker {
             if(prepared instanceof NotificationContent.Suppress discard)
                 return queue.suppressed(lease,discard.code())?Outcome.DISCARDED:Outcome.STALE;
             var message=((NotificationContent.Send)prepared).message();
+            // Recheck the live lease and operator suppression after fact preparation, immediately before SMTP.
+            if(!queue.renew(lease))return Outcome.STALE;
             MailDelivery.Result result;var lost=new AtomicBoolean();
             try(var heartbeat=Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory())) {
                 var task=heartbeat.scheduleWithFixedDelay(()->{

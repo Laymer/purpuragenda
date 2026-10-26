@@ -18,7 +18,7 @@ public final class NotificationContent {
     public record Suppress(String code) implements Prepared {}
     private static final ZoneId BRUSSELS=ZoneId.of("Europe/Brussels");
     private static final DateTimeFormatter LOCAL=DateTimeFormatter.ofPattern("EEEE d MMMM yyyy 'at' HH:mm",Locale.ENGLISH);
-    private static final Set<String> ALWAYS=Set.of("PAYMENT_RECORDED","OWNER_PAYMENT_RECORDED","REFUND_RECORDED","OWNER_ACTION_RECONCILIATION","OWNER_ACTION_REFUND");
+    private static final Set<String> ALWAYS=Set.of("PAYMENT_RECORDED","OWNER_PAYMENT_RECORDED","REFUND_RECORDED","OWNER_REFUND_RECORDED","OWNER_ACTION_RECONCILIATION","OWNER_ACTION_REFUND");
 
     public static Prepared prepare(Facts f) {
         Objects.requireNonNull(f);
@@ -28,11 +28,11 @@ public final class NotificationContent {
         if(!known)return new Suppress("UNKNOWN_TEMPLATE");
         if(f.recipient()==null)return new Suppress("RECIPIENT_UNAVAILABLE");
         boolean pendingLive=f.state().equals("PENDING_CONFIRMATION") && f.expiresAt()!=null && f.expiresAt().isAfter(f.now());
-        boolean confirmed=Set.of("CONFIRMED","COMPLETED","NO_SHOW").contains(f.state());
+        boolean confirmed=f.state().equals("CONFIRMED");
         Set<String> later=f.laterEventTypes();
         String stale=null;
         if(!ALWAYS.contains(f.template())) stale=switch(bare) {
-            case "BOOKING_REQUESTED","REQUEST_RECEIVED" -> pendingLive?null:"BOOKING_NOT_PENDING";
+            case "BOOKING_REQUESTED","REQUEST_RECEIVED" -> !disjoint(later,"RESCHEDULED")?"SUPERSEDED":pendingLive?null:"BOOKING_NOT_PENDING";
             case "BOOKING_CREATED" -> disjoint(later,"CANCELLED","EXPIRED","REJECTED")?(pendingLive||confirmed?null:"BOOKING_NOT_ACTIVE"):"SUPERSEDED";
             case "BOOKING_CONFIRMED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":confirmed?null:"BOOKING_NOT_CONFIRMED";
             case "BOOKING_RESCHEDULED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":(pendingLive||confirmed)?null:"BOOKING_NOT_ACTIVE";
@@ -45,7 +45,7 @@ public final class NotificationContent {
         String when=f.start().atZone(BRUSSELS).format(LOCAL)+" (Brussels time; "+f.start()+" UTC)";
         String subject=switch(bare) {
             case "BOOKING_REQUESTED","REQUEST_RECEIVED" -> "Booking request received";
-            case "BOOKING_CREATED" -> confirmed?"Your booking is confirmed":"A booking request was created for you";
+            case "BOOKING_CREATED" -> f.audience().equals("OWNER")?"Booking created":confirmed?"Your booking is confirmed":"A booking request was created for you";
             case "BOOKING_CONFIRMED" -> "Booking confirmed";
             case "BOOKING_RESCHEDULED" -> "Booking time changed";
             case "BOOKING_CANCELLED" -> "Booking cancelled";
