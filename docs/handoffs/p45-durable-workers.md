@@ -1,7 +1,7 @@
 # Durable runtime worker composition
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T14:43:26Z.
-- Current task: P45/durable-workers; branch: task/p45-durable-workers; base: main; PR URL: not yet created.
+- Current task: P45/durable-workers; branch: task/p45-durable-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/67.
 - Last pushed implementation commit: Claude main f654c53, documentation PR65 confirmed merged7f0c4a7 after independent review and all14checks; uncommitted changes: reconciled ledger/claims and durable-worker implementation claim, runtime worker lifecycle, independent AUTH/cleanup lanes and real SMTP restart tests implemented.
 - What works: merged PostgreSQL scheduling/customer changes, public services/availability, session/origin/CSRF, throttles/cleanup, private admin operator, finance and schedule commands. Claude local proof/account and notification checkpoints are preserved in three separate worktrees.
 - What remains: automatic AUTH delivery and bounded security cleanup composition, lifecycle/failure tests and all required categories; protected business HTTP, workflow UI and remaining fullv1 are still incomplete.
