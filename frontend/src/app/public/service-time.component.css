@@ -1,6 +1,6 @@
 .booking-start { max-width: 1080px; margin: auto; padding: 40px 24px 72px; }
-h1 { font-size: clamp(2.4rem, 5vw, 4rem); margin: 16px 0; }
-h2, legend { font-size: 1.2rem; font-weight: 600; margin: 0 0 16px; }
+.booking-start > h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 16px 0; }
+h3, legend { font-size: 1.2rem; font-weight: 600; margin: 0 0 16px; }
 .intro { max-width: 60ch; color: #605568; }
 fieldset { border: 0; padding: 0; margin: 32px 0; min-width: 0; }
 .services, .times, .search-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
