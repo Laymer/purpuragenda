@@ -78,6 +78,9 @@ class LedgerTest(unittest.TestCase):
             '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/32 |')
         self.assertTrue(any('not active in ledger' in error for error in self.validate(ledger)))
         self.assertEqual([], self.validate(ledger.replace(self.claim, 'None.')))
+        label_only = ledger.replace('https://github.com/Laymer/purpuragenda/pull/32', 'PR32').replace(self.claim, 'None.')
+        self.assertTrue(any('requires a PR link' in error for error in self.validate(label_only)))
+        self.assertFalse(any('not active in ledger' in error for error in self.validate(label_only)))
 
     def test_handoff_progress_notes_keep_the_required_field_delimiter(self):
         path = self.root / 'docs/handoffs/p01.md'
