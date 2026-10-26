@@ -46,7 +46,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountEnrollment.java').is_file():
         suites.append(('AccountEnrollmentDatabaseTest', 20))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountAuthentication.java').is_file():
-        suites.append(('AccountAuthenticationDatabaseTest', 22))
+        suites.append(('AccountAuthenticationDatabaseTest', 26))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():

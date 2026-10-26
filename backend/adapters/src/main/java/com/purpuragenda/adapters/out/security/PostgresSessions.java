@@ -129,34 +129,35 @@ public final class PostgresSessions implements SessionStore {
             return Optional.of(issue(c,Kind.GUEST,previous.browserHash(),value.id(),value.customerId(),null,null,null,now));
         });
     }
+    private record AccountCredential(UUID customer,long version,Instant enrolled,Instant changed,String encoded) {
+        @Override public String toString() { return "SessionAccountCredential[REDACTED]"; }
+    }
+    private record AccountProof(String purpose,String browser,String request,long version,Instant issued,Instant expires,Instant consumed,Instant revoked) {
+        @Override public String toString() { return "SessionAccountProof[REDACTED]"; }
+    }
     @Override public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) {
         try {
             var binding=new ProofBinding(previous.browserHash(),requestHash);var hash=crypto.digest(proofToken);if(hash.isEmpty())return Optional.empty();
             return issuing(c->{
-                UUID account;
-                try(var q=c.prepareStatement("SELECT account_id FROM account_authentication_proof WHERE token_hash=?")) {
-                    q.setString(1,hash.get());try(var r=q.executeQuery()) { if(!r.next())return Optional.empty();account=r.getObject(1,UUID.class); }
-                }
-                UUID customer;long version;Instant enrolled,changed;
-                try(var q=c.prepareStatement("SELECT customer_id,credential_version,enrolled_at,password_changed_at,password_hash FROM customer_account WHERE id=? FOR UPDATE")) {
-                    q.setObject(1,account);try(var r=q.executeQuery()) {
-                        if(!r.next() || !Argon2PasswordHash.validEncoding(r.getString(5)))return Optional.empty();
-                        customer=r.getObject(1,UUID.class);version=r.getLong(2);enrolled=time(r,3);changed=time(r,4);
-                    }
-                }
-                try(var q=c.prepareStatement("SELECT purpose,browser_hash,request_hash,credential_version,issued_at,expires_at,consumed_at,revoked_at FROM account_authentication_proof WHERE token_hash=? FOR UPDATE")) {
-                    q.setString(1,hash.get());try(var r=q.executeQuery()) {
-                        if(!r.next())return Optional.empty();var old=load(c,"id",previous.id(),previous.browserHash());Instant now=now(c);
-                        if(old==null || old.session.kind()==Kind.ADMIN || !live(c,old,now) || now.isBefore(enrolled) || changed==null || now.isBefore(changed)
-                                || !r.getString(1).equals("ACCOUNT_AUTHENTICATION") || !same(r.getString(2),binding.browserHash())
-                                || !same(r.getString(3),binding.requestHash()) || r.getLong(4)!=version || now.isBefore(time(r,5)) || !now.isBefore(time(r,6))
-                                || time(r,7)!=null || time(r,8)!=null)return Optional.empty();
-                        update(c,"UPDATE account_authentication_proof SET consumed_at=? WHERE token_hash=?",now,hash.get());
-                        update(c,"UPDATE app_session SET revoked_at=? WHERE id=?",now,previous.id());
-                        update(c,"INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at) VALUES (?,?,'ACCOUNT_SESSION','ACCOUNT_SESSION_CREATED',?)",UUID.randomUUID(),account,now);
-                        return Optional.of(issue(c,Kind.ACCOUNT,binding.browserHash(),null,customer,account,null,null,version,now));
-                    }
-                }
+                // Framework resource ownership suppresses close on this exact transaction connection.
+                var jdbc=new org.springframework.jdbc.core.JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(c,true));
+                var owners=jdbc.query("SELECT account_id FROM account_authentication_proof WHERE token_hash=?",(r,n)->r.getObject(1,UUID.class),hash.get());
+                if(owners.isEmpty())return Optional.empty();UUID account=owners.getFirst();
+                var credentials=jdbc.query("SELECT customer_id,credential_version,enrolled_at,password_changed_at,password_hash FROM customer_account WHERE id=? FOR UPDATE",
+                        (r,n)->new AccountCredential(r.getObject(1,UUID.class),r.getLong(2),time(r,3),time(r,4),r.getString(5)),account);
+                if(credentials.isEmpty() || !Argon2PasswordHash.validEncoding(credentials.getFirst().encoded))return Optional.empty();
+                var credential=credentials.getFirst();
+                var proofs=jdbc.query("SELECT purpose,browser_hash,request_hash,credential_version,issued_at,expires_at,consumed_at,revoked_at FROM account_authentication_proof WHERE token_hash=? FOR UPDATE",
+                        (r,n)->new AccountProof(r.getString(1),r.getString(2),r.getString(3),r.getLong(4),time(r,5),time(r,6),time(r,7),time(r,8)),hash.get());
+                if(proofs.isEmpty())return Optional.empty();var proof=proofs.getFirst();
+                var old=load(c,"id",previous.id(),previous.browserHash());Instant now=now(c);
+                if(old==null || old.session.kind()==Kind.ADMIN || !live(c,old,now) || now.isBefore(credential.enrolled) || credential.changed==null || now.isBefore(credential.changed)
+                        || !proof.purpose.equals("ACCOUNT_AUTHENTICATION") || !same(proof.browser,binding.browserHash()) || !same(proof.request,binding.requestHash())
+                        || proof.version!=credential.version || now.isBefore(proof.issued) || !now.isBefore(proof.expires) || proof.consumed!=null || proof.revoked!=null)return Optional.empty();
+                update(c,"UPDATE account_authentication_proof SET consumed_at=? WHERE token_hash=?",now,hash.get());
+                update(c,"UPDATE app_session SET revoked_at=? WHERE id=?",now,previous.id());
+                update(c,"INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at) VALUES (?,?,'ACCOUNT_SESSION','ACCOUNT_SESSION_CREATED',?)",UUID.randomUUID(),account,now);
+                return Optional.of(issue(c,Kind.ACCOUNT,binding.browserHash(),null,credential.customer,account,null,null,credential.version,now));
             });
         } finally { clear(proofToken); }
     }
