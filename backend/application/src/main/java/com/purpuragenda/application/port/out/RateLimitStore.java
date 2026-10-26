@@ -16,6 +16,7 @@ public interface RateLimitStore {
         EMAIL_ADDRESS(5, Duration.ofHours(1)),
         EMAIL_IP(30, Duration.ofHours(1)),
         ADMIN_ATTEMPT(5, Duration.ofMinutes(15)),
+        ACCOUNT_ATTEMPT(5, Duration.ofMinutes(15)),
         AVAILABILITY_IP(120, Duration.ofSeconds(60));
         private final int limit;
         private final Duration window;
