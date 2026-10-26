@@ -14,7 +14,7 @@ public final class PrivateAdminRecovery {
     public PrivateAdminRecovery(AdminRecoveryUnitOfWork store,PasswordHash passwords,AdminRecoveryCrypto crypto) {
         this.store=Objects.requireNonNull(store);this.passwords=Objects.requireNonNull(passwords);this.crypto=Objects.requireNonNull(crypto);
     }
-    public record Reenrollment(RecoveryCode token,Secret secret) implements AutoCloseable {
+    public record Reenrollment(RecoveryCode token,Secret secret,java.time.Instant expiresAt) implements AutoCloseable {
         @Override public void close() { token.close();secret.close(); }
         @Override public String toString() { return "AdminReenrollment[REDACTED]"; }
     }
@@ -29,8 +29,8 @@ public final class PrivateAdminRecovery {
                 if(identity.isEmpty() || !passwords.verify(password,identity.get().passwordHash()))return Optional.<Reenrollment>empty();
                 var token=crypto.recoveryCode();issued.add(token);
                 var secret=admin.begin(digest.get(),binding,token.hash());
-                secret.ifPresent(prepared::add);
-                return secret.map(value->new Reenrollment(token,value));
+                secret.ifPresent(value->prepared.add(value.secret()));
+                return secret.map(value->new Reenrollment(token,value.secret(),value.expiresAt()));
             });
             if(result.isEmpty())issued.forEach(RecoveryCode::close);
             return result;

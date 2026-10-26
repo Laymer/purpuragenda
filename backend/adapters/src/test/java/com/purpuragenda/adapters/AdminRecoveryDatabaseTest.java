@@ -55,11 +55,12 @@ class AdminRecoveryDatabaseTest {
     }
     @Test void exactBoundRetryRotatesOnlyProofWithoutExtendingExpiryOrReusingOldToken() throws Exception {
         try(var first=begin()) {
+            assertEquals(f.jdbc.queryForObject("SELECT expires_at FROM admin_reenrollment_grant",Timestamp.class).toInstant(),first.expiresAt());
             Instant expires=f.jdbc.queryForObject("SELECT expires_at FROM admin_reenrollment_grant",Timestamp.class).toInstant();
             assertTrue(recovery.begin("owner@example.test",password(),codes.getFirst().clone(),binding(2,2)).isEmpty());
             assertTrue(recovery.begin("owner@example.test",password(),codes.getFirst().clone(),binding(1,3)).isEmpty());
             try(var resumed=begin()) {
-                assertTrue(Arrays.equals(first.secret().bytes(),resumed.secret().bytes()));assertFalse(first.token().hash().equals(resumed.token().hash()));
+                assertEquals(expires,resumed.expiresAt());assertTrue(Arrays.equals(first.secret().bytes(),resumed.secret().bytes()));assertFalse(first.token().hash().equals(resumed.token().hash()));
                 assertTrue(finish(first,binding,f.freshCode()).isEmpty());assertEquals(expires,f.jdbc.queryForObject("SELECT expires_at FROM admin_reenrollment_grant",Timestamp.class).toInstant());
                 assertEquals(1,version());assertEquals(1,consumed());assertEquals(1,f.count("admin_reenrollment_grant"));
             }
