@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AdministratorFinanceTest {
     final Fixture f=new Fixture();
-    final AdministratorFinance finance=new AdministratorFinance(f);
+    final AdministratorFinance finance=new AdministratorFinance(f,Set.of("zoom.us"));
     final SessionBinding session=new SessionBinding(UUID.randomUUID(),"c".repeat(64));
 
     @Test void livePendingReceiptIsAnIndependentFactThatNeverChangesTheBooking() {
@@ -98,18 +98,78 @@ class AdministratorFinanceTest {
         assertThrows(DomainFailure.class,()->new Command(session,null,FinanceUnitOfWork.Operation.RECORD_RECEIPT,"k",first));
     }
 
+    static final String URL="https://zoom.us/j/123456789";
+    AdministratorFinance.Confirmation confirmation(String url) { return new AdministratorFinance.Confirmation(f.current.version(),url); }
+
+    @Test void manualApprovalConfirmsAfterVersionStateAndMeetingChecksWithoutReadingPayment() {
+        Booking before=f.current;var result=finance.approve(session,before.id(),"k",confirmation(URL));
+        assertEquals(new Receipt(Code.OK,before.id(),before.version()+1),result);
+        assertEquals(Booking.State.CONFIRMED,f.current.state());assertEquals(Booking.ConfirmationBasis.MANUAL_APPROVAL,f.current.confirmationBasis());
+        assertEquals(List.of("expiry","attempt","authorized","meeting","save","confirm-effects"),f.steps);assertEquals(1,f.confirmations);
+        assertEquals(FinanceUnitOfWork.Operation.APPROVE_BOOKING,f.command.operation());assertEquals(0,f.recorded);
+    }
+
+    @Test void paymentConfirmationRequiresSufficientNetEurWithNoRefundDueAndRecordsItsBasis() {
+        Booking before=f.current;long price=before.snapshot().service().price().minor();
+        assertEquals(Receipt.failure(Code.PAYMENT_INSUFFICIENT),finance.confirmExternalPayment(session,before.id(),"k",confirmation(URL)));
+        for(var entry:List.of(entry(before,price-1,"EUR","a"),entry(before,price*5,"USD","b"))) f.ledger=f.ledger.append(entry);
+        assertEquals(Receipt.failure(Code.PAYMENT_INSUFFICIENT),finance.confirmExternalPayment(session,before.id(),"k",confirmation(URL)));
+        f.ledger=f.ledger.append(entry(before,1,"EUR","c"));
+        var result=finance.confirmExternalPayment(session,before.id(),"k",confirmation(URL));
+        assertTrue(result.success());assertEquals(Booking.ConfirmationBasis.EXTERNAL_PAYMENT,f.current.confirmationBasis());
+        assertEquals(3,f.ledger.entries().size());
+        f.reset(before);f.ledger=f.ledger.append(entry(before,price,"EUR","d")).requireRefunds("X");
+        assertEquals(Receipt.failure(Code.PAYMENT_INSUFFICIENT),finance.confirmExternalPayment(session,before.id(),"k",confirmation(URL)));
+        assertEquals(Booking.State.PENDING_CONFIRMATION,f.current.state());
+    }
+    PaymentLedger.Entry entry(Booking b,long minor,String currency,String reference) {
+        return new PaymentLedger.Entry(UUID.randomUUID(),b.id(),PaymentLedger.Kind.RECEIPT,new Money(minor,currency),"bank",reference,f.now,null);
+    }
+
+    @Test void staleTerminalExpiredInvalidAndSharedMeetingsAreExpectedFailuresWithoutEffects() {
+        Booking before=f.current;
+        assertEquals(Receipt.failure(Code.STALE_VERSION),finance.approve(session,before.id(),"k",new AdministratorFinance.Confirmation(before.version()+1,URL)));
+        assertEquals(Receipt.failure(Code.INVALID_MEETING),finance.approve(session,before.id(),"k",confirmation("http://zoom.us/j/123456789")));
+        f.meetingInUse=true;assertEquals(Receipt.failure(Code.MEETING_IN_USE),finance.approve(session,before.id(),"k",confirmation(URL)));
+        assertSame(before,f.current);assertEquals(0,f.confirmations);
+        f.reset(terminal(Booking.State.CANCELLED));
+        assertEquals(Receipt.failure(Code.INVALID_TRANSITION),finance.approve(session,f.current.id(),"k",confirmation(URL)));
+        Booking pending=f.pending(f.now.plusSeconds(7200));f.reset(pending);f.now=pending.expiresAt();
+        // Reclamation itself advanced the version, so the reviewed version is stale; the expired hold never revives.
+        assertEquals(Receipt.failure(Code.STALE_VERSION),finance.approve(session,pending.id(),"k",confirmation(URL)));
+        assertEquals(Receipt.failure(Code.INVALID_TRANSITION),finance.approve(session,pending.id(),"k2",confirmation(URL)));
+        assertEquals(Booking.State.EXPIRED,f.current.state());assertEquals(1,f.expiryEffects);assertEquals(0,f.confirmations);
+    }
+
+    @Test void configuredLocalDomainAndConfirmationShapeAreValidated() {
+        var local=new AdministratorFinance(f,Set.of("zoom.us","meet.example.test"));
+        assertTrue(local.approve(session,f.current.id(),"k",confirmation("https://meet.example.test/j/123456789")).success());
+        f.reset(f.current);
+        assertThrows(DomainFailure.class,()->new AdministratorFinance(f,Set.of()));
+        assertThrows(DomainFailure.class,()->new AdministratorFinance(f,null));
+        assertThrows(DomainFailure.class,()->new AdministratorFinance.Confirmation(0,URL));
+        assertThrows(DomainFailure.class,()->new AdministratorFinance.Confirmation(1,null));
+        assertEquals("Confirmation[REDACTED]",confirmation(URL).toString());
+        assertThrows(NullPointerException.class,()->finance.approve(session,f.current.id(),"k",null));
+        String first=capture(confirmation(URL));assertNotEquals(first,capture(new AdministratorFinance.Confirmation(f.current.version()+1,URL)));
+        assertNotEquals(first,capture(confirmation("https://zoom.us/j/123456780")));
+    }
+    String capture(AdministratorFinance.Confirmation request) { finance.approve(session,f.current.id(),"k",request);return f.command.fingerprint(); }
+
     static class Fixture extends PublicSchedulingTest.Fixture implements FinanceUnitOfWork,Finance {
-        Booking current;Command command;PaymentLedger ledger=PaymentLedger.empty();boolean late,referenceUsed,attempting;
+        Booking current;Command command;PaymentLedger ledger=PaymentLedger.empty();boolean late,referenceUsed,attempting,meetingInUse;int confirmations;
         int recorded,expiryEffects;final List<String> steps=new ArrayList<>();
         Fixture(){current=pending(now.plusSeconds(7200));}
-        void reset(Booking value){current=value;ledger=PaymentLedger.empty();late=referenceUsed=attempting=false;recorded=expiryEffects=0;steps.clear();now=Instant.parse("2026-01-01T00:00:00Z");}
+        void reset(Booking value){current=value;ledger=PaymentLedger.empty();late=referenceUsed=attempting=meetingInUse=false;recorded=expiryEffects=confirmations=0;steps.clear();now=Instant.parse("2026-01-01T00:00:00Z");}
         public Receipt execute(Command supplied,Function<Finance,Receipt> work){command=supplied;return work.apply(this);}
         public Optional<Booking> booking(UUID id){return Optional.of(current);}
         public Booking authorizedBooking(){steps.add("authorized");assertTrue(attempting);return current;}
         public PaymentLedger ledger(){steps.add("ledger");return ledger;}
         public boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference){steps.add("reference");return referenceUsed;}
         public void receiptRecorded(PaymentLedger.Entry entry,boolean isLate){steps.add("record");recorded++;late=isLate;ledger=ledger.append(entry);if(isLate)ledger=ledger.requireRefund(entry.id(),"LATE_RECEIPT");}
-        public void save(Booking value){current=value;}
+        public boolean meetingInUse(Meeting meeting,UUID booking){steps.add("meeting");return meetingInUse;}
+        public void confirmedEffects(Booking original,Booking confirmed){steps.add("confirm-effects");confirmations++;}
+        public void save(Booking value){steps.add(attempting?"save":"reclaim");current=value;}
         public List<Booking> duePending(){steps.add("expiry");return current.state()==Booking.State.PENDING_CONFIRMATION&&!now.isBefore(current.expiresAt())?List.of(current):List.of();}
         public void expiryEffects(UUID id,long version){expiryEffects++;}
         public Receipt attempt(Supplier<Receipt> mutation){steps.add("attempt");attempting=true;try{return mutation.get();}finally{attempting=false;}}

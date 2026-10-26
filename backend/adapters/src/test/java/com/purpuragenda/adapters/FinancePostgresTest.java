@@ -30,12 +30,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class FinancePostgresTest {
     final CustomerCreationPostgresTest c=new CustomerCreationPostgresTest();
     @TempDir Path directory;
+    static final Set<String> HOSTS=Set.of("zoom.us");
     PostgresFinance adapter;AdministratorFinance finance;Admin admin;
     record Admin(SessionBinding binding,UUID id) { }
     @BeforeAll static void start() { MigrationTest.start(); }
     @AfterAll static void stop() { MigrationTest.stop(); }
     @BeforeEach void setup() throws Exception {
-        c.directory=directory;c.setup();adapter=new PostgresFinance(c.f.source);finance=new AdministratorFinance(adapter);admin=admin();
+        c.directory=directory;c.setup();adapter=new PostgresFinance(c.f.source);finance=new AdministratorFinance(adapter,HOSTS);admin=admin();
     }
     @AfterEach void cleanup() { c.cleanup(); }
 
@@ -63,7 +64,7 @@ class FinancePostgresTest {
     Failure fail(org.junit.jupiter.api.function.Executable work) { return c.failure(work); }
     int count(String sql) { return c.count(sql); }
     Instant expires(UUID booking) { return c.jdbc.queryForObject("SELECT expires_at FROM booking WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),booking); }
-    AdministratorFinance at(Instant captured) { return new AdministratorFinance(new PostgresFinance(c.clock(captured,new AtomicInteger()))); }
+    AdministratorFinance at(Instant captured) { return new AdministratorFinance(new PostgresFinance(c.clock(captured,new AtomicInteger())),HOSTS); }
 
     @Test void receiptOnALiveHoldIsOneImmutableFactWithAuditOutboxAndReplayAndLeavesTheBookingUntouched() {
         UUID id=pending("a",3,9);Booking before=c.load(id);
@@ -271,21 +272,21 @@ class FinancePostgresTest {
     }
 
     @Test void twentySameKeyReceiptsAcrossTwoInstancesCommitOneFactAndOneReceipt() throws Exception {
-        UUID id=pending("a",3,9);var other=new AdministratorFinance(new PostgresFinance(c.f.source));var request=money(100,"EUR","synthetic-same");
+        UUID id=pending("a",3,9);var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);var request=money(100,"EUR","synthetic-same");
         var results=race(i->(i%2==0?finance:other).recordReceipt(admin.binding(),id,"same",request));
         assertEquals(1,new HashSet<>(results).size());assertTrue(results.getFirst().success());
         assertEquals(1,count("payment_entry"));assertEquals(1,count("audit_event WHERE type='PAYMENT_RECORDED'"));assertEquals(1,count("outbox_event WHERE type='PAYMENT_RECORDED'"));
     }
 
     @Test void twentyDifferentKeysWithOneReferenceCommitExactlyOneFact() throws Exception {
-        UUID id=pending("a",3,9);var other=new AdministratorFinance(new PostgresFinance(c.f.source));
+        UUID id=pending("a",3,9);var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);
         var results=race(i->(i%2==0?finance:other).recordReceipt(admin.binding(),id,"key-"+i,money(100,"EUR","synthetic-shared")));
         assertEquals(1,results.stream().filter(Receipt::success).count());assertEquals(19,results.stream().filter(r->r.code()==Code.DUPLICATE_PAYMENT).count());
         assertEquals(1,count("payment_entry"));
     }
 
     @Test void twentyDistinctReceiptsAllCommitWithDistinctAuditAndNoBookingChange() throws Exception {
-        UUID id=pending("a",3,9);Booking before=c.load(id);var other=new AdministratorFinance(new PostgresFinance(c.f.source));
+        UUID id=pending("a",3,9);Booking before=c.load(id);var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);
         var results=race(i->(i%2==0?finance:other).recordReceipt(admin.binding(),id,"key-"+i,money(100+i,"EUR","synthetic-"+i)));
         assertTrue(results.stream().allMatch(Receipt::success));assertEquals(20,results.stream().map(Receipt::entityId).distinct().count());
         assertEquals(20,count("payment_entry"));assertEquals(20,count("audit_event WHERE type='PAYMENT_RECORDED'"));assertEquals(before,c.load(id));
@@ -301,6 +302,167 @@ class FinancePostgresTest {
         assertEquals(count("refund_obligation WHERE reason='LATE_RECEIPT'"),count("outbox_event WHERE type='PAYMENT_RECONCILIATION_REQUIRED'"));
         assertEquals(count("refund_obligation WHERE reason='EXPIRED'"),count("outbox_event WHERE type='PAYMENT_RECORDED'"));
         assertEquals(0,count("booking_occupancy WHERE released_at IS NULL"));
+    }
+
+    static String url(int n) { return "https://zoom.us/j/"+(100000000+n); }
+    AdministratorFinance.Confirmation confirmation(UUID id,String url) { return new AdministratorFinance.Confirmation(c.load(id).version(),url); }
+    Receipt approve(UUID id,String key,String url) { return finance.approve(admin.binding(),id,key,confirmation(id,url)); }
+    Receipt confirmPaid(UUID id,String key,String url) { return finance.confirmExternalPayment(admin.binding(),id,key,confirmation(id,url)); }
+
+    @Test void manualApprovalConfirmsWithAMeetingAuditAndOutboxAndLeavesPaymentFactsUntouched() {
+        UUID id=pending("a",3,9);Booking before=c.load(id);
+        Receipt result=approve(id,"approve",url(1));
+        assertEquals(new Receipt(Code.OK,id,before.version()+1),result);Booking after=c.load(id);
+        assertEquals(Booking.State.CONFIRMED,after.state());assertEquals(Booking.ConfirmationBasis.MANUAL_APPROVAL,after.confirmationBasis());
+        assertEquals(url(1),after.meeting().participantUrl());assertEquals(before.snapshot(),after.snapshot());assertEquals(before.start(),after.start());
+        assertEquals(0,count("payment_entry"));assertEquals(0,count("refund_obligation"));assertEquals(1,count("booking_occupancy WHERE released_at IS NULL AND booking_id='"+id+"'"));
+        assertEquals(1,count("audit_event WHERE type='APPROVED' AND actor_kind='ADMIN' AND version="+after.version()));assertEquals(1,count("outbox_event WHERE type='APPROVED'"));
+        assertEquals(admin.id()+"/APPROVE_BOOKING/"+id,c.f.value("SELECT scope FROM idempotency_record WHERE scope LIKE '%APPROVE_BOOKING%'"));
+        assertEquals(result,finance.approve(admin.binding(),id,"approve",new AdministratorFinance.Confirmation(before.version(),url(1))));
+        assertEquals(1,count("outbox_event WHERE type='APPROVED'"));
+        assertEquals(Code.IDEMPOTENCY_KEY_REUSED,finance.approve(admin.binding(),id,"approve",new AdministratorFinance.Confirmation(before.version(),url(2))).code());
+        assertEquals(Code.INVALID_TRANSITION,finance.approve(admin.binding(),id,"again",new AdministratorFinance.Confirmation(after.version(),url(1))).code());
+    }
+
+    @Test void externalPaymentConfirmationNeedsNetSufficientMatchingCurrencyFundsAndAWinningReceiptStaysCommitted() {
+        UUID id=pending("a",3,9);long price=c.load(id).snapshot().service().price().minor();
+        assertEquals(Code.PAYMENT_INSUFFICIENT,confirmPaid(id,"none",url(1)).code());
+        assertTrue(record(id,"usd",money(price*10,"USD","synthetic-usd")).success());
+        assertTrue(record(id,"part",money(price-1,"EUR","synthetic-part")).success());
+        assertEquals(Code.PAYMENT_INSUFFICIENT,confirmPaid(id,"short",url(1)).code());assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(id).state());
+        assertTrue(record(id,"rest",money(1,"EUR","synthetic-rest")).success());
+        // The valid payment facts stay committed when the later confirmation fails for another reason.
+        assertEquals(Code.INVALID_MEETING,confirmPaid(id,"bad","http://zoom.us/j/123456789").code());
+        assertEquals(3,count("payment_entry"));assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(id).state());
+        Receipt ok=confirmPaid(id,"good",url(1));assertTrue(ok.success());
+        Booking after=c.load(id);assertEquals(Booking.ConfirmationBasis.EXTERNAL_PAYMENT,after.confirmationBasis());
+        assertEquals(1,count("audit_event WHERE type='CONFIRMED_EXTERNAL_PAYMENT'"));assertEquals(3,count("payment_entry"));
+    }
+
+    @Test void refundDueOrRefundedFundsCannotConfirmByPayment() {
+        UUID id=pending("a",3,9);assertTrue(record(id,"r",money(500,"EUR","synthetic-r")).success());
+        c.jdbc.update("INSERT INTO payment_entry(id,booking_id,kind,amount_minor,currency,method,reference,verified_at,receipt_id) SELECT ?,booking_id,'REFUND',500,'EUR','synthetic-bank','synthetic-refund',clock_timestamp(),id FROM payment_entry",UUID.randomUUID());
+        assertEquals(Code.PAYMENT_INSUFFICIENT,confirmPaid(id,"refunded",url(1)).code());
+        assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(id).state());
+    }
+
+    @ParameterizedTest @ValueSource(longs={-1,0,1})
+    void approvalRequiresALiveHoldStrictlyBeforeExpiryAtMicrosecondEquality(long micros) {
+        UUID id=pending("a",3,9);Instant captured=expires(id).plusNanos(micros*1000);sessionAt(captured,60,60);Booking before=c.load(id);
+        Receipt result=at(captured).approve(admin.binding(),id,"edge",new AdministratorFinance.Confirmation(before.version(),url(1)));
+        if(micros<0){assertTrue(result.success());assertEquals(Booking.State.CONFIRMED,c.load(id).state());}
+        else {
+            // The reclamation advanced the version, so the reviewed version is stale; the expired hold never revives.
+            assertEquals(Code.STALE_VERSION,result.code());assertEquals(Booking.State.EXPIRED,c.load(id).state());
+            assertEquals(1,count("outbox_event WHERE type='EXPIRED'"));assertEquals(0,count("outbox_event WHERE type='APPROVED'"));
+            assertEquals(Code.INVALID_TRANSITION,at(captured).approve(admin.binding(),id,"edge2",new AdministratorFinance.Confirmation(before.version()+1,url(1))).code());
+        }
+    }
+
+    @Test void staleVersionIsAnExpectedFailureThatKeepsEarlierExpiryReclamationAndTerminalBookingsNeverRevive() {
+        UUID id=pending("a",3,9);Booking before=c.load(id);UUID due=c.f.database.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());
+        assertEquals(Code.STALE_VERSION,finance.approve(admin.binding(),id,"stale",new AdministratorFinance.Confirmation(before.version()+1,url(1))).code());
+        assertEquals(before,c.load(id));assertEquals(Booking.State.EXPIRED,c.load(due).state());assertEquals(1,count("outbox_event WHERE type='EXPIRED'"));
+        UUID rejected=c.f.database.booking(MigrationTest.START.plusSeconds(86400),"REJECTED",MigrationTest.snapshot());
+        assertEquals(Code.INVALID_TRANSITION,approve(rejected,"rejected",url(1)).code());assertEquals(Booking.State.REJECTED,c.load(rejected).state());
+    }
+
+    @Test void meetingMustBeValidAndUniqueAndSyntheticDomainsNeedExplicitLocalConfiguration() {
+        UUID first=pending("a",3,9),second=pending("b",4,9);assertTrue(approve(first,"one",url(1)).success());
+        for(String bad:List.of("http://zoom.us/j/123456789","https://zoom.us.example.test/j/123456789","https://user@zoom.us/j/123456789","https://127.0.0.1/j/123456789","https://zoom.us/j/12","https://zoom.us/start/123456789","https://zoom.us/j/123456789#x","https://meet.example.test/j/123456789"))
+            assertEquals(Code.INVALID_MEETING,approve(second,"bad-"+bad.hashCode(),bad).code(),bad);
+        assertEquals(Code.MEETING_IN_USE,approve(second,"dup",url(1)).code());
+        assertEquals(Code.MEETING_IN_USE,approve(second,"dup-pwd",url(1)+"?pwd=abc").code());
+        assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(second).state());
+        var local=Set.of("zoom.us","meet.example.test");var configured=new AdministratorFinance(new PostgresFinance(c.f.source,local),local);
+        assertTrue(configured.approve(admin.binding(),second,"local",new AdministratorFinance.Confirmation(c.load(second).version(),"https://meet.example.test/j/123456780")).success());
+    }
+
+    @Test void aDuplicateMeetingIdRacingPastTheCheckBecomesABusinessReceiptNotAStorageError() {
+        UUID first=pending("a",3,9),second=pending("b",4,9);assertTrue(approve(first,"one",url(1)).success());
+        var scheduling=new PostgresScheduling(c.f.source);
+        Receipt receipt=scheduling.execute(c.internal(),tx->tx.attempt(()->{
+            Booking b=tx.booking(second).orElseThrow().approve(tx.now(),Meeting.parse(url(1),Set.of("zoom.us")),Booking.ConfirmationBasis.MANUAL_APPROVAL);
+            tx.save(b);return new Receipt(Code.OK,second,b.version());
+        }));
+        assertEquals(Receipt.failure(Code.MEETING_IN_USE),receipt);assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(second).state());
+    }
+
+    @Test void approvalFromGuestOrStaleMfaIsDeniedAndChangesNothing() {
+        UUID id=pending("a",3,9);var guest=c.guest("g@example.test");Booking before=c.load(id);
+        assertEquals(Failure.Kind.FORBIDDEN,fail(()->finance.approve(c.binding(guest),id,"g",new AdministratorFinance.Confirmation(before.version(),url(1)))).kind());
+        Instant t=c.now().plusSeconds(3600);Instant authenticated=t.minusSeconds(600);
+        place(authenticated.minusSeconds(60),t.minusSeconds(1),authenticated,authenticated.minusSeconds(60).plusSeconds(28800));
+        Failure denied=fail(()->at(t).approve(admin.binding(),id,"stale-mfa",new AdministratorFinance.Confirmation(before.version(),url(1))));
+        assertEquals(Failure.Kind.FRESH_AUTHENTICATION_REQUIRED,denied.kind());assertEquals(before,c.load(id));
+        assertEquals(0,count("idempotency_record WHERE scope LIKE '%APPROVE_BOOKING%'"));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"booking","audit_event","outbox_event","booking_occupancy"})
+    void unexpectedStorageFailureRollsBackConfirmationEffectsReceiptAndReclamation(String table) throws Exception {
+        UUID id=pending("a",3,9);Booking before=c.load(id);UUID due=c.f.database.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());
+        String where=table.equals("audit_event")||table.equals("outbox_event")?"NEW.type='APPROVED'":table.equals("booking")?"NEW.state='CONFIRMED'":"true";
+        try(var connection=c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"CREATE FUNCTION reject_approval() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF "+where+" THEN RAISE EXCEPTION 'SYNTHETIC_FAILURE'; END IF; RETURN NEW; END $$");
+            String event=table.equals("booking")||table.equals("booking_occupancy")?"UPDATE":"INSERT";
+            MigrationTest.execute(connection,"CREATE TRIGGER reject_approval BEFORE "+event+" ON "+table+" FOR EACH ROW EXECUTE FUNCTION reject_approval()");
+        }
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->approve(id,"fail",url(1))).kind());
+        assertEquals(before,c.load(id));assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(due).state());
+        assertEquals(0,count("idempotency_record WHERE scope LIKE '%APPROVE_BOOKING%'"));assertEquals(0,count("outbox_event WHERE type IN ('APPROVED','EXPIRED')"));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"no-effects","effects-without-save","double-effects","wrong-basis","receipt-operation","forged-original","wrong-version","foreign-entity"})
+    void everyCommittedConfirmationMustCarryExactlyItsEffects(String misuse) {
+        UUID id=pending("a",3,9);Booking before=c.load(id);
+        var operation=misuse.equals("receipt-operation")?FinanceUnitOfWork.Operation.RECORD_RECEIPT:FinanceUnitOfWork.Operation.APPROVE_BOOKING;
+        var command=new FinanceUnitOfWork.Command(admin.binding(),id,operation,"misuse",CommandKey.fingerprint(List.of(misuse)));
+        Function<FinanceUnitOfWork.Finance,Receipt> work=tx->{
+            Booking original=tx.authorizedBooking();Meeting meeting=Meeting.parse(url(7),HOSTS);
+            Booking confirmed=original.approve(tx.now(),meeting,misuse.equals("wrong-basis")?Booking.ConfirmationBasis.EXTERNAL_PAYMENT:Booking.ConfirmationBasis.MANUAL_APPROVAL);
+            switch(misuse) {
+                case "no-effects" -> tx.save(confirmed);
+                case "effects-without-save" -> tx.confirmedEffects(original,confirmed);
+                case "double-effects" -> {tx.save(confirmed);tx.confirmedEffects(original,confirmed);tx.confirmedEffects(original,confirmed);}
+                case "forged-original" -> {tx.save(confirmed);tx.confirmedEffects(original.deliveryContact("forged@example.test"),confirmed);}
+                default -> {tx.save(confirmed);tx.confirmedEffects(original,confirmed);}
+            }
+            if(misuse.equals("wrong-version"))return new Receipt(Code.OK,id,confirmed.version()+1);
+            return new Receipt(Code.OK,misuse.equals("foreign-entity")?UUID.randomUUID():id,confirmed.version());
+        };
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(command,work)).kind());
+        assertEquals(before,c.load(id));assertEquals(0,count("outbox_event WHERE type='APPROVED'"));
+    }
+
+    @Test void aStoredConfirmationForAnotherEntityFailsClosedOnReplay() {
+        UUID id=pending("a",3,9);Booking before=c.load(id);var request=new AdministratorFinance.Confirmation(before.version(),url(1));
+        assertTrue(finance.approve(admin.binding(),id,"k",request).success());
+        c.jdbc.update("UPDATE idempotency_record SET receipt=jsonb_set(receipt,'{entityId}',to_jsonb(?::text)) WHERE scope LIKE '%APPROVE_BOOKING%'",UUID.randomUUID().toString());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->finance.approve(admin.binding(),id,"k",request)).kind());
+    }
+
+    @Test void twentySameKeyApprovalsAcrossTwoInstancesCommitOneConfirmationAndOneReceipt() throws Exception {
+        UUID id=pending("a",3,9);var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);var request=new AdministratorFinance.Confirmation(1,url(1));
+        var results=race(i->(i%2==0?finance:other).approve(admin.binding(),id,"same",request));
+        assertEquals(1,new HashSet<>(results).size());assertTrue(results.getFirst().success());
+        assertEquals(1,count("outbox_event WHERE type='APPROVED'"));assertEquals(1,count("audit_event WHERE type='APPROVED'"));
+    }
+
+    @Test void twentyDifferentApprovalsAndPaymentConfirmationsOfOneBookingCommitAtMostOnce() throws Exception {
+        UUID id=pending("a",3,9);assertTrue(record(id,"pay",money(100000,"EUR","synthetic-pay")).success());var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);
+        var results=race(i->{var who=i%2==0?finance:other;var request=new AdministratorFinance.Confirmation(1,url(i));
+            return i<10?who.approve(admin.binding(),id,"a-"+i,request):who.confirmExternalPayment(admin.binding(),id,"c-"+i,request);});
+        assertEquals(1,results.stream().filter(Receipt::success).count());
+        assertTrue(results.stream().filter(r->!r.success()).allMatch(r->Set.of(Code.STALE_VERSION,Code.INVALID_TRANSITION).contains(r.code())));
+        assertEquals(1,count("outbox_event WHERE type IN ('APPROVED','CONFIRMED_EXTERNAL_PAYMENT')"));assertEquals(1,count("payment_entry"));
+    }
+
+    @Test void twentyBookingsCannotShareOneMeetingEvenAcrossTwoInstances() throws Exception {
+        var ids=new ArrayList<UUID>();for(int i=0;i<20;i++)ids.add(pending("m"+i,3+i,9));
+        var other=new AdministratorFinance(new PostgresFinance(c.f.source),HOSTS);
+        var results=race(i->(i%2==0?finance:other).approve(admin.binding(),ids.get(i),"share",new AdministratorFinance.Confirmation(1,url(1))));
+        assertEquals(1,results.stream().filter(Receipt::success).count());assertEquals(19,results.stream().filter(r->r.code()==Code.MEETING_IN_USE).count());
+        assertEquals(1,count("booking WHERE state='CONFIRMED'"));assertEquals(1,count("outbox_event WHERE type='APPROVED'"));
     }
 
     List<Receipt> race(Work work) throws Exception {
