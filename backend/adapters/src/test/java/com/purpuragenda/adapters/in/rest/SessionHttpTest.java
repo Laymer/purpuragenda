@@ -38,6 +38,7 @@ class SessionHttpTest {
         @Override public boolean csrf(SessionReference reference,char[] csrf) {
             return byToken.values().stream().anyMatch(e->e.session.reference().equals(reference) && !e.revoked && e.csrf.equals(new String(csrf)));
         }
+        public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) { return Optional.empty(); }
         @Override public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError(); }
         @Override public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); }
         @Override public boolean revoke(SessionReference reference) {
@@ -186,6 +187,7 @@ class SessionHttpTest {
             public Optional<Snapshot> resolve(char[] t){return store.resolve(t);}
             public Optional<Snapshot> inspect(char[] t){throw new AssertionError();}
             public boolean csrf(SessionReference r,char[] c){return true;}
+            public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) { return Optional.empty(); }
             public Optional<Issued> exchangeAdmin(SessionReference p,String h,char[] t){throw new AssertionError();}
             public Optional<Issued> exchangeGuest(SessionReference p,GuestAccessStore.Redemption r){throw new AssertionError();}
             public boolean revoke(SessionReference r){throw new IllegalStateException("SESSION_UNAVAILABLE");}

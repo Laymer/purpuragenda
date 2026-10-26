@@ -336,5 +336,19 @@ class MigrationReportTest(unittest.TestCase):
         GATE.validate(self.root)
 
 
+    def test_account_authentication_requires_complete_replay_epoch_upgrade_and_race_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountAuthentication.java'
+        source.parent.mkdir(parents=True);source.write_text('synthetic account authentication adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountAuthenticationDatabaseTest.xml')
+        for count, actual, nested in ((25,25,''),(26,25,''),(26,26,'<failure/>'),(26,26,'<error/>'),(26,26,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountAuthenticationDatabaseTest" tests="{count}">' +
+                              '<testcase/>' * (actual-1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountAuthenticationDatabaseTest" tests="26">' + '<testcase/>' * 26 + '</testsuite>')
+        GATE.validate(self.root)
+
+
 if __name__ == '__main__':
     unittest.main()

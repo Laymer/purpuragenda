@@ -33,6 +33,7 @@ class GuestAuthHttpTest {
         public Optional<Snapshot> inspect(char[] token) { throw new AssertionError(); }
         public Optional<Snapshot> resolve(char[] token) { return new String(token).equals(TOKEN)?Optional.of(live):Optional.empty(); }
         public boolean csrf(SessionReference reference,char[] csrf) { return new String(csrf).equals(CSRF); }
+        public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) { return Optional.empty(); }
         public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError(); }
         public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) {
             if(unavailable) throw new IllegalStateException("synthetic-private-detail");
