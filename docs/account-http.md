@@ -1,0 +1,11 @@
+# Account credential HTTP
+
+`POST /api/v1/account/login` accepts the immutable login `email` and exact `password`. The existing browser session, exact Origin and current `X-CSRF-Token` are required. The server reserves the canonical mailbox/network attempt before verification, creates its own browser/request/credential-version-bound proof and consumes it once while rotating bearer and CSRF. The reply is the existing private `SessionBootstrap`; no customer/account identifiers or factor proof are returned. Wrong/unknown credentials share `AUTHENTICATION_FAILED`; errors and success are `no-store`.
+
+`POST /api/v1/account/password` accepts `email`, `currentPassword` and `newPassword` from a current ACCOUNT session. Passwords use the approved exact15–128-codepoint policy. New derivation occurs before locking. Current session/epoch and old password are rechecked under account then session locks with one authoritative postlock time; there is no additional account-age cutoff. Success atomically advances the credential epoch, revokes every account session and unconsumed account password proof, and audits the change.204 has no body and clears the cookie. Ordinary login with the new password is then required.
+
+Both routes use strict bounded JSON, generic private errors and the existing distributed account attempt budget.429 always includes a positive whole-second `Retry-After`. The HTTP adapter pads credential actions to a300ms minimum. The common Origin/session/CSRF filter remains mandatory; there is no test mode or authentication bypass.
+
+Login must use the shared frontend `authenticate()` transition so returned CSRF stays private and old queued intents are discarded. Password change requires a serialized credential-transition helper that clears private in-memory state before releasing its queue on success or an uncertain outcome; known factor rejection keeps the valid current context. It must not use generic frozen-mutation uncertainty retry retention. Never automatically retry login or password change, persist credentials/proofs, or put them in URLs, logs or artifacts.
+
+Enrollment proof issuance/enrollment HTTP remains a separate reviewed-throttle follow-up. These routes operate on explicitly enrolled accounts and grant no administrator authorization. Profile/history, recovery and their UI remain separate work.

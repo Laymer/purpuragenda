@@ -12,6 +12,15 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_guest_booking_discovery_is_scoped_and_never_accepts_a_target(self):
+        operation = self.document['paths']['/guest/booking']['get']
+        self.assertEqual('getGuestBooking', operation['operationId'])
+        self.assertEqual([{'sessionCookie': []}], operation['security'])
+        self.assertNotIn('parameters', operation)
+        self.assertNotIn('requestBody', operation)
+        self.assertEqual('#/components/schemas/CustomerBookingStatus', operation['responses']['200']['content']['application/json']['schema']['$ref'])
+        self.assertIn('404', operation['responses'])
+
     def setUp(self):
         self.document = json.loads((ROOT / 'contracts/openapi.yaml').read_text())
 
@@ -20,12 +29,27 @@ class ContractTest(unittest.TestCase):
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
-                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator',
-                          'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking'},
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
+                          'createBooking', 'getBooking', 'getGuestBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
-        self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)
+        self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)
         self.assertEqual(len(operations), len({op['operationId'] for op in operations}))
+
+    def test_public_review_context_has_exact_current_versions_and_plaintext_notice(self):
+        operation = self.document['paths']['/booking-context']['get']
+        self.assertEqual([], operation['security'])
+        self.assertEqual(['serviceId'], [value['name'] for value in operation['parameters']])
+        self.assertTrue(operation['parameters'][0]['required'])
+        for response in operation['responses'].values():
+            self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+        schemas = self.document['components']['schemas']
+        self.assertEqual({'serverNow', 'horizon', 'businessZone', 'reservationMinutes', 'service', 'policy', 'notice'}, set(schemas['BookingReviewContext']['required']))
+        self.assertEqual('#/components/schemas/Service', schemas['BookingReviewContext']['properties']['service']['$ref'])
+        self.assertEqual({'version', 'text', 'synthetic'}, set(schemas['BookingReviewNotice']['required']))
+        self.assertEqual(16000, schemas['BookingReviewNotice']['properties']['text']['maxLength'])
+        self.assertEqual({'type': 'boolean'}, schemas['BookingReviewNotice']['properties']['synthetic'])
+        self.assertEqual({'version', 'gridMinutes', 'dailyCapacity', 'minimumNoticeSeconds', 'pendingLifetimeSeconds', 'expiryBufferSeconds', 'customerCutoffSeconds'}, set(schemas['BookingReviewPolicy']['required']))
 
     def test_administrator_login_requires_session_csrf_and_exact_write_only_factors(self):
         operation = self.document['paths']['/admin/login']['post']
@@ -98,6 +122,46 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(10, result['recoveryCodes']['minItems'])
         self.assertFalse(result['recoveryCodes'].get('uniqueItems', False), 'Pinned client must hydrate JSON as an array')
 
+    def test_administrator_read_contract_has_bounded_private_explicit_snapshots(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        for path, name in (('/admin/bookings', 'AdministratorAgendaPage'), ('/admin/bookings/{bookingId}', 'AdministratorBookingDetail')):
+            operation = paths[path]['get']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual('#/components/schemas/' + name, operation['responses']['200']['content']['application/json']['schema']['$ref'])
+            self.assertTrue({'400', '401', '403', '503'} <= operation['responses'].keys())
+            for response in operation['responses'].values():
+                if '$ref' in response: response = self.document['components']['responses'][response['$ref'].rsplit('/', 1)[1]]
+                self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+        parameters = {value['name']: value for value in paths['/admin/bookings']['get']['parameters']}
+        self.assertEqual({'from', 'through', 'limit', 'cursor'}, set(parameters))
+        self.assertTrue(parameters['from']['required']); self.assertTrue(parameters['through']['required'])
+        self.assertEqual(100, parameters['limit']['schema']['maximum']); self.assertEqual(200, parameters['cursor']['schema']['maxLength'])
+        self.assertFalse(schemas['AdministratorAgendaPage']['properties']['entries'].get('uniqueItems', False))
+        self.assertFalse({'intake', 'deliveryEmail', 'payment', 'meetingUrl'} & schemas['AdministratorAgendaEntry']['properties'].keys())
+        self.assertFalse({'customerId', 'adminId'} & schemas['AdministratorBookingDetail']['properties'].keys())
+        self.assertTrue({'snapshot', 'payment', 'pendingExpired', 'version'} <= schemas['AdministratorBookingDetail']['properties'].keys())
+        self.assertTrue(all(not value.get('writeOnly', False) for value in schemas['AdministratorIntakeSnapshot']['properties'].values()))
+        self.assertIn('ETag', paths['/admin/bookings/{bookingId}']['get']['responses']['200']['headers'])
+        self.assertNotIn('ETag', paths['/admin/bookings']['get']['responses']['200']['headers'])
+
+    def test_account_credentials_require_private_bound_session_and_never_client_supplied_factor_proofs(self):
+        paths=self.document['paths']; schemas=self.document['components']['schemas']
+        for path, request in (('/account/login','AccountLoginRequest'),('/account/password','AccountPasswordChangeRequest')):
+            operation=paths[path]['post']; self.assertEqual([{'sessionCookie':[]}],operation['security'])
+            self.assertEqual('X-CSRF-Token',operation['parameters'][0]['name']); self.assertTrue(operation['parameters'][0]['required'])
+            self.assertEqual('#/components/schemas/'+request,operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertFalse(schemas[request]['additionalProperties']); self.assertTrue({'400','401','403','429','503'} <= operation['responses'].keys())
+            for status in ('400','401','403','429','503','default'):
+                ref=operation['responses'][status]['$ref'];response=self.document['components']['responses'][ref.rsplit('/',1)[1]]
+                self.assertEqual(['no-store'],response['headers']['Cache-Control']['schema']['enum']);self.assertIn('application/problem+json',response['content'])
+        self.assertEqual({'email','password'},set(schemas['AccountLoginRequest']['required']))
+        self.assertEqual({'email','currentPassword','newPassword'},set(schemas['AccountPasswordChangeRequest']['required']))
+        for field in ('currentPassword','newPassword'):
+            value=schemas['AccountPasswordChangeRequest']['properties'][field]; self.assertTrue(value['writeOnly']); self.assertEqual((15,128),(value['minLength'],value['maxLength']))
+        self.assertTrue(schemas['AccountLoginRequest']['properties']['password']['writeOnly'])
+        reply=paths['/account/login']['post']['responses']['200']; self.assertEqual('#/components/schemas/SessionBootstrap',reply['content']['application/json']['schema']['$ref'])
+        changed=paths['/account/password']['post']['responses']['204']; self.assertNotIn('content',changed); self.assertIn('Set-Cookie',changed['headers']); self.assertEqual(['no-store'],changed['headers']['Cache-Control']['schema']['enum'])
+
     def test_all_references_resolve(self):
         def visit(value):
             if isinstance(value, dict):
@@ -137,7 +201,9 @@ class ContractTest(unittest.TestCase):
         self.assertIn('31', operation['description'])
         for path in self.document['paths'].values():
             for operation in path.values():
-                self.assertIn('application/problem+json', operation['responses']['default']['content'])
+                response=operation['responses']['default']
+                if '$ref' in response:response=self.document['components']['responses'][response['$ref'].rsplit('/',1)[1]]
+                self.assertIn('application/problem+json', response['content'])
 
     def test_session_contract_is_same_origin_csrf_protected_and_no_store(self):
         paths = self.document['paths']

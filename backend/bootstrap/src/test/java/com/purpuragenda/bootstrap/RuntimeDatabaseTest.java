@@ -293,6 +293,12 @@ class RuntimeDatabaseTest {
             cookie=redeemed.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];csrf=field(redeemed.body(),"csrfToken");
             var day=java.time.LocalDate.parse(text("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Brussels')::date")).plusDays(5);
             String start=day.atTime(9,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            var terms=call(port,"GET","/api/v1/booking-context?serviceId=10000000-0000-0000-0000-000000000001");
+            assertEquals(200,terms.statusCode());assertEquals("no-store",terms.headers().firstValue("Cache-Control").orElseThrow());
+            var reviewed=new com.fasterxml.jackson.databind.ObjectMapper().readTree(terms.body());
+            assertEquals(1,reviewed.at("/service/version").asLong());assertEquals(1,reviewed.at("/policy/version").asLong());
+            assertEquals("local-v1",reviewed.at("/notice/version").asText());assertTrue(reviewed.at("/notice/synthetic").asBoolean());
+            assertEquals(86400,reviewed.at("/policy/customerCutoffSeconds").asLong());
             String body="""
                 {"serviceId":"10000000-0000-0000-0000-000000000001","serviceVersion":1,"policyVersion":1,
                  "startInstant":"%s","displayZone":"Europe/Brussels","noticeVersion":"local-v1",
@@ -395,7 +401,84 @@ class RuntimeDatabaseTest {
         }
     }
 
+    @Test @Order(15) void administratorReadHttpUsesRealMfaAndKeepsPrivateIntakeOutOfAgenda() throws Exception {
+        sql("DELETE FROM app_session WHERE admin_id IS NOT NULL; DELETE FROM admin_authentication_proof; DELETE FROM admin_reenrollment_grant; DELETE FROM admin_recovery_code; DELETE FROM admin_user");
+        char[] password="synthetic runtime owner read phrase".toCharArray();byte[] secret=null;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");int port=port(context);
+            var guestBoot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String guestCookie=guestBoot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],guestCsrf=field(guestBoot.body(),"csrfToken");
+            assertEquals(202,json(port,"/api/v1/guest/create-proofs","{\"email\":\"runtime-owner-read@example.test\"}",guestCookie,guestCsrf).statusCode());
+            var queue=context.getBean(NotificationQueue.class);var lease=queue.claimAuth().orElseThrow();var message=context.getBean(AuthDeliveryStore.class).prepare(lease).orElseThrow();assertTrue(queue.sent(lease));
+            String proof=message.text().split("#token=",2)[1].split("&",2)[0];
+            var redeemed=json(port,"/api/v1/guest/redemptions","{\"token\":\""+proof+"\",\"purpose\":\"CREATE\"}",guestCookie,guestCsrf);assertEquals(200,redeemed.statusCode());
+            guestCookie=redeemed.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];guestCsrf=field(redeemed.body(),"csrfToken");
+            var day=java.time.LocalDate.parse(text("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Brussels')::date")).plusDays(15);
+            while(day.getDayOfWeek()==java.time.DayOfWeek.SATURDAY || day.getDayOfWeek()==java.time.DayOfWeek.SUNDAY)day=day.plusDays(1);
+            String start=day.atTime(14,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            String body="""
+                {"serviceId":"10000000-0000-0000-0000-000000000001","serviceVersion":1,"policyVersion":1,"startInstant":"%s",
+                 "displayZone":"Europe/Brussels","noticeVersion":"local-v1","intake":{"firstName":"Synthetic","lastName":"Customer","telephone":"+32400123456",
+                 "birthDate":"1990-01-01","birthTime":"12:00:15","birthplace":"Synthetic private city","message":""}}
+                """.formatted(start);
+            var created=json(port,"/api/v1/bookings",body,guestCookie,guestCsrf,"Idempotency-Key","runtime-owner-read-create");assertEquals(201,created.statusCode());String id=field(created.body(),"bookingId");
+            assertEquals(PrivateAdminStore.Result.CREATED,context.getBean(PrivateAdminBootstrap.class).create("runtime-owner-read-admin@example.test",password.clone()));
+            var factors=context.getBean(PrivateAdminMfa.class);try(var prepared=factors.provision("runtime-owner-read-admin@example.test",password.clone()).orElseThrow()) { secret=prepared.bytes(); }
+            var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");var key=new javax.crypto.spec.SecretKeySpec(secret,"HmacSHA1");
+            String enrollment=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.now()));
+            try(var codes=factors.enroll("runtime-owner-read-admin@example.test",password.clone(),enrollment).orElseThrow()) { assertEquals(10,codes.codes().size()); }
+            String code=null;long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(35);
+            while(code==null && System.nanoTime()<deadline) {
+                var now=java.time.Instant.now();String candidate=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond((now.getEpochSecond()/30+1)*30)));
+                long previous=Long.parseLong(text("SELECT last_totp_step FROM admin_user"));
+                if(com.purpuragenda.adapters.out.security.Totp.acceptedStep(secret,candidate,now,previous)>previous)code=candidate;else Thread.sleep(100);
+            }
+            assertNotNull(code,"Expected a fresh synthetic MFA step");var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            var authenticated=login(port,"{\"email\":\"runtime-owner-read-admin@example.test\",\"password\":\""+new String(password)+"\",\"totp\":\""+code+"\"}",cookie,csrf);assertEquals(200,authenticated.statusCode());
+            cookie=authenticated.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];
+            var agenda=call(port,"GET","/api/v1/admin/bookings?from="+day+"&through="+day,"Cookie",cookie);assertEquals(200,agenda.statusCode());assertFalse(agenda.body().contains("Synthetic private city") || agenda.body().contains("\"intake\""));
+            var detail=call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",cookie,"If-None-Match","\"1\"");assertEquals(200,detail.statusCode());assertEquals("no-store",detail.headers().firstValue("Cache-Control").orElseThrow());assertEquals("\"1\"",detail.headers().firstValue("ETag").orElseThrow());
+            var projection=new com.fasterxml.jackson.databind.ObjectMapper().readTree(detail.body());assertTrue("Synthetic private city".equals(projection.at("/snapshot/intake/birthplace").asText()),"Owner detail must retain the immutable private intake");assertEquals("UNPAID",projection.at("/payment/status").asText());
+            assertEquals(403,call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",guestCookie).statusCode());
+        } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
+    }
 
+
+    @Test @Order(16) void accountLoginAndPasswordChangeUseRealEnrolledCredentialsAndPersistedHttpSessions() throws Exception {
+        char[] password="synthetic runtime account phrase".toCharArray(),replacement="synthetic replacement account phrase".toCharArray();
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");
+            int port=port(context);var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);assertEquals(200,boot.statusCode());
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            var snapshot=context.getBean(SessionStore.class).inspect(cookie.split("=",2)[1].toCharArray()).orElseThrow();
+            var delivery=context.getBean(AuthDeliveryStore.class);var queue=context.getBean(NotificationQueue.class);
+            var receipt=delivery.issue(new AuthDeliveryStore.Issue("runtime-account@example.test",AuthDeliveryStore.Purpose.ACCOUNT,null,snapshot.reference().browserHash()));
+            var lease=queue.claimAuth().orElseThrow();assertEquals(receipt.jobId(),lease.id());var message=delivery.prepare(lease).orElseThrow();
+            String token=message.text().split("#token=",2)[1].split("&",2)[0];assertTrue(queue.sent(lease));
+            var enrollment=new AccountEnrollment(new com.purpuragenda.adapters.out.security.PostgresAccountEnrollment(context.getBean(javax.sql.DataSource.class)),new com.purpuragenda.adapters.out.security.Argon2PasswordHash());
+            assertTrue(enrollment.enroll(token,snapshot.reference().browserHash(),password.clone()).isPresent());
+            String loginBody="{\"email\":\"runtime-account@example.test\",\"password\":\""+new String(password)+"\"}";
+            var authenticated=accountPost(port,"/login",loginBody,cookie,csrf);assertEquals(200,authenticated.statusCode());
+            assertTrue("ACCOUNT".equals(field(authenticated.body(),"role")),"Expected account role");assertFalse(authenticated.body().contains("accountId"));
+            String current=authenticated.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],proof=field(authenticated.body(),"csrfToken");
+            assertFalse(cookie.equals(current),"Expected account bearer rotation");assertFalse(csrf.equals(proof),"Expected account CSRF rotation");
+            String changed="{\"email\":\"runtime-account@example.test\",\"currentPassword\":\""+new String(password)+"\",\"newPassword\":\""+new String(replacement)+"\"}";
+            var result=accountPost(port,"/password",changed,current,proof);assertEquals(204,result.statusCode());assertTrue(result.headers().firstValue("Set-Cookie").orElseThrow().contains("Max-Age=0"));
+            assertEquals(401,call(port,"GET","/api/v1/session","Cookie",current).statusCode());
+            var fresh=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);String anonymous=fresh.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],nextCsrf=field(fresh.body(),"csrfToken");
+            assertEquals(401,accountPost(port,"/login",loginBody,anonymous,nextCsrf).statusCode());
+            assertEquals(200,accountPost(port,"/login","{\"email\":\"runtime-account@example.test\",\"password\":\""+new String(replacement)+"\"}",anonymous,nextCsrf).statusCode());
+            assertEquals("1",text("SELECT count(*) FROM audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+        } finally { Arrays.fill(password,'\0');Arrays.fill(replacement,'\0'); }
+    }
+    static HttpResponse<String> accountPost(int port,String suffix,String body,String cookie,String csrf) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/account"+suffix)).timeout(Duration.ofSeconds(5))
+                    .header("Origin",ORIGIN).header("Cookie",cookie).header("X-CSRF-Token",csrf).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
     @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
         var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
         try(var first=Purpuragenda.launch(new String[0],isolated);

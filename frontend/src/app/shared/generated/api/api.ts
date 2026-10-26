@@ -1,3 +1,5 @@
+export * from './account.service';
+import { AccountService } from './account.service';
 export * from './administrator.service';
 import { AdministratorService } from './administrator.service';
 export * from './bookings.service';
@@ -8,4 +10,4 @@ export * from './guest.service';
 import { GuestService } from './guest.service';
 export * from './session.service';
 import { SessionService } from './session.service';
-export const APIS = [AdministratorService, BookingsService, CatalogService, GuestService, SessionService];
+export const APIS = [AccountService, AdministratorService, BookingsService, CatalogService, GuestService, SessionService];

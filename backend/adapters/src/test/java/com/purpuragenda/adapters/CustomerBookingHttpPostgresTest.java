@@ -167,4 +167,17 @@ class CustomerBookingHttpPostgresTest {
         assertEquals(401,g.send(get(path).cookie(cookie)).getStatus());
     }
 
+    @Test void managementEmailRedemptionDiscoversItsExactBookingWithoutAClientIdentifier() throws Exception {
+        var owner=c.guest("management-http@example.test");UUID id=c.create(owner,"managed",c.request(3,9)).entityId();
+        String reference=c.load(id).reference();var browser=g.boot();
+        var body=json.createObjectNode().put("email","management-http@example.test").put("reference",reference);
+        assertEquals(202,g.send(g.json(browser,"/api/v1/guest/management-proofs",body.toString())).getStatus());
+        var redeemed=g.send(g.json(browser,"/api/v1/guest/redemptions",g.redeemBody(g.proofToken(),"MANAGE")));
+        assertEquals(200,redeemed.getStatus());
+        String cookie=redeemed.getHeader("Set-Cookie").split(";",2)[0].split("=",2)[1];
+        var response=g.send(get("/api/v1/guest/booking").cookie(new Cookie("__Host-purpuragenda",cookie)));
+        assertEquals(200,response.getStatus());assertTrue(id.toString().equals(json.readTree(response.getContentAsString()).get("id").asText()));
+        assertFalse(response.getContentAsString().contains("Synthetic intake"));
+    }
+
 }
