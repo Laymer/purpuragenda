@@ -260,6 +260,36 @@ class RateLimitDatabaseTest {
         assertEquals(0, count(Kind.ADMIN_ATTEMPT));
     }
 
+    @Test void sharedBucketPairsSubmittedInOppositeOrdersNeverDeadlockAndCountExactly() throws Exception {
+        var real = new PostgresRateLimits(fixture.source("p17_pairs"), key);
+        int rounds = 10, workers = 20;
+        for (int round = 0; round < rounds; round++) {
+            // Two buckets shared by every worker; half submit [A,B], half [B,A], so unsorted locking would form cycles.
+            var a = new Charge(Kind.EMAIL_IP, "synthetic-shared-a-" + round);
+            var b = new Charge(Kind.AVAILABILITY_IP, "synthetic-shared-b-" + round);
+            var barrier = new CyclicBarrier(workers);
+            try (var pool = Executors.newFixedThreadPool(workers)) {
+                var futures = new ArrayList<Future<Decision>>();
+                for (int w = 0; w < workers; w++) {
+                    var pair = w % 2 == 0 ? List.of(a, b) : List.of(b, a);
+                    futures.add(pool.submit(() -> { barrier.await(30, TimeUnit.SECONDS); return real.admit(pair); }));
+                }
+                for (var future : futures) {
+                    var decision = future.get(60, TimeUnit.SECONDS);
+                    assertTrue(decision.allowed());
+                    assertEquals(pair(decision), 2);
+                }
+            }
+        }
+        assertEquals(2 * rounds, rows());
+        assertEquals(rounds, jdbc.queryForObject("SELECT count(*) FROM rate_limit_bucket WHERE kind='EMAIL_IP' AND count=20", Integer.class));
+        assertEquals(rounds, jdbc.queryForObject("SELECT count(*) FROM rate_limit_bucket WHERE kind='AVAILABILITY_IP' AND count=20", Integer.class));
+        // Reservations follow input order even though locks follow digest order.
+        var forward = real.admit(List.of(new Charge(Kind.EMAIL_IP, "synthetic-order-x"), new Charge(Kind.AVAILABILITY_IP, "synthetic-order-y")));
+        assertEquals(List.of(Kind.EMAIL_IP, Kind.AVAILABILITY_IP), forward.reservations().stream().map(Reservation::kind).toList());
+    }
+    int pair(Decision decision) { return decision.reservations().size(); }
+
     @Test void oppositeChargeOrdersOverSharedBucketsNeitherDeadlockNorLoseCounts() throws Exception {
         var real = new PostgresRateLimits(fixture.source("p17_order"), key);
         var shared = new Charge(Kind.EMAIL_IP, "synthetic-shared-network");

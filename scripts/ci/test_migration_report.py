@@ -250,7 +250,7 @@ class MigrationReportTest(unittest.TestCase):
 
     def test_throttles_and_cleanup_require_complete_boundary_race_rollback_and_lock_order_cases(self):
         self.write()
-        for adapter, suite, minimum in (('PostgresRateLimits', 'RateLimitDatabaseTest', 16), ('PostgresSecurityCleanup', 'SecurityCleanupDatabaseTest', 18)):
+        for adapter, suite, minimum in (('PostgresRateLimits', 'RateLimitDatabaseTest', 17), ('PostgresSecurityCleanup', 'SecurityCleanupDatabaseTest', 18)):
             source = self.root / f'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/{adapter}.java'
             source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic adapter')
             with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)

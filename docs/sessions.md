@@ -81,3 +81,9 @@ fenced leases and jobs held by workers keep their challenge, and no envelope is 
 Every unsafe method on every route requires exactly one `Origin` equal to the canonical `APP_PUBLIC_ORIGIN` (`null`, repeated, wrong scheme, host or port are refused; forwarded headers are ignored), a `Sec-Fetch-Site` that is absent or `same-origin`, a live persisted session cookie and one `X-CSRF-Token` equal to the current proof. Failures are `application/problem+json` with `Cache-Control: no-store`, a fixed code (`ORIGIN_REJECTED`, `CROSS_SITE_REJECTED`, `SESSION_REQUIRED`, `CSRF_REJECTED`, `SESSION_UNAVAILABLE`) and a random correlation id; no exception text. Logout revokes the row and expires the cookie. Session-only requests lock the `app_session` row alone, never grant or administrator rows. Throttles and login/email endpoints are separate slices; until throttles land anonymous bootstrap creation is unlimited.
 
 `X-Purpuragenda-Client-IP` (set by Caddy) is honored only when the socket peer exactly matches a literal IP in `APP_SECURITY_TRUSTED_PROXY_PEERS` (default empty; no hostnames or ranges) and exactly one valid literal IP is supplied; otherwise the socket peer is used. `Forwarded` and `X-Forwarded-*` are never read.
+
+Operational notes for throttles: rotating the rate key (`APP_SECURITY_RATE_KEY_FILE`/`ID`) changes every digest, so
+throttle state effectively resets and the old rows are removed by cleanup one hour after their windows end. Migration
+013 deletes existing `rate_limit_bucket` rows by design: no earlier code wrote them and they are ephemeral. A
+`SecurityMaintenance.tick()` skipped because another sweep is running reports `failed={overlap}`; that is expected
+and not an error.
