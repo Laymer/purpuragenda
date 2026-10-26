@@ -32,7 +32,12 @@ public final class ConfigurationConflicts {
     public ConfigurationConflicts(SchedulingUnitOfWork unit) { this.unit=Objects.requireNonNull(unit); }
     public Assessment assess(Proposal proposal) {
         Objects.requireNonNull(proposal);
-        return unit.read(view -> {
+        return unit.read(view -> evaluate(view,proposal));
+    }
+    /** Evaluates inside an already open view or locked transaction, so a mutation reviews the exact state it will change. */
+    public static Assessment evaluate(SchedulingUnitOfWork.View view,Proposal proposal) {
+        Objects.requireNonNull(view);Objects.requireNonNull(proposal);
+        {
             Instant now=view.now();SchedulingPolicy currentPolicy=view.policy();AvailabilityCalendar currentCalendar=view.calendar();
             SchedulingPolicy policy=proposal.policy()==null?currentPolicy:proposal.policy();
             AvailabilityCalendar calendar=proposal.calendar()==null?currentCalendar:proposal.calendar();
@@ -52,7 +57,7 @@ public final class ConfigurationConflicts {
             }
             conflicts.sort(Comparator.comparing(Conflict::start).thenComparing(Conflict::bookingId));
             return new Assessment(now,calendar.version(),policy.version(),conflicts);
-        });
+        }
     }
     private static Map<UUID,Set<Reason>> violations(List<Booking> bookings,AvailabilityCalendar calendar,SchedulingPolicy policy) {
         Map<UUID,Set<Reason>> result=new HashMap<>();
