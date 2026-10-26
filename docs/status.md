@@ -643,4 +643,4 @@ P31 follow-up native result: pinned verify-build passed 108 domain, 176 applicat
 
 ## P18 slice 1 explicit enrollment checkpoint
 
-Claude-workerF adds migration 015 (credential columns, immutability trigger, ACCOUNT_ATTEMPT throttle policy), `AccountEnrollment`, the `AccountEnrollmentStore` port and `PostgresAccountEnrollment` with 16 actual-container cases. No HTTP or OpenAPI change. Exact native results are recorded on the draft PR.
+Claude-workerF adds migration 015 (credential columns, immutability trigger, ACCOUNT_ATTEMPT throttle policy), `AccountEnrollment`, the `AccountEnrollmentStore` port and `PostgresAccountEnrollment` with 16 actual-container cases. No HTTP or OpenAPI change. Native `verify-build.sh` passed (exit 0, zero failures or skips): 108 domain, 184 application, 520 adapters, 28 bootstrap and 3 architecture tests (843 Java) and 231 strict Python cases. Coverage domain 276/277 lines 478/489 branches, application 824/827 and 658/680, adapters 1655/1678 and 1315/1454, bootstrap 201/215 and 184/198. Hosted results are on the draft PR. Upgrade tests now expect 14 applied changesets (014 reserved for P36).
