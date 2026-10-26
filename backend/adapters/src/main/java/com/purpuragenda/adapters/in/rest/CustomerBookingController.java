@@ -9,6 +9,7 @@ import com.purpuragenda.domain.DomainFailure;
 import com.purpuragenda.domain.customer.Intake;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
 import org.springframework.http.*;
@@ -25,18 +26,23 @@ public final class CustomerBookingController {
         this.access=Objects.requireNonNull(access);this.cookies=Objects.requireNonNull(cookies);
     }
     @GetMapping("/{bookingId}")
-    public ResponseEntity<String> get(@PathVariable String bookingId,HttpServletRequest request,HttpServletResponse response) throws IOException {
+    public void get(@PathVariable String bookingId,HttpServletRequest request,HttpServletResponse response) throws IOException {
         UUID id;
-        try { id=BookingHttp.id(bookingId); } catch(BookingHttp.Invalid invalid) { invalid(response);return null; }
+        try { id=BookingHttp.id(bookingId); } catch(BookingHttp.Invalid invalid) { invalid(response);return; }
         try {
             var session=access.inspect(cookies.read(request));
-            if(session.isEmpty()) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
+            if(session.isEmpty()) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return; }
             var view=views.find(binding(session.get()),id);
-            if(view.isEmpty()) { BookingHttp.problem(response,404,"BOOKING_NOT_FOUND",false,false);return null; }
-            return json(200,view.get().version(),BookingHttp.view(view.get()));
+            if(view.isEmpty()) { BookingHttp.problem(response,404,"BOOKING_NOT_FOUND",false,false);return; }
+            // This tag is the command version; independent money may change without advancing it.
+            // Explicit output prevents MVC's conditional304 handling from hiding the current private projection.
+            byte[] body=BookingHttp.view(view.get()).getBytes(StandardCharsets.UTF_8);
+            response.setStatus(200);response.setHeader(HttpHeaders.CACHE_CONTROL,"no-store");
+            response.setHeader(HttpHeaders.ETAG,'"'+Long.toString(view.get().version())+'"');
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);response.setCharacterEncoding("UTF-8");
+            response.setContentLength(body.length);response.getOutputStream().write(body);
         } catch(Failure failure) { BookingHttp.failure(response,failure); }
         catch(RuntimeException unavailable) { unavailable(response); }
-        return null;
     }
     @PostMapping
     public ResponseEntity<String> create(HttpServletRequest request,HttpServletResponse response) throws IOException {
@@ -85,9 +91,6 @@ public final class CustomerBookingController {
         return null;
     }
     private static SessionBinding binding(Snapshot session) { return new SessionBinding(session.reference().id(),session.reference().browserHash()); }
-    private static ResponseEntity<String> json(int status,long version,String body) {
-        return ResponseEntity.status(status).header(HttpHeaders.CACHE_CONTROL,"no-store").eTag('"'+Long.toString(version)+'"').contentType(MediaType.APPLICATION_JSON).body(body);
-    }
     private static void invalid(HttpServletResponse response) throws IOException { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false); }
     private static void unavailable(HttpServletResponse response) throws IOException { BookingHttp.problem(response,503,"TEMPORARILY_UNAVAILABLE",true,false); }
 }

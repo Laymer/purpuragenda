@@ -15,6 +15,10 @@ public interface NotificationQueue {
     Optional<Lease> claim();
     /** AUTH-only selection and expired-lease reclamation; never mutates booking-template jobs. */
     Optional<Lease> claimAuth();
+    /** Booking-template selection (never AUTH) and expired-lease reclamation for booking jobs only. */
+    default Optional<Lease> claimBooking() { throw new UnsupportedOperationException(); }
+    /** Fenced terminal suppression of a stale, superseded or expired job; the code is a fixed safe identifier. */
+    default boolean suppressed(Lease lease,String safeCode) { throw new UnsupportedOperationException(); }
     boolean renew(Lease lease);
     boolean sent(Lease lease);
     boolean failed(Lease lease);

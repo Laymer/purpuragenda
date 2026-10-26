@@ -42,6 +42,7 @@ class AdministratorBookingHttpTest {
         public Optional<Snapshot> resolve(char[] token) { throw new AssertionError("READ_MUST_NOT_TOUCH_SESSION"); }
         public Issued anonymous() { throw new AssertionError(); } public Optional<CsrfRotation> rotateCsrf(char[] token) { throw new AssertionError(); }
         public boolean csrf(SessionReference session,char[] token) { throw new AssertionError(); } public Optional<Issued> exchangeAdmin(SessionReference previous,String request,char[] proof) { throw new AssertionError(); }
+        public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError("ACCOUNT_SESSION_UNEXPECTED"); }
         public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); } public boolean revoke(SessionReference session) { throw new AssertionError(); }
     };
     final AdministratorBookingQuery query=new AdministratorBookingQuery() {

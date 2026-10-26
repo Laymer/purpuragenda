@@ -49,6 +49,14 @@ public final class PostgresSecurityCleanup implements SecurityCleanupStore {
                   ORDER BY id LIMIT ? FOR UPDATE SKIP LOCKED)
                 """, grace.toSeconds(), now, limit);
             if (removed >= limit) return removed;
+            removed += update(c, """
+                DELETE FROM account_authentication_proof WHERE id IN (
+                  SELECT id FROM account_authentication_proof
+                  WHERE LEAST(expires_at,COALESCE(consumed_at,'infinity'::timestamptz),COALESCE(revoked_at,'infinity'::timestamptz))
+                        +?*INTERVAL '1 second'<=?
+                  ORDER BY id LIMIT ? FOR UPDATE SKIP LOCKED)
+                """, grace.toSeconds(), now, limit - removed);
+            if (removed >= limit) return removed;
             // A grant whose recovery code is still usable is never removed: the unique code binding must remain.
             return removed + update(c, """
                 DELETE FROM admin_reenrollment_grant WHERE id IN (
