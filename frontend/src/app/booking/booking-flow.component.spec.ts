@@ -192,4 +192,13 @@ describe('Real typed booking flow and private state', () => {
     expect(flow.intake.getRawValue()).toEqual(intake);
   });
 
+  it('submits the actual email form without a native page reload', async () => {
+    await enter('ANONYMOUS'); flow.email.setValue('synthetic@example.test'); fixture.detectChanges();
+    const event = new Event('submit', { bubbles: true, cancelable: true });
+    fixture.nativeElement.querySelector('form').dispatchEvent(event); await settle();
+    expect(event.defaultPrevented).toBe(true);
+    http.expectOne('/api/v1/guest/create-proofs').flush({ accepted: true }); await settle();
+    expect(flow.message()).toContain('Check your inbox');
+  });
+
 });

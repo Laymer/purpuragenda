@@ -9,7 +9,7 @@
   @if (phase() === 'email') {
     <h2 tabindex="-1">Verify your email</h2>
     <p>No account is required. We will send a link that works in this browser.</p>
-    <form (ngSubmit)="requestEmail()">
+    <form (submit)="$event.preventDefault(); requestEmail()">
       <label for="booking-email">Email address</label>
       <input id="booking-email" type="text" inputmode="email" autocomplete="email" [formControl]="email" [attr.aria-invalid]="email.touched && email.invalid" aria-describedby="email-help" maxlength="254" required>
       <p id="email-help">Use an address where you can receive booking updates.</p>
