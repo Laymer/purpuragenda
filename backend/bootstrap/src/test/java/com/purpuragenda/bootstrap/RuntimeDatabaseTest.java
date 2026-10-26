@@ -279,4 +279,45 @@ class RuntimeDatabaseTest {
             }
         }
     }
+    @Test @Order(11) void realHttpGuestCreationReadMoveAndCancellationUseTheComposedBackend() throws Exception {
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();
+            sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");
+            int port=port(context);var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            assertEquals(202,json(port,"/api/v1/guest/create-proofs","{\"email\":\"synthetic-booking@example.test\"}",cookie,csrf).statusCode());
+            var queue=context.getBean(NotificationQueue.class);var lease=queue.claimAuth().orElseThrow();
+            var message=context.getBean(AuthDeliveryStore.class).prepare(lease).orElseThrow();assertTrue(queue.sent(lease));
+            String proof=message.text().split("#token=",2)[1].split("&",2)[0];
+            var redeemed=json(port,"/api/v1/guest/redemptions","{\"token\":\""+proof+"\",\"purpose\":\"CREATE\"}",cookie,csrf);assertEquals(200,redeemed.statusCode());
+            cookie=redeemed.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];csrf=field(redeemed.body(),"csrfToken");
+            var day=java.time.LocalDate.parse(text("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Brussels')::date")).plusDays(5);
+            String start=day.atTime(9,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            String body="""
+                {"serviceId":"10000000-0000-0000-0000-000000000001","serviceVersion":1,"policyVersion":1,
+                 "startInstant":"%s","displayZone":"Europe/Brussels","noticeVersion":"local-v1",
+                 "intake":{"firstName":"Synthetic","lastName":"Customer","telephone":"+32400123456","birthDate":"1990-01-01",
+                   "birthTime":"12:00","birthplace":"Synthetic city","message":""}}
+                """.formatted(start);
+            var created=json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create");assertEquals(201,created.statusCode());
+            UUID id=UUID.fromString(field(created.body(),"bookingId"));String path="/api/v1/bookings/"+id;
+            assertEquals(created.body(),json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create").body());
+            var current=call(port,"GET",path,"Cookie",cookie);assertEquals(200,current.statusCode());assertEquals("\"1\"",current.headers().firstValue("ETag").orElseThrow());
+            assertFalse(current.body().contains("Synthetic city") || current.body().contains("\"intake\""));assertTrue(current.body().contains("\"UNPAID\""));
+            String moved=day.plusDays(1).atTime(9,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            assertEquals(200,json(port,path+"/reschedule","{\"policyVersion\":1,\"startInstant\":\""+moved+"\"}",cookie,csrf,"Idempotency-Key","runtime-move","If-Match","\"1\"").statusCode());
+            assertEquals(412,json(port,path+"/cancel","{}",cookie,csrf,"Idempotency-Key","runtime-stale","If-Match","\"1\"").statusCode());
+            assertEquals(200,json(port,path+"/cancel","{}",cookie,csrf,"Idempotency-Key","runtime-cancel","If-Match","\"2\"").statusCode());
+            assertEquals("CANCELLED",text("SELECT state FROM booking WHERE id='"+id+"'"));assertEquals("1",text("SELECT count(*) FROM request_charge WHERE booking_id='"+id+"'"));
+        }
+    }
+    static HttpResponse<String> json(int port,String path,String body,String cookie,String csrf,String... extra) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            var request=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).timeout(Duration.ofSeconds(10))
+                    .header("Origin",ORIGIN).header("Cookie",cookie).header("X-CSRF-Token",csrf).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body));
+            for(int i=0;i<extra.length;i+=2)request.header(extra[i],extra[i+1]);
+            return client.send(request.build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
 }

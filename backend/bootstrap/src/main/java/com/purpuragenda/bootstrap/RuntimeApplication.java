@@ -4,10 +4,16 @@ import com.purpuragenda.adapters.in.rest.*;
 import com.purpuragenda.adapters.out.email.*;
 import com.purpuragenda.adapters.out.postgres.PostgresScheduling;
 import com.purpuragenda.adapters.out.postgres.DatabaseReadiness;
+import com.purpuragenda.adapters.out.postgres.PostgresCustomerBooking;
+import com.purpuragenda.adapters.out.postgres.PostgresBookingChanges;
+import com.purpuragenda.adapters.out.postgres.PostgresCustomerBookingQuery;
 import com.purpuragenda.adapters.out.security.*;
 import com.purpuragenda.application.*;
 import com.purpuragenda.application.port.out.*;
 import com.purpuragenda.application.scheduling.PublicScheduling;
+import com.purpuragenda.application.scheduling.CustomerBooking;
+import com.purpuragenda.application.scheduling.CustomerBookingChanges;
+import com.purpuragenda.application.scheduling.CustomerBookingView;
 import javax.sql.DataSource;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -66,6 +72,13 @@ public class RuntimeApplication {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
+    @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,Environment environment,SessionAccess access,SessionCookies cookies) {
+        // Operational settings already require an explicit non-local notice version before this bean is composed.
+        var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),environment.getProperty("app.notice-version","local-v1"));
+        var changes=new CustomerBookingChanges(new PostgresBookingChanges(source,settings.meetingHosts()));
+        var views=new CustomerBookingView(new PostgresCustomerBookingQuery(source,settings.meetingHosts()));
+        return new CustomerBookingController(create,changes,views,access,cookies);
+    }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));
         registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+20);
