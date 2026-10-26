@@ -1,0 +1,7 @@
+# Optional customer accounts
+
+An account is optional and explicit. A guest proof (CREATE or MANAGE) never creates one. Enrollment needs a delivered ACCOUNT email proof bound to the requesting browser and a chosen password. In one transaction `PostgresAccountEnrollment` consumes the proof (strict expiry, single use), reuses or creates the verified stable customer identity for that mailbox, inserts the account and an empty profile and audits `ACCOUNT_ENROLLED`. It issues no session and no grant. Existing bookings, grants and quotas stay with the identity and are not transferred or merged; an identity with an account cannot be enrolled again, and the rejected proof is left unconsumed.
+
+The login identity is the verified mailbox at enrollment and is immutable (a database trigger also requires it to equal the identity's email). Passwords use the administrator policy (15 to 128 Unicode code points, never trimmed or normalized) and Argon2id 64 MiB, 3 iterations, one lane. They are hashed before the transaction, buffers are cleared, and only the encoded hash is stored. A new hash requires a higher `credential_version`, so history cannot be rewritten or rolled back.
+
+Failed account logins are reserved before any password work as `ACCOUNT_ATTEMPT` (five per fixed fifteen minutes per account and network), like administrator attempts. Real PostgreSQL tests cover replay, wrong browser and purpose, expiry equality at one microsecond, existing accounts, rollback and 20-way races across independent connections.

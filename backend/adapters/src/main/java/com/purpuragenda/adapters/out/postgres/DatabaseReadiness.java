@@ -30,10 +30,11 @@ public final class DatabaseReadiness implements HealthIndicator {
                   s.admin_security_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
                   a.id,a.admin_id,a.token_hash,a.purpose,a.browser_hash,a.request_hash,a.security_version,
                   a.issued_at,a.expires_at,a.consumed_at,a.revoked_at,
-                  t.key,t.kind,t.key_id,t.count,t.window_started_at,t.reset_at
+                  t.key,t.kind,t.key_id,t.count,t.window_started_at,t.reset_at,
+                  ca.login_email,ca.password_hash,ca.credential_version,ca.password_changed_at
                 FROM booking b,booking_occupancy o,notification_job n,request_charge q,
                   access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c,
-                  app_session s,admin_authentication_proof a,rate_limit_bucket t LIMIT 0
+                  app_session s,admin_authentication_proof a,rate_limit_bucket t,customer_account ca LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c

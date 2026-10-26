@@ -640,3 +640,7 @@ P31 config-commands native result: pinned verify-build passed 108 domain, 171 ap
 P31 follow-up (review items): policy value caps validated before the transaction (INVALID_CONFIGURATION, 366 days / capacity 100), mutation-path DST and month-end cases, stronger PostgreSQL assertions. P36 must map outbox type CONFIGURATION_CONFLICT to a no-customer-notification handler so an unknown type cannot crash a consumer.
 
 P31 follow-up native result: pinned verify-build passed 108 domain, 176 application, 477 adapters, 28 bootstrap, quality 3, 6 Angular and 231 Python, zero failures/errors/skips. Coverage: domain 276/277 lines 478/489 branches; application 765/767 and 618/638; adapters 1608/1630 and 1263/1394; bootstrap 201/215 and 184/198; Angular 22/22 and 30/30. No threshold changed.
+
+## P18 slice 1 explicit enrollment checkpoint
+
+Claude-workerF adds migration 015 (credential columns, immutability trigger, ACCOUNT_ATTEMPT throttle policy), `AccountEnrollment`, the `AccountEnrollmentStore` port and `PostgresAccountEnrollment` with 16 actual-container cases. No HTTP or OpenAPI change. Exact native results are recorded on the draft PR.
