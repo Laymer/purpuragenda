@@ -334,6 +334,19 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorRecoveryPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator reader')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (19,19,''), (20,19,''), (21,20,''), (20,20,'<failure/>'), (20,20,'<error/>'), (20,20,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="20">' + '<testcase/>' * 20 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java'
