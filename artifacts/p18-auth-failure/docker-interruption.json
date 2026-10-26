@@ -1,0 +1,9 @@
+{
+  "revision": "3d8da93",
+  "adapterTests": 117,
+  "adapterErrors": 33,
+  "adapterFailures": 0,
+  "skipped": 0,
+  "cause": "Docker unavailable; isolated PostgreSQL fixture initialization failed. Aggregate check failed, not acceptance evidence.",
+  "recovery": "Coordinator restored existing Docker Desktop and verified pinned isolated Postgres smoke; no volumes or secrets changed."
+}

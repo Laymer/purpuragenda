@@ -64,8 +64,8 @@ describe('Customer booking typed HTTP boundary', () => {
     const cancel = http.expectOne('/api/v1/bookings/' + id + '/cancel');
     expect(cancel.request.method).toBe('POST'); expect(cancel.request.headers.get('If-Match')).toBe('"3"');
     expect(cancel.request.headers.get('X-CSRF-Token') === csrf).toBe(true); expect(cancel.request.body).toEqual({});
-    cancel.flush({ code: 'CUTOFF_PASSED', refreshAvailability: false }, { status: 409, statusText: 'Conflict' });
+    cancel.flush({ code: 'CUTOFF_PASSED', refreshAvailability: true }, { status: 409, statusText: 'Conflict' });
     expect(failures.map(value => value.status)).toEqual([412, 409]);
-    expect(failures.map(value => value.error.refreshAvailability)).toEqual([true, false]);
+    expect(failures.map(value => value.error.refreshAvailability)).toEqual([true, true]);
   });
 });

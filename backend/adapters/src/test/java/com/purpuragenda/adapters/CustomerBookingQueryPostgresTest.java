@@ -62,6 +62,13 @@ class CustomerBookingQueryPostgresTest {
         c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(expiry.minusSeconds(1)),s.reference().id());
         assertEquals(micros<0,reader(c.clock(expiry.plusNanos(micros*1000),new AtomicInteger())).find(c.binding(s),id).isPresent());
     }
+    @ParameterizedTest @ValueSource(longs={-1,0,1})
+    void snapshotRejectsActivityFromAfterItsCapturedTime(long micros) {
+        var session=c.guest("synthetic@example.test");UUID id=c.create(session,"clock",c.request(3,9)).entityId();
+        Instant seen=c.jdbc.queryForObject("SELECT clock_timestamp()+interval '10 seconds'",(r,n)->r.getTimestamp(1).toInstant());
+        c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(seen),session.reference().id());
+        assertEquals(micros>=0,reader(c.clock(seen.plusNanos(micros*1000),new AtomicInteger())).find(c.binding(session),id).isPresent());
+    }
     @Test void futureAuthorityAndUnconsumedCreationCannotReadBookings() {
         var s=c.guest("synthetic@example.test");UUID id=c.create(s,"a",c.request(3,9)).entityId();
         var unused=c.guest("synthetic@example.test");assertTrue(query.find(c.binding(unused),id).isEmpty());

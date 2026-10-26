@@ -8,12 +8,12 @@ import java.util.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Persisted customer session rows shared by authorized customer units. A reference alone is never authority. */
-record PersistedSession(UUID id,String browser,String kind,UUID grant,UUID customer,UUID account,
+record PersistedSession(UUID id,String browser,String kind,UUID grant,UUID customer,UUID account,Long accountVersion,
                         Instant issued,Instant lastSeen,Instant expires,Instant revoked) {
     static PersistedSession find(JdbcTemplate jdbc,SessionBinding binding,boolean lock) {
         return jdbc.query("SELECT * FROM app_session WHERE id=? AND browser_hash=?"+(lock?" FOR UPDATE":""),(r,n)->new PersistedSession(
                 r.getObject("id",UUID.class),r.getString("browser_hash"),r.getString("kind"),r.getObject("grant_id",UUID.class),
-                r.getObject("customer_id",UUID.class),r.getObject("account_id",UUID.class),time(r,"issued_at"),time(r,"last_seen_at"),
+                r.getObject("customer_id",UUID.class),r.getObject("account_id",UUID.class),r.getObject("account_credential_version",Long.class),time(r,"issued_at"),time(r,"last_seen_at"),
                 time(r,"absolute_expires_at"),time(r,"revoked_at")),binding.sessionId(),binding.browserHash()).stream().findFirst().orElse(null);
     }
     /** Recheck after the row lock: expiry, idle timeout, revocation and unchanged identity all use the captured time. */
@@ -21,7 +21,7 @@ record PersistedSession(UUID id,String browser,String kind,UUID grant,UUID custo
         return revoked==null && !issued.isAfter(now) && now.isBefore(expires) && now.isBefore(lastSeen.plusSeconds(1800))
                 && identity().equals(initial.identity());
     }
-    private List<Object> identity() { return Arrays.asList(kind,grant,account,customer); }
+    private List<Object> identity() { return Arrays.asList(kind,grant,account,customer,accountVersion); }
     static Instant time(ResultSet row,String column) throws SQLException { Timestamp value=row.getTimestamp(column);return value==null?null:value.toInstant(); }
     static Timestamp stamp(Instant value) { return Timestamp.from(value); }
     static Failure denied() { return new Failure(Failure.Kind.FORBIDDEN); }
