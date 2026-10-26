@@ -27,7 +27,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
 | P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; Codex-worker-c claims shared in-memory session/command access foundation; actual booking UI waits P20/P23 |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -60,6 +60,8 @@ Delivery prerequisites and concurrent task lanes are specified in docs/delivery.
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
+
+- P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
 - P20/customer-view: agent=Codex-coordinator; branch=task/p20-customer-view; base=main; handoff=docs/handoffs/p20-customer-view.md
 - P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
