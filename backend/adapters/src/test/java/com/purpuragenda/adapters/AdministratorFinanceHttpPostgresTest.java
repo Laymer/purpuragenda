@@ -77,7 +77,7 @@ class AdministratorFinanceHttpPostgresTest {
     String state(UUID id) { return f.jdbc.queryForObject("SELECT state FROM booking WHERE id=?",String.class,id); }
     long version(UUID id) { return f.jdbc.queryForObject("SELECT version FROM booking WHERE id=?",Long.class,id); }
     int count(String table) { return f.count(table); }
-    UUID entry(MockHttpServletResponse response) throws Exception { assertEquals(201,response.getStatus());var body=JSON.readTree(response.getContentAsString());assertTrue(body.has("bookingId") && body.has("bookingVersion"));return UUID.fromString(body.get("paymentEntryId").textValue()); }
+    UUID entry(MockHttpServletResponse response) throws Exception { assertEquals(201,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));assertNull(response.getHeader("ETag"));var body=JSON.readTree(response.getContentAsString());assertEquals(3,body.size());assertTrue(body.has("bookingId") && body.has("bookingVersion"));return UUID.fromString(body.get("paymentEntryId").textValue()); }
 
     @Test void manualApprovalDoesNotAssertPaymentAndLaterReceiptDoesNotChangeConfirmation() throws Exception {
         UUID id=booking(false,false);var admin=admin();var approved=send(admin,id,"/approve","approve",confirmation(MEETING),"\"1\"");assertEquals(200,approved.getStatus());assertEquals("\"2\"",approved.getHeader("ETag"));

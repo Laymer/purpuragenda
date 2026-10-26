@@ -63,7 +63,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - P25/management-target: agent=Codex-coordinator; branch=task/p25-management-target; base=main; handoff=docs/handoffs/p25-management-target.md
 
-- P22/admin-finance-http: agent=Codex-worker-b; branch=task/p22-admin-finance-http; base=main; handoff=docs/handoffs/p22-admin-finance-http.md
+- P22/admin-finance-http: agent=Codex-worker-b; branch=task/p22-admin-finance-http; base=task/p22-admin-read-http; handoff=docs/handoffs/p22-admin-finance-http.md
 
 
 - P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
