@@ -20,7 +20,8 @@ class ContractTest(unittest.TestCase):
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
-                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator'},
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator',
+                          'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession'}, public)
@@ -44,6 +45,41 @@ class ContractTest(unittest.TestCase):
         self.assertIn('Retry-After', operation['responses']['429']['headers'])
         for response in operation['responses'].values():
             self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+
+    def test_customer_commands_bind_receipts_versions_and_explicit_private_projections(self):
+        paths = self.document['paths']
+        for path, method in (('/bookings', 'post'), ('/bookings/{bookingId}', 'get'),
+                             ('/bookings/{bookingId}/cancel', 'post'), ('/bookings/{bookingId}/reschedule', 'post')):
+            operation = paths[path][method]
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            headers = {value['name']: value for value in operation['parameters'] if value['in'] == 'header'}
+            if method == 'post':
+                self.assertTrue(headers['X-CSRF-Token']['required'])
+                self.assertTrue(headers['Idempotency-Key']['required'])
+                self.assertTrue(operation['requestBody']['required'])
+            if path.endswith(('/cancel', '/reschedule')):
+                self.assertTrue(headers['If-Match']['required'])
+                self.assertTrue({'404', '412', '428'} <= operation['responses'].keys())
+            for response in operation['responses'].values():
+                if '$ref' in response:
+                    response = self.document['components']['responses'][response['$ref'].rsplit('/', 1)[1]]
+                self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+        schemas = self.document['components']['schemas']
+        request = schemas['CreateBookingRequest']
+        self.assertEqual({'serviceId', 'serviceVersion', 'policyVersion', 'startInstant', 'displayZone', 'noticeVersion', 'intake'}, set(request['required']))
+        self.assertEqual({'bookingId', 'version'}, set(schemas['BookingReceipt']['required']))
+        self.assertEqual({}, schemas['CancelBookingRequest']['properties'])
+        self.assertEqual({'policyVersion', 'startInstant'}, set(schemas['RescheduleBookingRequest']['required']))
+        for value in schemas['BookingIntake']['properties'].values():
+            self.assertTrue(value['writeOnly'])
+        projection = schemas['CustomerBookingStatus']['properties']
+        self.assertTrue({'pendingExpired', 'version', 'allowedActions', 'payment', 'serverNow', 'customerChangesUntil'} <= projection.keys())
+        self.assertFalse({'intake', 'customerId', 'accountId', 'entries', 'snapshot'} & projection.keys())
+        self.assertEqual(['string', 'null'], projection['meetingUrl']['type'])
+        self.assertEqual(['CANCEL', 'RESCHEDULE'], projection['allowedActions']['items']['enum'])
+        self.assertFalse(projection['allowedActions'].get('uniqueItems', False), 'The pinned Angular generator otherwise emits an unhydrated Set for a JSON array')
+        self.assertEqual('#/components/schemas/CustomerBookingStatus', paths['/bookings/{bookingId}']['get']['responses']['200']['content']['application/json']['schema']['$ref'])
+        self.assertIn('Location', paths['/bookings']['post']['responses']['201']['headers'])
 
     def test_all_references_resolve(self):
         def visit(value):
