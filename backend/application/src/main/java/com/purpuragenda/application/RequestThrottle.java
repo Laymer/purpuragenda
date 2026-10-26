@@ -52,6 +52,11 @@ public final class RequestThrottle {
         return admission(List.of(new Charge(Kind.ADMIN_ATTEMPT, email(account) + "\n" + network(clientIp))), true);
     }
 
+    /** Reserve before any account password work, exactly like administrator attempts. */
+    public Admission accountAttempt(String account, String clientIp) {
+        return admission(List.of(new Charge(Kind.ACCOUNT_ATTEMPT, email(account) + "\n" + network(clientIp))), true);
+    }
+
     private Admission admission(List<Charge> charges, boolean reserved) {
         Decision decision = store.admit(charges);
         if (!decision.allowed()) return new Admission(false, decision.retryAfterSeconds(), null);
