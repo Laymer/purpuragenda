@@ -304,6 +304,21 @@ class MigrationReportTest(unittest.TestCase):
                           + '<testcase/>' * 6 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_account_enrollment_requires_complete_proof_race_rollback_and_upgrade_evidence(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountEnrollment.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic account enrollment adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountEnrollmentDatabaseTest.xml')
+        for count, cases, nested in ((0, 0, ''), (19, 19, ''), (20, 19, ''), (21, 20, ''),
+                                     (20, 20, '<failure/>'), (20, 20, '<error/>'), (20, 20, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="20">'
+                          + '<testcase/>' * 20 + '</testsuite>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -103,3 +103,19 @@ databaseChangeLog:
             path: 013-rate-limit-buckets.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 015-customer-account-credentials
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 015-customer-account-credentials.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+  - changeSet:
+      id: 016-account-credential-shape
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 016-account-credential-shape.sql
+            relativeToChangelogFile: true
+            splitStatements: false
