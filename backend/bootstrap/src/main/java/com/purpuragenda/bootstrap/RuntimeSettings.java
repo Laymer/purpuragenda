@@ -21,7 +21,10 @@ final class RuntimeSettings {
     private RuntimeSettings(URI origin,boolean suppressed,boolean local,Secrets totp,Secrets delivery,RateKey rate,MailDelivery mail,Set<String> trustedProxyPeers) {
         this.trustedProxyPeers=trustedProxyPeers;this.origin=origin;this.suppressed=suppressed;this.local=local;this.totp=totp;this.delivery=delivery;this.rate=rate;this.mail=mail;
     }
-    static RuntimeSettings read(Environment environment) {
+    static RuntimeSettings read(Environment environment) { return read(environment,true); }
+    /** The private operator holds no throttle secret (exact Compose secret set), so only serving requires the rate key. */
+    static RuntimeSettings readForOperator(Environment environment) { return read(environment,false); }
+    private static RuntimeSettings read(Environment environment,boolean serving) {
         try {
             String mode=environment.getRequiredProperty("app.mode");
             if(!Set.of("local","test","restore","operational").contains(mode)) throw new IllegalArgumentException();
@@ -43,13 +46,14 @@ final class RuntimeSettings {
             Path deliveryFile=Path.of(environment.getRequiredProperty("app.delivery-key-file"));
             String totpId=environment.getRequiredProperty("app.totp-key-id"),deliveryId=environment.getRequiredProperty("app.delivery-key-id");
             if(Files.isSymbolicLink(totpFile) || Files.isSymbolicLink(deliveryFile) || totpId.equals(deliveryId) || Files.mismatch(totpFile,deliveryFile)==-1) throw new IllegalArgumentException();
-            Path rateFile=Path.of(environment.getRequiredProperty("app.security.rate-key-file"));
-            String rateId=environment.getRequiredProperty("app.security.rate-key-id");
+            Path rateFile=serving?Path.of(environment.getRequiredProperty("app.security.rate-key-file")):null;
+            String rateId=serving?environment.getRequiredProperty("app.security.rate-key-id"):null;
             // The throttle HMAC key is a third, independent secret; local development identifiers never reach non-local modes.
-            if(Files.isSymbolicLink(rateFile) || rateId.equals(totpId) || rateId.equals(deliveryId)
-                    || Files.mismatch(rateFile,totpFile)==-1 || Files.mismatch(rateFile,deliveryFile)==-1
-                    || !local && Stream.of(totpId,deliveryId,rateId).anyMatch(id->id.toLowerCase(java.util.Locale.ROOT).startsWith("local-"))) throw new IllegalArgumentException();
-            var totp=new Secrets(totpFile,totpId);var delivery=new Secrets(deliveryFile,deliveryId);var rate=new RateKey(rateFile,rateId);
+            if(serving && (Files.isSymbolicLink(rateFile) || rateId.equals(totpId) || rateId.equals(deliveryId)
+                    || Files.mismatch(rateFile,totpFile)==-1 || Files.mismatch(rateFile,deliveryFile)==-1)) throw new IllegalArgumentException();
+            if(!local && Stream.of(totpId,deliveryId).anyMatch(id->id.toLowerCase(java.util.Locale.ROOT).startsWith("local-"))
+                    || serving && !local && rateId.toLowerCase(java.util.Locale.ROOT).startsWith("local-")) throw new IllegalArgumentException();
+            var totp=new Secrets(totpFile,totpId);var delivery=new Secrets(deliveryFile,deliveryId);var rate=serving?new RateKey(rateFile,rateId):null;
             MailDelivery mail;
             if(suppressed) mail=SmtpDelivery.restore();
             else {

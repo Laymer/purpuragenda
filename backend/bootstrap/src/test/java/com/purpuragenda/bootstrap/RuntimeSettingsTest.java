@@ -96,6 +96,13 @@ class RuntimeSettingsTest {
         values.put("app.mode","restore");values.put("app.public-origin","http://localhost:8080");
         assertTrue(RuntimeSettings.read(environment()).suppressed());invalid("app.security.rate-key-id","local-rate-v1");
     }
+    @Test void operatorSettingsNeedNoThrottleSecretButStillRejectLocalDefaultsOutsideLocalModes() {
+        values.remove("app.security.rate-key-file");values.remove("app.security.rate-key-id");
+        assertThrows(IllegalArgumentException.class,()->RuntimeSettings.read(environment()));
+        assertNull(RuntimeSettings.readForOperator(environment()).rate());
+        values.put("app.mode","restore");values.put("app.totp-key-id","local-totp-v1");
+        assertThrows(IllegalArgumentException.class,()->RuntimeSettings.readForOperator(environment()));
+    }
     @Test void secretFilesPreserveSpacesAndRejectControlsEmptyLargeAndLinkedInput() throws Exception {
         Path secret=directory.resolve("value");Files.writeString(secret," padded synthetic value \r\n");
         assertEquals(" padded synthetic value ",DatabaseConfiguration.secret(secret.toString()));
