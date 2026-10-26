@@ -15,7 +15,7 @@ import org.springframework.core.env.Environment;
 @Import(DatabaseConfiguration.class)
 public class OperatorApplication {
     @Bean String databaseRole() { return "purpuragenda_app"; }
-    @Bean RuntimeSettings settings(Environment environment) { return RuntimeSettings.read(environment); }
+    @Bean RuntimeSettings settings(Environment environment) { return RuntimeSettings.readForOperator(environment); }
     @Bean ApplicationRunner adminSetup(DataSource source, RuntimeSettings settings) {
         return arguments -> {
             var hash = new Argon2PasswordHash();

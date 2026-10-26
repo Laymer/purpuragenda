@@ -56,6 +56,24 @@ rollback, a 20-way proof race, recovery races, credential epochs, grant revocati
 and token rotation. Their full report is mandatory; compilation alone does not
 certify these scenarios.
 
+## Persisted throttles and bounded cleanup
+
+Migration 013 turns `rate_limit_bucket` into scoped fixed-window counters: email cooldown (1 per 60 seconds),
+5 per hour per address, 30 per hour per client network, administrator password/MFA 5 per 15 minutes per
+account and network, and availability 120 per minute per network. Keys are HMAC-SHA256 digests under the
+separate rate key; raw email and addresses are never stored or logged (IPv6 shares one bucket per /64).
+`PostgresRateLimits` upserts and locks buckets one statement at a time in ascending digest order, captures one
+database time after all locks, and admits every charge or none, returning a whole-second ceiling Retry-After.
+Window equality is expired. Administrator attempts are reserved before factor work; success releases a slot
+only while the same window is still current. Storage failure throws a cause-free exception and callers fail closed.
+
+`PostgresSecurityCleanup` and `SecurityCleanup` provide bounded hourly retention (sessions and proofs one hour
+after death, grants and challenges 24 hours, throttle rows one hour after window end). Independent rows use
+SKIP LOCKED. The mixed grant transaction locks scheduling resource, grants (children first), referencing sessions,
+delivery jobs, then challenges; envelopes and challenge references are cleared before challenge deletion, live
+fenced leases and jobs held by workers keep their challenge, and no envelope is ever decrypted. The
+`SecurityMaintenance.tick()` hook is composed but no scheduler or HTTP endpoint invokes it yet.
+
 ## HTTP edge
 
 `POST /api/v1/session/bootstrap`, `GET /api/v1/session` and `POST /api/v1/session/logout` expose these sessions. The cookie is `__Host-purpuragenda` (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain) operationally and `purpuragenda-local` (no Secure) in local, test and restore modes. Bootstrap needs only the exact configured Origin: with no live cookie it creates an anonymous guest session; with one it rotates only the CSRF proof and sets no cookie. Only digests are stored, so a reload must bootstrap again. `GET /session` returns the role and idle/absolute deadlines only through a read-only lookup that writes, locks and touches nothing, so polling cannot extend idle lifetime; unsafe requests and bootstrap do touch.
@@ -63,3 +81,9 @@ certify these scenarios.
 Every unsafe method on every route requires exactly one `Origin` equal to the canonical `APP_PUBLIC_ORIGIN` (`null`, repeated, wrong scheme, host or port are refused; forwarded headers are ignored), a `Sec-Fetch-Site` that is absent or `same-origin`, a live persisted session cookie and one `X-CSRF-Token` equal to the current proof. Failures are `application/problem+json` with `Cache-Control: no-store`, a fixed code (`ORIGIN_REJECTED`, `CROSS_SITE_REJECTED`, `SESSION_REQUIRED`, `CSRF_REJECTED`, `SESSION_UNAVAILABLE`) and a random correlation id; no exception text. Logout revokes the row and expires the cookie. Session-only requests lock the `app_session` row alone, never grant or administrator rows. Throttles and login/email endpoints are separate slices; until throttles land anonymous bootstrap creation is unlimited.
 
 `X-Purpuragenda-Client-IP` (set by Caddy) is honored only when the socket peer exactly matches a literal IP in `APP_SECURITY_TRUSTED_PROXY_PEERS` (default empty; no hostnames or ranges) and exactly one valid literal IP is supplied; otherwise the socket peer is used. `Forwarded` and `X-Forwarded-*` are never read.
+
+Operational notes for throttles: rotating the rate key (`APP_SECURITY_RATE_KEY_FILE`/`ID`) changes every digest, so
+throttle state effectively resets and the old rows are removed by cleanup one hour after their windows end. Migration
+013 deletes existing `rate_limit_bucket` rows by design: no earlier code wrote them and they are ephemeral. A
+`SecurityMaintenance.tick()` skipped because another sweep is running reports `failed={overlap}`; that is expected
+and not an error.

@@ -95,3 +95,11 @@ databaseChangeLog:
             path: 012-session-proofs.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 013-rate-limit-buckets
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 013-rate-limit-buckets.sql
+            relativeToChangelogFile: true
+            splitStatements: false
