@@ -24,7 +24,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; Claude-workerF backend slices in task/p18-accounts (enrollment and credential first, then login/session/password change, then profile/history); migration 015 owned by P18; HTTP/OpenAPI remain with the contract owner |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
-| P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; Claude-workerF slice 1 receipts/reconciliation merged https://github.com/Laymer/purpuragenda/pull/56 at 2f9c894; approval/confirmation merged https://github.com/Laymer/purpuragenda/pull/59 at a322914; refunds and refund requirement in draft slice task/p21-refunds; no migration; HTTP remains P22/P29 |
+| P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; commands and PostgreSQL adapter merged (receipts PR56, approval/confirmation PR59, refunds PR62 at 0128f21), no migration; HTTP routes remain P22/P29 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
 | P23 — Complete public service selection and timezone-aware time selection | Recovered WIP; dependencies in docs/delivery.md;  |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
