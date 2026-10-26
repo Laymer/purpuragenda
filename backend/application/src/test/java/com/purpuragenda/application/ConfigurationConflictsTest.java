@@ -119,4 +119,41 @@ class ConfigurationConflictsTest {
         var list=new ArrayList<>(List.of(conflict));var assessment=new Assessment(f.now,1,1,list);list.clear();
         assertEquals(1,assessment.conflicts().size());assertThrows(UnsupportedOperationException.class,()->assessment.conflicts().clear());
     }
+
+    void openAllDay() { f.calendar=new AvailabilityCalendar(weekly(0,1440),Map.of(),List.of(),1);f.policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(400),Duration.ZERO,Duration.ZERO); }
+    AvailabilityCalendar replaced(LocalDate date,int from,int to) {
+        return new AvailabilityCalendar(f.calendar.weekly(),Map.of(date,new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.REPLACE,List.of(new AvailabilityCalendar.Window(from,to)))),List.of(),f.calendar.version()+1);
+    }
+
+    @Test void springForwardDayUsesTheLocalOffsetInForceAtEachBooking() {
+        openAllDay();LocalDate day=LocalDate.of(2026,3,29);
+        Booking morning=booking(Instant.parse("2026-03-29T07:00:00Z")),noon=booking(Instant.parse("2026-03-29T10:00:00Z")),afterGap=booking(Instant.parse("2026-03-29T01:00:00Z"));
+        f.bookings=List.of(morning,noon,afterGap);   // 09:00 and 12:00 at +02:00; 03:00, the first valid local time after the gap
+        assertEquals(Set.of(noon.id(),afterGap.id()),new HashSet<>(assess(replaced(day,540,720),null).stream().map(Conflict::bookingId).toList()));
+        assertEquals(List.of(afterGap.id()),assess(replaced(day,181,1440),null).stream().map(Conflict::bookingId).toList());
+        assertTrue(assess(replaced(day,180,1440),null).isEmpty());
+    }
+
+    @Test void fallBackDayTreatsTheRepeatedLocalHourAsTwoDistinctBookings() {
+        openAllDay();LocalDate day=LocalDate.of(2026,10,25);
+        Booking first=booking(Instant.parse("2026-10-25T00:30:00Z")),second=booking(Instant.parse("2026-10-25T01:30:00Z")),noon=booking(Instant.parse("2026-10-25T11:00:00Z"));
+        f.bookings=List.of(first,second,noon);   // 02:30 at +02:00, 02:30 again at +01:00, then 12:00
+        assertEquals(Set.of(first.id(),second.id(),noon.id()),new HashSet<>(assess(replaced(day,0,150),null).stream().map(Conflict::bookingId).toList()));
+        assertEquals(List.of(noon.id()),assess(replaced(day,0,151),null).stream().map(Conflict::bookingId).toList());
+        assertEquals(List.of(),assess(replaced(day,0,721),null));
+    }
+
+    @Test void monthEndReservationCrossingMidnightCountsOnItsStartDateButBlocksTheNextDateBlackout() {
+        openAllDay();var p=f.policy;
+        Booking late=booking(Instant.parse("2026-01-31T22:30:00Z")),next=booking(Instant.parse("2026-02-01T08:00:00Z"));   // 23:30 Jan 31 (to 01:30 Feb 1) and 09:00 Feb 1
+        f.bookings=List.of(late,next);
+        SchedulingPolicy one=new SchedulingPolicy(2,p.gridMinutes(),1,p.minimumNotice(),p.pendingLifetime(),p.expiryBuffer(),p.customerCutoff());
+        assertTrue(assess(null,one).isEmpty());   // one booking per business date
+        SchedulingPolicy none=new SchedulingPolicy(2,p.gridMinutes(),0,p.minimumNotice(),p.pendingLifetime(),p.expiryBuffer(),p.customerCutoff());
+        assertEquals(List.of(late.id(),next.id()),assess(null,none).stream().map(Conflict::bookingId).toList());
+        var midnight=Instant.parse("2026-01-31T23:30:00Z");   // 00:30 on 1 February, after the late session ends
+        var blackout=new AvailabilityCalendar.Blackout(UUID.randomUUID(),new ReservationInterval(midnight,midnight.plusSeconds(600)),"Synthetic closure reason");
+        var conflicts=assess(new AvailabilityCalendar(f.calendar.weekly(),Map.of(),List.of(blackout),2),null);
+        assertEquals(List.of(late.id()),conflicts.stream().map(Conflict::bookingId).toList());assertEquals(Set.of(blackout.id()),conflicts.getFirst().blackoutIds());
+    }
 }
