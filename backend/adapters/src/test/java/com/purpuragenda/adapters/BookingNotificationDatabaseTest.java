@@ -11,7 +11,10 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -226,11 +229,12 @@ class BookingNotificationDatabaseTest {
         assertTrue(store.load(lease).isPresent());
     }
 
-    @ParameterizedTest @ValueSource(strings={"outbox_event","notification_job"})
-    void driverReadFailureRollsBackAndReleasesTheLockedRowWithoutPrivateErrors(String table) throws Exception {
+    @ParameterizedTest @ValueSource(strings={"outbox_event","notification_job","outbox_event:rollback","notification_job:rollback"})
+    void driverReadFailureRollsBackAndReleasesTheLockedRowWithoutPrivateErrors(String failurePoint) throws Exception {
+        String table=failurePoint.split(":",2)[0];
         book("customer@example.test",3,9);NotificationQueue.Lease lease=null;
         if(table.equals("notification_job")){expander.drain(10);lease=queue.claimBooking().orElseThrow();}
-        var current=lease;var source=brokenRead(table);
+        var current=lease;var source=brokenRead(table,failurePoint.endsWith(":rollback"));
         var failure=assertThrows(IllegalStateException.class,()->{
             if(current==null)new PostgresOutboxStore(source).expandNext(NotificationPlanner::plan);
             else new PostgresBookingNotificationStore(source).load(current);
@@ -245,23 +249,75 @@ class BookingNotificationDatabaseTest {
         else assertTrue(store.load(lease).isPresent());
     }
 
-    DataSource brokenRead(String table) {
+    DataSource brokenRead(String table,boolean rollbackFailure) {
         return GuestAccessDatabaseTest.proxy(DataSource.class,(p,m,a)->{
             Object connection=GuestAccessDatabaseTest.invoke(c.f.source,m,a);
             if(!m.getName().equals("getConnection"))return connection;
             return GuestAccessDatabaseTest.proxy(Connection.class,(cp,cm,ca)->{
                 Object query=GuestAccessDatabaseTest.invoke(connection,cm,ca);
+                if(rollbackFailure && cm.getName().equals("rollback"))throw new SQLException("SYNTHETIC_ROLLBACK_ACK_FAILURE");
+                if(cm.getName().equals("createStatement"))return GuestAccessDatabaseTest.proxy(Statement.class,(sp,sm,sa)->{
+                    Object rows=GuestAccessDatabaseTest.invoke(query,sm,sa);
+                    return sm.getName().equals("executeQuery") && ((String)sa[0]).contains("FROM "+table)?failedRows(rows):rows;
+                });
                 if(!cm.getName().equals("prepareStatement") || !((String)ca[0]).contains("FROM "+table))return query;
                 return GuestAccessDatabaseTest.proxy(PreparedStatement.class,(qp,qm,qa)->{
                     Object rows=GuestAccessDatabaseTest.invoke(query,qm,qa);
                     if(!qm.getName().equals("executeQuery"))return rows;
-                    return GuestAccessDatabaseTest.proxy(ResultSet.class,(rp,rm,ra)->{
-                        if(rm.getName().equals("getObject"))throw new SQLException("SYNTHETIC_READ_FAILURE");
-                        return GuestAccessDatabaseTest.invoke(rows,rm,ra);
-                    });
+                    return failedRows(rows);
                 });
             });
         });
+    }
+
+    static ResultSet failedRows(Object rows) {
+        return GuestAccessDatabaseTest.proxy(ResultSet.class,(rp,rm,ra)->{
+            if(rm.getName().equals("getObject"))throw new SQLException("SYNTHETIC_READ_FAILURE");
+            return GuestAccessDatabaseTest.invoke(rows,rm,ra);
+        });
+    }
+
+    @Test void expansionCommitsIndependentlyOfAnUnrelatedCallerTransaction() {
+        book("customer@example.test",3,9);
+        new TransactionTemplate(new DataSourceTransactionManager(c.f.source)).execute(status->{
+            c.jdbc.update("INSERT INTO audit_event(id,actor_kind,type,occurred_at) VALUES(?,'SYSTEM','SYNTHETIC_OUTER_TRANSACTION',clock_timestamp())",UUID.randomUUID());
+            assertEquals(1,expander.drain(10));status.setRollbackOnly();return null;
+        });
+        assertEquals(0,count("audit_event WHERE type='SYNTHETIC_OUTER_TRANSACTION'"));
+        assertEquals(1,count("outbox_event WHERE expanded_at IS NOT NULL"));
+        assertEquals(2,count("notification_job WHERE template<>'AUTH' AND state='QUEUED'"));
+    }
+
+    @Test void anAudienceAdvisoryLockContentionDoesNotConsumeAnAttempt() throws Exception {
+        book("customer@example.test",3,9);expander.drain(10);
+        String group=c.f.value("SELECT booking_id::text||':'||audience FROM notification_job WHERE template<>'AUTH' ORDER BY due_at,id LIMIT 1");
+        try(var blocker=c.f.source.getConnection()) {
+            blocker.setAutoCommit(false);MigrationTest.execute(blocker,"SELECT pg_advisory_xact_lock(hashtextextended(?,0))",group);
+            assertTrue(queue.claimBooking().isEmpty());assertEquals(0,count("notification_job WHERE template<>'AUTH' AND attempts<>0"));
+            blocker.rollback();assertTrue(queue.claimBooking().isPresent());
+        }
+    }
+
+    @Test void anAudienceLeaseCommittedAfterCandidateSelectionPreventsASecondClaim() {
+        UUID id=book("customer@example.test",3,9);event(id,"PAYMENT_RECORDED",1);expander.drain(10);
+        c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");
+        var competing=new AtomicReference<NotificationQueue.Lease>();
+        DataSource interleaved=GuestAccessDatabaseTest.proxy(DataSource.class,(p,m,a)->{
+            Object connection=GuestAccessDatabaseTest.invoke(c.f.source,m,a);
+            if(!m.getName().equals("getConnection"))return connection;
+            return GuestAccessDatabaseTest.proxy(Connection.class,(cp,cm,ca)->{
+                Object query=GuestAccessDatabaseTest.invoke(connection,cm,ca);
+                if(!cm.getName().equals("prepareStatement") || !((String)ca[0]).contains("pg_try_advisory_xact_lock"))return query;
+                return GuestAccessDatabaseTest.proxy(PreparedStatement.class,(qp,qm,qa)->{
+                    if(qm.getName().equals("executeQuery"))competing.set(queue.claimBooking().orElseThrow());
+                    return GuestAccessDatabaseTest.invoke(query,qm,qa);
+                });
+            });
+        });
+        assertTrue(new PostgresNotificationQueue(interleaved,false).claimBooking().isEmpty());
+        assertNotNull(competing.get());assertEquals(1,count("notification_job WHERE template<>'AUTH' AND state='LEASED'"));
+        assertEquals(1,count("notification_job WHERE template<>'AUTH' AND attempts=1"));
+        assertEquals(1,count("notification_job WHERE template<>'AUTH' AND state='QUEUED' AND attempts=0"));
     }
 
     @Test void secondAudienceInsertFailureRollsBackTheFirstJobAndExpansionMark() throws Exception {

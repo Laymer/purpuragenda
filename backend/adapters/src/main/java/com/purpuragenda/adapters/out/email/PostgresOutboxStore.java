@@ -1,57 +1,44 @@
 package com.purpuragenda.adapters.out.email;
 
 import com.purpuragenda.application.port.out.OutboxStore;
-import java.sql.*;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.sql.DataSource;
 
-/** Expansion only: no scheduling resource lock, no SMTP and no content. Each event is its own short transaction. */
+/** Expansion only: each event commits independently; no scheduling resource lock or SMTP. */
 public final class PostgresOutboxStore implements OutboxStore {
-    private final DataSource source;
-    public PostgresOutboxStore(DataSource source) { this.source=Objects.requireNonNull(source); }
+    private final NotificationJdbc db;
+    public PostgresOutboxStore(DataSource source) { db=new NotificationJdbc(source); }
+    private record Event(UUID id,UUID booking,String type,long version) { }
 
     @Override public Outcome expandNext(Function<String,Plan> planner) {
         Objects.requireNonNull(planner);
-        try(var c=source.getConnection()) {
-            c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            c.setAutoCommit(false);
-            try(var statement=c.createStatement()) { statement.execute("SET LOCAL lock_timeout='2s'");statement.execute("SET LOCAL statement_timeout='5s'"); }
-            try {
-                UUID event,booking;String type;long version;
-                try(var query=c.prepareStatement("SELECT id,booking_id,type,version FROM outbox_event WHERE expanded_at IS NULL ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT 1");
-                    var result=query.executeQuery()) {
-                    if(!result.next()) { c.commit();return Outcome.IDLE; }
-                    event=result.getObject(1,UUID.class);booking=result.getObject(2,UUID.class);type=result.getString(3);version=result.getLong(4);
-                }
-                Instant now;
-                try(var query=c.createStatement();var result=query.executeQuery("SELECT clock_timestamp()")) { result.next();now=result.getTimestamp(1).toInstant(); }
-                Plan plan=Objects.requireNonNull(planner.apply(type));
-                Outcome outcome;
-                if(plan instanceof Jobs jobs) {
-                    for(Spec spec:jobs.specs()) insert(c,event,booking,spec.audience(),spec.template(),version,now,"QUEUED",null);
-                    outcome=jobs.specs().isEmpty()?Outcome.NO_NOTIFICATION:Outcome.EXPANDED;
-                } else {
-                    // Visible, terminal and cause-free: an operator sees it in the failed queue; no consumer is blocked or crashed.
-                    insert(c,event,booking,"OWNER","UNKNOWN_OUTBOX_TYPE",version,now,"FAILED","UNKNOWN_OUTBOX_TYPE");
-                    outcome=Outcome.UNKNOWN_TYPE;
-                }
-                try(var update=c.prepareStatement("UPDATE outbox_event SET expanded_at=? WHERE id=?")) {
-                    update.setTimestamp(1,Timestamp.from(now));update.setObject(2,event);update.executeUpdate();
-                }
-                c.commit();return outcome;
-            } catch(SQLException|RuntimeException failure) { try { c.rollback(); } catch(SQLException ignored) { } throw failure; }
-        } catch(SQLException|RuntimeException ignored) { throw new IllegalStateException("NOTIFICATION_STORAGE_FAILED"); }
+        return db.transaction(()->{
+            var events=db.jdbc.query("SELECT id,booking_id,type,version FROM outbox_event WHERE expanded_at IS NULL ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT 1",
+                    (row,n)->new Event(row.getObject(1,UUID.class),row.getObject(2,UUID.class),row.getString(3),row.getLong(4)));
+            if(events.isEmpty())return Outcome.IDLE;
+            var event=events.getFirst();Instant now=db.now();
+            Plan plan=Objects.requireNonNull(planner.apply(event.type()));
+            Outcome outcome;
+            if(plan instanceof Jobs jobs) {
+                for(Spec spec:jobs.specs())insert(event,spec.audience(),spec.template(),now,"QUEUED",null);
+                outcome=jobs.specs().isEmpty()?Outcome.NO_NOTIFICATION:Outcome.EXPANDED;
+            } else {
+                // Visible terminal failure: the unknown event never blocks later work.
+                insert(event,"OWNER","UNKNOWN_OUTBOX_TYPE",now,"FAILED","UNKNOWN_OUTBOX_TYPE");
+                outcome=Outcome.UNKNOWN_TYPE;
+            }
+            db.jdbc.update("UPDATE outbox_event SET expanded_at=? WHERE id=?",Timestamp.from(now),event.id());
+            return outcome;
+        });
     }
-    private static void insert(Connection c,UUID event,UUID booking,String audience,String template,long version,Instant now,String state,String error) throws SQLException {
-        try(var query=c.prepareStatement("""
+    private void insert(Event event,String audience,String template,Instant now,String state,String error) {
+        db.jdbc.update("""
             INSERT INTO notification_job(id,event_id,booking_id,audience,template,version,due_at,state,safe_error)
             VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(event_id,audience,template,version) DO NOTHING
-            """)) {
-            query.setObject(1,UUID.randomUUID());query.setObject(2,event);query.setObject(3,booking);query.setString(4,audience);query.setString(5,template);
-            query.setLong(6,version);query.setTimestamp(7,Timestamp.from(now));query.setString(8,state);query.setString(9,error);query.executeUpdate();
-        }
+            """,UUID.randomUUID(),event.id(),event.booking(),audience,template,event.version(),Timestamp.from(now),state,error);
     }
 }
