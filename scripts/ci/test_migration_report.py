@@ -365,6 +365,19 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AccountAuthenticationDatabaseTest" tests="26">' + '<testcase/>' * 26 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_account_password_requires_complete_authority_revocation_rollback_and_lock_races(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountPassword.java'
+        source.parent.mkdir(parents=True);source.write_text('synthetic account password adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountPasswordDatabaseTest.xml')
+        for count, actual, nested in ((27,27,''),(28,27,''),(28,28,'<failure/>'),(28,28,'<error/>'),(28,28,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountPasswordDatabaseTest" tests="{count}">' +
+                              '<testcase/>' * (actual-1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountPasswordDatabaseTest" tests="28">' + '<testcase/>' * 28 + '</testsuite>')
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

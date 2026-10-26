@@ -21,7 +21,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
 | P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
-| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
+| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; oldpassword77 preserved/superseded after historical merge policy failure; clean task/p18-password-change-v2 claimed; profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTP draftPR72 verifies current integration |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
@@ -63,7 +63,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 - P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
-- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
+- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change-v2; base=main; handoff=docs/handoffs/p18-password-change.md
 - P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
 - P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
