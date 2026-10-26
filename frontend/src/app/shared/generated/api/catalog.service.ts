@@ -40,7 +40,7 @@ export class CatalogService extends BaseService {
     }
 
     /**
-     * Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled to 120 requests per minute per client address; malformed requests are charged too.
+     * Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled (by a servlet filter, before the handler) to 120 requests per minute per client address; malformed requests are charged too.
      * @endpoint get /availability
      * @param serviceId Active service; archived or unknown services are 404.
      * @param from 

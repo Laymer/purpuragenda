@@ -1,6 +1,5 @@
 package com.purpuragenda.adapters.in.rest;
 
-import com.purpuragenda.application.RequestThrottle;
 import com.purpuragenda.application.scheduling.PublicScheduling;
 import com.purpuragenda.domain.DomainFailure;
 import com.purpuragenda.domain.booking.ServiceDefinition;
@@ -19,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Anonymous catalog and advisory availability. Wire documents are written field by field to match the OpenAPI
  * contract; application records are never serialized directly. Availability is never cacheable because the booking
- * write path rechecks everything authoritatively. No personal data is read or returned.
+ * write path rechecks everything authoritatively. The per-client throttle runs in AvailabilityThrottleFilter.
+ * No personal data is read or returned.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -28,12 +28,8 @@ public final class PublicController {
     private static final Pattern UUID_TEXT = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static final Pattern DATE_TEXT = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
     private final PublicScheduling scheduling;
-    private final RequestThrottle throttle;
 
-    public PublicController(PublicScheduling scheduling, RequestThrottle throttle) {
-        this.scheduling = Objects.requireNonNull(scheduling);
-        this.throttle = Objects.requireNonNull(throttle);
-    }
+    public PublicController(PublicScheduling scheduling) { this.scheduling = Objects.requireNonNull(scheduling); }
 
     @GetMapping("/services")
     public ResponseEntity<String> services(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -61,11 +57,6 @@ public final class PublicController {
 
     @GetMapping("/availability")
     public ResponseEntity<String> availability(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // Throttle first so malformed floods are charged too; storage failure fails closed.
-        RequestThrottle.Admission admission;
-        try { admission = throttle.availability(client(request)); }
-        catch (RuntimeException unavailable) { Problems.reject(response, Problems.Code.TEMPORARILY_UNAVAILABLE); return null; }
-        if (!admission.allowed()) { Problems.reject(response, Problems.Code.RATE_LIMITED, admission.retryAfterSeconds()); return null; }
         UUID service; LocalDate from, to; String zone;
         try {
             service = uuid(single(request, "serviceId"));
@@ -105,10 +96,6 @@ public final class PublicController {
         return body.append("]}").toString();
     }
 
-    private static String client(HttpServletRequest request) {
-        Object value = request.getAttribute(ApiGuardFilter.CLIENT_ATTRIBUTE);
-        return value instanceof String text ? text : "0.0.0.0";
-    }
     private static String single(HttpServletRequest request, String name) {
         String[] values = request.getParameterValues(name);
         if (values == null || values.length != 1 || values[0].isEmpty() || values[0].length() > 64) throw new IllegalArgumentException();

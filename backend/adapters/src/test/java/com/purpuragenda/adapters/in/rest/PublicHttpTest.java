@@ -66,8 +66,9 @@ class PublicHttpTest {
         limits = new Counting();
         var sessions = (SessionStore) Proxy.newProxyInstance(SessionStore.class.getClassLoader(), new Class<?>[]{SessionStore.class},
                 (p, m, a) -> { throw new AssertionError("public GET never touches sessions"); });
-        mvc = MockMvcBuilders.standaloneSetup(new PublicController(new PublicScheduling(fixture), new RequestThrottle(limits)))
-                .addFilters(new ApiGuardFilter(ORIGIN, new SessionAccess(sessions), SessionCookies.operational(), new ClientAddress(List.of("10.0.0.2")))).build();
+        mvc = MockMvcBuilders.standaloneSetup(new PublicController(new PublicScheduling(fixture)))
+                .addFilters(new ApiGuardFilter(ORIGIN, new SessionAccess(sessions), SessionCookies.operational(), new ClientAddress(List.of("10.0.0.2"))),
+                        new AvailabilityThrottleFilter(new RequestThrottle(limits))).build();
     }
 
     String availability(String query, int status) throws Exception {
@@ -223,8 +224,8 @@ class PublicHttpTest {
     }
 
     @Test void constructorsRejectMissingDependenciesAndEscapingCoversControlCharacters() {
-        assertThrows(NullPointerException.class, () -> new PublicController(null, new RequestThrottle(limits)));
-        assertThrows(NullPointerException.class, () -> new PublicController(new PublicScheduling(fixture), null));
+        assertThrows(NullPointerException.class, () -> new PublicController(null));
+        assertThrows(NullPointerException.class, () -> new AvailabilityThrottleFilter(null));
         assertEquals("\"a\\\"b\\\\c\\u0001\\u007f\"", PublicController.string("a\"b\\c\u0001\u007f"));
     }
 }

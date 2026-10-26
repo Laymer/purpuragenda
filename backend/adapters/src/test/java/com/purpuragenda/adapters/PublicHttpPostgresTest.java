@@ -48,9 +48,10 @@ class PublicHttpPostgresTest {
         var limits = new PostgresRateLimits(ThrottleFixture.at(fixture.source, clock), key);
         var sessions = (SessionStore) Proxy.newProxyInstance(SessionStore.class.getClassLoader(), new Class<?>[]{SessionStore.class},
                 (p, m, a) -> { throw new AssertionError("public GET never touches sessions"); });
-        var controller = new PublicController(new PublicScheduling(new PostgresScheduling(fixture.source)), new RequestThrottle(limits));
+        var controller = new PublicController(new PublicScheduling(new PostgresScheduling(fixture.source)));
         mvc = MockMvcBuilders.standaloneSetup(controller).addFilters(new ApiGuardFilter("https://bookings.example.com",
-                new SessionAccess(sessions), SessionCookies.operational(), new ClientAddress(List.of("10.0.0.2")))).build();
+                new SessionAccess(sessions), SessionCookies.operational(), new ClientAddress(List.of("10.0.0.2"))),
+                        new AvailabilityThrottleFilter(new RequestThrottle(limits))).build();
         serviceId = jdbc.queryForObject("SELECT id::text FROM service WHERE duration_minutes=60 AND active", String.class);
         LocalDate day = LocalDate.now().plusDays(10);
         path = "/api/v1/availability?serviceId=" + serviceId + "&from=" + day + "&to=" + day + "&displayZone=Europe/Brussels";
