@@ -14,7 +14,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P08 — Complete JDBC scheduling transactions, locking, savepoints and idempotency storage | Merged; https://github.com/Laymer/purpuragenda/pull/35 at5909901; additive009 correction; https://github.com/Laymer/purpuragenda/pull/20 at98c7535; scheduling storage scope complete; transaction core PR18 at6c1f96f; all seven final checks passed |
 | P09 — Complete availability, request creation, quotas and synchronous expiry reclamation | In progress; availability/expiry/quotas/command boundary and typed application PR43 merged39001ae; atomic customer authority/creation https://github.com/Laymer/purpuragenda/pull/46 confirmed merged bcc9fec after native470Java/6Angular/203Python and all13checks; HTTP acceptance remains |
 | P10 — Complete atomic cancellation, rescheduling and appointment outcomes | In progress; application commands https://github.com/Laymer/purpuragenda/pull/47 merged 27e2df1; concrete PostgreSQL customer-change adapter in draft slice task/p10-postgres-changes (code and actual-container tests implemented, review and hosted checks pending); HTTP and administrator outcomes remain |
-| P11 — Complete administrator creation, overrides and configuration conflict assessment | In progress; slice 1 administrator creation https://github.com/Laymer/purpuragenda/pull/55 merged e238cd1; slice 2 (override hygiene, meeting uniqueness receipt, configuration conflict assessment) in draft branch task/p11-conflict-assessment; HTTP is P22 |
+| P11 — Complete administrator creation, overrides and configuration conflict assessment | In progress; administrator creation https://github.com/Laymer/purpuragenda/pull/55 merged e238cd1 and override hygiene, meeting receipt and conflict assessment https://github.com/Laymer/purpuragenda/pull/58 merged 9caa056; HTTP exposure remains P22 |
 | P12 — Establish contract generation, the Angular application shell and typed API access | Merged; https://github.com/Laymer/purpuragenda/pull/16; c1151b2; contract foundation PR11 bc64f01 |
 | P13 — Complete cryptographic primitives, protected key handling and RFC-vector tests | Merged; https://github.com/Laymer/purpuragenda/pull/12; 34836ed |
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
@@ -34,7 +34,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
+| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; backend schedule and policy commands (application plus PostgreSQL adapter, no HTTP) in draft branch task/p31-config-commands; HTTP (P22) and UI remain |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P17/throttles: agent=Claude-workerD; branch=task/p17-throttles; base=main; handoff=docs/handoffs/p17-throttles.md
-- P11/conflict-assessment: agent=Claude-workerE; branch=task/p11-conflict-assessment; base=main; handoff=docs/handoffs/p11-conflict-assessment.md
+- P31/config-commands: agent=Claude-workerE; branch=task/p31-config-commands; base=main; handoff=docs/handoffs/p31-config-commands.md
 - P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
 - P21/finance-commands: agent=Claude-workerF; branch=task/p21-approval-confirmation; base=main; handoff=docs/handoffs/p21-finance-commands.md
 
