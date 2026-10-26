@@ -33,7 +33,7 @@ public final class NotificationContent {
         String stale=null;
         if(!ALWAYS.contains(f.template())) stale=switch(bare) {
             case "BOOKING_REQUESTED","REQUEST_RECEIVED" -> !disjoint(later,"RESCHEDULED")?"SUPERSEDED":pendingLive?null:"BOOKING_NOT_PENDING";
-            case "BOOKING_CREATED" -> disjoint(later,"CANCELLED","EXPIRED","REJECTED")?(pendingLive||confirmed?null:"BOOKING_NOT_ACTIVE"):"SUPERSEDED";
+            case "BOOKING_CREATED" -> disjoint(later,"CANCELLED","EXPIRED","REJECTED","RESCHEDULED")?(pendingLive||confirmed?null:"BOOKING_NOT_ACTIVE"):"SUPERSEDED";
             case "BOOKING_CONFIRMED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":confirmed?null:"BOOKING_NOT_CONFIRMED";
             case "BOOKING_RESCHEDULED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":(pendingLive||confirmed)?null:"BOOKING_NOT_ACTIVE";
             case "BOOKING_CANCELLED" -> f.state().equals("CANCELLED")?null:"BOOKING_NOT_CANCELLED";

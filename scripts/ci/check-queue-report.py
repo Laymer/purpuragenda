@@ -26,7 +26,7 @@ def validate(root):
         suite = ET.parse(report).getroot()
         count = int(suite.get('tests', '0'))
         if (suite.get('name') != 'com.purpuragenda.adapters.BookingNotificationDatabaseTest'
-                or count < 14 or count != len(list(suite.iter('testcase')))):
+                or count < 15 or count != len(list(suite.iter('testcase')))):
             raise ValueError('Incomplete mandatory booking notification suite')
         if (any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):

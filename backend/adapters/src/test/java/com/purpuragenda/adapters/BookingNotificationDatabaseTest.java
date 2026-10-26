@@ -14,6 +14,8 @@ import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Real PostgreSQL outbox expansion and booking-notification delivery with synthetic mail capture only. */
@@ -94,8 +96,10 @@ class BookingNotificationDatabaseTest {
         assertEquals(1,mail.sent.stream().filter(m->m.subject().equals("Booking created")).count());
     }
 
-    @Test void reschedulingBeforeDispatchSuppressesOriginalRequestNotices() {
+    @ParameterizedTest @ValueSource(strings={"REQUESTED","ADMIN_CREATED"})
+    void reschedulingBeforeDispatchSuppressesOriginalRequestNotices(String originalEvent) {
         var session=c.guest("customer@example.test");UUID id=c.create(session,"create",c.request(3,9)).entityId();
+        c.jdbc.update("UPDATE outbox_event SET type=? WHERE booking_id=?",originalEvent,id);
         assertEquals(1,expander.drain(10));
         var request=c.request(4,9);
         var changes=new com.purpuragenda.application.scheduling.CustomerBookingChanges(new PostgresBookingChanges(c.f.source));

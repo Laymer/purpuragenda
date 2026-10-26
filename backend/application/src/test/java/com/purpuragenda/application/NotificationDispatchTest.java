@@ -96,6 +96,9 @@ class NotificationDispatchTest {
         for(String audience:List.of("CUSTOMER","OWNER")) {
             String requested=audience.equals("CUSTOMER")?"BOOKING_REQUESTED":"OWNER_REQUEST_RECEIVED";
             assertEquals("SUPERSEDED",code(prepare(audience,requested,"PENDING_CONFIRMATION",Set.of("RESCHEDULED"))));
+            String created=audience.equals("CUSTOMER")?"BOOKING_CREATED":"OWNER_BOOKING_CREATED";
+            assertEquals("SUPERSEDED",code(prepare(audience,created,"PENDING_CONFIRMATION",Set.of("RESCHEDULED"))));
+            assertEquals("SUPERSEDED",code(prepare(audience,created,"CONFIRMED",Set.of("RESCHEDULED"))));
             for(String state:List.of("COMPLETED","NO_SHOW")) {
                 assertEquals("BOOKING_NOT_PENDING",code(prepare(audience,requested,state,Set.of())));
                 String prefix=audience.equals("OWNER")?"OWNER_":"";
