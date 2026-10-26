@@ -10,11 +10,6 @@
 
 
 export interface ProofAccepted { 
-    accepted: ProofAcceptedAcceptedEnum;
+    accepted: boolean;
 }
-export enum ProofAcceptedAcceptedEnum {
-    True = true
-};
-
-
 
