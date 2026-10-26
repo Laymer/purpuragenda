@@ -51,13 +51,14 @@ class CustomerBookingQueryPostgresTest {
         var s=c.guest("synthetic@example.test");UUID id=c.create(s,"a",c.request(3,9)).entityId();
         if(target.equals("session"))c.sessions.revoke(s.reference());
         else c.jdbc.update("UPDATE access_grant SET revoked_at=clock_timestamp() WHERE "+(target.equals("parent")?"id=?":"parent_grant_id=?"),s.grantId());
-        assertTrue(query.find(c.binding(s),id).isEmpty());
+        assertTrue(query.find(c.binding(s),id).isEmpty());assertTrue(query.find(c.binding(s)).isEmpty());
     }
     @ParameterizedTest @ValueSource(longs={-1,0,1})
     void idleAndGrantExpiryUseOneCapturedTimeWithStrictEquality(long micros) {
         var s=c.guest("synthetic@example.test");UUID id=c.create(s,"a",c.request(3,9)).entityId();
         Instant idle=c.jdbc.queryForObject("SELECT last_seen_at+interval '30 minutes' FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),s.reference().id());
         var reads=new AtomicInteger();assertEquals(micros<0,reader(c.clock(idle.plusNanos(micros*1000),reads)).find(c.binding(s),id).isPresent());assertEquals(1,reads.get());
+        var scopedReads=new AtomicInteger();assertEquals(micros<0,reader(c.clock(idle.plusNanos(micros*1000),scopedReads)).find(c.binding(s)).isPresent());assertEquals(1,scopedReads.get());
         Instant expiry=c.jdbc.queryForObject("SELECT expires_at FROM access_grant WHERE parent_grant_id=?",(r,n)->r.getTimestamp(1).toInstant(),s.grantId());
         c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(expiry.minusSeconds(1)),s.reference().id());
         assertEquals(micros<0,reader(c.clock(expiry.plusNanos(micros*1000),new AtomicInteger())).find(c.binding(s),id).isPresent());
@@ -91,6 +92,7 @@ class CustomerBookingQueryPostgresTest {
         Instant expiry=c.jdbc.queryForObject("SELECT expires_at FROM access_grant WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),manager.grantId());
         c.jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",Timestamp.from(expiry.minusSeconds(1)),manager.reference().id());
         assertEquals(micros<0,reader(c.clock(expiry.plusNanos(micros*1000),new AtomicInteger())).find(c.binding(manager),id).isPresent());
+        assertEquals(micros<0,reader(c.clock(expiry.plusNanos(micros*1000),new AtomicInteger())).find(c.binding(manager)).isPresent());
     }
     @Test void derivedManagementSessionStillRequiresItsParent() {
         var s=c.guest("synthetic@example.test");UUID id=c.create(s,"a",c.request(3,9)).entityId();
@@ -104,7 +106,7 @@ class CustomerBookingQueryPostgresTest {
         UUID due=c.f.database.booking(MigrationTest.START,"PENDING_CONFIRMATION",MigrationTest.snapshot());
         String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",s.reference().id());
         int events=c.count("outbox_event"),audit=c.count("audit_event"),receipts=c.count("idempotency_record");
-        assertTrue(query.find(c.binding(s),id).isPresent());
+        assertTrue(query.find(c.binding(s),id).isPresent());assertTrue(query.find(c.binding(s)).isPresent());
         assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",s.reference().id()));
         assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(due).state());
         assertEquals(events,c.count("outbox_event"));assertEquals(audit,c.count("audit_event"));assertEquals(receipts,c.count("idempotency_record"));
@@ -114,7 +116,8 @@ class CustomerBookingQueryPostgresTest {
         try(var lock=c.f.source.getConnection();var statement=lock.createStatement();var executor=Executors.newVirtualThreadPerTaskExecutor()) {
             lock.setAutoCommit(false);
             for(String table:List.of("scheduling_resource","app_session","access_grant","booking"))statement.executeQuery("SELECT * FROM "+table+" FOR UPDATE").close();
-            assertTrue(executor.submit(()->query.find(c.binding(s),id).isPresent()).get(3,TimeUnit.SECONDS));lock.rollback();
+            assertTrue(executor.submit(()->query.find(c.binding(s),id).isPresent()).get(3,TimeUnit.SECONDS));
+            assertTrue(executor.submit(()->query.find(c.binding(s)).isPresent()).get(3,TimeUnit.SECONDS));lock.rollback();
         }
     }
     @Test void moneyAndBookingUseOneReadOnlySnapshotAcrossAConcurrentConfirmation() {
@@ -150,10 +153,34 @@ class CustomerBookingQueryPostgresTest {
         var unavailable=new DelegatingDataSource(c.f.source) { @Override public Connection getConnection() throws SQLException { throw new SQLException("synthetic-provider-detail"); } };
         var binding=new SessionBinding(UUID.randomUUID(),"b".repeat(64));
         assertEquals(Failure.Kind.STORAGE_FAILURE,c.failure(()->reader(unavailable).find(binding,UUID.randomUUID())).kind());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,c.failure(()->reader(unavailable).find(binding)).kind());
+        assertThrows(NullPointerException.class,()->query.find(null));
         assertThrows(NullPointerException.class,()->reader(c.f.source).find(null,UUID.randomUUID()));
         assertThrows(NullPointerException.class,()->query.find(binding,null));
         assertThrows(NullPointerException.class,()->reader(null));
         assertThrows(IllegalArgumentException.class,()->new PostgresCustomerBookingQuery(c.f.source,null));
         assertThrows(IllegalArgumentException.class,()->new PostgresCustomerBookingQuery(c.f.source,Set.of()));
     }
+    @Test void scopedLookupReturnsOnlyTheBoundBookingForConsumedCreationAndManagement() {
+        var first=c.guest("scoped@example.test");var second=c.guest("scoped@example.test");
+        UUID a=c.create(first,"first",c.request(3,9)).entityId(),b=c.create(second,"second",c.request(4,9)).entityId();
+        assertEquals(a,query.find(c.binding(first)).orElseThrow().booking().id());
+        assertEquals(b,query.find(c.binding(second)).orElseThrow().booking().id());
+        var manager=c.guest("scoped@example.test",a);
+        assertEquals(a,query.find(c.binding(manager)).orElseThrow().booking().id());
+        c.jdbc.update("UPDATE app_session SET grant_id=(SELECT id FROM access_grant WHERE parent_grant_id=?) WHERE id=?",first.grantId(),first.reference().id());
+        assertEquals(a,query.find(c.binding(first)).orElseThrow().booking().id());
+        c.jdbc.update("UPDATE access_grant SET revoked_at=clock_timestamp() WHERE id=?",first.grantId());
+        assertTrue(query.find(c.binding(first)).isEmpty());
+        assertEquals(a,query.find(c.binding(manager)).orElseThrow().booking().id());
+    }
+    @Test void scopedLookupDoesNotChooseFromAccountHistoryOrUnverifiedSessions() {
+        var account=c.account();UUID id=c.command.create(account.binding(),"account",c.request(3,9)).entityId();
+        assertTrue(query.find(account.binding(),id).isPresent());assertTrue(query.find(account.binding()).isEmpty());
+        var unused=c.guest("unused@example.test");assertTrue(query.find(c.binding(unused)).isEmpty());
+        try(var anonymous=c.sessions.anonymous()) { assertTrue(query.find(c.binding(anonymous.session())).isEmpty()); }
+        assertTrue(query.find(new SessionBinding(UUID.randomUUID(),"b".repeat(64))).isEmpty());
+        assertTrue(query.find(new SessionBinding(unused.reference().id(),"0".repeat(64))).isEmpty());
+    }
+
 }

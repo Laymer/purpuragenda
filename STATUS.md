@@ -28,7 +28,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
-| P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; coordinator claims scoped guest target lookup; management UI follows |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -61,6 +61,8 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P25/management-target: agent=Codex-coordinator; branch=task/p25-management-target; base=main; handoff=docs/handoffs/p25-management-target.md
+
 - P17/admin-recovery: agent=Codex-worker-b; branch=task/p17-admin-recovery; base=main; handoff=docs/handoffs/p17-admin-recovery.md
 
 - P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
@@ -71,12 +73,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:22:00Z.
-- Current task: P20/customer-http; branch: task/p20-customer-http; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/72.
-- Last pushed implementation commit: ce0a1c2; uncommitted changes: confirmed public selection70/main integration and reviewed deterministic runtime-port isolation regression/fix.
-- What works: protected create/GET/cancel/reschedule composition and explicit strict wire models; real proof/session/CSRF/transaction tests; four OpenAPI operations and regenerated typed client.
-- What remains: full integrated native/coverage/hosted/Compose/exact review; public reviewed terms and all customer UI remain separate required slices. Query PR69 is confirmed merged f99a8dd; notification64 confirmed merged669bc5b and integrated; account73 confirmed mergedcde517c and integrated before final HTTP gates.
-- Decisions: runtime combines customerOrder11, administratorOrder12 and independent port-isolationOrder18 with strict13-case guard. Credentials/intake remain in memory and request-only models. Generated allowedActions uses Array matching JSON; no unhydrated Set. Existing coverage thresholds and source completeness remain unchanged.
-- Verification: ce0 baseline fullnative/coverage/14Angular/244Python plus all14hosted/cleanCompose6/exactreview pass; new integration requires fresh gates. Corrected snapshot boundary target43Java (17domain/4application/22actualPG) passes, mandatory query22; targeted5wire/3controller/6actualPGHTTP and12runtimePG pass after Docker recovery; fresh14Angular tests/build pass with handwritten22/22lines30/30branches.14contract cases and regeneration pass. Earlier Docker interruption and contract assertion/generator mismatch remain documented failures; full current-head gates pending. PR71 confirmed merged d96e0a6 after921Java/11Angular/237Python,14hosted/Compose6/exact review.
-- Next concrete action: publish current-main integration, run all implemented categories, clean Compose and exact review.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: PR69 and PR71 confirmed merged; notification64 confirmed merged; fresh integrated gates remain. No full local milestone claimed.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:10:58Z.
+- Current task: P25/management-target; branch: task/p25-management-target; base: main; PR URL: none yet.
+- Last pushed implementation commit: none; uncommitted changes: guest-scope query, application projection, HTTP wiring and relevant tests on fresh main538e335.
+- What works: guest proof redemption and persisted scoped booking reads are merged; the verification landing has no authoritative booking target to display after a MANAGE proof.
+- What remains: one guest-session-derived booking lookup, application projection, protected HTTP/typed contract and real PostgreSQL authorization/boundary tests; full gates and independent review.
+- Decisions: derive exactly the persisted grant-bound target, never guest history. Reuse existing complete persisted authority checks in one read-only REPEATABLE READ snapshot and captured database time. No session touch, resource lock, mutation, migration or client-supplied target. Wait for account HTTP contract slot before contract generation.
+- Verification: target17domain/6application cases pass; new query/HTTP/runtime source and tests await compiled PostgreSQL verification. No full gate or browser claim.
+- Next concrete action: adopt the clean accountHTTP0509 contract ancestry, add the scoped endpoint/client contract, run targeted PostgreSQL/HTTP/runtime and all exact-head gates.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: none for backend slice, management UI follows this and booking-flow83.

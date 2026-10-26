@@ -301,6 +301,9 @@ class RuntimeDatabaseTest {
                 """.formatted(start);
             var created=json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create");assertEquals(201,created.statusCode());
             UUID id=UUID.fromString(field(created.body(),"bookingId"));String path="/api/v1/bookings/"+id;
+            var scoped=call(port,"GET","/api/v1/guest/booking","Cookie",cookie);
+            assertEquals(200,scoped.statusCode());assertEquals("no-store",scoped.headers().firstValue("Cache-Control").orElseThrow());
+            assertTrue(id.toString().equals(field(scoped.body(),"id")),"Expected exactly the guest-bound booking");
             assertEquals(created.body(),json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create").body());
             var current=call(port,"GET",path,"Cookie",cookie);assertEquals(200,current.statusCode());assertEquals("\"1\"",current.headers().firstValue("ETag").orElseThrow());
             assertFalse(current.body().contains("Synthetic city") || current.body().contains("\"intake\""));assertTrue(current.body().contains("\"UNPAID\""));

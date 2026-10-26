@@ -38,6 +38,7 @@ class CustomerBookingHttpPostgresTest {
         var throttle=new RequestThrottle(new PostgresRateLimits(c.f.source,new RateKey(Files.write(directory.resolve("http-rate.key"),bytes),"http-test-v1")));
         var proofs=new GuestProofs(throttle,c.f.delivery,new GuestRecovery(new PostgresGuestRecoveryLookup(c.f.source),c.f.delivery));
         g.mvc=MockMvcBuilders.standaloneSetup(new SessionController(access,cookies),new GuestAuthController(proofs,access,cookies,Duration.ZERO),
+                new GuestBookingController(new GuestBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new CustomerBookingController(c.command,new CustomerBookingChanges(new PostgresBookingChanges(c.f.source)),
                         new CustomerBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies))
                 .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of()))).build();
@@ -149,4 +150,21 @@ class CustomerBookingHttpPostgresTest {
         assertEquals(1,c.count("booking"));assertEquals(1,c.count("request_charge"));assertEquals(1,c.count("booking_occupancy WHERE released_at IS NULL"));
         assertEquals(20,c.count("idempotency_record"));assertEquals(1,c.count("outbox_event WHERE type='REQUESTED'"));
     }
+    @Test void discoversOnlyTheCurrentGuestTargetAndNeverUsesAClientSuppliedTarget() throws Exception {
+        var browser=guest("scoped-http@example.test");String path="/api/v1/guest/booking";
+        var cookie=new Cookie("__Host-purpuragenda",browser.cookie());
+        assertEquals(401,g.send(get(path)).getStatus());assertEquals(404,g.send(get(path).cookie(cookie)).getStatus());
+        String id=booking(create(browser,"scoped",body(3)));
+        var another=c.guest("scoped-http@example.test");c.create(another,"other",c.request(4,9));
+        String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE browser_hash=?",browser.browserHash());
+        var response=g.send(get(path).cookie(cookie).header("If-None-Match","*").header("If-Modified-Since","Wed, 01 Jan 2099 00:00:00 GMT"));
+        assertEquals(200,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));
+        var result=json.readTree(response.getContentAsString());assertEquals(id,result.get("id").asText());
+        assertFalse(result.has("intake") || result.has("customerId") || response.getContentAsString().contains("Synthetic city"));
+        assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE browser_hash=?",browser.browserHash()));
+        assertEquals(400,g.send(get(path+"?bookingId="+UUID.randomUUID()).cookie(cookie)).getStatus());
+        c.jdbc.update("UPDATE access_grant SET revoked_at=clock_timestamp() WHERE kind='CREATE' AND booking_id=?",UUID.fromString(id));
+        assertEquals(401,g.send(get(path).cookie(cookie)).getStatus());
+    }
+
 }

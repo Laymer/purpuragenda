@@ -84,6 +84,10 @@ public class RuntimeApplication {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
+    @Bean GuestBookingController guestBooking(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        return new GuestBookingController(new com.purpuragenda.application.scheduling.GuestBookingView(
+                new PostgresCustomerBookingQuery(source,settings.meetingHosts())),access,cookies);
+    }
     @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,Environment environment,SessionAccess access,SessionCookies cookies) {
         // Operational settings already require an explicit non-local notice version before this bean is composed.
         var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),environment.getProperty("app.notice-version","local-v1"));

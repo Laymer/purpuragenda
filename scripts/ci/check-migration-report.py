@@ -38,7 +38,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBooking.java').is_file():
         suites.append(('CustomerCreationPostgresTest', 43))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBookingQuery.java').is_file():
-        suites.append(('CustomerBookingQueryPostgresTest', 22))
+        suites.append(('CustomerBookingQueryPostgresTest', 24))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresRateLimits.java').is_file():
         suites.append(('RateLimitDatabaseTest', 17))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSecurityCleanup.java').is_file():
@@ -50,7 +50,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CustomerBookingController.java').is_file():
-        suites.append(('CustomerBookingHttpPostgresTest', 6))
+        suites.append(('CustomerBookingHttpPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():
         suites.append(('AdministratorLoginPostgresTest', 12))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorRecoveryController.java').is_file():
