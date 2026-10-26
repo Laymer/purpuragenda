@@ -622,6 +622,11 @@ Head 2cb760650c7fbf192a2e89a158bd01adb20f0429 passed the full native `verify-bui
 ## P21 slice 2 approval and confirmation checkpoint
 
 `AdministratorFinance.approve`/`confirmExternalPayment` and the PostgresFinance confirmation effects (no migration). Native `verify-build.sh` passed (exit 0, zero failures or skips): 108 domain, 137 application, 421 adapters, 23 bootstrap and 3 architecture tests (692 Java) and 230 strict Python cases. Coverage domain 276/277 lines 478/489 branches, application 551/553 and 449/458, adapters 1347/1371 and 1112/1220, bootstrap 182/196 and 154/168. Hosted results are on the draft PR.
+
 P11/conflict-assessment slice 2 (Claude-workerE, branch task/p11-conflict-assessment): OVERRIDE_UNUSED rejection, MEETING_IN_USE receipt for duplicate participant meeting ids, documented admin-attested identity risk and the read-only ConfigurationConflicts query (6 application and 2 actual-container cases). No migration. Native and hosted results are recorded on the draft PR.
 
 P11 slice 2 native result: pinned verify-build passed 108 domain, 141 application, 398 adapters, 23 bootstrap, quality 3, 6 Angular and 230 Python, zero failures/errors/skips. Coverage: domain 276/277 lines 478/489 branches; application 572/574 and 463/472; adapters 1334/1358 and 1074/1178; bootstrap 182/196 and 154/168; Angular 22/22 and 30/30. No threshold changed; hosted results are on the draft PR.
+
+## P21 slice 3 refunds checkpoint
+
+`AdministratorFinance.recordRefund` and `requireRefund` over `PostgresFinance`, no migration. A refund targets one receipt of the same booking and currency and is bounded by what that receipt still holds (checked under the resource lock; the database refund trigger remains the independent backstop). Obligations are always stored for the whole receipt, so the ledger projection (due minus refunded) is exact; the P10 cancellation adapter was corrected to store the whole receipt instead of the remainder, which double-subtracted earlier refunds. The one-argument PostgresFinance constructor with a silent zoom.us default was removed. Exact native results are on the draft PR.

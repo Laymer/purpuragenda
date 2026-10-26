@@ -42,6 +42,69 @@ public final class AdministratorFinance {
     public Receipt confirmExternalPayment(SessionBinding session,UUID bookingId,String key,Confirmation request) {
         return confirm(session,bookingId,key,request,Operation.CONFIRM_BOOKING,Booking.ConfirmationBasis.EXTERNAL_PAYMENT);
     }
+    /** A refund of actual money against one receipt, in that receipt's own currency; nothing is converted. */
+    public record RefundRequest(UUID receiptId,Money amount,String method,String reference,Instant verifiedAt) {
+        public RefundRequest {
+            require(receiptId!=null && amount!=null && amount.minor()>0 && verifiedAt!=null,"INVALID_REFUND");
+            method=Input.text(method,1,80);reference=Input.text(reference,1,120);
+            require(verifiedAt.equals(verifiedAt.truncatedTo(ChronoUnit.MICROS)),"INVALID_REFUND");
+        }
+        @Override public String toString() { return "RefundRequest[REDACTED]"; }
+    }
+    /** Mark one receipt as owing a refund (for example after a provider cancellation). */
+    public record RefundRequirement(UUID receiptId,String reason) {
+        public RefundRequirement {
+            require(receiptId!=null,"INVALID_REFUND");reason=Input.reason(reason);
+        }
+        @Override public String toString() { return "RefundRequirement[REDACTED]"; }
+    }
+
+    /**
+     * Records a refund bounded by what its receipt still holds. Refunds are independent money facts: they apply in any
+     * booking state, need no booking version and consume outstanding obligations through the ledger projection.
+     */
+    public Receipt recordRefund(SessionBinding session,UUID bookingId,String key,RefundRequest request) {
+        Objects.requireNonNull(request);
+        String fingerprint=CommandKey.fingerprint(List.of(request.receiptId().toString(),request.amount().currency(),Long.toString(request.amount().minor()),
+                request.method(),request.reference(),request.verifiedAt().toString()));
+        return unit.execute(new Command(session,bookingId,Operation.RECORD_REFUND,key,fingerprint),
+                tx -> SchedulingCommands.within(tx,() -> {
+                    Booking booking=tx.authorizedBooking();
+                    require(!request.verifiedAt().isAfter(tx.now()),"INVALID_REFUND");
+                    require(!tx.referenceUsed(PaymentLedger.Kind.REFUND,request.method(),request.reference()),"DUPLICATE_PAYMENT");
+                    PaymentLedger ledger=tx.ledger();
+                    PaymentLedger.Entry receipt=receipt(ledger,request.receiptId());
+                    // Exact per-currency bound: a different currency is never converted or inferred.
+                    require(receipt.amount().currency().equals(request.amount().currency()),"INVALID_REFUND");
+                    long returned=ledger.entries().stream().filter(e -> e.kind()==PaymentLedger.Kind.REFUND && request.receiptId().equals(e.receiptId()))
+                            .mapToLong(e -> e.amount().minor()).reduce(0,Math::addExact);
+                    require(request.amount().minor()<=receipt.amount().minor()-returned,"REFUND_EXCEEDS_RECEIPT");
+                    var entry=new PaymentLedger.Entry(UUID.randomUUID(),booking.id(),PaymentLedger.Kind.REFUND,request.amount(),
+                            request.method(),request.reference(),request.verifiedAt(),request.receiptId());
+                    ledger.append(entry);
+                    tx.refundRecorded(entry);
+                    return new Receipt(Code.OK,entry.id(),booking.version());
+                }));
+    }
+
+    /** Idempotent: a receipt that already owes a refund succeeds without a second obligation or event. */
+    public Receipt requireRefund(SessionBinding session,UUID bookingId,String key,RefundRequirement request) {
+        Objects.requireNonNull(request);
+        String fingerprint=CommandKey.fingerprint(List.of(request.receiptId().toString(),request.reason()));
+        return unit.execute(new Command(session,bookingId,Operation.REQUIRE_REFUND,key,fingerprint),
+                tx -> SchedulingCommands.within(tx,() -> {
+                    Booking booking=tx.authorizedBooking();
+                    PaymentLedger ledger=tx.ledger();
+                    receipt(ledger,request.receiptId());
+                    if(ledger.obligations().stream().noneMatch(o -> o.receiptId().equals(request.receiptId())))
+                        tx.refundRequired(request.receiptId(),request.reason());
+                    return new Receipt(Code.OK,request.receiptId(),booking.version());
+                }));
+    }
+    private static PaymentLedger.Entry receipt(PaymentLedger ledger,UUID id) {
+        return ledger.entries().stream().filter(e -> e.kind()==PaymentLedger.Kind.RECEIPT && e.id().equals(id)).findFirst()
+                .orElseThrow(() -> new com.purpuragenda.domain.DomainFailure("INVALID_REFUND"));
+    }
     private Receipt confirm(SessionBinding session,UUID bookingId,String key,Confirmation request,Operation operation,Booking.ConfirmationBasis basis) {
         Objects.requireNonNull(request);
         String fingerprint=CommandKey.fingerprint(List.of(Long.toString(request.expectedVersion()),request.meetingUrl()));

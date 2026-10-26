@@ -113,7 +113,7 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
             transition(original,cancelled,Booking.State.CANCELLED);
             jdbc.update("""
                 INSERT INTO refund_obligation(receipt_id,due_minor,reason)
-                SELECT p.id,p.amount_minor-COALESCE(r.refunded,0),'CUSTOMER_CANCELLED' FROM payment_entry p
+                SELECT p.id,p.amount_minor,'CUSTOMER_CANCELLED' FROM payment_entry p
                 LEFT JOIN (SELECT receipt_id,sum(amount_minor) AS refunded FROM payment_entry WHERE kind='REFUND' GROUP BY receipt_id) r ON r.receipt_id=p.id
                 WHERE p.booking_id=? AND p.kind='RECEIPT' AND p.amount_minor>COALESCE(r.refunded,0)
                 ON CONFLICT(receipt_id) DO NOTHING

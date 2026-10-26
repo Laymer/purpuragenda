@@ -81,7 +81,7 @@ class BookingChangesPostgresTest {
         Booking before=c.load(id);assertTrue(cancel(bind(session),id,"cancel",before.version()).success());
         assertEquals(before.calendarRevision()+1,c.load(id).calendarRevision());
         assertEquals(2,count("refund_obligation"));assertEquals(1500L,Long.valueOf(c.f.value("SELECT due_minor FROM refund_obligation WHERE receipt_id=?",full)));
-        assertEquals(1500L,Long.valueOf(c.f.value("SELECT due_minor FROM refund_obligation WHERE receipt_id=?",partial)));
+        assertEquals(2000L,Long.valueOf(c.f.value("SELECT due_minor FROM refund_obligation WHERE receipt_id=?",partial)),"the obligation covers the whole receipt; the ledger subtracts the 500 already refunded");
         assertEquals("CUSTOMER_CANCELLED",c.f.value("SELECT reason FROM refund_obligation WHERE receipt_id=?",full));
         assertEquals(5,count("payment_entry"));
     }

@@ -14,7 +14,7 @@ import static com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
  */
 public interface FinanceUnitOfWork {
     Receipt execute(Command command,Function<Finance,Receipt> work);
-    enum Operation { RECORD_RECEIPT, APPROVE_BOOKING, CONFIRM_BOOKING }
+    enum Operation { RECORD_RECEIPT, APPROVE_BOOKING, CONFIRM_BOOKING, RECORD_REFUND, REQUIRE_REFUND }
     record Command(SessionBinding session,UUID bookingId,Operation operation,String key,String fingerprint) {
         public Command {
             Objects.requireNonNull(session);
@@ -34,6 +34,10 @@ public interface FinanceUnitOfWork {
         boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference);
         /** Persist one verified receipt; a late receipt on a terminal booking also records its reconciliation obligation. */
         void receiptRecorded(PaymentLedger.Entry receipt,boolean late);
+        /** Persist one refund linked to an actual receipt of the same booking and currency. */
+        void refundRecorded(PaymentLedger.Entry refund);
+        /** Record an explicit refund obligation for one receipt; the administrator's reason is audited. */
+        void refundRequired(UUID receiptId,String reason);
         /** The saved pending-to-confirmed transition; payment facts are untouched. Records audit and outbox. */
         void confirmedEffects(Booking original,Booking confirmed);
     }
