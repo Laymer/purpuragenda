@@ -46,7 +46,7 @@ export class AdminAuthComponent {
     totp: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] }),
   });
   constructor() {
-    const remove = this.sessions.onInvalidated(() => { this.clearSecrets(); });
+    const remove = this.sessions.onInvalidated(() => { this.clearSecrets(); if (!this.busy()) this.message.set('Your session expired or changed. Check the browser session, then sign in again.'); });
     inject(DestroyRef).onDestroy(() => { this.active = false; remove(); clearTimeout(this.timer); this.form.reset(); });
   }
   administrator(): boolean { return this.sessions.state()?.role === SessionStateRoleEnum.Admin; }

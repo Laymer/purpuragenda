@@ -842,3 +842,7 @@ P27 administrator authentication UI slice (Codex-worker-c): real generated MFA l
 P27 initial Python invocation mistakenly omitted the required pinned toolchain environment:248cases/8failures/8errors in path-identity fixture checks, not a passing receipt. Count-only evidence retained at artifacts/p27-failure/unpinned-python.json; rerun uses scripts/dev/toolchain-env.sh and the approved Python pin.
 
 P27 final complete frontend121cases/build/CSP passes with467/470handwrittenlines450/484branches;248strictPython pass under the pinned environment, documentation/diff clean. No failed invocation accepted. Exact source review and fresh integrated full categories remain pending.
+
+P27 idle-expiry self-audit reproduced122Angularcases/1failure: authorization/form already cleared correctly, but the old successful sign-in text remained. Idle invalidation now replaces it with a safe expired/changed-session message; active authentication/logout retain their own explicit completion handling. Sanitized before-count receipt artifacts/p27-failure/expiry-before.json. Fresh complete frontend rerun pending.
+
+P27 corrected idle-expiry complete verifier passes122Angular cases, production build/CSP, source-complete coverage and248strictPython; zero failures/errors/skips. Exact source review/full integrated native/hosted/Compose and real browser remain pending. Log /private/tmp/p27-expiry-final.log.

@@ -72,6 +72,11 @@ describe('Administrator authentication with real typed SDK', () => {
     const { result, request } = await pendingLogin(); fill(); sessions.invalidate(); expect(view.form.controls.password.value).toBe('');
     request.flush(reply('ADMIN')); await result; expect(view.administrator()).toBe(false); expect(view.message()).toContain('expired');
   });
+  it('replaces successful sign-in text when the administrator session expires', async () => {
+    const { result, request } = await pendingLogin(); request.flush(reply('ADMIN')); await result;
+    vi.advanceTimersByTime(600000); fixture.detectChanges();
+    expect(view.administrator()).toBe(false); expect(view.message()).toContain('expired'); expect(fixture.nativeElement.querySelector('form')).not.toBeNull();
+  });
   it('does not repopulate a destroyed view after a late response', async () => {
     const { result, request } = await pendingLogin(); fixture.destroy(); request.flush(reply('ADMIN')); await result;
     expect(view.message()).toBe(''); expect(view.form.controls.password.value).toBe('');
