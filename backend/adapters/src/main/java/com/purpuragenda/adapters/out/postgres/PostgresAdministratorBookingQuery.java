@@ -37,10 +37,10 @@ public final class PostgresAdministratorBookingQuery implements AdministratorBoo
                 var authority=jdbc.query("""
                     SELECT s.kind,COALESCE(a.enabled AND a.enrolled AND a.security_version=s.admin_security_version
                       AND s.revoked_at IS NULL AND s.issued_at<=? AND s.absolute_expires_at>?
-                      AND s.last_seen_at+interval '15 minutes'>? AND s.authenticated_at<=?,false)
+                      AND s.last_seen_at<=? AND s.last_seen_at+interval '15 minutes'>? AND s.authenticated_at<=?,false)
                     FROM app_session s LEFT JOIN admin_user a ON a.id=s.admin_id
                     WHERE s.id=? AND s.browser_hash=?
-                    """,(row,n)->new Authority(row.getString(1),row.getBoolean(2)),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),session.sessionId(),session.browserHash());
+                    """,(row,n)->new Authority(row.getString(1),row.getBoolean(2)),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),session.sessionId(),session.browserHash());
                 if(authority.isEmpty())throw PersistedSession.unauthenticated();
                 var value=authority.getFirst();if(!value.kind().equals("ADMIN"))throw PersistedSession.denied();
                 if(!value.permitted())throw PersistedSession.unauthenticated();
