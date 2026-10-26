@@ -1,5 +1,6 @@
 package com.purpuragenda.application;
 
+import com.purpuragenda.application.port.out.GuestAccessStore;
 import com.purpuragenda.application.port.out.SessionStore;
 import com.purpuragenda.application.port.out.SessionStore.*;
 import java.time.Instant;
@@ -45,5 +46,14 @@ public final class SessionAccess {
     public Optional<Snapshot> current(char[] cookie) { return cookie==null?Optional.empty():sessions.resolve(cookie); }
     /** Verifies the current CSRF proof of a session resolved in this request; consumes the borrowed buffer. */
     public boolean csrf(Snapshot session,char[] csrf) { return sessions.csrf(session.reference(),csrf); }
+    /**
+     * Atomically exchanges an email proof for a rotated guest session bound to the same browser. Empty for any
+     * unknown, replayed, expired, mis-bound or revoked proof; the caller cannot tell which.
+     */
+    public Optional<Started> redeemGuest(Snapshot previous,GuestAccessStore.Redemption proof) {
+        return sessions.exchangeGuest(previous.reference(),proof).map(issued -> {
+            try(issued) { return new Started(view(issued.session()),issued.token(),issued.csrf()); }
+        });
+    }
     public boolean logout(Snapshot authorized) { return sessions.revoke(authorized.reference()); }
 }

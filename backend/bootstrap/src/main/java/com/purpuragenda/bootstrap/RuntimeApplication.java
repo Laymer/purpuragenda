@@ -55,6 +55,12 @@ public class RuntimeApplication {
     @Bean SessionAccess sessionAccess(SessionStore sessions) { return new SessionAccess(sessions); }
     @Bean SessionCookies sessionCookies(RuntimeSettings settings) { return settings.localCookies()?SessionCookies.local():SessionCookies.operational(); }
     @Bean SessionController sessionController(SessionAccess access,SessionCookies cookies) { return new SessionController(access,cookies); }
+    @Bean GuestRecoveryLookup guestRecoveryLookup(DataSource source) { return new PostgresGuestRecoveryLookup(source); }
+    @Bean GuestRecovery guestRecovery(GuestRecoveryLookup lookup,AuthDeliveryStore delivery) { return new GuestRecovery(lookup,delivery); }
+    @Bean GuestProofs guestProofs(RequestThrottle throttle,AuthDeliveryStore delivery,GuestRecovery recovery) { return new GuestProofs(throttle,delivery,recovery); }
+    @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
+        return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
+    }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));

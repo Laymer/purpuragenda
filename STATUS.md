@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P19/public-http: agent=Claude-workerD; branch=task/p19-public-http; base=main; handoff=docs/handoffs/p19-public-http.md
+- P17/auth-http: agent=Claude-workerD; branch=task/p17-auth-http; base=main; handoff=docs/handoffs/p17-auth-http.md
 - P31/config-commands: agent=Claude-workerE; branch=task/p31-config-commands; base=main; handoff=docs/handoffs/p31-config-commands.md
 - P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
 - P21/finance-commands: agent=Claude-workerF; branch=task/p21-refunds; base=main; handoff=docs/handoffs/p21-finance-commands.md

@@ -25,7 +25,8 @@ class SessionAccessTest {
         @Override public Optional<Snapshot> inspect(char[] token) { calls.add("inspect");return token[0]=='L'?Optional.of(live):Optional.empty(); }
         @Override public boolean csrf(SessionReference session,char[] csrf) { calls.add("csrf");lastBuffer=csrf;return csrfMatches; }
         @Override public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proofToken) { throw new AssertionError(); }
-        @Override public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); }
+        Optional<Issued> guestResult=Optional.empty();SessionReference exchanged;
+        @Override public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { calls.add("exchangeGuest");exchanged=previous;return guestResult; }
         @Override public boolean revoke(SessionReference session) { calls.add("revoke");revoked=true;return true; }
     }
     @Test void bootstrapWithoutLiveCookieIssuesAnonymousAuthorityAndBothSecrets() {
@@ -72,5 +73,16 @@ class SessionAccessTest {
     @Test void logoutRevokesOnlyTheAuthorizedSessionReference() {
         var store=new Fake();var access=new SessionAccess(store);
         assertTrue(access.logout(store.live));assertTrue(store.revoked);assertEquals(List.of("revoke"),store.calls);
+    }
+    @Test void guestRedemptionReturnsRotatedSecretsAndRolesOrNothing() {
+        var store=new Fake();var access=new SessionAccess(store);
+        var proof=new GuestAccessStore.Redemption("p".repeat(43),GuestAccessStore.Kind.CREATE,"a".repeat(64));
+        assertTrue(access.redeemGuest(store.live,proof).isEmpty());
+        var guest=snapshot(Kind.GUEST,ISSUED,ISSUED.plusSeconds(7200));
+        store.guestResult=Optional.of(new Issued(guest,"g".repeat(43).toCharArray(),"h".repeat(43).toCharArray()));
+        try(var started=access.redeemGuest(store.live,proof).orElseThrow()) {
+            assertEquals(Kind.GUEST,started.view().role());assertEquals("g".repeat(43),new String(started.cookie()));assertEquals("h".repeat(43),new String(started.csrf()));
+        }
+        assertEquals(store.live.reference(),store.exchanged);
     }
 }
