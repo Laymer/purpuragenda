@@ -99,14 +99,18 @@ class AccountAuthenticationDatabaseTest {
         try(var issued=login()) {
             var ref=issued.session().reference();var session=new com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding(ref.id(),ref.browserHash());
             var request=e.c.request(3,9);var created=e.c.command.create(session,"created",request);assertTrue(created.success());
+            var query=new PostgresCustomerBookingQuery(e.c.f.source,Set.of("zoom.us"));
+            assertTrue(query.find(session,created.entityId()).isPresent());
             e.c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=credential_version+1,password_changed_at=clock_timestamp() WHERE id=?",changed,account.accountId());
             assertTrue(sessions.inspect(issued.token()).isEmpty());assertTrue(sessions.resolve(issued.token()).isEmpty());assertTrue(sessions.rotateCsrf(issued.token()).isEmpty());assertFalse(sessions.csrf(ref,issued.csrf()));
+            assertTrue(query.find(session,created.entityId()).isEmpty());
             assertEquals(com.purpuragenda.application.port.out.SchedulingUnitOfWork.Failure.Kind.FORBIDDEN,e.c.failure(()->e.c.command.create(session,"created",request)).kind());
             assertEquals(com.purpuragenda.application.port.out.SchedulingUnitOfWork.Failure.Kind.FORBIDDEN,e.c.failure(()->new com.purpuragenda.application.scheduling.CustomerBookingChanges(new PostgresBookingChanges(e.c.f.source))
                     .cancel(session,created.entityId(),"cancel",new com.purpuragenda.application.scheduling.CustomerBookingChanges.Cancellation(1))).kind());
             assertEquals(1,count("booking"));assertEquals(1,count("request_charge"));
             e.c.jdbc.update("UPDATE customer_account SET password_hash=?,credential_version=credential_version+1,password_changed_at=clock_timestamp() WHERE id=?",original,account.accountId());
             assertTrue(sessions.inspect(issued.token()).isEmpty());
+            assertTrue(query.find(session,created.entityId()).isEmpty());
             e.c.f.database.denied("23514","UPDATE customer_account SET credential_version=1 WHERE id=?",account.accountId());
         }
         browser.close();browser=sessions.anonymous();
