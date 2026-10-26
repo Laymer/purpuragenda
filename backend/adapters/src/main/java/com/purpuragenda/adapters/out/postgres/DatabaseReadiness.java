@@ -36,6 +36,13 @@ public final class DatabaseReadiness implements HealthIndicator {
                   access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c,
                   app_session s,admin_authentication_proof a,rate_limit_bucket t,customer_account ca LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }
+            // 016 tightens an existing CHECK without adding columns. Read only
+            // public catalog metadata so 015 cannot report ready before its fix.
+            try(var shape=statement.executeQuery("""
+                SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_constraint
+                  WHERE conrelid='customer_account'::regclass AND conname='account_credential_shape_v2'
+                    AND contype='c' AND convalidated)
+                """)) { if(!shape.next() || !shape.getBoolean(1)) return false; }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c
                 JOIN scheduling_resource r ON r.id=c.id JOIN business_settings s ON s.id=r.id

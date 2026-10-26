@@ -64,7 +64,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P19/public-http: agent=Claude-workerD; branch=task/p19-public-http; base=main; handoff=docs/handoffs/p19-public-http.md
 - P31/config-commands: agent=Claude-workerE; branch=task/p31-config-commands; base=main; handoff=docs/handoffs/p31-config-commands.md
 - P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
-- P18/accounts: agent=Claude-workerF; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
+- P18/accounts: agent=Codex-worker-a; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
 
 ## Active handoff
 

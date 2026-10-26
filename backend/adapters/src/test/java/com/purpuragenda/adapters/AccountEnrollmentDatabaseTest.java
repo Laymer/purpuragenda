@@ -1,6 +1,8 @@
 package com.purpuragenda.adapters;
 
 import com.purpuragenda.adapters.out.security.*;
+import com.purpuragenda.adapters.out.postgres.DatabaseReadiness;
+import com.purpuragenda.adapters.out.postgres.PostgresScheduling;
 import com.purpuragenda.application.AccountEnrollment;
 import com.purpuragenda.application.port.out.AccountEnrollmentStore.*;
 import com.purpuragenda.application.port.out.AuthDeliveryStore.Purpose;
@@ -116,6 +118,65 @@ class AccountEnrollmentDatabaseTest {
         c.jdbc.update("INSERT INTO rate_limit_bucket(key,count,reset_at,kind,key_id,window_started_at) SELECT ?,5,t+interval '15 minutes','ACCOUNT_ATTEMPT','k',t FROM (SELECT clock_timestamp() t) x",key);
         c.f.database.denied("23514","INSERT INTO rate_limit_bucket(key,count,reset_at,kind,key_id,window_started_at) SELECT ?,6,t+interval '15 minutes','ACCOUNT_ATTEMPT','k',t FROM (SELECT clock_timestamp() t) x","b".repeat(64));
         c.f.database.denied("23514","INSERT INTO rate_limit_bucket(key,count,reset_at,kind,key_id,window_started_at) SELECT ?,1,t+interval '1 hour','ACCOUNT_ATTEMPT','k',t FROM (SELECT clock_timestamp() t) x","c".repeat(64));
+    }
+
+    @Test void databaseRejectsAnEnrolledIdentityWithoutAPassword() {
+        UUID customer=UUID.randomUUID();
+        c.jdbc.update("INSERT INTO customer_identity VALUES(?,?,clock_timestamp())",customer,"incomplete@example.test");
+        c.f.database.denied("23514","""
+            INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_changed_at)
+            VALUES(gen_random_uuid(),?,clock_timestamp(),'incomplete@example.test',clock_timestamp())
+            """,customer);
+        assertEquals(0,count("customer_account"));
+    }
+
+    @Test void aProofThatExpiresWhileWaitingForItsChallengeLockCannotEnroll() throws Exception {
+        var proof=proof("synthetic@example.test");var reads=new AtomicInteger();
+        var fixed=new PostgresAccountEnrollment(c.clock(proof.expiresAt(),reads));
+        String name="account-proof-lock-"+UUID.randomUUID();c.f.source.setApplicationName(name);
+        try(var blocker=c.f.database.connection(MigrationTest.APP);var pool=Executors.newVirtualThreadPerTaskExecutor()) {
+            blocker.setAutoCommit(false);
+            MigrationTest.execute(blocker,"SELECT id FROM email_challenge WHERE id=? FOR UPDATE",proof.id());
+            var future=pool.submit(()->enrollHashed(fixed,proof));boolean waiting=false;
+            long limit=System.nanoTime()+TimeUnit.SECONDS.toNanos(4);
+            while(System.nanoTime()<limit) {
+                if(c.jdbc.queryForObject("SELECT count(*) FROM pg_stat_activity WHERE application_name=? AND wait_event_type='Lock'",Integer.class,name)>0) {
+                    waiting=true;break;
+                }
+                Thread.sleep(10);
+            }
+            assertTrue(waiting);assertEquals(0,reads.get());blocker.commit();
+            assertTrue(future.get(10,TimeUnit.SECONDS).isEmpty());assertEquals(1,reads.get());
+        }
+        assertEquals(0,count("customer_account"));assertEquals(0,count("customer_identity"));
+        assertNull(value("SELECT consumed_at FROM email_challenge WHERE id=?",proof.id()));
+    }
+
+    @Test void additiveCredentialShapeUpgradePreservesEnrolledAndLegacyAccountsAndReruns() throws Exception {
+        c.f.database.newSchema();c.f.database.migrate(14); // 001-013 plus unchanged 015; 014 is reserved for P36.
+        c.f.source.setCurrentSchema(c.f.database.schema+",public");
+        var readiness=new DatabaseReadiness(c.f.source,new PostgresScheduling(c.f.source));
+        assertEquals(org.springframework.boot.health.contributor.Status.DOWN,readiness.health().getStatus());
+        UUID enrolled=UUID.randomUUID(),legacy=UUID.randomUUID(),incomplete=UUID.randomUUID();
+        Instant enrolledAt=Instant.parse("2026-10-01T10:00:00Z");
+        try(var connection=c.f.database.connection(MigrationTest.APP)) {
+            MigrationTest.execute(connection,"INSERT INTO customer_identity VALUES(?,?,?),(?,?,?),(?,?,?)",
+                    enrolled,"enrolled@example.test",enrolledAt,legacy,"legacy@example.test",enrolledAt,incomplete,"incomplete@example.test",enrolledAt);
+            MigrationTest.execute(connection,"INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_hash,password_changed_at) VALUES(?,?,?,'enrolled@example.test',?,?)",
+                    UUID.randomUUID(),enrolled,enrolledAt,encoded,enrolledAt);
+            MigrationTest.execute(connection,"INSERT INTO customer_account(id,customer_id,enrolled_at) VALUES(?,?,?)",UUID.randomUUID(),legacy,enrolledAt);
+        }
+        c.f.database.migrate(0);c.f.database.migrate(0);
+        assertEquals(org.springframework.boot.health.contributor.Status.UP,readiness.health().getStatus());
+        assertEquals(15,c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(2,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account"));
+        assertEquals(1,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account WHERE login_email IS NULL AND password_hash IS NULL AND password_changed_at IS NULL"));
+        try(var connection=c.f.database.connection(MigrationTest.APP);
+            var query=connection.prepareStatement("SELECT password_hash=? AND enrolled_at=? AND password_changed_at=? AND credential_version=1 FROM customer_account WHERE customer_id=?")) {
+            query.setString(1,encoded);query.setTimestamp(2,Timestamp.from(enrolledAt));query.setTimestamp(3,Timestamp.from(enrolledAt));query.setObject(4,enrolled);
+            try(var rows=query.executeQuery()) { assertTrue(rows.next());assertTrue(rows.getBoolean(1)); }
+        }
+        c.f.database.denied("23514","INSERT INTO customer_account(id,customer_id,enrolled_at,login_email,password_changed_at) VALUES(gen_random_uuid(),?,clock_timestamp(),'incomplete@example.test',clock_timestamp())",incomplete);
     }
 
     @ParameterizedTest @ValueSource(strings={"customer_profile","customer_account","audit_event"})

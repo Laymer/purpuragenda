@@ -199,6 +199,14 @@ class LedgerTest(unittest.TestCase):
         for name in ('STATUS.md', 'docs/handoffs/p01-claude-handoff.md'):
             self.assertIn(line, (root / name).read_text())
 
+    def test_local_testing_guide_names_real_commands_and_forbids_volume_deletion(self):
+        text = (Path(__file__).resolve().parents[2] / 'docs/local-testing.md').read_text()
+        for command in ('./scripts/dev/local.sh up', './scripts/dev/local.sh smoke', './scripts/dev/local.sh admin-setup',
+                        'scripts/ci/verify-build.sh', 'scripts/ci/verify-compose.py'):
+            self.assertIn(command, text)
+        self.assertIn('Never** run `docker compose down -v`', text)
+        self.assertNotIn('./verify.sh', text)  # the root aggregate command does not exist yet
+
     def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):
         for name in ('AGENTS.md', 'CLAUDE.md'):
             path = self.root / name
