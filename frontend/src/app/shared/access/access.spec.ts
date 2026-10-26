@@ -175,15 +175,16 @@ describe('Shared in-memory session and frozen command access', () => {
   });
 
   it('logout uses the current proof then clears context and prepared commands', async () => {
-    await ready(); const command = commands.prepare('POST', '/api/v1/bookings', {}); const logout = sessions.logout(); await settle();
+    await ready(); const command = commands.prepare('POST', '/api/v1/bookings', {}); const logout = sessions.logout(); const queued = command.attempt(); const expired = expect(queued).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' }); await settle();
     const request = http.expectOne('/api/v1/session/logout'); expect(request.request.headers.get('X-CSRF-Token') === reply().csrfToken).toBe(true);
-    request.flush(null); await logout; expect(sessions.state()).toBeNull(); expect(command.state()).toBe('expired');
+    request.flush(null); await logout; await expired; http.expectNone('/api/v1/bookings'); expect(sessions.state()).toBeNull(); expect(command.state()).toBe('expired');
   });
 
   it('clears private context even when logout acknowledgement is lost', async () => {
     await ready(); const command = commands.prepare('POST', '/api/v1/bookings', { synthetic: true });
-    const logout = sessions.logout(); const rejected = expect(logout).rejects.toMatchObject({ kind: 'UNCERTAIN' }); await settle();
-    http.expectOne('/api/v1/session/logout').error(new ProgressEvent('error')); await rejected;
+    const logout = sessions.logout(); const rejected = expect(logout).rejects.toMatchObject({ kind: 'UNCERTAIN' });
+    const queued = command.attempt(); const expired = expect(queued).rejects.toMatchObject({ kind: 'SESSION_EXPIRED' }); await settle();
+    http.expectOne('/api/v1/session/logout').error(new ProgressEvent('error')); await rejected; await expired; http.expectNone('/api/v1/bookings');
     expect(sessions.state()).toBeNull(); expect(command.state()).toBe('expired');
   });
 

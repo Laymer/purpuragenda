@@ -41,7 +41,7 @@ export class SessionAccess {
   /** The callback must issue exactly one request and must never log its borrowed proof. */
   perform<T>(send: (csrf: string) => Observable<T>): Promise<T> { return this.run(send); }
 
-  private run<T>(send: (csrf: string) => Observable<T>, rotation?: (result: T) => SessionBootstrap): Promise<T> {
+  private run<T>(send: (csrf: string) => Observable<T>, rotation?: (result: T) => SessionBootstrap, clearAfter = false): Promise<T> {
     const epoch = this.#epoch;
     return this.serial(async () => {
       try {
@@ -58,14 +58,14 @@ export class SessionAccess {
         const failure = safeFailure(error, true);
         if ((failure.kind === 'SESSION_EXPIRED' || (rotation !== undefined && failure.kind === 'UNCERTAIN')) && epoch === this.#epoch) this.invalidate();
         throw failure;
-      }
+      } finally { if (clearAfter) this.invalidate(); }
     });
   }
 
   toJSON(): string { return '[SessionAccess]'; }
 
   logout(): Promise<void> {
-    return this.perform(csrf => this.api.logoutSession(csrf)).then(() => {}).finally(() => this.invalidate());
+    return this.run(csrf => this.api.logoutSession(csrf), undefined, true).then(() => {});
   }
 
   onInvalidated(listener: () => void): () => void { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; }
