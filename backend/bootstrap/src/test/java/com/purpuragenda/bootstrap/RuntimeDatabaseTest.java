@@ -321,11 +321,13 @@ class RuntimeDatabaseTest {
 
 
     @Test @Order(14) void bookingWorkersResumeDurableEffectsExpireDueHoldsAndSuppressRestore() throws Exception {
-        UUID live,due;
+        UUID live,due,unrelated;
         try(var context=Purpuragenda.launch(new String[0],properties)) {
             context.getBean(RuntimeWorkers.class).stop();
             sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");
             live=syntheticWorkerBooking(context,false,10); due=syntheticWorkerBooking(context,true,11);
+            unrelated=syntheticWorkerBooking(context,false,9);
+            sql("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES('"+UUID.randomUUID()+"','"+unrelated+"','REQUESTED',1,clock_timestamp())");
             sql("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES('"+UUID.randomUUID()+"','"+live+"','REQUESTED',1,clock_timestamp())");
         }
         try(var capture=new org.testcontainers.containers.GenericContainer<>(org.testcontainers.utility.DockerImageName.parse(
@@ -336,7 +338,8 @@ class RuntimeDatabaseTest {
             String jobs=" FROM notification_job WHERE booking_id IN ('"+live+"','"+due+"')";
             try(var context=Purpuragenda.launch(new String[0],configured)) {
                 long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(20);
-                while(count("SELECT count(*)"+jobs+" AND state='SENT'")<4 && System.nanoTime()<deadline)Thread.sleep(25);
+                while((count("SELECT count(*)"+jobs+" AND state='SENT'")<4 ||
+                        count("SELECT count(*) FROM notification_job WHERE booking_id='"+unrelated+"' AND state='SENT'")<2) && System.nanoTime()<deadline)Thread.sleep(25);
                 assertEquals(4,count("SELECT count(*)"+jobs+" AND state='SENT' AND attempts=1"));
                 assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='CUSTOMER'"));
                 assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='OWNER'"));
@@ -344,12 +347,15 @@ class RuntimeDatabaseTest {
                 assertEquals(0,count("SELECT count(*) FROM booking_occupancy WHERE booking_id='"+due+"' AND released_at IS NULL"));
                 var inbox=get(capture.getMappedPort(8025),"/api/v1/messages");assertEquals(200,inbox.statusCode());
                 var messages=new com.fasterxml.jackson.databind.ObjectMapper().readTree(inbox.body()).path("messages");
-                assertEquals(4,messages.size());
+                int matching=0;
                 for(var message:messages) {
                     String detail=get(capture.getMappedPort(8025),"/api/v1/message/"+message.path("ID").asText()).body();
+                    if(!detail.contains(live.toString()) && !detail.contains(due.toString()))continue;
+                    matching++;
                     assertTrue(detail.contains("Booking reference:"),"Expected bounded booking content");
                     assertFalse(detail.contains("Private synthetic intake"),"Intake must never enter notification content");
                 }
+                assertEquals(4,matching,"Only the current fixtures count toward their delivery assertions");
             }
             UUID restore;
             try(var context=Purpuragenda.launch(new String[0],configured)) {

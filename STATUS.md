@@ -70,7 +70,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active handoff
 
 - Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T22:01:00Z.
-- Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: none yet.
+- Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/79.
 - Last pushed implementation commit: d109082; uncommitted changes: five-lane runtime composition, lifecycle and actual Mailpit/restart/expiry/restore regressions.
 - What works: query69 is confirmed merged; notification64 confirmed merged669bc5b after all required gates. Public context74 targets and source review pass, full final gates pending.
 - What remains: current-main integration, full native/coverage/hosted/Compose/exact review; no full local milestone claimed.

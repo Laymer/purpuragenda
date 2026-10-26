@@ -113,11 +113,15 @@ class RuntimeWorkersTest {
         var maintenance = new CountDownLatch(3);
         Runnable mail = () -> { entered.countDown(); await(release); };
         var lanes = List.of(new RuntimeWorkers.Lane(mail,0,5),new RuntimeWorkers.Lane(mail,0,5),
-                new RuntimeWorkers.Lane(maintenance::countDown,0,5),new RuntimeWorkers.Lane(maintenance::countDown,0,5),
-                new RuntimeWorkers.Lane(maintenance::countDown,0,5));
+                new RuntimeWorkers.Lane(once(maintenance),0,5),new RuntimeWorkers.Lane(once(maintenance),0,5),
+                new RuntimeWorkers.Lane(once(maintenance),0,5));
         var worker = new RuntimeWorkers(lanes,()->true,false,Duration.ofSeconds(2));
         try { worker.start(); await(entered); await(maintenance); }
         finally { release.countDown(); worker.stop(); }
+    }
+    static Runnable once(CountDownLatch latch) {
+        var first=new AtomicBoolean(true);
+        return ()->{if(first.compareAndSet(true,false))latch.countDown();};
     }
     @Test void eachLaneRecoversFromFailureAndTheLaneListIsDefensivelyCopied() {
         var recovered = new CountDownLatch(5); var lanes = new ArrayList<RuntimeWorkers.Lane>();
