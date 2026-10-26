@@ -221,7 +221,7 @@ export class BookingsService extends BaseService {
     }
 
     /**
-     * Read only the booking owned by the account or exact guest grant. Does not touch idle lifetime, acquire scheduling locks or reclaim expiry. All replies are no-store; conditional304 is not used.
+     * Read only the booking owned by the account or exact guest grant. Does not touch idle lifetime, acquire scheduling locks or reclaim expiry. All replies are no-store; conditional304 is not used. Always returns the current private no-store body, ignoring conditional cache validators: the numeric ETag identifies the booking command version, while independent financial facts may change without advancing it.
      * @endpoint get /bookings/{bookingId}
      * @param bookingId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.

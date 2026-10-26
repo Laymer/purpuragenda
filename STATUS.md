@@ -25,7 +25,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P19 — Complete public service and availability HTTP contracts | In progress; booking review context claimed in task/p19-booking-context; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd after all required gates; customer HTTP draftPR72 and public review context74 remain |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
-| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; Codex-worker-b claims bounded persisted-admin read-only agenda/detail query; HTTP/configuration APIs remain |
+| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; query PR76 and private read HTTP implemented by Codex-worker-b with targeted real PostgreSQL/runtime evidence; current-head gates and mutation/configuration APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | In progress; Codex-worker-c on task/p23-service-time, separate public UI slice; no mock backend |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,7 +61,8 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P22/admin-view: agent=Codex-worker-b; branch=task/p22-admin-view; base=main; handoff=docs/handoffs/p22-admin-view.md
+- P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
+
 
 - P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
 - P17/admin-recovery: agent=Codex-worker-b; branch=task/p17-admin-recovery; base=main; handoff=docs/handoffs/p17-admin-recovery.md

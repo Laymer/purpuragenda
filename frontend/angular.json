@@ -92,7 +92,15 @@
               "src/app/shared/generated/model/administratorReenrollmentResult.ts",
               "src/app/shared/generated/model/bookingReviewContext.ts",
               "src/app/shared/generated/model/bookingReviewNotice.ts",
-              "src/app/shared/generated/model/bookingReviewPolicy.ts"
+              "src/app/shared/generated/model/bookingReviewPolicy.ts",
+              "src/app/shared/generated/model/administratorAgendaEntry.ts",
+              "src/app/shared/generated/model/administratorAgendaPage.ts",
+              "src/app/shared/generated/model/administratorIntakeSnapshot.ts",
+              "src/app/shared/generated/model/administratorBookingSnapshot.ts",
+              "src/app/shared/generated/model/administratorPaymentEntry.ts",
+              "src/app/shared/generated/model/administratorRefundObligation.ts",
+              "src/app/shared/generated/model/administratorBookingPayment.ts",
+              "src/app/shared/generated/model/administratorBookingDetail.ts"
             ],
             "coverageReporters": [
               "text",
