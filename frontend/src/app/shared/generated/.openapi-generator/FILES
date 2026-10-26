@@ -14,6 +14,10 @@ encoder.ts
 git_push.sh
 index.ts
 model/administratorLoginRequest.ts
+model/administratorRecoveryRequest.ts
+model/administratorRecoverySetup.ts
+model/administratorReenrollmentRequest.ts
+model/administratorReenrollmentResult.ts
 model/availability.ts
 model/bookingIntake.ts
 model/bookingPaymentSummary.ts

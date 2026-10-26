@@ -19,7 +19,7 @@ class PrivateAdminRecoveryTest {
     final Admin context=new Admin() {
         public Instant now() { return Instant.EPOCH; }
         public Optional<Identity> identity() { return Optional.ofNullable(identity); }
-        public Optional<Secret> begin(String hash,Binding value,String token) { assertSame(binding,value);return secret(); }
+        public Optional<Setup> begin(String hash,Binding value,String token) { assertSame(binding,value);return secret().map(secret->new Setup(secret,Instant.EPOCH.plusSeconds(600))); }
         public Optional<Secret> prove(String hash,Binding value) { assertSame(binding,value);return secret(); }
         private Optional<Secret> secret() {
             if(!authorized)return Optional.empty();byte[] bytes=new byte[20];Arrays.fill(bytes,(byte)7);
@@ -47,6 +47,7 @@ class PrivateAdminRecoveryTest {
     @Test void recoveryReturnsOnlyBoundReenrollmentAndConsumesInputBuffers() {
         char[] password=password(),code=token();
         try(var result=recovery.begin("Owner@Example.test",password,code,binding).orElseThrow()) {
+            assertEquals(Instant.EPOCH.plusSeconds(600),result.expiresAt());
             cleared(password);cleared(code);assertSame(issued.getFirst(),result.token());assertSame(secrets.getFirst(),result.secret());
             assertEquals("AdminReenrollment[REDACTED]",result.toString());assertEquals("AdminRecoveryIdentity[REDACTED]",identity.toString());
         }
