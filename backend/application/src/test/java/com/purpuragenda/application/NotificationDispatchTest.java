@@ -178,4 +178,14 @@ class NotificationDispatchTest {
         var specs=new ArrayList<>(List.of(new Spec("OWNER","OWNER_ACTION_REFUND")));var jobs=new Jobs(specs);specs.clear();
         assertEquals(1,jobs.specs().size());assertThrows(UnsupportedOperationException.class,()->jobs.specs().clear());
     }
+
+    @Test void everySendableTemplateCarriesThePrivacyLineAndNoRecipientAddressInTheBody() {
+        var none=Set.<String>of();
+        for(String[] row:new String[][]{{"CUSTOMER","BOOKING_REQUESTED","PENDING_CONFIRMATION"},{"CUSTOMER","BOOKING_CONFIRMED","CONFIRMED"},{"OWNER","OWNER_BOOKING_CANCELLED","CANCELLED"},
+                {"CUSTOMER","PAYMENT_RECORDED","CONFIRMED"},{"OWNER","OWNER_ACTION_REFUND","CANCELLED"}}) {
+            var m=message(prepare(row[0],row[1],row[2],none));
+            assertTrue(m.text().endsWith("This message deliberately contains no personal intake details.\n"),row[1]);
+            assertFalse(m.text().contains(m.recipient()),row[1]);
+        }
+    }
 }
