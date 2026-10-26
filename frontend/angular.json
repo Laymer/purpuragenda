@@ -28,7 +28,15 @@
                   "maximumWarning": "550kB",
                   "maximumError": "750kB"
                 }
-              ]
+              ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              }
             },
             "development": {
               "optimization": false,
