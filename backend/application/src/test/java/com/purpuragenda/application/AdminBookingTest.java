@@ -84,7 +84,7 @@ class AdminBookingTest {
         f.policy=new SchedulingPolicy(1,30,20,Duration.ofHours(48),Duration.ofDays(1),Duration.ZERO,Duration.ZERO);
         fails(Code.MINIMUM_NOTICE,request());succeeds(request(start(),null,override(Rule.NOTICE)));
         f.policy=SchedulingPolicy.defaults();Instant far=Instant.parse("2026-03-02T08:00:00Z");
-        fails(Code.OUTSIDE_HORIZON,request(far,null,override(Rule.NOTICE)));succeeds(request(far,null,override(Rule.HORIZON,Rule.NOTICE)));
+        fails(Code.OUTSIDE_HORIZON,request(far,null,override(Rule.NOTICE)));succeeds(request(far,null,override(Rule.HORIZON)));
         f.policy=new SchedulingPolicy(1,30,1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO);
         f.bookings=List.of(f.pending(Instant.parse("2026-01-02T12:00:00Z")));
         fails(Code.DAILY_CAPACITY_REACHED,request());succeeds(request(start(),null,override(Rule.DAILY_CAPACITY)));
@@ -123,10 +123,26 @@ class AdminBookingTest {
         f.bookings=List.of(f.pending(start().minus(Duration.ofMinutes(119))));
         fails(Code.SLOT_UNAVAILABLE,request(start(),null,override(every)));
         f.bookings=List.of(f.pending(start().plus(Duration.ofMinutes(120))));
-        succeeds(request(start(),null,override(every)));   // adjacency is not overlap
+        succeeds(request());   // adjacency is not overlap
         fails(Code.START_NOT_FUTURE,request(f.now,null,override(every)));
         fails(Code.START_NOT_FUTURE,request(f.now.minusSeconds(60),null,override(every)));
         assertEquals(1,f.saves);
+    }
+
+    @Test void unusedRulesAndUnrelatedBlackoutsAreRejectedSoOverridesRecordOnlyWhatWasNeeded() {
+        fails(Code.OVERRIDE_UNUSED,request(start(),null,override(Rule.NOTICE)));
+        fails(Code.OVERRIDE_UNUSED,request(start(),null,override(Rule.START_RULES,Rule.HORIZON)));
+        f.calendar=blackouts(UUID.randomUUID());UUID stray=UUID.randomUUID();UUID real=f.calendar.blackouts().getFirst().id();
+        fails(Code.BLACKOUT_OVERRIDE_REQUIRED,request(start(),null,override(Rule.HARD_BLACKOUT)));
+        fails(Code.OVERRIDE_UNUSED,request(start(),null,new SchedulingRules.Override(Set.of(Rule.HARD_BLACKOUT),REASON,Set.of(real,stray))));
+        succeeds(request(start(),null,new SchedulingRules.Override(Set.of(Rule.HARD_BLACKOUT),REASON,Set.of(real))));
+    }
+
+    @Test void aParticipantMeetingIdAlreadyHeldByAnotherBookingIsAStableBusinessReceipt() {
+        f.usedMeetings.add("123456789");
+        fails(Code.MEETING_IN_USE,request(start(),ZOOM,SchedulingRules.Override.none()));
+        assertEquals(0,f.saves);
+        f.usedMeetings.clear();succeeds(request(start(),ZOOM,SchedulingRules.Override.none()));
     }
 
     @Test void shortNoticePendingHoldIsImpossibleUnlessImmediatelyConfirmed() {
@@ -175,7 +191,7 @@ class AdminBookingTest {
     static class Fixture extends PublicSchedulingTest.Fixture implements AdminBookingUnitOfWork,Creation {
         Booking created;Command command;RuntimeException effectFailure;SchedulingRules.Override override;String requestedEmail;
         final Customer identity=new Customer(UUID.randomUUID(),"customer@example.test");
-        final List<String> steps=new ArrayList<>();int active,requests,saves;boolean attempting;
+        final Set<String> usedMeetings=new HashSet<>();final List<String> steps=new ArrayList<>();int active,requests,saves;boolean attempting;
         Fixture(){policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO);}
         public Receipt create(Command supplied,Function<Creation,Receipt> work){command=supplied;steps.clear();return work.apply(this);}
         public List<Booking> duePending(){steps.add("expiry");return List.of();}
@@ -183,6 +199,7 @@ class AdminBookingTest {
         public Receipt attempt(Supplier<Receipt> mutation){steps.add("attempt");attempting=true;try{return mutation.get();}finally{attempting=false;}}
         public CustomerQuota quota(UUID customer){steps.add("quota");assertEquals(identity.id(),customer);return new CustomerQuota(active,requests,CustomerQuota.dayAt(now));}
         public boolean chargeCreated(Booking value){throw new AssertionError("Administrator creation must never charge a submission");}
+        public boolean meetingInUse(String id){steps.add("meeting");return usedMeetings.contains(id);}
         public Customer customer(String email){steps.add("customer");requestedEmail=email;return identity;}
         public void save(Booking value){steps.add("save");saves++;created=value;}
         public void createdEffects(Booking value,SchedulingRules.Override supplied){steps.add("effects");assertSame(created,value);override=supplied;if(effectFailure!=null)throw effectFailure;}

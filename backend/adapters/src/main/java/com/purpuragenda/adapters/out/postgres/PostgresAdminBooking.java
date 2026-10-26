@@ -96,6 +96,9 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
             return jdbc.queryForObject("SELECT id,email_key FROM customer_identity WHERE email_key=?",
                     (r,n)->new Customer(r.getObject(1,UUID.class),r.getString(2)),key);
         }
+        public boolean meetingInUse(String meetingId) {
+            return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM booking WHERE meeting_id=?)",Boolean.class,meetingId));
+        }
         public void createdEffects(Booking value,SchedulingRules.Override override) {
             if(effects || value.origin()!=Booking.Origin.ADMINISTRATOR || value.version()!=1 || !value.createdAt().equals(now())
                     || !booking(value.id()).filter(value::equals).isPresent())throw new Failure(Failure.Kind.STORAGE_FAILURE);

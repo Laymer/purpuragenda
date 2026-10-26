@@ -75,8 +75,16 @@ public final class AdminBooking {
         int daily=(int)occupied.stream().filter(b -> b.businessDate().equals(day)).count();
         Customer customer=tx.customer(request.customerEmail());
         // The submission limit is a customer-request rule: administrator creation neither checks nor charges it.
-        SchedulingRules.validate(request.start(),now,policy,calendar,daily,tx.quota(customer.id()).active(),0,
+        int active=tx.quota(customer.id()).active();
+        SchedulingRules.validate(request.start(),now,policy,calendar,daily,active,0,
                 occupied.stream().map(Booking::interval).toList(),request.override());
+        // Only violated rules and intersecting blackouts may be named: an unused override would pollute the audit trail.
+        Set<SchedulingRules.Rule> violated=SchedulingRules.violations(request.start(),now,policy,calendar,daily,active,0);
+        Set<UUID> intersecting=calendar.blackouts().stream().filter(b -> b.interval().intersects(reservation))
+                .map(AvailabilityCalendar.Blackout::id).collect(Collectors.toSet());
+        require(violated.containsAll(request.override().rules()) && intersecting.containsAll(request.override().affectedBlackoutIds()),"OVERRIDE_UNUSED");
+        // Meeting ids are unique across bookings; the resource lock makes this check race-free for scheduling writers.
+        require(meeting==null || !tx.meetingInUse(meeting.meetingId()),"MEETING_IN_USE");
         var snapshot=new Booking.Snapshot(service,policy,request.intake(),customer.verifiedEmail(),request.displayZone(),noticeVersion);
         UUID id=UUID.randomUUID();String reference="B-"+UUID.randomUUID();
         Booking booking=meeting==null
