@@ -37,6 +37,11 @@ class LedgerTest(unittest.TestCase):
         (self.root / 'STATUS.md').write_text(self.ledger if text is None else text)
         return CHECK.validate(self.root)
 
+    def test_missing_uncommitted_changes_field_rejects_published_checkpoint(self):
+        altered = self.handoff.replace("uncommitted changes:", "implementation:")
+        (self.root / "docs/handoffs/p01.md").write_text(altered)
+        self.assertTrue(any("missing handoff field: uncommitted changes:" in e for e in self.validate()))
+
     def test_valid_claim(self):
         self.assertEqual([], self.validate())
 
