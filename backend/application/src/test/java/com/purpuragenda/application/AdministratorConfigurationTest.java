@@ -25,7 +25,7 @@ class AdministratorConfigurationTest {
     Review review(UUID... acknowledged){return new Review(REASON,Set.of(acknowledged));}
     Map<DayOfWeek,List<AvailabilityCalendar.Window>> weekly(int from,int to){Map<DayOfWeek,List<AvailabilityCalendar.Window>> days=new EnumMap<>(DayOfWeek.class);for(var day:DayOfWeek.values())days.put(day,List.of(new AvailabilityCalendar.Window(from,to)));return days;}
     Receipt replace(long version,Review review,int from,int to){return config.replaceWeekly(session,"synthetic-key",version,weekly(from,to),review);}
-    Booking futureBooking(int hourUtc){f.policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(400),Duration.ZERO,Duration.ZERO);Booking b=f.pending(Instant.parse(String.format("2026-01-05T%02d:00:00Z",hourUtc)));f.bookings=List.of(b);return b;}
+    Booking futureBooking(int hourUtc){f.policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);Booking b=f.pending(Instant.parse(String.format("2026-01-05T%02d:00:00Z",hourUtc)));f.bookings=List.of(b);return b;}
 
     @Test void weeklyReplacementAdvancesTheVersionAndRecordsExactlyOneSaveAndEffect() {
         Receipt receipt=replace(1,review(),600,1000);
@@ -113,12 +113,63 @@ class AdministratorConfigurationTest {
         assertThrows(DomainFailure.class,()->new Review("x".repeat(501),Set.of()));assertThrows(NullPointerException.class,()->new Review(REASON,null));
     }
 
-    PolicyValues values(int grid,int capacity){return new PolicyValues(grid,capacity,Duration.ZERO,Duration.ofDays(400),Duration.ZERO,Duration.ZERO);}
+    @Test void policyCapsAreValidatedBeforeAnyTransactionAtTheBoundaryAndOneBeyond() {
+        var max=AdministratorConfiguration.MAX_DURATION;int cap=AdministratorConfiguration.MAX_DAILY_CAPACITY;
+        assertEquals(Duration.ofDays(366),max);assertEquals(100,cap);
+        assertTrue(config.updatePolicy(session,"at-cap",1,new PolicyValues(30,cap,max,max,max,max),review()).success());
+        assertEquals(cap,f.policy.dailyCapacity());f.command=null;
+        for(Supplier<PolicyValues> beyond:List.<Supplier<PolicyValues>>of(
+                ()->new PolicyValues(30,cap+1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,max.plusNanos(1),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,max.plusNanos(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ofDays(1),max.plusNanos(1),Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,max.plusNanos(1)),
+                ()->new PolicyValues(30,0,Duration.ofDays(Long.MAX_VALUE/86400),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,-1,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(0,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(121,0,Duration.ZERO,Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ofSeconds(-1),Duration.ofDays(1),Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,Duration.ZERO,Duration.ZERO,Duration.ZERO,Duration.ZERO),
+                ()->new PolicyValues(30,0,null,Duration.ofDays(1),Duration.ZERO,Duration.ZERO)))
+            assertEquals("INVALID_CONFIGURATION",assertThrows(DomainFailure.class,beyond::get).code());
+        assertNull(f.command);   // nothing reached the unit of work
+    }
+
+    /** Mutation paths on real calendar dates: spring-forward day, fall-back day and a month-end reservation crossing midnight. */
+    void openAllDay(){f.calendar=new AvailabilityCalendar(weekly(0,1440),Map.of(),List.of(),1);}
+    Booking at(String start){f.now=f.now.plusSeconds(1);try{return f.pending(Instant.parse(start));}finally{f.now=f.now.minusSeconds(1);}}
+
+    @Test void dateExceptionOnTheSpringForwardDayNeedsTheExactAcknowledgement() {
+        Booking nine=at("2027-03-28T07:00:00Z");Booking noon=at("2027-03-28T10:00:00Z");f.bookings=List.of(nine,noon);   // 09:00 and 12:00 at +02:00
+        LocalDate day=LocalDate.of(2027,3,28);var window=new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.REPLACE,List.of(new AvailabilityCalendar.Window(600,1200)));
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.setDateException(session,"k",1,day,window,review()));
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.setDateException(session,"k2",1,day,window,review(nine.id(),noon.id())));
+        assertTrue(config.setDateException(session,"k3",1,day,window,review(nine.id())).success());
+        assertEquals(List.of(nine.id()),f.acknowledged.stream().map(Conflict::bookingId).toList());assertEquals(window,f.calendar.exceptions().get(day));
+    }
+
+    @Test void weeklyReplacementOnTheFallBackDayTreatsTheRepeatedHourByLocalMinute() {
+        openAllDay();Booking first=at("2027-10-31T00:30:00Z");f.bookings=List.of(first);   // 02:30 at +02:00, minute 150
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),replace(1,review(),0,150));
+        assertTrue(replace(1,review(first.id()),0,150).success());assertEquals(first.id(),f.acknowledged.getFirst().bookingId());
+        f.reset();assertTrue(replace(2,review(),0,151).success());assertTrue(f.acknowledged.isEmpty());   // minute 150 is inside again
+    }
+
+    @Test void blackoutOnAMonthEndReservationCrossingMidnightNeedsTheExactAcknowledgement() {
+        openAllDay();Booking late=at("2027-01-31T22:30:00Z");Booking next=at("2027-02-01T08:00:00Z");f.bookings=List.of(late,next);   // 23:30 on 31 Jan until 01:30 on 1 Feb
+        Instant midnight=Instant.parse("2027-01-31T23:30:00Z");
+        var blackout=new AvailabilityCalendar.Blackout(UUID.randomUUID(),new ReservationInterval(midnight,midnight.plusSeconds(600)),"Synthetic closure reason");
+        assertEquals(Receipt.failure(Code.CONFLICT_REVIEW_REQUIRED),config.addBlackout(session,"k",1,blackout,review(next.id())));
+        assertTrue(config.addBlackout(session,"k2",1,blackout,review(late.id())).success());
+        assertEquals(Set.of(blackout.id()),f.acknowledged.getFirst().blackoutIds());
+    }
+
+    PolicyValues values(int grid,int capacity){return new PolicyValues(grid,capacity,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);}
 
     static class Fixture extends PublicSchedulingTest.Fixture implements ConfigurationUnitOfWork,Configuration {
         Command command;Operation operation;long effectVersion;String effectReason;List<Conflict> acknowledged=List.of();RuntimeException effectFailure;
         final List<String> steps=new ArrayList<>();int saves;
-        Fixture(){policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(400),Duration.ZERO,Duration.ZERO);}
+        Fixture(){policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(366),Duration.ZERO,Duration.ZERO);}
         void reset(){steps.clear();saves=0;effectFailure=null;acknowledged=List.of();}
         public Receipt execute(Command supplied,Function<Configuration,Receipt> work){command=supplied;steps.clear();return work.apply(this);}
         public List<Booking> duePending(){steps.add("expiry");return List.of();}

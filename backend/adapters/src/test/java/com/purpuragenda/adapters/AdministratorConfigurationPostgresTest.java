@@ -79,7 +79,7 @@ class AdministratorConfigurationPostgresTest {
     }
 
     @Test void conflictingChangesNeedTheExactAcknowledgementAndNeverInvalidateExistingBookings() {
-        UUID mine=book("one@example.test",3,9),other=book("two@example.test",4,12);Booking before=c.load(mine);
+        UUID mine=book("one@example.test",3,9),other=book("two@example.test",4,12);Booking before=c.load(mine),otherBefore=c.load(other);
         assertEquals(Code.CONFLICT_REVIEW_REQUIRED,replace("none",1,660,1080,review()).code());
         assertEquals(Code.CONFLICT_REVIEW_REQUIRED,replace("extra",1,660,1080,review(mine,UUID.randomUUID())).code());
         assertEquals(1,calendar().version());assertEquals(0,count("audit_event WHERE type='CALENDAR_CHANGED'"));
@@ -90,7 +90,9 @@ class AdministratorConfigurationPostgresTest {
         assertEquals("t",c.f.value("SELECT metadata->'reasons' @> '[\"START_RULES\"]' FROM audit_event WHERE type='CONFIGURATION_CONFLICT_ACKNOWLEDGED'"));
         // New requests obey the new calendar immediately while the old booking keeps its original snapshot and occupancy.
         assertEquals(Code.START_NOT_AVAILABLE,c.create(c.guest("three@example.test"),"new",c.request(5,9)).code());
-        assertEquals(other.toString().length(),other.toString().length());
+        // The unrelated, still-conforming booking is untouched and carries no acknowledgement effects.
+        assertEquals(otherBefore,c.load(other));assertEquals(0,count("audit_event WHERE booking_id='"+other+"' AND type='CONFIGURATION_CONFLICT_ACKNOWLEDGED'"));
+        assertEquals(0,count("outbox_event WHERE booking_id='"+other+"' AND type='CONFIGURATION_CONFLICT'"));
     }
 
     @Test void dateExceptionsAndBlackoutsAreVersionedAndRemovable() {
@@ -202,6 +204,36 @@ class AdministratorConfigurationPostgresTest {
         boolean changed=results.subList(10,20).stream().anyMatch(Receipt::success);
         // An unacknowledged change can only commit while no 09:00 booking exists, and later creations then fail.
         assertEquals(changed?0:10,count("booking"));assertEquals(changed?2:1,calendar().version());
+        if(changed) {
+            assertTrue(results.subList(0,10).stream().allMatch(r->r.code()==Code.START_NOT_AVAILABLE));
+            assertEquals(1,results.subList(10,20).stream().filter(Receipt::success).count());
+            assertTrue(results.subList(10,20).stream().filter(r->!r.success()).allMatch(r->r.code()==Code.CALENDAR_CHANGED));
+        } else {
+            assertTrue(results.subList(0,10).stream().allMatch(Receipt::success));
+            assertTrue(results.subList(10,20).stream().allMatch(r->r.code()==Code.CONFLICT_REVIEW_REQUIRED));
+        }
+    }
+
+    @Test void mutationsOnDaylightSavingAndMonthEndDatesRequireTheExactAcknowledgement() {
+        UUID spring=confirmed("2027-03-28T07:00:00Z"),fall=confirmed("2027-10-31T00:30:00Z"),lateJanuary=confirmed("2027-01-31T22:30:00Z");
+        assertTrue(replace("open-all-day",1,0,1440,review()).success());
+        LocalDate day=LocalDate.of(2027,3,28);
+        var window=new AvailabilityCalendar.DateException(AvailabilityCalendar.Mode.REPLACE,List.of(new AvailabilityCalendar.Window(600,1200)));
+        assertEquals(Code.CONFLICT_REVIEW_REQUIRED,config.setDateException(session,"spring",2,day,window,review()).code());
+        assertEquals(Code.CONFLICT_REVIEW_REQUIRED,config.setDateException(session,"spring-x",2,day,window,review(spring,fall)).code());
+        assertEquals(2,calendar().version());
+        assertTrue(config.setDateException(session,"spring-ok",2,day,window,review(spring)).success());
+        assertEquals(1,count("outbox_event WHERE type='CONFIGURATION_CONFLICT' AND booking_id='"+spring+"'"));
+        assertTrue(config.removeDateException(session,"spring-rm",3,day,review()).success());
+        var midnight=Instant.parse("2027-01-31T23:30:00Z");
+        var blackout=new AvailabilityCalendar.Blackout(UUID.randomUUID(),new ReservationInterval(midnight,midnight.plusSeconds(600)),"Synthetic closure reason");
+        assertEquals(Code.CONFLICT_REVIEW_REQUIRED,config.addBlackout(session,"month",4,blackout,review()).code());
+        assertTrue(config.addBlackout(session,"month-ok",4,blackout,review(lateJanuary)).success());
+        // Every Sunday booking leaves the 00:00-02:30 window, including the one at the repeated hour (minute 150 is excluded).
+        assertEquals(Code.CONFLICT_REVIEW_REQUIRED,replace("fall",5,0,150,review(fall)).code());
+        assertTrue(replace("fall-ok",5,0,150,review(fall,spring,lateJanuary)).success());
+        assertEquals(6,calendar().version());assertEquals(5,count("outbox_event WHERE type='CONFIGURATION_CONFLICT'"));
+        assertEquals(3,count("booking WHERE state='CONFIRMED' AND version=1"));
     }
 
     @Test void conflictAssessmentSeesPersistedDaylightSavingAndMonthEndBookingsOnRealDates() {

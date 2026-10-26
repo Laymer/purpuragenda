@@ -34,12 +34,12 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; backend schedule and policy commands (application plus PostgreSQL adapter, no HTTP) in draft branch task/p31-config-commands; HTTP (P22) and UI remain |
+| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; backend schedule and policy commands (application plus PostgreSQL adapter, no HTTP) in draft branch task/p31-config-commands; HTTP (P22) and UI remain; P36 must map outbox type CONFIGURATION_CONFLICT to a no-customer-notification handler |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
-| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
+| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype; must map outbox type CONFIGURATION_CONFLICT (P31) to a no-customer-notification handler |
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |

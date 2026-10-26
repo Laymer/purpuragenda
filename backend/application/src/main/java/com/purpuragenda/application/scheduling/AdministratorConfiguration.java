@@ -34,7 +34,18 @@ public final class AdministratorConfiguration {
             return List.of(reason,acknowledgedBookingIds.stream().map(UUID::toString).sorted().collect(Collectors.joining(",")));
         }
     }
+    /** Conservative caps: far above the defaults (capacity 3, 24h notice/lifetime/cutoff, 1h buffer), far below any arithmetic overflow. */
+    public static final int MAX_DAILY_CAPACITY=100;
+    public static final Duration MAX_DURATION=Duration.ofDays(366);
     public record PolicyValues(int gridMinutes,int dailyCapacity,Duration minimumNotice,Duration pendingLifetime,Duration expiryBuffer,Duration customerCutoff) {
+        /** Validated before any transaction opens, so an extreme value can never reach customer booking arithmetic. */
+        public PolicyValues {
+            require(gridMinutes>=1 && gridMinutes<=120 && dailyCapacity>=0 && dailyCapacity<=MAX_DAILY_CAPACITY,"INVALID_CONFIGURATION");
+            require(minimumNotice!=null && pendingLifetime!=null && expiryBuffer!=null && customerCutoff!=null,"INVALID_CONFIGURATION");
+            for(Duration value:List.of(minimumNotice,pendingLifetime,expiryBuffer,customerCutoff))
+                require(!value.isNegative() && value.compareTo(MAX_DURATION)<=0,"INVALID_CONFIGURATION");
+            require(pendingLifetime.isPositive(),"INVALID_CONFIGURATION");
+        }
         SchedulingPolicy next(long version) {
             return new SchedulingPolicy(version,gridMinutes,dailyCapacity,minimumNotice,pendingLifetime,expiryBuffer,customerCutoff);
         }
