@@ -18,10 +18,13 @@ public final class PostgresNotificationQueue implements NotificationQueue {
         this.source = Objects.requireNonNull(source); this.suppressed = suppressed;
     }
 
-    @Override public Optional<Lease> claim() { return claim(false); }
-    @Override public Optional<Lease> claimAuth() { return claim(true); }
+    @Override public Optional<Lease> claim() { return claim("TRUE","TRUE"); }
+    @Override public Optional<Lease> claimAuth() { return claim("(template='AUTH' AND audience='CUSTOMER')","(j.template='AUTH' AND j.audience='CUSTOMER')"); }
+    /** Booking notifications only: authentication jobs need their encrypted envelope and a different worker. */
+    @Override public Optional<Lease> claimBooking() { return claim("template<>'AUTH'","j.template<>'AUTH'"); }
 
-    private Optional<Lease> claim(boolean authOnly) {
+    // The filters are fixed internal constants, never caller input.
+    private Optional<Lease> claim(String reclaimFilter,String candidateFilter) {
         if (suppressed) return Optional.empty();
         return transaction(c -> {
             try (var query = c.prepareStatement("SELECT delivery_suppressed FROM operation_control WHERE id=1 FOR SHARE");
@@ -32,20 +35,20 @@ public final class PostgresNotificationQueue implements NotificationQueue {
             Instant now = now(c);
             update(c, """
                 UPDATE notification_job SET state='QUEUED',lease_until=NULL,lease_token=NULL
-                WHERE id IN (SELECT id FROM notification_job WHERE state='LEASED' AND (NOT ? OR (template='AUTH' AND audience='CUSTOMER'))
+                WHERE id IN (SELECT id FROM notification_job WHERE state='LEASED' AND %s
                   AND (lease_until<=? OR lease_until IS NULL OR lease_token IS NULL)
                   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 100)
-                """, authOnly, now);
+                """.formatted(reclaimFilter), now);
             UUID id; String group;
             try (var query = c.prepareStatement("""
                 SELECT j.id,COALESCE(j.booking_id,j.challenge_id,j.id)::text||':'||j.audience
-                FROM notification_job j WHERE j.state='QUEUED' AND j.due_at<=? AND (NOT ? OR (j.template='AUTH' AND j.audience='CUSTOMER'))
+                FROM notification_job j WHERE j.state='QUEUED' AND j.due_at<=? AND %s
                   AND NOT EXISTS (SELECT 1 FROM notification_job l WHERE l.state='LEASED'
                     AND COALESCE(l.booking_id,l.challenge_id,l.id)=COALESCE(j.booking_id,j.challenge_id,j.id)
                     AND l.audience=j.audience)
                 ORDER BY j.due_at,j.id FOR UPDATE OF j SKIP LOCKED LIMIT 1
-                """)) {
-                query.setTimestamp(1, Timestamp.from(now)); query.setBoolean(2, authOnly);
+                """.formatted(candidateFilter))) {
+                query.setTimestamp(1, Timestamp.from(now));
                 try (var result = query.executeQuery()) {
                     if (!result.next()) return Optional.empty();
                     id = result.getObject(1, UUID.class); group = result.getString(2);
@@ -73,6 +76,26 @@ public final class PostgresNotificationQueue implements NotificationQueue {
     @Override public boolean renew(Lease lease) { return change(lease, "RENEW"); }
     @Override public boolean sent(Lease lease) { return change(lease, "SENT"); }
     @Override public boolean failed(Lease lease) { return change(lease, "FAILED"); }
+    /** Terminal and fenced: the job was stale, superseded or expired, so no message exists to retry. */
+    @Override public boolean suppressed(Lease lease, String safeCode) {
+        Objects.requireNonNull(lease);
+        if (safeCode == null || !safeCode.matches("[A-Z][A-Z0-9_]{0,63}")) throw new IllegalArgumentException("INVALID_SAFE_CODE");
+        return transaction(c -> {
+            UUID token; Instant until;
+            try (var query = c.prepareStatement("SELECT lease_token,lease_until FROM notification_job WHERE id=? AND state='LEASED' FOR UPDATE")) {
+                query.setObject(1, lease.id());
+                try (var result = query.executeQuery()) {
+                    if (!result.next()) return false;
+                    token = result.getObject(1, UUID.class);
+                    until = result.getTimestamp(2) == null ? null : result.getTimestamp(2).toInstant();
+                }
+            }
+            Instant now = now(c);
+            if (token == null || until == null || !token.equals(lease.token()) || !new Lease(lease.id(), token, until).liveAt(now)) return false;
+            update(c, "UPDATE notification_job SET state='SUPPRESSED',lease_until=NULL,lease_token=NULL,encrypted_envelope=NULL,safe_error=? WHERE id=?", safeCode, lease.id());
+            return true;
+        });
+    }
 
     private boolean change(Lease lease, String operation) {
         Objects.requireNonNull(lease);
