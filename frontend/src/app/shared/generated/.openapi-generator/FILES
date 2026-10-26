@@ -3,6 +3,7 @@
 README.md
 api.base.service.ts
 api.module.ts
+api/account.service.ts
 api/administrator.service.ts
 api/api.ts
 api/bookings.service.ts
@@ -13,6 +14,8 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/accountLoginRequest.ts
+model/accountPasswordChangeRequest.ts
 model/administratorAgendaEntry.ts
 model/administratorAgendaPage.ts
 model/administratorBookingDetail.ts

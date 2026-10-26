@@ -41,7 +41,7 @@ class RuntimeDatabaseTest {
                     "app.database-password-file",directory.resolve("app").toString(),"app.mode","local",
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
-                    "app.delivery-key-id","delivery-test-v1","server.port","0"));
+                    "app.delivery-key-id","delivery-test-v1","SERVER_PORT","0"));
             properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
@@ -441,6 +441,50 @@ class RuntimeDatabaseTest {
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
 
+
+    @Test @Order(16) void accountLoginAndPasswordChangeUseRealEnrolledCredentialsAndPersistedHttpSessions() throws Exception {
+        char[] password="synthetic runtime account phrase".toCharArray(),replacement="synthetic replacement account phrase".toCharArray();
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");
+            int port=port(context);var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);assertEquals(200,boot.statusCode());
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            var snapshot=context.getBean(SessionStore.class).inspect(cookie.split("=",2)[1].toCharArray()).orElseThrow();
+            var delivery=context.getBean(AuthDeliveryStore.class);var queue=context.getBean(NotificationQueue.class);
+            var receipt=delivery.issue(new AuthDeliveryStore.Issue("runtime-account@example.test",AuthDeliveryStore.Purpose.ACCOUNT,null,snapshot.reference().browserHash()));
+            var lease=queue.claimAuth().orElseThrow();assertEquals(receipt.jobId(),lease.id());var message=delivery.prepare(lease).orElseThrow();
+            String token=message.text().split("#token=",2)[1].split("&",2)[0];assertTrue(queue.sent(lease));
+            var enrollment=new AccountEnrollment(new com.purpuragenda.adapters.out.security.PostgresAccountEnrollment(context.getBean(javax.sql.DataSource.class)),new com.purpuragenda.adapters.out.security.Argon2PasswordHash());
+            assertTrue(enrollment.enroll(token,snapshot.reference().browserHash(),password.clone()).isPresent());
+            String loginBody="{\"email\":\"runtime-account@example.test\",\"password\":\""+new String(password)+"\"}";
+            var authenticated=accountPost(port,"/login",loginBody,cookie,csrf);assertEquals(200,authenticated.statusCode());
+            assertTrue("ACCOUNT".equals(field(authenticated.body(),"role")),"Expected account role");assertFalse(authenticated.body().contains("accountId"));
+            String current=authenticated.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],proof=field(authenticated.body(),"csrfToken");
+            assertFalse(cookie.equals(current),"Expected account bearer rotation");assertFalse(csrf.equals(proof),"Expected account CSRF rotation");
+            String changed="{\"email\":\"runtime-account@example.test\",\"currentPassword\":\""+new String(password)+"\",\"newPassword\":\""+new String(replacement)+"\"}";
+            var result=accountPost(port,"/password",changed,current,proof);assertEquals(204,result.statusCode());assertTrue(result.headers().firstValue("Set-Cookie").orElseThrow().contains("Max-Age=0"));
+            assertEquals(401,call(port,"GET","/api/v1/session","Cookie",current).statusCode());
+            var fresh=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);String anonymous=fresh.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],nextCsrf=field(fresh.body(),"csrfToken");
+            assertEquals(401,accountPost(port,"/login",loginBody,anonymous,nextCsrf).statusCode());
+            assertEquals(200,accountPost(port,"/login","{\"email\":\"runtime-account@example.test\",\"password\":\""+new String(replacement)+"\"}",anonymous,nextCsrf).statusCode());
+            assertEquals("1",text("SELECT count(*) FROM audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
+        } finally { Arrays.fill(password,'\0');Arrays.fill(replacement,'\0'); }
+    }
+    static HttpResponse<String> accountPost(int port,String suffix,String body,String cookie,String csrf) throws Exception {
+        try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
+            return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/account"+suffix)).timeout(Duration.ofSeconds(5))
+                    .header("Origin",ORIGIN).header("Cookie",cookie).header("X-CSRF-Token",csrf).header("Content-Type","application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+        }
+    }
+    @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
+        var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
+        try(var first=Purpuragenda.launch(new String[0],isolated);
+            var second=Purpuragenda.launch(new String[0],isolated)) {
+            assertNotEquals(port(first),port(second));
+            assertEquals(200,get(port(first),"/actuator/health/readiness").statusCode());
+            assertEquals(200,get(port(second),"/actuator/health/readiness").statusCode());
+        }
+    }
     static HttpResponse<String> login(int port,String body,String cookie,String csrf) throws Exception {
         try(var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()) {
             return client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+"/api/v1/admin/login")).timeout(Duration.ofSeconds(5))

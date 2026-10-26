@@ -94,6 +94,16 @@ public class RuntimeApplication {
     @Bean AdministratorLoginController administratorLoginController(AdministratorLogin login,SessionCookies cookies) {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AccountAuthentication accountAuthentication(DataSource source,RequestThrottle throttle) {
+        return new AccountAuthentication(new PostgresAccountAuthentication(source),new Argon2PasswordHash(),new AdminCrypto(),throttle);
+    }
+    @Bean AccountLogin accountLogin(AccountAuthentication factors,SessionStore sessions) { return new AccountLogin(factors,sessions,new AdminCrypto()); }
+    @Bean AccountPasswordChange accountPasswordChange(DataSource source,RequestThrottle throttle) {
+        return new AccountPasswordChange(new PostgresAccountPassword(source),new Argon2PasswordHash(),throttle);
+    }
+    @Bean AccountController accountController(AccountLogin login,AccountPasswordChange passwords,SessionCookies cookies) {
+        return new AccountController(login,passwords,cookies,java.time.Duration.ofMillis(300));
+    }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
     @Bean BookingNotice bookingNotice(Environment environment) { return RuntimeNotice.read(environment); }
     @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {

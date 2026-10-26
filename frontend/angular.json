@@ -28,7 +28,15 @@
                   "maximumWarning": "550kB",
                   "maximumError": "750kB"
                 }
-              ]
+              ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              }
             },
             "development": {
               "optimization": false,
@@ -100,7 +108,10 @@
               "src/app/shared/generated/model/administratorPaymentEntry.ts",
               "src/app/shared/generated/model/administratorRefundObligation.ts",
               "src/app/shared/generated/model/administratorBookingPayment.ts",
-              "src/app/shared/generated/model/administratorBookingDetail.ts"
+              "src/app/shared/generated/model/administratorBookingDetail.ts",
+              "src/app/shared/generated/api/account.service.ts",
+              "src/app/shared/generated/model/accountLoginRequest.ts",
+              "src/app/shared/generated/model/accountPasswordChangeRequest.ts"
             ],
             "coverageReporters": [
               "text",

@@ -64,6 +64,7 @@ class AdministratorLoginTest {
             public Optional<Snapshot> inspect(char[] token) { throw new AssertionError(); }
             public boolean csrf(SessionReference session,char[] token) { throw new AssertionError(); }
             public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); }
+            public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proof) { throw new AssertionError("ACCOUNT_SESSION_UNEXPECTED"); }
             public boolean revoke(SessionReference session) { throw new AssertionError(); }
             public Optional<Issued> exchangeAdmin(SessionReference previous,String requestHash,char[] proof) {
                 events.add("exchange");exchangeBuffer=proof;

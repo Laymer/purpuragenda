@@ -20,7 +20,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
-                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking',
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
                           'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
@@ -135,6 +135,24 @@ class ContractTest(unittest.TestCase):
         self.assertIn('ETag', paths['/admin/bookings/{bookingId}']['get']['responses']['200']['headers'])
         self.assertNotIn('ETag', paths['/admin/bookings']['get']['responses']['200']['headers'])
 
+    def test_account_credentials_require_private_bound_session_and_never_client_supplied_factor_proofs(self):
+        paths=self.document['paths']; schemas=self.document['components']['schemas']
+        for path, request in (('/account/login','AccountLoginRequest'),('/account/password','AccountPasswordChangeRequest')):
+            operation=paths[path]['post']; self.assertEqual([{'sessionCookie':[]}],operation['security'])
+            self.assertEqual('X-CSRF-Token',operation['parameters'][0]['name']); self.assertTrue(operation['parameters'][0]['required'])
+            self.assertEqual('#/components/schemas/'+request,operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertFalse(schemas[request]['additionalProperties']); self.assertTrue({'400','401','403','429','503'} <= operation['responses'].keys())
+            for status in ('400','401','403','429','503','default'):
+                ref=operation['responses'][status]['$ref'];response=self.document['components']['responses'][ref.rsplit('/',1)[1]]
+                self.assertEqual(['no-store'],response['headers']['Cache-Control']['schema']['enum']);self.assertIn('application/problem+json',response['content'])
+        self.assertEqual({'email','password'},set(schemas['AccountLoginRequest']['required']))
+        self.assertEqual({'email','currentPassword','newPassword'},set(schemas['AccountPasswordChangeRequest']['required']))
+        for field in ('currentPassword','newPassword'):
+            value=schemas['AccountPasswordChangeRequest']['properties'][field]; self.assertTrue(value['writeOnly']); self.assertEqual((15,128),(value['minLength'],value['maxLength']))
+        self.assertTrue(schemas['AccountLoginRequest']['properties']['password']['writeOnly'])
+        reply=paths['/account/login']['post']['responses']['200']; self.assertEqual('#/components/schemas/SessionBootstrap',reply['content']['application/json']['schema']['$ref'])
+        changed=paths['/account/password']['post']['responses']['204']; self.assertNotIn('content',changed); self.assertIn('Set-Cookie',changed['headers']); self.assertEqual(['no-store'],changed['headers']['Cache-Control']['schema']['enum'])
+
     def test_all_references_resolve(self):
         def visit(value):
             if isinstance(value, dict):
@@ -174,7 +192,9 @@ class ContractTest(unittest.TestCase):
         self.assertIn('31', operation['description'])
         for path in self.document['paths'].values():
             for operation in path.values():
-                self.assertIn('application/problem+json', operation['responses']['default']['content'])
+                response=operation['responses']['default']
+                if '$ref' in response:response=self.document['components']['responses'][response['$ref'].rsplit('/',1)[1]]
+                self.assertIn('application/problem+json', response['content'])
 
     def test_session_contract_is_same_origin_csrf_protected_and_no_store(self):
         paths = self.document['paths']

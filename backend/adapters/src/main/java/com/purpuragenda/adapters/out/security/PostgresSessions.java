@@ -129,28 +129,63 @@ public final class PostgresSessions implements SessionStore {
             return Optional.of(issue(c,Kind.GUEST,previous.browserHash(),value.id(),value.customerId(),null,null,null,now));
         });
     }
+    private record AccountCredential(UUID customer,long version,Instant enrolled,Instant changed,String encoded) {
+        @Override public String toString() { return "SessionAccountCredential[REDACTED]"; }
+    }
+    private record AccountProof(String purpose,String browser,String request,long version,Instant issued,Instant expires,Instant consumed,Instant revoked) {
+        @Override public String toString() { return "SessionAccountProof[REDACTED]"; }
+    }
+    @Override public Optional<Issued> exchangeAccount(SessionReference previous,String requestHash,char[] proofToken) {
+        try {
+            var binding=new ProofBinding(previous.browserHash(),requestHash);var hash=crypto.digest(proofToken);if(hash.isEmpty())return Optional.empty();
+            return issuing(c->{
+                // Framework resource ownership suppresses close on this exact transaction connection.
+                var jdbc=new org.springframework.jdbc.core.JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(c,true));
+                var owners=jdbc.query("SELECT account_id FROM account_authentication_proof WHERE token_hash=?",(r,n)->r.getObject(1,UUID.class),hash.get());
+                if(owners.isEmpty())return Optional.empty();UUID account=owners.getFirst();
+                var credentials=jdbc.query("SELECT customer_id,credential_version,enrolled_at,password_changed_at,password_hash FROM customer_account WHERE id=? FOR UPDATE",
+                        (r,n)->new AccountCredential(r.getObject(1,UUID.class),r.getLong(2),time(r,3),time(r,4),r.getString(5)),account);
+                if(credentials.isEmpty() || !Argon2PasswordHash.validEncoding(credentials.getFirst().encoded))return Optional.empty();
+                var credential=credentials.getFirst();
+                var proofs=jdbc.query("SELECT purpose,browser_hash,request_hash,credential_version,issued_at,expires_at,consumed_at,revoked_at FROM account_authentication_proof WHERE token_hash=? FOR UPDATE",
+                        (r,n)->new AccountProof(r.getString(1),r.getString(2),r.getString(3),r.getLong(4),time(r,5),time(r,6),time(r,7),time(r,8)),hash.get());
+                if(proofs.isEmpty())return Optional.empty();var proof=proofs.getFirst();
+                var old=load(c,"id",previous.id(),previous.browserHash());Instant now=now(c);
+                if(old==null || old.session.kind()==Kind.ADMIN || !live(c,old,now) || now.isBefore(credential.enrolled) || credential.changed==null || now.isBefore(credential.changed)
+                        || !proof.purpose.equals("ACCOUNT_AUTHENTICATION") || !same(proof.browser,binding.browserHash()) || !same(proof.request,binding.requestHash())
+                        || proof.version!=credential.version || now.isBefore(proof.issued) || !now.isBefore(proof.expires) || proof.consumed!=null || proof.revoked!=null)return Optional.empty();
+                update(c,"UPDATE account_authentication_proof SET consumed_at=? WHERE token_hash=?",now,hash.get());
+                update(c,"UPDATE app_session SET revoked_at=? WHERE id=?",now,previous.id());
+                update(c,"INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at) VALUES (?,?,'ACCOUNT_SESSION','ACCOUNT_SESSION_CREATED',?)",UUID.randomUUID(),account,now);
+                return Optional.of(issue(c,Kind.ACCOUNT,binding.browserHash(),null,credential.customer,account,null,null,credential.version,now));
+            });
+        } finally { clear(proofToken); }
+    }
     private Issued issue(Connection c,Kind kind,String browser,UUID grant,UUID customer,UUID account,UUID admin,Long version,Instant now) throws SQLException {
+        return issue(c,kind,browser,grant,customer,account,admin,version,null,now);
+    }
+    private Issued issue(Connection c,Kind kind,String browser,UUID grant,UUID customer,UUID account,UUID admin,Long version,Long accountVersion,Instant now) throws SQLException {
         long seconds=kind==Kind.ADMIN?28800:kind==Kind.ACCOUNT?43200:7200;
         var session=new Snapshot(new SessionReference(UUID.randomUUID(),browser),kind,grant,customer,account,admin,version,now,now,now.plusSeconds(seconds),kind==Kind.ANONYMOUS?null:now);
         try(var token=crypto.recoveryCode();var csrf=crypto.recoveryCode()) {
-            update(c,"INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                    session.reference().id(),token.hash(),browser,csrf.hash(),kind.name(),grant,customer,account,admin,version,now,now,session.absoluteExpiresAt(),session.authenticatedAt());
+            update(c,"INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at,account_credential_version) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    session.reference().id(),token.hash(),browser,csrf.hash(),kind.name(),grant,customer,account,admin,version,now,now,session.absoluteExpiresAt(),session.authenticatedAt(),accountVersion);
             char[] bearer=token.value(),nonce=csrf.value();
             try { return new Issued(session,bearer,nonce); }
             finally { clear(bearer);clear(nonce); }
         }
     }
-    private record Row(Snapshot session,String csrfHash,Instant revokedAt) {
+    private record Row(Snapshot session,String csrfHash,Instant revokedAt,Long accountVersion) {
         @Override public String toString() { return "StoredSession[REDACTED]"; }
     }
     private static Row load(Connection c,String column,Object value,String browser) throws SQLException { return load(c,column,value,browser,true); }
     private static Row load(Connection c,String column,Object value,String browser,boolean lock) throws SQLException {
-        try(var q=c.prepareStatement("SELECT id,browser_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at,csrf_hash,revoked_at FROM app_session WHERE "+column+"=?"+(browser==null?"":" AND browser_hash=?")+(lock?" FOR UPDATE":""))) {
+        try(var q=c.prepareStatement("SELECT id,browser_hash,kind,grant_id,customer_id,account_id,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at,csrf_hash,revoked_at,account_credential_version FROM app_session WHERE "+column+"=?"+(browser==null?"":" AND browser_hash=?")+(lock?" FOR UPDATE":""))) {
             q.setObject(1,value);if(browser!=null)q.setString(2,browser);
             try(var r=q.executeQuery()) {
                 if(!r.next())return null;
                 return new Row(new Snapshot(new SessionReference(r.getObject(1,UUID.class),r.getString(2)),Kind.valueOf(r.getString(3)),r.getObject(4,UUID.class),r.getObject(5,UUID.class),r.getObject(6,UUID.class),
-                        r.getObject(7,UUID.class),r.getObject(8,Long.class),time(r,9),time(r,10),time(r,11),time(r,12)),r.getString(13),time(r,14));
+                        r.getObject(7,UUID.class),r.getObject(8,Long.class),time(r,9),time(r,10),time(r,11),time(r,12)),r.getString(13),time(r,14),r.getObject(15,Long.class));
             }
         }
     }
@@ -160,7 +195,7 @@ public final class PostgresSessions implements SessionStore {
         return switch(s.kind()) {
             case ANONYMOUS -> true;
             case ADMIN -> exists(c,"SELECT 1 FROM admin_user WHERE id=? AND enabled AND enrolled AND security_version=?",s.adminId(),s.adminSecurityVersion());
-            case ACCOUNT -> exists(c,"SELECT 1 FROM customer_account WHERE id=? AND customer_id=?",s.accountId(),s.customerId());
+            case ACCOUNT -> exists(c,"SELECT 1 FROM customer_account WHERE id=? AND customer_id=? AND credential_version=?",s.accountId(),s.customerId(),row.accountVersion);
             case GUEST -> exists(c,"SELECT 1 FROM access_grant g WHERE g.id=? AND g.customer_id=? AND g.browser_hash=? AND g.revoked_at IS NULL AND (g.parent_grant_id IS NULL OR EXISTS(SELECT 1 FROM access_grant parent WHERE parent.id=g.parent_grant_id AND parent.kind='CREATE' AND parent.revoked_at IS NULL AND parent.consumed_at=g.issued_at AND parent.customer_id=g.customer_id AND parent.browser_hash=g.browser_hash AND parent.booking_id=g.booking_id)) AND g.issued_at<=? AND ((g.consumed_at IS NULL AND ?<g.expires_at) OR (g.kind='CREATE' AND g.consumed_at IS NOT NULL AND EXISTS(SELECT 1 FROM access_grant child WHERE child.parent_grant_id=g.id AND child.kind='MANAGE' AND child.revoked_at IS NULL AND child.issued_at<=? AND ?<child.expires_at)))",
                     s.grantId(),s.customerId(),s.reference().browserHash(),now,now,now,now);
         };
