@@ -39,7 +39,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
-| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; https://github.com/Laymer/purpuragenda/pull/64 atf4480f5 source reviewed,871Java/6Angular/234Python and all14hosted checks pass on priorbase; current-main integration and fresh gates remain;014 reserved for reminders |
+| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | In progress; notification slice1PR64 confirmed merged669bc5b; Codex-worker-c claims reserved014reminders with current-state/grace/retry suppression; runtime composition remainsP45 |
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
@@ -60,6 +60,8 @@ Delivery prerequisites and concurrent task lanes are specified in docs/delivery.
 Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
+
+- P36/reminders: agent=Codex-worker-c; branch=task/p36-reminders; base=main; handoff=docs/handoffs/p36-reminders.md
 
 - P20/customer-view: agent=Codex-coordinator; branch=task/p20-customer-view; base=main; handoff=docs/handoffs/p20-customer-view.md
 - P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
