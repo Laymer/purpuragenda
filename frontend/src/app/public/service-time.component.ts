@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, inject, output, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, output, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { Subscription } from 'rxjs';
 import { Availability, CatalogService, Service, Slot } from '../shared/generated';
-import { addDays, canonicalZone, civilDate, ConsultationSelection, retryDelay, selected, slotDuration, slotLabel, offsetLabel, validRange } from './selection-model';
+import { addDays, canonicalZone, civilDate, ConsultationSelection, retryDelay, selected, slotDuration, slotLabel, timeLabel, dateLabel, offsetLabel, validRange } from './selection-model';
 
 @Component({
   imports: [CurrencyPipe, ReactiveFormsModule, MatButtonModule, MatCardModule],
@@ -27,6 +27,9 @@ export class ServiceTimeComponent {
   readonly error = signal<string | null>(null);
   readonly formError = signal<string | null>(null);
   readonly choice = signal<Slot | null>(null);
+  readonly days = signal<string[]>([]);
+  readonly day = signal('');
+  readonly shownSlots = computed(() => this.availability()?.slots.filter(slot => slot.displayLocalTime.startsWith(this.day())) ?? []);
   readonly retrySeconds = signal(0);
   readonly zones = ['Europe/Brussels', 'UTC', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'Australia/Sydney'];
   readonly form = new FormGroup({
@@ -35,6 +38,8 @@ export class ServiceTimeComponent {
     zone: new FormControl('Europe/Brussels', { nonNullable: true }),
   });
   readonly label = slotLabel;
+  readonly time = timeLabel;
+  readonly date = dateLabel;
   readonly duration = slotDuration;
   readonly offset = offsetLabel;
   private catalogRequest?: Subscription;
@@ -80,13 +85,20 @@ export class ServiceTimeComponent {
     this.form.controls.zone.setValue(canonical, { emitEvent: false });
     this.loading.set(true);
     this.timesRequest = this.catalog.availability(service.id, from, to, canonical).subscribe({
-      next: values => { this.availability.set(values); this.loading.set(false); },
+      next: values => {
+        const days = [...new Set(values.slots.map(slot => slot.displayLocalTime.slice(0, 10)))].sort();
+        this.days.set(days); this.day.set(days[0] ?? ''); this.availability.set(values); this.loading.set(false);
+      },
       error: (failure: HttpErrorResponse) => {
         this.loading.set(false);
         this.error.set(failure.status === 404 ? 'This consultation is no longer available. Reload consultations and choose again.' : 'We could not load times. Please try again.');
         this.throttled(failure);
       },
     });
+  }
+
+  chooseDay(day: string): void {
+    this.day.set(day); this.choice.set(null); this.selectionChanged.emit(null);
   }
 
   chooseTime(slot: Slot): void {
@@ -96,7 +108,7 @@ export class ServiceTimeComponent {
 
   private clearTimes(): void {
     this.timesRequest?.unsubscribe(); this.loading.set(false); this.availability.set(null);
-    this.error.set(null); this.formError.set(null); this.choice.set(null); this.selectionChanged.emit(null);
+    this.error.set(null); this.formError.set(null); this.choice.set(null); this.days.set([]); this.day.set(''); this.selectionChanged.emit(null);
   }
 
   private throttled(failure: HttpErrorResponse): void {

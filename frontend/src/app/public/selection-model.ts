@@ -59,3 +59,15 @@ export function selected(service: Service, availability: Availability, slot: Slo
 }
 
 export function offsetLabel(offset: string): string { return offset === 'Z' ? 'UTC+00:00' : 'UTC' + offset; }
+
+const dateFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' });
+export function dateLabel(date: string): string { return dateFormat.format(new Date(date + 'T12:00:00Z')); }
+const timeFormats = new Map<string, Intl.DateTimeFormat>();
+export function timeLabel(slot: Slot, zone: string): string {
+  let formatter = timeFormats.get(zone);
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat('en', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    timeFormats.set(zone, formatter);
+  }
+  return formatter.format(new Date(slot.startInstant));
+}

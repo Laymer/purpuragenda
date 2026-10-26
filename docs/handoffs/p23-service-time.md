@@ -1,11 +1,11 @@
 # Public service and time selection
 
-- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T15:45:00Z.
+- Agent and UTC checkpoint: Codex-worker-c, 2026-10-26T19:00:00Z.
 - Current task: P23/service-time; branch: task/p23-service-time; base: main (5d7d8be); PR URL: https://github.com/Laymer/purpuragenda/pull/70.
-- Last pushed implementation commit:5fc9eb5; uncommitted changes: real public selection component/helpers/style and22Angular cases, lazy /book route/homeCTA and evidence being consolidated into first checkpoint.
+- Last pushed implementation commit:68bd5166d75b663f816ac4c3c321e7fdca656ec1; uncommitted changes: compact available-day/time grid, light purple styling and relevant helper/DOM regressions being committed with this checkpoint.
 - What works: real catalog/availability selection, canonical IANA zones and explicit UTCoffsets for repeated instants, versioned in-memory selection, stale-request cancellation and choices cleared on every parameter/version refresh. Safe loading/error/empty/retry/429 states and labelled native keyboard controls.
-- What remains: full implemented gates, current-main integration, realbrowser preview and independent exact-head review. Authenticated session/access/intake/submission remain later P17/P20/P24 slices; no fake final action.
+- What remains: full implemented gates, current-main integration, updated realbrowser preview and fresh independent exact-head review. Authenticated session/access/intake/submission remain later P17/P20/P24 slices; no fake final action.
 - Decisions: exclusively own handwritten frontend routes/home/public feature and tests; no OpenAPI/generated changes. Selection stays in memory; no fake booking submission. Shared authenticated access/intake follows coordinated P17/P20 work.
-- Verification:22Angular cases and production build/sourcecompletecoverage pass104/104lines82/82branches; initial339.59kB and lazy68.33kB. First compile/type and2encoded-query fixture failures were diagnosed/fixed and preserved as sanitized counters; fullnative/hosted gates pending.
+- Verification:26Angular cases, production build and source-complete coverage pass119/119lines87/88branches; initial339.66kB and lazy73.77kB. Real-backend Chromium1.64 preview of prior68bd passed all3viewports with keyboard selection and no overflow/runtime errors; exposed unwieldy110-slot mobile list and dark Material surfaces, corrected in this checkpoint. Two compact-grid fixture failures were locale punctuation expectations (en-GB omits the weekday comma), corrected against actual Intl output. Updated real preview, fullnative/hosted gates and fresh source review remain pending.
 - Next concrete action: publish coherent tested checkpoint, integrate current main without rewriting history, run all mandatory categories and independent review; browser/Compose resource slot coordinated by root.
-- Recovery: origin/recovery/2026-10-25-prototype at6f9405b; existing worktrees/volumes preserved; sibling P36 draft64 remains frozen at48705cd awaiting finalmainintegration; stacked PR dependencies: mergedP19 only.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b; existing worktrees/volumes preserved; sibling P36 draft64 atd431207 has fresh independent review after JDBC refactor; awaits main69 integration and full gates; stacked PR dependencies: mergedP19 only.

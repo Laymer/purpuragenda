@@ -54,11 +54,16 @@
       @if (times.slots.length === 0) { <p>No times are available in this range. Try another date range or consultation.</p> }
       @if (times.restrictions.length > 0) { <p>Availability is limited by the practice’s booking policies. Try a different date range if no times suit you.</p> }
       @if (times.slots.length > 0) {
+        <label class="day-picker" for="available-day">Available day
+          <select id="available-day" [value]="day()" (change)="chooseDay($any($event.target).value)">
+            @for (day of days(); track day) { <option [value]="day">{{ date(day) }}</option> }
+          </select>
+        </label>
         <fieldset class="times"><legend>Choose an available time</legend>
-          @for (slot of times.slots; track slot.startInstant) {
+          @for (slot of shownSlots(); track slot.startInstant) {
             <label class="time-option" [class.is-selected]="choice()?.startInstant === slot.startInstant">
               <input type="radio" name="time" [value]="slot.startInstant" [checked]="choice()?.startInstant === slot.startInstant" (change)="chooseTime(slot)">
-              <span>{{ label(slot, times.displayZone) }}</span><small>{{ offset(slot.offset) }} · {{ duration(slot) }} minutes</small>
+              <span>{{ time(slot, times.displayZone) }}</span><small>{{ offset(slot.offset) }} · {{ duration(slot) }} min</small>
             </label>
           }
         </fieldset>

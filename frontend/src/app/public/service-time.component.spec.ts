@@ -56,7 +56,7 @@ describe('Real catalog-backed service and time selection', () => {
     ready(); choose().flush(available()); render();
     const inputs = [...root().querySelectorAll<HTMLInputElement>('input[name=time]')];
     expect(inputs.map(input => input.value)).toEqual(slots.map(slot => slot.startInstant));
-    expect(text()).toContain('UTC+02:00 · 30 minutes'); expect(text()).toContain('UTC+01:00 · 30 minutes');
+    expect(text()).toContain('UTC+02:00 · 30 min'); expect(text()).toContain('UTC+01:00 · 30 min');
     const emitted: unknown[] = []; component.selectionChanged.subscribe(value => emitted.push(value));
     inputs[1].dispatchEvent(new Event('change')); render();
     expect(component.choice()?.startInstant).toBe(slots[1].startInstant);
@@ -78,6 +78,16 @@ describe('Real catalog-backed service and time selection', () => {
     component.form.controls.from.setValue('2026-10-26'); render(); expect(changingDates.cancelled).toBe(true);
     component.form.controls.to.setValue('2026-10-27'); render(); expect(component.choice()).toBeNull();
     fixture.destroy();
+  });
+
+  it('shows one available day at a time and clears selection when the day changes', () => {
+    ready(); choose().flush(available({ slots: [...slots, { ...slots[0], startInstant: '2026-10-26T08:00:00Z', sessionEndInstant: '2026-10-26T08:30:00Z', displayLocalTime: '2026-10-26T09:00', offset: '+01:00' }] })); render();
+    expect(root().querySelectorAll('input[name=time]').length).toBe(2); component.chooseTime(slots[0]); render();
+    const day = root().querySelector<HTMLSelectElement>('#available-day')!;
+    expect(day.options.length).toBe(2); expect(day.options[0].textContent).toBe('Sunday 25 October');
+    day.value = '2026-10-26'; day.dispatchEvent(new Event('change')); render();
+    expect(component.choice()).toBeNull(); expect(root().querySelectorAll('input[name=time]').length).toBe(1);
+    expect(text()).toContain('09:00'); http.expectNone(request => request.url === '/api/v1/availability');
   });
 
   it('uses canonical IANA zones and displays times across business and display dates', () => {

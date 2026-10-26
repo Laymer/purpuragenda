@@ -7,14 +7,14 @@ fieldset { border: 0; padding: 0; margin: 32px 0; min-width: 0; }
 .services legend, .times legend { float: left; width: 100%; grid-column: 1 / -1; }
 .services::after, .times::after { content: ''; display: block; clear: both; }
 .service-option, .time-option { cursor: pointer; }
-mat-card { height: 100%; border-radius: 16px; }
+mat-card { height: 100%; border-radius: 16px; background: #fff; color: #30263b; }
 mat-card-content { display: grid; grid-template-columns: 20px 1fr; gap: 8px 12px; padding: 24px !important; }
 .service-name { font-weight: 600; font-size: 1.1rem; }
 .service-details { grid-column: 2; color: #605568; }
 .is-selected mat-card, .time-option.is-selected { border-color: #68458c; background: #f0e8f7; }
 .search { border-top: 1px solid #e3dde6; padding-top: 32px; }
 .search-fields label { display: grid; gap: 8px; font-weight: 500; }
-.search-fields input { width: 100%; min-height: 48px; border: 1px solid #85788e; border-radius: 8px; padding: 10px 12px; font: inherit; background: white; color: #30263b; }
+.search-fields input, .day-picker select { width: 100%; min-height: 48px; border: 1px solid #85788e; border-radius: 8px; padding: 10px 12px; font: inherit; background: white; color: #30263b; }
 input:focus-visible, button:focus-visible, label:focus-within mat-card { outline: 3px solid #68458c; outline-offset: 3px; }
 .hint { color: #605568; font-size: .9rem; }
 .results { margin-top: 32px; }
@@ -23,3 +23,10 @@ input:focus-visible, button:focus-visible, label:focus-within mat-card { outline
 .selection { margin-top: 32px; border-left: 4px solid #68458c; background: #f0e8f7; padding: 24px; border-radius: 0 12px 12px 0; }
 [role=alert] { margin: 24px 0; color: #9b253a; }
 @media (max-width: 480px) { .booking-start { padding: 28px 20px 48px; } .search-fields { grid-template-columns: 1fr; } }
+
+.day-picker { display: grid; gap: 8px; max-width: 360px; margin: 20px 0; font-weight: 500; }
+.times { grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); gap: 10px; }
+.time-option { padding: 12px; gap: 6px; grid-template-columns: 18px 1fr; }
+.time-option small { font-size: .8rem; }
+button[mat-flat-button] { background: #68458c; color: #fff; }
+button[mat-flat-button]:disabled { background: #e3dde6; color: #605568; }

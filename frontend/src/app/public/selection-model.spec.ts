@@ -1,4 +1,4 @@
-import { addDays, canonicalZone, civilDate, retryDelay, slotDuration, slotLabel, offsetLabel, validRange } from './selection-model';
+import { addDays, canonicalZone, civilDate, retryDelay, slotDuration, slotLabel, timeLabel, dateLabel, offsetLabel, validRange } from './selection-model';
 import { Slot } from '../shared/generated';
 
 describe('Civil display dates and advisory selection', () => {
@@ -35,6 +35,8 @@ describe('Civil display dates and advisory selection', () => {
     const slot: Slot = { startInstant: '2026-10-25T00:30:00Z', sessionEndInstant: '2026-10-25T01:00:00Z', reservedEndInstant: '2026-10-25T02:30:00Z', businessDate: '2026-10-25', displayLocalTime: '2026-10-25T02:30', offset: '+02:00' };
     expect(slotDuration(slot)).toBe(30); expect(slotLabel(slot, 'Europe/Brussels')).toContain('02:30');
     expect(slotLabel(slot, 'America/New_York')).toContain('20:30');
+    expect(timeLabel(slot, 'Europe/Brussels')).toBe('02:30');
+    expect(dateLabel('2026-10-25')).toBe('Sunday 25 October');
     expect(offsetLabel('Z')).toBe('UTC+00:00'); expect(offsetLabel('+02:00')).toBe('UTC+02:00');
   });
 });
