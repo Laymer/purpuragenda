@@ -615,6 +615,13 @@ P11/admin-create slice 1 (Claude-workerE, branch task/p11-admin-create): adminis
 
 P11/admin-create slice 1 native result (head before this note c8adcd5): pinned verify-build passed 108 domain, 125 application (10 AdminBooking), 357 adapters (22 AdminBookingPostgres), 23 bootstrap, quality 3, 6 Angular and 230 Python, zero failures/errors/skips, SAST passed. Coverage: domain 276/277 lines 478/489 branches; application 493/495 and 416/424; adapters 1264/1280 and 1021/1114; bootstrap 182/196 and 154/168; Angular 22/22 and 30/30. An earlier run failed the closed business-code inventory test (SchedulingCommandsTest) until CALENDAR_CHANGED was added; no threshold changed. Hosted results are on the draft PR.
 
+## P21 slice 1 native evidence (PR56, merged 2f9c894)
+
+Head 2cb760650c7fbf192a2e89a158bd01adb20f0429 passed the full native `verify-build.sh` (exit 0, zero failures or skips): 108 domain, 122 application, 373 adapters, 23 bootstrap and 3 architecture tests (629 Java) and 230 strict Python cases. Coverage domain 276/277 lines 478/489 branches, application 475/477 and 400/402, adapters 1262/1285 and 1029/1124, bootstrap 182/196 and 154/168. All 14 hosted checks passed. The first run failed the pinned business-code list in SchedulingCommandsTest, corrected additively before the passing run.
+
+## P21 slice 2 approval and confirmation checkpoint
+
+`AdministratorFinance.approve`/`confirmExternalPayment` and the PostgresFinance confirmation effects (no migration). Native `verify-build.sh` passed (exit 0, zero failures or skips): 108 domain, 137 application, 421 adapters, 23 bootstrap and 3 architecture tests (692 Java) and 230 strict Python cases. Coverage domain 276/277 lines 478/489 branches, application 551/553 and 449/458, adapters 1347/1371 and 1112/1220, bootstrap 182/196 and 154/168. Hosted results are on the draft PR.
 P11/conflict-assessment slice 2 (Claude-workerE, branch task/p11-conflict-assessment): OVERRIDE_UNUSED rejection, MEETING_IN_USE receipt for duplicate participant meeting ids, documented admin-attested identity risk and the read-only ConfigurationConflicts query (6 application and 2 actual-container cases). No migration. Native and hosted results are recorded on the draft PR.
 
 P11 slice 2 native result: pinned verify-build passed 108 domain, 141 application, 398 adapters, 23 bootstrap, quality 3, 6 Angular and 230 Python, zero failures/errors/skips. Coverage: domain 276/277 lines 478/489 branches; application 572/574 and 463/472; adapters 1334/1358 and 1074/1178; bootstrap 182/196 and 154/168; Angular 22/22 and 30/30. No threshold changed; hosted results are on the draft PR.

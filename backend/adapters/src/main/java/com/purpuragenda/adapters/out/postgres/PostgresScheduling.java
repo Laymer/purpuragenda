@@ -157,6 +157,10 @@ public final class PostgresScheduling implements SchedulingUnitOfWork {
                         && pg.getServerErrorMessage()!=null && "practitioner_no_overlap".equals(pg.getServerErrorMessage().getConstraint())) {
                     return Receipt.failure(Code.SLOT_UNAVAILABLE);
                 }
+                if(sql instanceof PSQLException pg && "23505".equals(sql.getSQLState())
+                        && pg.getServerErrorMessage()!=null && "booking_meeting_id_key".equals(pg.getServerErrorMessage().getConstraint())) {
+                    return Receipt.failure(Code.MEETING_IN_USE);
+                }
                 throw failure;
             } finally { status.releaseSavepoint(savepoint); }
         }

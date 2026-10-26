@@ -24,7 +24,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | Recovered WIP; dependencies in docs/delivery.md;  |
 | P19 — Complete public service and availability HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
-| P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; Claude-workerF application commands and PostgreSQL adapter in stacked draft slices (receipts/reconciliation, approval/confirmation, refunds), no migration; HTTP remains P22/P29 |
+| P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; Claude-workerF slice 1 receipts/reconciliation merged https://github.com/Laymer/purpuragenda/pull/56 at 2f9c894; approval/confirmation in draft slice task/p21-approval-confirmation; refunds remain; no migration; HTTP remains P22/P29 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | Recovered WIP; dependencies in docs/delivery.md;  |
 | P23 — Complete public service selection and timezone-aware time selection | Recovered WIP; dependencies in docs/delivery.md;  |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -62,6 +62,9 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P17/throttles: agent=Claude-workerD; branch=task/p17-throttles; base=main; handoff=docs/handoffs/p17-throttles.md
+- P11/conflict-assessment: agent=Claude-workerE; branch=task/p11-conflict-assessment; base=main; handoff=docs/handoffs/p11-conflict-assessment.md
+- P45/followup: agent=Claude-workerC; branch=task/p45-followup-v2; base=main; handoff=docs/handoffs/p45-followup.md
+- P21/finance-commands: agent=Claude-workerF; branch=task/p21-approval-confirmation; base=main; handoff=docs/handoffs/p21-finance-commands.md
 
 ## Active handoff
 

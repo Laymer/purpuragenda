@@ -1,7 +1,7 @@
 package com.purpuragenda.application.port.out;
 
 import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
-import com.purpuragenda.domain.booking.Booking;
+import com.purpuragenda.domain.booking.*;
 import com.purpuragenda.domain.payment.PaymentLedger;
 import java.util.*;
 import java.util.function.Function;
@@ -14,7 +14,7 @@ import static com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
  */
 public interface FinanceUnitOfWork {
     Receipt execute(Command command,Function<Finance,Receipt> work);
-    enum Operation { RECORD_RECEIPT }
+    enum Operation { RECORD_RECEIPT, APPROVE_BOOKING, CONFIRM_BOOKING }
     record Command(SessionBinding session,UUID bookingId,Operation operation,String key,String fingerprint) {
         public Command {
             Objects.requireNonNull(session);
@@ -28,9 +28,13 @@ public interface FinanceUnitOfWork {
         Booking authorizedBooking();
         /** Every receipt, refund and obligation of the locked booking. */
         PaymentLedger ledger();
+        /** True when another booking already owns this participant meeting number. */
+        boolean meetingInUse(Meeting meeting,UUID bookingId);
         /** True when a financial fact with this kind/method/reference exists on any booking. */
         boolean referenceUsed(PaymentLedger.Kind kind,String method,String reference);
         /** Persist one verified receipt; a late receipt on a terminal booking also records its reconciliation obligation. */
         void receiptRecorded(PaymentLedger.Entry receipt,boolean late);
+        /** The saved pending-to-confirmed transition; payment facts are untouched. Records audit and outbox. */
+        void confirmedEffects(Booking original,Booking confirmed);
     }
 }
