@@ -20,7 +20,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessionsPR45 mergeda6a62fa, HTTP origin/CSRF https://github.com/Laymer/purpuragenda/pull/53 merged7523709, throttles/cleanup https://github.com/Laymer/purpuragenda/pull/57 merged93f586c; guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 at a8183cf passed866Java/10Angular/233Python, all14hosted and clean localCompose; main7216986 integration under fresh verification by Codex-worker-b; administrator auth HTTP remains |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup merged; guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad after875Java/10Angular/234Python, all14checks and cleanCompose; administrator login claimed by Codex-worker-b; recovery HTTP remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit enrollment localae55b4b claimed by Codex-worker-a, supersedes old draft https://github.com/Laymer/purpuragenda/pull/63; migration015 retained,016 reserved additive correction; login/profile/history remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -62,7 +62,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active task claims
 
 - P45/durable-workers: agent=Codex-coordinator; branch=task/p45-durable-workers; base=main; handoff=docs/handoffs/p45-durable-workers.md
-- P17/auth-http: agent=Codex-worker-b; branch=task/p17-auth-http; base=main; handoff=docs/handoffs/p17-auth-http.md
+- P17/admin-login: agent=Codex-worker-b; branch=task/p17-admin-login; base=main; handoff=docs/handoffs/p17-admin-login.md
 - P18/accounts: agent=Codex-worker-a; branch=task/p18-accounts-v2; base=main; handoff=docs/handoffs/p18-accounts.md
 - P36/notifications: agent=Codex-worker-c; branch=task/p36-notifications; base=main; handoff=docs/handoffs/p36-notifications.md
 

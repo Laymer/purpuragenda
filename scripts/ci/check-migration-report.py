@@ -43,6 +43,8 @@ def validate(root):
         suites.append(('SecurityCleanupDatabaseTest', 18))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
+    if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():
+        suites.append(('AdministratorLoginPostgresTest', 12))
     for name, minimum in suites:
         qualified = 'com.purpuragenda.adapters.' + name
         report = root / ('backend/adapters/target/surefire-reports/TEST-' + qualified + '.xml')
@@ -53,7 +55,7 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed authority cases')
 
@@ -64,7 +66,7 @@ def validate(root):
             raise ValueError('Missing mandatory runtime PostgreSQL report')
         suite = ET.parse(report).getroot()
         cases = suite.findall('testcase')
-        if (suite.get('name') != qualified or len(cases) < 10 or int(suite.get('tests', '0')) != len(cases)
+        if (suite.get('name') != qualified or len(cases) < 11 or int(suite.get('tests', '0')) != len(cases)
                 or any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
                 or any(suite.findall('.//' + key) for key in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed runtime PostgreSQL suite')
