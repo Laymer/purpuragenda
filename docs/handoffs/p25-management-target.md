@@ -1,8 +1,8 @@
 # Scoped guest booking discovery
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:29:54Z.
-- Current task: P25/management-target; branch: task/p25-management-target; base: main; PR URL: none yet.
-- Last pushed implementation commit: none; uncommitted changes: local feature checkpoint ec38530 plus pending clean accountHTTP0509 integration, generated endpoint and current tests.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-27T00:06:00Z.
+- Current task: P25/management-target; branch: task/p25-management-target; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/85.
+- Last pushed implementation commit:4f5037f; uncommitted changes: append-only main79/cc3fe39 integration with meaningful worker/runtime tests and actual17-case report union.
 - What works: guest proof redemption and persisted scoped booking reads are merged; the verification landing has no authoritative booking target to display after a MANAGE proof.
 - What remains: current-main integration, full native/hosted/Compose/coverage gates and independent review; management UI follows separately.
 - Decisions: derive exactly the persisted grant-bound target, never guest history. Reuse existing complete persisted authority checks in one read-only REPEATABLE READ snapshot and captured database time. No session touch, resource lock, mutation, migration or client-supplied target. AccountHTTP84 clean contract ancestry adopted; release the extended contract at publication.
