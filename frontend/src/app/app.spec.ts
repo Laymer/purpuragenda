@@ -10,7 +10,7 @@ describe('Application shell and typed API boundary', () => {
   beforeEach(() => TestBed.configureTestingModule({
     imports: [AppComponent], providers: [...appConfig.providers, provideHttpClientTesting()],
   }));
-  afterEach(() => { TestBed.inject(HttpTestingController).verify(); TestBed.resetTestingModule(); });
+  afterEach(() => { try { TestBed.inject(HttpTestingController).verify(); } finally { TestBed.resetTestingModule(); } });
 
   it('provides landmarks, a working home route and a keyboard skip destination', async () => {
     const fixture = TestBed.createComponent(AppComponent);
@@ -30,7 +30,10 @@ describe('Application shell and typed API boundary', () => {
   it('lazy-loads public selection and reads consultations from the real API boundary', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     await TestBed.inject(Router).navigateByUrl('/book'); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Choose a consultation.');
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Request a consultation');
+    expect(fixture.nativeElement.querySelectorAll('h1').length).toBe(1);
+    const ids = [...(fixture.nativeElement as HTMLElement).querySelectorAll('[id]')].map(element => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
     TestBed.inject(HttpTestingController).expectOne('/api/v1/services').flush([]); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No consultations are available');
   });
