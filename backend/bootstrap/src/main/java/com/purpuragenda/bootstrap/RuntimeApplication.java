@@ -1,5 +1,8 @@
 package com.purpuragenda.bootstrap;
 
+import com.purpuragenda.application.scheduling.AdministratorBookingView;
+import com.purpuragenda.adapters.out.postgres.PostgresAdministratorBookingQuery;
+
 import com.purpuragenda.adapters.in.rest.*;
 import com.purpuragenda.adapters.out.email.*;
 import com.purpuragenda.adapters.out.postgres.PostgresScheduling;
@@ -79,6 +82,12 @@ public class RuntimeApplication {
     @Bean GuestProofs guestProofs(RequestThrottle throttle,AuthDeliveryStore delivery,GuestRecovery recovery) { return new GuestProofs(throttle,delivery,recovery); }
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
+    }
+    @Bean AdministratorBookingView administratorBookingView(DataSource source,RuntimeSettings settings) {
+        return new AdministratorBookingView(new PostgresAdministratorBookingQuery(source,settings.meetingHosts()));
+    }
+    @Bean AdministratorBookingController administratorBookingController(AdministratorBookingView view,SessionAccess access,SessionCookies cookies) {
+        return new AdministratorBookingController(view,access,cookies);
     }
     @Bean AdministratorRecovery administratorRecovery(PrivateAdminRecovery recovery,RequestThrottle throttle) {
         return new AdministratorRecovery(recovery,throttle,new SessionRecoveryBinding());

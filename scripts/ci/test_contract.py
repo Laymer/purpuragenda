@@ -20,7 +20,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
-                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator',
+                          'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking',
                           'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
@@ -112,6 +112,28 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('boolean', result['requiresFreshMfa']['type'])
         self.assertEqual(10, result['recoveryCodes']['minItems'])
         self.assertFalse(result['recoveryCodes'].get('uniqueItems', False), 'Pinned client must hydrate JSON as an array')
+
+    def test_administrator_read_contract_has_bounded_private_explicit_snapshots(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        for path, name in (('/admin/bookings', 'AdministratorAgendaPage'), ('/admin/bookings/{bookingId}', 'AdministratorBookingDetail')):
+            operation = paths[path]['get']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual('#/components/schemas/' + name, operation['responses']['200']['content']['application/json']['schema']['$ref'])
+            self.assertTrue({'400', '401', '403', '503'} <= operation['responses'].keys())
+            for response in operation['responses'].values():
+                if '$ref' in response: response = self.document['components']['responses'][response['$ref'].rsplit('/', 1)[1]]
+                self.assertEqual(['no-store'], response['headers']['Cache-Control']['schema']['enum'])
+        parameters = {value['name']: value for value in paths['/admin/bookings']['get']['parameters']}
+        self.assertEqual({'from', 'through', 'limit', 'cursor'}, set(parameters))
+        self.assertTrue(parameters['from']['required']); self.assertTrue(parameters['through']['required'])
+        self.assertEqual(100, parameters['limit']['schema']['maximum']); self.assertEqual(200, parameters['cursor']['schema']['maxLength'])
+        self.assertFalse(schemas['AdministratorAgendaPage']['properties']['entries'].get('uniqueItems', False))
+        self.assertFalse({'intake', 'deliveryEmail', 'payment', 'meetingUrl'} & schemas['AdministratorAgendaEntry']['properties'].keys())
+        self.assertFalse({'customerId', 'adminId'} & schemas['AdministratorBookingDetail']['properties'].keys())
+        self.assertTrue({'snapshot', 'payment', 'pendingExpired', 'version'} <= schemas['AdministratorBookingDetail']['properties'].keys())
+        self.assertTrue(all(not value.get('writeOnly', False) for value in schemas['AdministratorIntakeSnapshot']['properties'].values()))
+        self.assertIn('ETag', paths['/admin/bookings/{bookingId}']['get']['responses']['200']['headers'])
+        self.assertNotIn('ETag', paths['/admin/bookings']['get']['responses']['200']['headers'])
 
     def test_all_references_resolve(self):
         def visit(value):

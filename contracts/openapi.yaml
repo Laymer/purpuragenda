@@ -1163,7 +1163,7 @@
         "tags": [
           "Bookings"
         ],
-        "description": "Read only the booking owned by the account or exact guest grant. Does not touch idle lifetime, acquire scheduling locks or reclaim expiry. All replies are no-store; conditional304 is not used.",
+        "description": "Read only the booking owned by the account or exact guest grant. Does not touch idle lifetime, acquire scheduling locks or reclaim expiry. All replies are no-store; conditional304 is not used. Always returns the current private no-store body, ignoring conditional cache validators: the numeric ETag identifies the booking command version, while independent financial facts may change without advancing it.",
         "security": [
           {
             "sessionCookie": []
@@ -1977,6 +1977,205 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/admin/bookings": {
+      "get": {
+        "operationId": "listAdministratorBookings",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1\u2013100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "through",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorAgendaPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}": {
+      "get": {
+        "operationId": "getAdministratorBooking",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted booking version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorBookingDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
           }
         }
       }
@@ -2907,6 +3106,446 @@
             "minimum": 0
           }
         }
+      },
+      "AdministratorAgendaEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRMATION",
+              "CONFIRMED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED",
+              "COMPLETED",
+              "NO_SHOW"
+            ]
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "serviceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "version",
+          "state",
+          "startInstant",
+          "sessionEndInstant",
+          "serviceName"
+        ],
+        "description": "Minimal private agenda: excludes intake, contact, customer identity, meeting links and payment references."
+      },
+      "AdministratorAgendaPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorAgendaEntry"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "Opaque canonical start/id cursor. Copy unchanged; it confers no authority."
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "enum": [
+              "Europe/Brussels"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "nextCursor",
+          "serverNow",
+          "businessZone"
+        ]
+      },
+      "AdministratorIntakeSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "firstName",
+          "lastName",
+          "telephone",
+          "birthDate",
+          "birthTime",
+          "birthplace",
+          "message"
+        ],
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "telephone": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 40,
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "birthTime": {
+            "type": "string",
+            "pattern": "^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$"
+          },
+          "birthplace": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "description": "Civil birth date/time with no timezone or geocoding inference. Intake is request-only and never appears in booking status."
+      },
+      "AdministratorBookingSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "creationEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "displayZone": {
+            "type": "string"
+          },
+          "noticeVersion": {
+            "type": "string"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BookingReviewPolicy"
+          },
+          "intake": {
+            "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
+          }
+        },
+        "required": [
+          "creationEmail",
+          "displayZone",
+          "noticeVersion",
+          "service",
+          "policy",
+          "intake"
+        ],
+        "description": "Immutable creation snapshot. Private owner data; never persist in browser storage or diagnostics."
+      },
+      "AdministratorPaymentEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "RECEIPT",
+              "REFUND"
+            ]
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "method": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receiptId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amountMinor",
+          "currency",
+          "method",
+          "reference",
+          "verifiedAt",
+          "receiptId"
+        ]
+      },
+      "AdministratorRefundObligation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dueMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "dueMinor",
+          "reason"
+        ]
+      },
+      "AdministratorBookingPayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PAID_EXTERNAL",
+              "REFUND_DUE",
+              "REFUNDED_EXTERNAL"
+            ]
+          },
+          "receivedMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "refundedMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "remainingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "refundDueByCurrency": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "receivedByCurrency": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorPaymentEntry"
+            }
+          },
+          "refundObligations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorRefundObligation"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "receivedMinor",
+          "refundedMinor",
+          "remainingMinor",
+          "refundDueByCurrency",
+          "receivedByCurrency",
+          "entries",
+          "refundObligations"
+        ],
+        "description": "Independent immutable money and refund obligations. Approval never asserts payment; currencies are not converted."
+      },
+      "AdministratorBookingDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRMATION",
+              "CONFIRMED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED",
+              "COMPLETED",
+              "NO_SHOW"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER",
+              "ADMINISTRATOR"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reservationEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "pendingExpired": {
+            "type": "boolean"
+          },
+          "deliveryEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "calendarRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "confirmationBasis": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "MANUAL_APPROVAL or EXTERNAL_PAYMENT when previously confirmed."
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AdministratorBookingSnapshot"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/AdministratorBookingPayment"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "version",
+          "state",
+          "origin",
+          "createdAt",
+          "startInstant",
+          "sessionEndInstant",
+          "reservationEndInstant",
+          "pendingExpiresAt",
+          "pendingExpired",
+          "deliveryEmail",
+          "meetingUrl",
+          "calendarRevision",
+          "confirmationBasis",
+          "serverNow",
+          "snapshot",
+          "payment"
+        ],
+        "description": "Private administrator projection; no customer/admin authority identifiers. Read-only mapping; no generic domain serialization."
       }
     },
     "securitySchemes": {
