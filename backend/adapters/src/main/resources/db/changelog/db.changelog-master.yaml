@@ -127,3 +127,11 @@ databaseChangeLog:
             path: 017-account-authentication.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 014-reminder-deadlines
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 014-reminder-deadlines.sql
+            relativeToChangelogFile: true
+            splitStatements: false
