@@ -71,8 +71,9 @@ class CoreJourneyE2eTest {
                     guest.setDefaultTimeout(TIMEOUT_MS);
                     administrator.setDefaultTimeout(TIMEOUT_MS);
                     String reference = guestRequestsBooking(guest, origin, today, guestEmail, mail);
+                    MailpitClient.Mail received = requestReceivedMail(guest, mail, guestEmail);
                     Page agenda = administratorApproves(administrator, config, today, reference);
-                    guestSeesConfirmation(guest, mail, guestEmail);
+                    guestSeesConfirmation(guest, mail, guestEmail, received);
                     agenda.close();
                 }
             } catch (Throwable failure) {
@@ -181,17 +182,27 @@ class CoreJourneyE2eTest {
         return page;
     }
 
-    private void guestSeesConfirmation(BrowserContext guest, MailpitClient mail, String email) throws Exception {
+    /**
+     * Awaited while the booking is still pending: the application deliberately suppresses a request-received
+     * mail that is only sent after the booking was confirmed (BOOKING_NOT_PENDING), so a fast approval must not race it.
+     */
+    private MailpitClient.Mail requestReceivedMail(BrowserContext guest, MailpitClient mail, String email) throws Exception {
+        Page page = guest.pages().stream().filter(candidate -> candidate.url().endsWith("/book")).findFirst().orElseThrow();
+        at("request-received mail is in Mailpit while the booking is pending", page);
+        MailpitClient.Mail received = mail.await(email, candidate -> candidate.subject().equals("Booking request received"),
+                MAIL_TIMEOUT, "request-received mail");
+        assertFalse(received.text().isBlank());
+        return received;
+    }
+
+    private void guestSeesConfirmation(BrowserContext guest, MailpitClient mail, String email, MailpitClient.Mail received) throws Exception {
         Page page = guest.pages().stream().filter(candidate -> candidate.url().endsWith("/book")).findFirst().orElseThrow();
         at("guest refreshes the status and sees CONFIRMED", page);
         button(page, "Refresh booking status").click();
         assertThat(page.getByText("Status: confirmed.")).isVisible();
         assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Open meeting link"))).hasAttribute("href", ZOOM);
 
-        at("customer notification mails are in Mailpit", page);
-        MailpitClient.Mail received = mail.await(email, candidate -> candidate.subject().equals("Booking request received"),
-                MAIL_TIMEOUT, "request-received mail");
-        assertFalse(received.text().isBlank());
+        at("confirmation mail is in Mailpit", page);
         MailpitClient.Mail confirmed = mail.await(email, candidate -> candidate.subject().equals("Booking confirmed"),
                 MAIL_TIMEOUT, "confirmation mail");
         assertTrue(confirmed.text().contains("Meeting link: " + ZOOM), "confirmation mail carries the approved meeting link");
