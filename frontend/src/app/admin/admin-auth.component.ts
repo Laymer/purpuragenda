@@ -1,6 +1,7 @@
 import { Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { safeReturn } from './admin-reauth';
 import { MatButtonModule } from '@angular/material/button';
 import { AdministratorService, SessionStateRoleEnum } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
@@ -37,6 +38,8 @@ export class AdminAuthComponent {
   readonly sessions = inject(SessionAccess);
   private readonly api = inject(AdministratorService);
   private readonly router = inject(Router);
+  private readonly query = inject(ActivatedRoute, { optional: true })?.snapshot?.queryParamMap ?? null;
+  private readonly returnTo = safeReturn(this.query?.get('return'));
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   private active = true;
   private timer?: ReturnType<typeof setTimeout>;
@@ -49,6 +52,7 @@ export class AdminAuthComponent {
     totp: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] }),
   });
   constructor() {
+    if (this.query?.get('reason') === 'reauth') this.message.set('Your fresh authenticator window ended. Sign in again with a new authenticator code to continue.');
     const remove = this.sessions.onInvalidated(() => { this.clearSecrets(); if (!this.busy()) this.message.set('Your session expired or changed. Check the browser session, then sign in again.'); });
     inject(DestroyRef).onDestroy(() => { this.active = false; remove(); clearTimeout(this.timer); this.form.reset(); });
   }
@@ -63,7 +67,7 @@ export class AdminAuthComponent {
     try {
       const state = await this.sessions.authenticate(csrf => this.api.loginAdministrator(csrf, request));
       if (this.active) this.message.set(state === this.sessions.state() && this.administrator() ? 'Administrator sign in complete.' : 'Your session changed. Check the browser session before continuing.');
-      if (this.active && this.administrator()) await this.router.navigateByUrl('/admin').catch(() => false);
+      if (this.active && this.administrator()) await this.router.navigateByUrl(this.returnTo).catch(() => false);
     } catch (error) { if (this.active) this.failure(error); }
     finally { if (this.active) { this.clearSecrets(); this.busy.set(false); } }
   }

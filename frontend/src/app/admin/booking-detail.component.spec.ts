@@ -58,8 +58,27 @@ describe('Administrator booking detail and approval', () => {
     create(); get().flush({ detail: 'synthetic-provider-detail' }, { status, statusText: 'x' }); await settle();
     expect(view.message()).toContain(text); expect(view.message()).not.toContain('provider'); expect(view.booking()).toBeNull();
   });
-  it.each([401, 403])('sends a %s detail read to sign in', async status => {
-    const spy = vi.spyOn(router, 'navigateByUrl'); create(); get().flush({}, { status, statusText: 'No' }); await settle(); expect(spy).toHaveBeenCalledWith('/admin/login');
+  it('sends a 401 detail read to sign in', async () => {
+    const spy = vi.spyOn(router, 'navigateByUrl'); create(); get().flush({}, { status: 401, statusText: 'No' }); await settle(); expect(spy).toHaveBeenCalledWith('/admin/login');
+  });
+  it('re-authenticates directly after a 403 detail read and returns to the same booking', async () => {
+    const spy = vi.spyOn(router, 'navigate'); create(); get().flush({}, { status: 403, statusText: 'No' }); await settle();
+    expect(spy).toHaveBeenCalledWith(['/admin/login'], { queryParams: { reason: 'reauth', return: '/admin/bookings/' + id } }); expect(TestBed.inject(SessionAccess).state()).toBeNull();
+  });
+  it('does not claim fresh details after a failed reload following a version problem', async () => {
+    await loaded(); view.meeting.setValue(link); const pending = view.approve(); (await post()).flush({}, { status: 412, statusText: 'x' }); await settle();
+    get().flush({}, { status: 503, statusText: 'Unavailable' }); await pending; await settle();
+    expect(view.message()).toContain('could not be loaded'); expect(view.message()).not.toContain('latest details are shown');
+  });
+  it('does not claim fresh details after a failed reload following a generic conflict', async () => {
+    await loaded(); view.meeting.setValue(link); const pending = view.approve(); (await post()).flush({ code: 'SOMETHING' }, { status: 409, statusText: 'x' }); await settle();
+    get().flush({}, { status: 503, statusText: 'Unavailable' }); await pending; await settle();
+    expect(view.message()).toContain('could not be loaded'); expect(view.message()).not.toContain('latest details are shown');
+  });
+  it('says approval succeeded even when the follow-up reload fails', async () => {
+    await loaded(); view.meeting.setValue(link); const pending = view.approve(); (await post()).flush({ bookingId: id, version: 8 }); await settle();
+    get().flush({}, { status: 503, statusText: 'Unavailable' }); await pending; await settle();
+    expect(view.message()).toContain('Booking approved, but');
   });
   it('hides approval for settled or expired bookings', async () => {
     await loaded(detail({ state: 'CONFIRMED', meetingUrl: 'https://zoom.us/j/123456789' })); expect(fixture.nativeElement.querySelector('#meeting-url')).toBeNull();
@@ -110,13 +129,20 @@ describe('Administrator booking detail and approval', () => {
     await loaded(); view.meeting.setValue(link); const pending = view.approve(); (await post()).flush({ code: 'SOMETHING' }, { status: 409, statusText: 'Conflict' }); await settle();
     get().flush(detail()); await pending; await settle(); expect(view.message()).toContain('conflicts');
   });
-  it('asks for a fresh sign in on 403, backs off on 429 and clears private state on 401', async () => {
+  it('re-authenticates directly when approval returns 403 and drops the stale session and frozen command', async () => {
+    await loaded(); view.meeting.setValue(link); const nav = vi.spyOn(router, 'navigate');
+    const pending = view.approve(); (await post()).flush({ code: 'AUTHENTICATION_REQUIRED' }, { status: 403, statusText: 'No' }); await pending; await settle();
+    expect(nav).toHaveBeenCalledWith(['/admin/login'], { queryParams: { reason: 'reauth', return: '/admin/bookings/' + id } });
+    expect(TestBed.inject(SessionAccess).state()).toBeNull(); expect(view.booking()).toBeNull(); expect(view.meeting.value).toBe('');
+  });
+  it('backs off on 429', async () => {
     await loaded(); view.meeting.setValue(link);
-    let pending = view.approve(); (await post()).flush({ code: 'AUTHENTICATION_REQUIRED' }, { status: 403, statusText: 'No' }); await pending; await settle(); expect(view.message()).toContain('fresh authenticator');
-    pending = view.approve(); await settle(); http.expectOne('/api/v1/admin/bookings/' + id + '/approve').flush({}, { status: 429, statusText: 'Many', headers: { 'Retry-After': '5' } }); await pending; await settle();
+    const pending = view.approve(); (await post()).flush({}, { status: 429, statusText: 'Many', headers: { 'Retry-After': '5' } }); await pending; await settle();
     expect(view.message()).toContain('wait');
-    await vi.advanceTimersByTimeAsync(6000);
-    pending = view.approve(); await settle(); http.expectOne('/api/v1/admin/bookings/' + id + '/approve').flush({ code: 'SESSION_REQUIRED' }, { status: 401, statusText: 'No' }); await pending; await settle();
+  });
+  it('clears private state on 401', async () => {
+    await loaded(); view.meeting.setValue(link);
+    const pending = view.approve(); (await post()).flush({ code: 'SESSION_REQUIRED' }, { status: 401, statusText: 'No' }); await pending; await settle();
     expect(view.booking()).toBeNull(); expect(TestBed.inject(SessionAccess).state()).toBeNull();
   });
   it('clears private detail and the frozen command when the session is invalidated', async () => {
