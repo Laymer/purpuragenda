@@ -69,6 +69,8 @@ class ConfigurationAuthorityPostgresTest {
                 var failed=assertThrows(ExecutionException.class,()->result.get(20,TimeUnit.SECONDS));assertInstanceOf(Failure.class,failed.getCause());assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,((Failure)failed.getCause()).kind());unchanged();
             } else {
                 var receipt=result.get(20,TimeUnit.SECONDS);assertTrue(receipt.success());assertEquals(2,receipt.version());assertEquals(1,count("audit_event WHERE type='CALENDAR_CHANGED'"));
+                Instant retained=f.jdbc.queryForObject("SELECT last_seen_at FROM app_session WHERE id=?",(row,n)->row.getTimestamp(1).toInstant(),binding.sessionId());
+                assertTrue(retained.isAfter(time.get()),"Configuration must not rewind the concurrently advanced activity");
             }
         }
         assertEquals(1,captures.get(),"Authorization must not recapture command time after activity or revocation");
