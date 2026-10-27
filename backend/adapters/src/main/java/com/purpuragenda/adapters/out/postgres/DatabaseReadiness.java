@@ -45,6 +45,12 @@ public final class DatabaseReadiness implements HealthIndicator {
                   WHERE conrelid='customer_account'::regclass AND conname='account_credential_shape_v2'
                     AND contype='c' AND convalidated)
                 """)) { if(!shape.next() || !shape.getBoolean(1)) return false; }
+            // Enrollment hashing is exposed only after the dedicated network budget constraint is applied.
+            try(var shape=statement.executeQuery("""
+                SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_constraint
+                  WHERE conrelid='rate_limit_bucket'::regclass AND conname='rate_bucket_policy_v2'
+                    AND contype='c' AND convalidated)
+                """)) { if(!shape.next() || !shape.getBoolean(1)) return false; }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c
                 JOIN scheduling_resource r ON r.id=c.id JOIN business_settings s ON s.id=r.id

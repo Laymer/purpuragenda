@@ -1,0 +1,11 @@
+# P18 explicit enrollment network budget and HTTP
+
+- Agent and UTC checkpoint: Codex-worker-a, 2026-10-26T23:53:45Z.
+- Current task: P18/enrollment-http; branch: task/p18-enrollment-http; base: main; PR URL: not yet published.
+- Last pushed implementation commit: none; uncommitted changes: dedicated network rate kind, prehash enrollment boundary, additive018/readiness marker, actual migration/count updates and boundary/concurrency tests, stacked account HTTP fe5c3fb.
+- What works: explicit enrollment backend66 and account proof/session73 merged; password81 and account HTTP84 are tested independent stack dependencies awaiting final gates.
+- What remains: reserve a real network enrollment budget before Argon, release only after committed success, additive migration018, positive/boundary/replay/rollback/concurrency tests, then bounded explicit enrollment HTTP after contract slot release and all implemented checks/review.
+- Decisions: coordinator reserves018;014 belongs to reminders. Append new migration at current changelog end without reordering applied entries. ACCOUNT_ENROLLMENT_IP budget five failures per fifteen minutes per canonical network (IPv6 /64). No invented email identity, no auth bypass, no session from enrollment. Contract held by coordinator for authorized reschedule availability; no OpenAPI/generated changes yet.
+- Verification: inherited84 fe5c targeted17domain/5application/19realPG and18contract/31report/docs pass; full native still running. New application target44domain/18application passes;31strict report regressions/docs pass. Initial targeted command named a nonexistent domain suite and correctly failed; corrected explicit ValueObjectsTest passes. Initial actual-PG target caught an invalid fixture datasource setter at test-compile; corrected connection properties, fresh target running. No acceptance claimed.
+- Next concrete action: finish actual PostgreSQL upgrade/budget race target, integrate wrapper proof replay/expiry tests, publish bounded reviewed checkpoint; HTTP/contracts only after coordinator releases slot.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; old77 and unpublished HTTP prototype worktrees retained; stacked PR dependencies81/84/80/76 must merge before final main integration. Existing volumes/secrets untouched.

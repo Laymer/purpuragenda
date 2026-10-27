@@ -199,7 +199,7 @@ class GuestAccessDatabaseTest {
         sql("INSERT INTO customer_identity VALUES(?,'legacy@example.test',clock_timestamp())",owner);
         sql("INSERT INTO access_grant(id,customer_id,kind,expires_at) VALUES(?,?,'CREATE',clock_timestamp()+interval '30 minutes')",legacy,owner);
         database.migrate(0); database.migrate(0);
-        assertEquals(16,database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(17,database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,count("access_grant WHERE revoked_at IS NOT NULL AND issued_at IS NULL AND browser_hash IS NULL"));
         assertEquals(1,count("customer_identity")); database.denied("23514","UPDATE access_grant SET revoked_at=NULL WHERE id=?",legacy);
     }

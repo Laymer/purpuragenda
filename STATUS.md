@@ -67,7 +67,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P20/customer-http: agent=Codex-coordinator; branch=task/p20-customer-http; base=main; handoff=docs/handoffs/p20-customer-http.md
 - P17/admin-recovery: agent=Codex-worker-b; branch=task/p17-admin-recovery; base=main; handoff=docs/handoffs/p17-admin-recovery.md
 - P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
-- P18/account-http: agent=Codex-worker-a; branch=task/p18-account-http-v2; base=main; handoff=docs/handoffs/p18-account-http.md
+- P18/enrollment-http: agent=Codex-worker-a; branch=task/p18-enrollment-http; base=main; handoff=docs/handoffs/p18-enrollment-http.md
 
 
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md

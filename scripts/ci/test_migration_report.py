@@ -285,7 +285,7 @@ class MigrationReportTest(unittest.TestCase):
 
     def test_throttles_and_cleanup_require_complete_boundary_race_rollback_and_lock_order_cases(self):
         self.write()
-        for adapter, suite, minimum in (('PostgresRateLimits', 'RateLimitDatabaseTest', 17), ('PostgresSecurityCleanup', 'SecurityCleanupDatabaseTest', 18)):
+        for adapter, suite, minimum in (('PostgresRateLimits', 'RateLimitDatabaseTest', 21), ('PostgresSecurityCleanup', 'SecurityCleanupDatabaseTest', 18)):
             source = self.root / f'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/{adapter}.java'
             source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic adapter')
             with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
@@ -297,6 +297,19 @@ class MigrationReportTest(unittest.TestCase):
                 with self.assertRaises(ValueError): GATE.validate(self.root)
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.{suite}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
             GATE.validate(self.root)
+
+    def test_enrollment_budget_requires_complete_upgrade_expiry_replay_and_two_composition_cases(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/AccountEnrollmentRequest.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic application boundary')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountEnrollmentBudgetDatabaseTest.xml')
+        for count, cases, nested in ((4,4,''), (5,4,''), (5,5,'<failure/>'), (5,5,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountEnrollmentBudgetDatabaseTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentBudgetDatabaseTest" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        GATE.validate(self.root)
 
     def test_guest_http_requires_real_postgres_proof_binding_expiry_and_throttle_cases(self):
         self.write()

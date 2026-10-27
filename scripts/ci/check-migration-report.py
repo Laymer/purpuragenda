@@ -39,8 +39,10 @@ def validate(root):
         suites.append(('CustomerCreationPostgresTest', 43))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBookingQuery.java').is_file():
         suites.append(('CustomerBookingQueryPostgresTest', 22))
+    if (root / 'backend/application/src/main/java/com/purpuragenda/application/AccountEnrollmentRequest.java').is_file():
+        suites.append(('AccountEnrollmentBudgetDatabaseTest', 5))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresRateLimits.java').is_file():
-        suites.append(('RateLimitDatabaseTest', 17))
+        suites.append(('RateLimitDatabaseTest', 21))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSecurityCleanup.java').is_file():
         suites.append(('SecurityCleanupDatabaseTest', 18))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountEnrollment.java').is_file():
@@ -73,7 +75,7 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('PublicSchedulingPostgresTest', 'GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AdministratorBookingQueryPostgresTest', 'AdministratorBookingHttpPostgresTest', 'AccountEnrollmentDatabaseTest', 'AccountAuthenticationDatabaseTest', 'AccountPasswordDatabaseTest', 'AccountHttpPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('AccountEnrollmentBudgetDatabaseTest', 'PublicSchedulingPostgresTest', 'GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AdministratorBookingQueryPostgresTest', 'AdministratorBookingHttpPostgresTest', 'AccountEnrollmentDatabaseTest', 'AccountAuthenticationDatabaseTest', 'AccountPasswordDatabaseTest', 'AccountHttpPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed authority cases')
 
