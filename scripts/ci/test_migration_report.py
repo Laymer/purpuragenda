@@ -560,5 +560,19 @@ class MigrationReportTest(unittest.TestCase):
         GATE.validate(self.root)
 
 
+    def test_account_enrollment_budget_requires_all_real_postgres_cases_and_rejects_hidden_failures(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/AccountEnrollmentRequest.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic enrollment request')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountEnrollmentBudgetDatabaseTest.xml')
+        qualified = 'com.purpuragenda.adapters.AccountEnrollmentBudgetDatabaseTest'
+        for count, actual, nested in ((5, 5, ''), (6, 5, ''), (6, 6, '<failure/>'), (6, 6, '<error/>'), (6, 6, '<skipped/>')):
+            report.write_text(f'<testsuite name="{qualified}" tests="{count}">' + '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
+        GATE.validate(self.root)
+
+
 if __name__ == '__main__':
     unittest.main()

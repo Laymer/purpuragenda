@@ -86,7 +86,7 @@ class SessionDatabaseTest {
             MigrationTest.execute(c,"INSERT INTO admin_user(id,email_key,password_hash,totp_secret,enrolled,enabled,security_version) VALUES (?,'upgrade@example.test',?,'synthetic-encrypted-secret',true,true,7)",admin,AdminMfaDatabaseTest.hash);
         }
         f.fixture.migrate(0);f.fixture.migrate(0);
-        assertEquals(17,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(18,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(7,f.fixture.scalar(MigrationTest.APP,"SELECT security_version FROM admin_user"));
         try(var c=f.fixture.connection(MigrationTest.APP)) { MigrationTest.execute(c,"UPDATE admin_user SET enabled=false"); }
         assertEquals(8,f.fixture.scalar(MigrationTest.APP,"SELECT security_version FROM admin_user"));

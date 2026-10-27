@@ -10,13 +10,14 @@ import java.util.Objects;
  * logged raw: adapters persist only scoped keyed digests.
  */
 public interface RateLimitStore {
-    /** Limits and fixed-window lengths are fixed by the approved policy and mirrored by migration 013. */
+    /** Limits and fixed-window lengths are fixed by the approved policy and mirrored by the applied versioned migrations. */
     enum Kind {
         EMAIL_COOLDOWN(1, Duration.ofSeconds(60)),
         EMAIL_ADDRESS(5, Duration.ofHours(1)),
         EMAIL_IP(30, Duration.ofHours(1)),
         ADMIN_ATTEMPT(5, Duration.ofMinutes(15)),
         ACCOUNT_ATTEMPT(5, Duration.ofMinutes(15)),
+        ACCOUNT_ENROLLMENT_IP(5, Duration.ofMinutes(15)),
         AVAILABILITY_IP(120, Duration.ofSeconds(60));
         private final int limit;
         private final Duration window;
