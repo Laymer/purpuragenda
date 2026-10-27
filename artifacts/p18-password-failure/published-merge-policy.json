@@ -1,0 +1,16 @@
+{
+  "revision": "d099fecd0c20499ebbe55d705b020555b9f4961a",
+  "run": 40408952421,
+  "category": "delivery-policy",
+  "result": "failed",
+  "cause": "Historical main-integration merge d099fec had no substantive test-source delta from its first parent because the squash-merged predecessor code was already identical. Per-commit policy correctly rejects it.",
+  "recovery": "Preserve published PR77/branch/worktree unchanged. Create clean replacement branch from confirmed updated main after PR72 and selectively adopt final tested password feature with meaningful tests; no history rewrite or policy relaxation.",
+  "baselineEvidence": {
+    "nativeJava": 1046,
+    "angular": 11,
+    "python": 243,
+    "allTestsPass": true,
+    "cleanComposeChecks": 6,
+    "aggregateAcceptance": false
+  }
+}
