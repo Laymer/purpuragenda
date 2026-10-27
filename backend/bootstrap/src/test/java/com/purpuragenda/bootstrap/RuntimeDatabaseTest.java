@@ -41,7 +41,7 @@ class RuntimeDatabaseTest {
                     "app.database-password-file",directory.resolve("app").toString(),"app.mode","local",
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
-                    "app.delivery-key-id","delivery-test-v1","server.port","0"));
+                    "app.delivery-key-id","delivery-test-v1","SERVER_PORT","0"));
             properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
@@ -365,6 +365,62 @@ class RuntimeDatabaseTest {
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
 
+
+    @Test @Order(14) void bookingWorkersResumeDurableEffectsExpireDueHoldsAndSuppressRestore() throws Exception {
+        UUID live,due,unrelated;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();
+            sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");
+            live=syntheticWorkerBooking(context,false,10); due=syntheticWorkerBooking(context,true,11);
+            unrelated=syntheticWorkerBooking(context,false,9);
+            sql("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES('"+UUID.randomUUID()+"','"+unrelated+"','REQUESTED',1,clock_timestamp())");
+            sql("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES('"+UUID.randomUUID()+"','"+live+"','REQUESTED',1,clock_timestamp())");
+        }
+        try(var capture=new org.testcontainers.containers.GenericContainer<>(org.testcontainers.utility.DockerImageName.parse(
+                "axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498"))
+                .withEnv("MP_QUIET","true").withExposedPorts(1025,8025)) {
+            capture.start();var configured=new HashMap<>(properties);
+            configured.put("app.smtp-port",Integer.toString(capture.getMappedPort(1025)));
+            String jobs=" FROM notification_job WHERE booking_id IN ('"+live+"','"+due+"')";
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(20);
+                while((count("SELECT count(*)"+jobs+" AND state='SENT'")<4 ||
+                        count("SELECT count(*) FROM notification_job WHERE booking_id='"+unrelated+"' AND state='SENT'")<2) && System.nanoTime()<deadline)Thread.sleep(25);
+                assertEquals(4,count("SELECT count(*)"+jobs+" AND state='SENT' AND attempts=1"));
+                assertEquals(2,count("SELECT count(*) FROM notification_job WHERE booking_id='"+unrelated+"' AND state='SENT'"));
+                assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='CUSTOMER'"));
+                assertEquals(2,count("SELECT count(*)"+jobs+" AND audience='OWNER'"));
+                assertEquals("EXPIRED",text("SELECT state FROM booking WHERE id='"+due+"'"));
+                assertEquals(0,count("SELECT count(*) FROM booking_occupancy WHERE booking_id='"+due+"' AND released_at IS NULL"));
+                var inbox=get(capture.getMappedPort(8025),"/api/v1/messages");assertEquals(200,inbox.statusCode());
+                var messages=new com.fasterxml.jackson.databind.ObjectMapper().readTree(inbox.body()).path("messages");
+                int matching=0;
+                for(var message:messages) {
+                    String detail=get(capture.getMappedPort(8025),"/api/v1/message/"+message.path("ID").asText()).body();
+                    if(!detail.contains(live.toString()) && !detail.contains(due.toString()))continue;
+                    matching++;
+                    assertTrue(detail.contains("Booking reference:"),"Expected bounded booking content");
+                    assertFalse(detail.contains("Private synthetic intake"),"Intake must never enter notification content");
+                }
+                assertEquals(4,matching,"Only the current fixtures count toward their delivery assertions");
+            }
+            UUID restore;
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                assertEquals(200,get(port(context),"/actuator/health/readiness").statusCode());
+                context.getBean(RuntimeWorkers.class).stop();
+                assertEquals(4,count("SELECT count(*)"+jobs+" AND state='SENT' AND attempts=1"));
+                restore=syntheticWorkerBooking(context,true,12);
+                sql("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES('"+UUID.randomUUID()+"','"+restore+"','REQUESTED',1,clock_timestamp())");
+            }
+            configured.put("app.mode","restore");
+            try(var context=Purpuragenda.launch(new String[0],configured)) {
+                assertFalse(context.getBean(RuntimeWorkers.class).isRunning());
+                assertEquals("PENDING_CONFIRMATION",text("SELECT state FROM booking WHERE id='"+restore+"'"));
+                assertEquals(1,count("SELECT count(*) FROM outbox_event WHERE booking_id='"+restore+"' AND expanded_at IS NULL"));
+                assertEquals(0,count("SELECT count(*) FROM notification_job WHERE booking_id='"+restore+"'"));
+            }
+        }
+    }
     @Test @Order(13) void recoveryOverRealHttpReturnsOnlyRestrictedReenrollmentAndLeavesAnonymousSession() throws Exception {
         sql("DELETE FROM app_session WHERE admin_id IS NOT NULL; DELETE FROM admin_authentication_proof; DELETE FROM admin_reenrollment_grant; DELETE FROM admin_recovery_code; DELETE FROM admin_user");
         char[] password="synthetic runtime recovery phrase".toCharArray(),recoveryCode=null;
@@ -439,6 +495,32 @@ class RuntimeDatabaseTest {
             var projection=new com.fasterxml.jackson.databind.ObjectMapper().readTree(detail.body());assertTrue("Synthetic private city".equals(projection.at("/snapshot/intake/birthplace").asText()),"Owner detail must retain the immutable private intake");assertEquals("UNPAID",projection.at("/payment/status").asText());
             assertEquals(403,call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",guestCookie).statusCode());
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
+    }
+
+    @Test @Order(18) void independentRuntimeContextsBindDistinctEphemeralPorts() throws Exception {
+        var isolated=new HashMap<>(properties);isolated.put("app.mode","restore");
+        try(var first=Purpuragenda.launch(new String[0],isolated);
+            var second=Purpuragenda.launch(new String[0],isolated)) {
+            assertNotEquals(port(first),port(second));
+            assertEquals(200,get(port(first),"/actuator/health/readiness").statusCode());
+            assertEquals(200,get(port(second),"/actuator/health/readiness").statusCode());
+        }
+    }
+    // Synthetic durable-work fixtures use the real resource-locked persistence port; no HTTP authorization bypass.
+    static UUID syntheticWorkerBooking(org.springframework.context.ConfigurableApplicationContext context,boolean due,int days) throws Exception {
+        UUID customer=UUID.randomUUID(),id=UUID.randomUUID();
+        sql("INSERT INTO customer_identity VALUES('"+customer+"','"+customer+"@example.test',clock_timestamp())");
+        context.getBean(SchedulingMaintenanceUnitOfWork.class).maintain(tx->{
+            var policy=tx.policy();
+            if(due)policy=new com.purpuragenda.domain.scheduling.SchedulingPolicy(policy.version(),policy.gridMinutes(),policy.dailyCapacity(),
+                    policy.minimumNotice(),Duration.ofNanos(1000),policy.expiryBuffer(),policy.customerCutoff());
+            var snapshot=new com.purpuragenda.domain.booking.Booking.Snapshot(tx.services().getFirst(),policy,
+                    new com.purpuragenda.domain.customer.Intake("Synthetic","Worker","+32400123456",java.time.LocalDate.of(1990,1,1),
+                            java.time.LocalTime.NOON,"Synthetic city","Private synthetic intake"),"synthetic-worker@example.test","Europe/Brussels","local-v1");
+            tx.save(com.purpuragenda.domain.booking.Booking.pending(id,"B-"+id,customer,snapshot,
+                    com.purpuragenda.domain.booking.Booking.Origin.CUSTOMER,tx.now(),tx.now().plusSeconds(days*86400L)));
+            return 1;
+        });return id;
     }
 
     static HttpResponse<String> login(int port,String body,String cookie,String csrf) throws Exception {

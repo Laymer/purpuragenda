@@ -182,8 +182,8 @@ class CustomerCreationPostgresTest {
         jdbc.update("INSERT INTO customer_identity VALUES(?,?,clock_timestamp())",customer,email);
         jdbc.update("INSERT INTO customer_account VALUES(?,?,clock_timestamp())",account,customer);
         jdbc.update("""
-            INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,customer_id,account_id,issued_at,last_seen_at,absolute_expires_at,authenticated_at)
-            SELECT ?,?,?,?,'ACCOUNT',?,?,t,t,t+interval '12 hours',t FROM (SELECT clock_timestamp() t) captured
+            INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,customer_id,account_id,account_credential_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at)
+            SELECT ?,?,?,?,'ACCOUNT',?,?,1,t,t,t+interval '12 hours',t FROM (SELECT clock_timestamp() t) captured
             """,id,Secrets.hash("synthetic-account-token"+id),browser,Secrets.hash("synthetic-account-csrf"),customer,account);
         return new Account(new SessionBinding(id,browser),customer,account);
     }

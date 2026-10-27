@@ -32,12 +32,12 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingQueryPostgresTest.xml')
-        for count, actual, nested in ((18, 18, ''), (19, 18, ''), (19, 19, '<failure/>'), (19, 19, '<skipped/>'), (19, 19, '<error/>')):
+        for count, actual, nested in ((21, 21, ''), (22, 21, ''), (22, 22, '<failure/>'), (22, 22, '<skipped/>'), (22, 22, '<error/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="{count}">' +
                               '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="19">' + '<testcase/>' * 19 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="22">' + '<testcase/>' * 22 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_customer_http_requires_real_guarded_transaction_and_race_cases(self):
@@ -48,12 +48,12 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingHttpPostgresTest.xml')
-        for count, actual, nested in ((4, 4, ''), (5, 4, ''), (5, 5, '<failure/>'), (5, 5, '<skipped/>'), (5, 5, '<error/>')):
+        for count, actual, nested in ((5, 5, ''), (6, 5, ''), (6, 6, '<failure/>'), (6, 6, '<skipped/>'), (6, 6, '<error/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="{count}">' +
                               '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_unrelated_passing_suite_cannot_replace_missing_migrations(self):
@@ -118,6 +118,22 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="3">' + '<testcase/>' * 3 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_periodic_expiry_requires_actual_transaction_rollback_lock_and_race_cases(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/DueBookingExpiry.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic maintenance implementation')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.SchedulingMaintenancePostgresTest.xml')
+        for count, actual, nested in ((5, 5, ''), (6, 5, ''), (6, 6, '<failure/>'), (6, 6, '<error/>'), (6, 6, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.SchedulingMaintenancePostgresTest" tests="{count}">' +
+                              '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SchedulingMaintenancePostgresTest" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_expiry_requires_its_own_complete_unskipped_database_suite(self):
         self.write()
         source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java'
@@ -170,11 +186,14 @@ class MigrationReportTest(unittest.TestCase):
         report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
         report.parent.mkdir(parents=True)
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
-        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 13, ''), ('<testcase/>' * 14, 'errors="1"'),
-                                  ('<testcase><skipped/></testcase>' * 14, ''), ('<testcase><error/></testcase>' * 14, '')):
-            report.write_text(f'<testsuite name="{qualified}" tests="14" {attributes}>{cases}</testsuite>')
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 15, ''), ('<testcase/>' * 16, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 16, ''), ('<testcase><error/></testcase>' * 16, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="16" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text(f'<testsuite name="{qualified}" tests="14">' + '<testcase/>' * 14 + '</testsuite>')
+        # The worker baseline of 15 cases no longer satisfies the gate once the administrator read case joins it.
+        report.write_text(f'<testsuite name="{qualified}" tests="15">' + '<testcase/>' * 15 + '</testsuite>')
+        with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="16">' + '<testcase/>' * 16 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_operator_migration_requires_its_own_database_report(self):
@@ -339,32 +358,6 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorRecoveryPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
         GATE.validate(self.root)
 
-    def test_admin_read_http_requires_actual_mfa_privacy_revocation_and_conditional_cases(self):
-        self.write()
-        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorBookingController.java'
-        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator controller')
-        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
-        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest.xml')
-        for count, cases, nested in ((0,0,''), (10,10,''), (11,10,''), (12,11,''), (11,11,'<failure/>'), (11,11,'<error/>'), (11,11,'<skipped/>')):
-            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="{count}">'
-                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
-            with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
-        GATE.validate(self.root)
-
-    def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):
-        self.write()
-        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java'
-        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator reader')
-        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
-        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest.xml')
-        for count, cases, nested in ((0,0,''), (20,20,''), (21,20,''), (22,21,''), (21,21,'<failure/>'), (21,21,'<error/>'), (21,21,'<skipped/>')):
-            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="{count}">'
-                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
-            with self.assertRaises(ValueError): GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="21">' + '<testcase/>' * 21 + '</testsuite>')
-        GATE.validate(self.root)
-
     def test_guest_recovery_requires_exact_lookup_contact_race_and_queue_rollback_cases(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresGuestRecoveryLookup.java'
@@ -393,6 +386,61 @@ class MigrationReportTest(unittest.TestCase):
             with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentDatabaseTest" tests="20">'
                           + '<testcase/>' * 20 + '</testsuite>')
+        GATE.validate(self.root)
+
+
+    def test_account_authentication_requires_complete_replay_epoch_upgrade_and_race_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountAuthentication.java'
+        source.parent.mkdir(parents=True);source.write_text('synthetic account authentication adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountAuthenticationDatabaseTest.xml')
+        for count, actual, nested in ((25,25,''),(26,25,''),(26,26,'<failure/>'),(26,26,'<error/>'),(26,26,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountAuthenticationDatabaseTest" tests="{count}">' +
+                              '<testcase/>' * (actual-1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountAuthenticationDatabaseTest" tests="26">' + '<testcase/>' * 26 + '</testsuite>')
+        GATE.validate(self.root)
+
+
+    def test_admin_recovery_requires_actual_restricted_reenrollment_and_binding_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorRecoveryController.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator controller')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorRecoveryPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (10,10,''), (11,10,''), (12,11,''), (11,11,'<failure/>'), (11,11,'<error/>'), (11,11,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorRecoveryPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorRecoveryPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
+        GATE.validate(self.root)
+
+
+    def test_admin_read_http_requires_actual_mfa_privacy_revocation_and_conditional_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorBookingController.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator controller')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (10,10,''), (11,10,''), (12,11,''), (11,11,'<failure/>'), (11,11,'<error/>'), (11,11,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
+        GATE.validate(self.root)
+
+    def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator reader')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (20,20,''), (21,20,''), (22,21,''), (21,21,'<failure/>'), (21,21,'<error/>'), (21,21,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="21">' + '<testcase/>' * 21 + '</testsuite>')
         GATE.validate(self.root)
 
 

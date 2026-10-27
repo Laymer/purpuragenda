@@ -43,6 +43,7 @@ class AdministratorBookingHttpTest {
         public Issued anonymous() { throw new AssertionError(); } public Optional<CsrfRotation> rotateCsrf(char[] token) { throw new AssertionError(); }
         public boolean csrf(SessionReference session,char[] token) { throw new AssertionError(); } public Optional<Issued> exchangeAdmin(SessionReference previous,String request,char[] proof) { throw new AssertionError(); }
         public Optional<Issued> exchangeGuest(SessionReference previous,GuestAccessStore.Redemption proof) { throw new AssertionError(); } public boolean revoke(SessionReference session) { throw new AssertionError(); }
+        public Optional<Issued> exchangeAccount(SessionReference previous,String request,char[] proof) { throw new AssertionError("READ_MUST_NOT_EXCHANGE_SESSION"); }
     };
     final AdministratorBookingQuery query=new AdministratorBookingQuery() {
         void check(SessionBinding supplied) { assertEquals(reference.id(),supplied.sessionId());if(queryFails)throw new IllegalStateException("SYNTHETIC_PRIVATE");if(denial!=null)throw new Failure(denial); }

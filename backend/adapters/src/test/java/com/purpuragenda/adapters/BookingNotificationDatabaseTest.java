@@ -1,0 +1,387 @@
+package com.purpuragenda.adapters;
+
+import com.purpuragenda.adapters.out.email.*;
+import com.purpuragenda.adapters.out.postgres.PostgresBookingChanges;
+import com.purpuragenda.application.notification.*;
+import com.purpuragenda.application.port.out.*;
+import com.purpuragenda.application.port.out.MailDelivery.Result;
+import com.purpuragenda.application.port.out.OutboxStore.Outcome;
+import java.nio.file.Path;
+import java.sql.*;
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.sql.DataSource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Real PostgreSQL outbox expansion and booking-notification delivery with synthetic mail capture only. */
+@Timeout(240)
+@ResourceLock("postgres-migration-fixture")
+class BookingNotificationDatabaseTest {
+    final CustomerCreationPostgresTest c=new CustomerCreationPostgresTest();
+    @TempDir Path directory;
+    PostgresOutboxStore outbox;PostgresNotificationQueue queue;PostgresBookingNotificationStore store;OutboxExpander expander;Capture mail;
+    @BeforeAll static void start() { MigrationTest.start(); }
+    @AfterAll static void stop() { MigrationTest.stop(); }
+    @BeforeEach void setup() throws Exception {
+        c.directory=directory;c.setup();
+        outbox=new PostgresOutboxStore(c.f.source);queue=new PostgresNotificationQueue(c.f.source,false);store=new PostgresBookingNotificationStore(c.f.source);
+        expander=new OutboxExpander(outbox);mail=new Capture();
+        c.jdbc.update("INSERT INTO admin_user(id,email_key,password_hash,totp_secret,enrolled,enabled) VALUES(?,?,?,?,true,true)",
+                UUID.randomUUID(),"owner@example.test","synthetic-hash","synthetic-secret");
+    }
+    @AfterEach void cleanup() { c.cleanup(); }
+
+    static final class Capture implements MailDelivery {
+        final List<Message> sent=Collections.synchronizedList(new ArrayList<>());volatile Result result=Result.SENT;
+        public Result send(Message m) { sent.add(m);return result; }
+    }
+    BookingNotificationWorker worker(MailDelivery delivery) { return new BookingNotificationWorker(queue,store,delivery,false); }
+    BookingNotificationWorker worker() { return worker(mail); }
+    UUID book(String email,int day,int hour) { var r=c.create(c.guest(email),"k-"+email+day,c.request(day,hour));assertTrue(r.success());return r.entityId(); }
+    void event(UUID booking,String type,long version) {
+        c.jdbc.update("INSERT INTO outbox_event(id,booking_id,type,version,created_at) VALUES(?,?,?,?,clock_timestamp())",UUID.randomUUID(),booking,type,version);
+    }
+    int count(String sql) { return c.count(sql); }
+    /** Delivery attempts of booking notifications only: the verified-guest fixture also delivers an authentication email. */
+    int attempts(String where) { return count("delivery_attempt a JOIN notification_job j ON j.id=a.job_id WHERE j.template<>'AUTH' AND "+where); }
+    String job(String column) { return c.f.value("SELECT "+column+" FROM notification_job WHERE template<>'AUTH'"); }
+    List<BookingNotificationWorker.Outcome> drainWorker() {
+        var outcomes=new ArrayList<BookingNotificationWorker.Outcome>();
+        for(int i=0;i<40;i++){var o=worker().tick();if(o==BookingNotificationWorker.Outcome.IDLE)break;outcomes.add(o);}
+        return outcomes;
+    }
+
+    @Test void requestEventsExpandToDistinctAudienceJobsOnceAndDeliverWithoutAnyIntakeData() {
+        UUID id=book("customer@example.test",3,9);
+        assertEquals(1,expander.drain(10));
+        assertEquals(1,count("notification_job WHERE booking_id='"+id+"' AND audience='CUSTOMER' AND template='BOOKING_REQUESTED' AND version=1 AND state='QUEUED'"));
+        assertEquals(1,count("notification_job WHERE booking_id='"+id+"' AND audience='OWNER' AND template='OWNER_REQUEST_RECEIVED' AND version=1 AND state='QUEUED'"));
+        assertEquals(1,count("outbox_event WHERE expanded_at IS NOT NULL"));assertEquals(0,expander.drain(10));assertEquals(2,count("notification_job WHERE booking_id IS NOT NULL AND template<>'AUTH'"));
+        assertEquals(List.of(BookingNotificationWorker.Outcome.SENT,BookingNotificationWorker.Outcome.SENT),drainWorker());
+        assertEquals(2,mail.sent.size());
+        assertEquals(Set.of("customer@example.test","owner@example.test"),new HashSet<>(mail.sent.stream().map(MailDelivery.Message::recipient).toList()));
+        for(var m:mail.sent) {
+            for(String forbidden:List.of("Synthetic","Customer","+32400123456","1990","Synthetic city","Synthetic intake","token"))
+                assertFalse((m.subject()+m.text()).contains(forbidden),forbidden);
+            assertTrue(m.text().contains(c.load(id).reference()));
+        }
+        assertEquals(2,count("notification_job WHERE template<>'AUTH' AND state='SENT' AND encrypted_envelope IS NULL"));assertEquals(2,attempts("a.success"));
+        assertEquals(0,count("notification_job WHERE template<>'AUTH' AND state='QUEUED'"));
+    }
+
+    @Test void unknownTypesFailVisiblyWithoutBlockingAndConfigurationConflictsNotifyNobody() {
+        UUID id=book("customer@example.test",3,9);
+        event(id,"SURPRISE",1);event(id,"CONFIGURATION_CONFLICT",1);
+        assertEquals(3,expander.drain(10));
+        assertEquals(1,count("notification_job WHERE template='UNKNOWN_OUTBOX_TYPE' AND state='FAILED' AND safe_error='UNKNOWN_OUTBOX_TYPE' AND audience='OWNER'"));
+        assertEquals(2,count("notification_job WHERE template<>'UNKNOWN_OUTBOX_TYPE' AND template<>'AUTH'"));   // only the REQUESTED pair
+        assertEquals(3,count("outbox_event WHERE expanded_at IS NOT NULL"));
+        // The failed unknown job is never leased.
+        assertEquals(2,drainWorker().size());assertEquals(1,count("notification_job WHERE template<>'AUTH' AND state='FAILED'"));
+    }
+
+    @Test void administratorCreationAndRefundEventsDeliverToBothAudiences() {
+        UUID id=book("customer@example.test",3,9);event(id,"ADMIN_CREATED",1);event(id,"REFUND_RECORDED",1);
+        c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");
+        assertEquals(2,expander.drain(10));assertEquals(4,drainWorker().size());
+        assertEquals(4,mail.sent.size());
+        for(String recipient:List.of("customer@example.test","owner@example.test"))
+            assertEquals(2,mail.sent.stream().filter(m->m.recipient().equals(recipient)).count());
+        assertEquals(2,mail.sent.stream().filter(m->m.subject().equals("Refund recorded")).count());
+        assertEquals(1,mail.sent.stream().filter(m->m.subject().equals("Booking created")).count());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"REQUESTED","ADMIN_CREATED"})
+    void reschedulingBeforeDispatchSuppressesOriginalRequestNotices(String originalEvent) {
+        var session=c.guest("customer@example.test");UUID id=c.create(session,"create",c.request(3,9)).entityId();
+        c.jdbc.update("UPDATE outbox_event SET type=? WHERE booking_id=?",originalEvent,id);
+        assertEquals(1,expander.drain(10));
+        var request=c.request(4,9);
+        var changes=new com.purpuragenda.application.scheduling.CustomerBookingChanges(new PostgresBookingChanges(c.f.source));
+        assertTrue(changes.reschedule(c.binding(session),id,"move",
+                new com.purpuragenda.application.scheduling.CustomerBookingChanges.Reschedule(1,1,request.start())).success());
+        assertEquals(1,expander.drain(10));var outcomes=drainWorker();
+        assertEquals(2,outcomes.stream().filter(o->o==BookingNotificationWorker.Outcome.DISCARDED).count());
+        assertEquals(2,outcomes.stream().filter(o->o==BookingNotificationWorker.Outcome.SENT).count());
+        assertEquals(Set.of("Booking time changed"),new HashSet<>(mail.sent.stream().map(MailDelivery.Message::subject).toList()));
+        assertEquals(2,count("notification_job WHERE state='SUPPRESSED' AND safe_error='SUPERSEDED'"));
+    }
+
+    @Test void authenticationJobsAreNeverClaimedByTheBookingWorker() {
+        c.f.delivery.issue(new com.purpuragenda.application.port.out.AuthDeliveryStore.Issue("customer@example.test",com.purpuragenda.application.port.out.AuthDeliveryStore.Purpose.CREATE,null,"a".repeat(64)));
+        assertEquals(1,count("notification_job WHERE template='AUTH' AND state='QUEUED'"));
+        assertEquals(BookingNotificationWorker.Outcome.IDLE,worker().tick());assertEquals(1,count("notification_job WHERE template='AUTH' AND state='QUEUED'"));
+        assertEquals(0,mail.sent.size());assertTrue(queue.claimAuth().isPresent());
+    }
+
+    @Test void staleAndSupersededJobsAreSuppressedAndOnlyCurrentFactsAreSent() {
+        var session=c.guest("customer@example.test");
+        UUID id=c.create(session,"create",c.request(3,9)).entityId();
+        assertEquals(1,expander.drain(10));
+        // The booking is cancelled before the request notices are delivered.
+        assertTrue(new com.purpuragenda.application.scheduling.CustomerBookingChanges(new PostgresBookingChanges(c.f.source))
+                .cancel(c.binding(session),id,"cancel",new com.purpuragenda.application.scheduling.CustomerBookingChanges.Cancellation(1)).success());
+        expander.drain(10);
+        var outcomes=drainWorker();
+        assertEquals(2,outcomes.stream().filter(o->o==BookingNotificationWorker.Outcome.DISCARDED).count());
+        assertEquals(2,outcomes.stream().filter(o->o==BookingNotificationWorker.Outcome.SENT).count());
+        assertEquals(2,count("notification_job WHERE state='SUPPRESSED' AND safe_error='BOOKING_NOT_PENDING' AND template IN ('BOOKING_REQUESTED','OWNER_REQUEST_RECEIVED')"));
+        assertEquals(Set.of("Booking cancelled"),new HashSet<>(mail.sent.stream().map(MailDelivery.Message::subject).toList()));
+        assertNotNull(session);
+    }
+
+    @Test void currentContactMeetingAndOwnerAreReadAtSendTimeAndAMissingOwnerSuppressesOwnerJobs() {
+        UUID id=book("customer@example.test",3,9);event(id,"APPROVED",2);
+        c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");
+        c.jdbc.update("UPDATE booking SET state='CONFIRMED',version=2,expires_at=NULL,previously_confirmed=true,meeting_id='123456789',meeting_url='https://zoom.us/j/123456789',confirmation_basis='MANUAL_APPROVAL' WHERE id=?",id);
+        c.jdbc.update("UPDATE booking SET delivery_email='changed@example.test' WHERE id=?",id);
+        c.jdbc.update("UPDATE admin_user SET enabled=false");
+        assertEquals(1,expander.drain(10));drainWorker();
+        assertEquals(1,mail.sent.size());assertEquals("changed@example.test",mail.sent.getFirst().recipient());
+        assertTrue(mail.sent.getFirst().text().contains("Meeting link: https://zoom.us/j/123456789"));
+        assertEquals(1,count("notification_job WHERE audience='OWNER' AND state='SUPPRESSED' AND safe_error='RECIPIENT_UNAVAILABLE'"));
+    }
+
+    @Test void failedDeliveryFollowsTheDurableRetryScheduleThenTheFailedQueue() {
+        UUID id=book("customer@example.test",3,9);event(id,"REFUND_RECORDED",1);
+        c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");
+        assertEquals(1,expander.drain(10));c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");mail.result=Result.RETRY_LATER;
+        long[] expectedSeconds={60,300,1800,7200,21600,43200};
+        for(int attempt=0;attempt<7;attempt++) {
+            assertEquals(BookingNotificationWorker.Outcome.RETRY_LATER,worker().tick(),"attempt "+attempt);
+            if(attempt<6) {
+                assertEquals(expectedSeconds[attempt],Long.valueOf(c.f.value("SELECT round(extract(epoch FROM j.due_at-(SELECT max(a.attempted_at) FROM delivery_attempt a WHERE a.job_id=j.id)))::bigint FROM notification_job j WHERE j.template<>'AUTH'")),"retry "+attempt);
+                assertEquals("QUEUED",job("state"));
+                assertEquals(BookingNotificationWorker.Outcome.IDLE,worker().tick());   // not due yet
+                c.jdbc.update("UPDATE notification_job SET due_at=clock_timestamp() WHERE template<>'AUTH'");
+            }
+        }
+        assertEquals("FAILED",job("state"));assertEquals("SMTP_DELIVERY_FAILED",job("safe_error"));
+        assertEquals(7,attempts("NOT a.success"));assertEquals(BookingNotificationWorker.Outcome.IDLE,worker().tick());
+        assertEquals(7,mail.sent.size());assertEquals(1,new HashSet<>(mail.sent.stream().map(MailDelivery.Message::jobId).toList()).size());   // stable job identity for Message-ID
+    }
+
+    @Test void staleLeasesCannotAcknowledgeSuppressOrDuplicateAndACrashAfterSmtpResendsWithTheSameJobIdentity() {
+        UUID id=book("customer@example.test",3,9);event(id,"REFUND_RECORDED",1);c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");expander.drain(10);c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");
+        var first=queue.claimBooking().orElseThrow();
+        // A worker sent the message (capture) but crashed before acknowledging: the lease expires and another worker resends.
+        mail.send(new MailDelivery.Message(first.id(),"customer@example.test","Refund recorded","Synthetic"));
+        c.jdbc.update("UPDATE notification_job SET lease_until=clock_timestamp()-interval '1 second' WHERE id=?",first.id());
+        assertEquals(BookingNotificationWorker.Outcome.SENT,worker().tick());
+        assertEquals(2,mail.sent.size());assertEquals(first.id(),mail.sent.get(0).jobId());assertEquals(first.id(),mail.sent.get(1).jobId());
+        assertFalse(queue.sent(first));assertFalse(queue.failed(first));assertFalse(queue.suppressed(first,"BOOKING_NOT_PENDING"));assertFalse(queue.renew(first));
+        assertEquals(1,attempts("a.success"));assertEquals("SENT",job("state"));
+        assertThrows(IllegalArgumentException.class,()->queue.suppressed(first,"lowercase"));
+    }
+
+    @Test void operatorSuppressionBlocksClaimsAndALostLeaseNeverReportsDelivery() {
+        UUID id=book("customer@example.test",3,9);event(id,"REFUND_RECORDED",1);c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");expander.drain(10);c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");
+        assertEquals(BookingNotificationWorker.Outcome.SUPPRESSED_BY_OPERATOR,new BookingNotificationWorker(queue,store,mail,true).tick());
+        c.jdbc.update("UPDATE operation_control SET delivery_suppressed=true");
+        assertEquals(BookingNotificationWorker.Outcome.IDLE,worker().tick());assertEquals(0,mail.sent.size());
+        c.jdbc.update("UPDATE operation_control SET delivery_suppressed=false");
+        // A lease expiring while the message is in flight is reported stale and the job stays retryable.
+        MailDelivery slow=m->{c.jdbc.update("UPDATE notification_job SET lease_until=clock_timestamp()-interval '1 second' WHERE id=?",m.jobId());return Result.SENT;};
+        assertEquals(BookingNotificationWorker.Outcome.STALE,worker(slow).tick());assertEquals(0,attempts("TRUE"));
+    }
+
+    @Test void operatorSuppressionEnabledWhilePreparingFactsPreventsSmtp() {
+        UUID id=book("customer@example.test",3,9);expander.drain(10);
+        BookingNotificationStore suppressDuringPreparation=lease->{
+            var facts=store.load(lease);
+            c.jdbc.update("UPDATE operation_control SET delivery_suppressed=true");
+            return facts;
+        };
+        var guarded=new BookingNotificationWorker(queue,suppressDuringPreparation,mail,false);
+        assertEquals(BookingNotificationWorker.Outcome.STALE,guarded.tick());
+        assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
+        assertEquals(1,count("notification_job WHERE booking_id='"+id+"' AND state='LEASED'"));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"lease_token","lease_until"})
+    void incompleteLeaseMetadataCannotDiscloseFactsOrAcknowledgeDelivery(String missing) {
+        book("customer@example.test",3,9);expander.drain(10);var lease=queue.claimBooking().orElseThrow();
+        c.jdbc.update("UPDATE notification_job SET "+missing+"=NULL WHERE id=?",lease.id());
+        assertTrue(store.load(lease).isEmpty());assertFalse(queue.renew(lease));assertFalse(queue.sent(lease));
+        assertFalse(queue.failed(lease));assertFalse(queue.suppressed(lease,"SUPERSEDED"));assertEquals(0,attempts("TRUE"));
+        var replacement=queue.claimBooking().orElseThrow();assertEquals(lease.id(),replacement.id());
+        assertFalse(lease.token().equals(replacement.token()));assertTrue(store.load(replacement).isPresent());
+    }
+
+    @Test void missingOperatorControlFailsClosedForClaimsAndRenewals() {
+        book("customer@example.test",3,9);expander.drain(10);var lease=queue.claimBooking().orElseThrow();
+        c.jdbc.update("DELETE FROM operation_control");assertFalse(queue.renew(lease));
+        var failure=assertThrows(IllegalStateException.class,()->worker().tick());
+        assertEquals("NOTIFICATION_WORKER_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
+        c.jdbc.update("INSERT INTO operation_control(id) VALUES(1)");assertTrue(queue.renew(lease));
+        assertThrows(IllegalArgumentException.class,()->queue.suppressed(lease,null));
+        assertThrows(IllegalArgumentException.class,()->queue.suppressed(lease,"A".repeat(65)));
+        assertTrue(store.load(lease).isPresent());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"outbox_event","notification_job","outbox_event:rollback","notification_job:rollback"})
+    void driverReadFailureRollsBackAndReleasesTheLockedRowWithoutPrivateErrors(String failurePoint) throws Exception {
+        String table=failurePoint.split(":",2)[0];
+        book("customer@example.test",3,9);NotificationQueue.Lease lease=null;
+        if(table.equals("notification_job")){expander.drain(10);lease=queue.claimBooking().orElseThrow();}
+        var current=lease;var source=brokenRead(table,failurePoint.endsWith(":rollback"));
+        var failure=assertThrows(IllegalStateException.class,()->{
+            if(current==null)new PostgresOutboxStore(source).expandNext(NotificationPlanner::plan);
+            else new PostgresBookingNotificationStore(source).load(current);
+        });
+        assertEquals("NOTIFICATION_STORAGE_FAILED",failure.getMessage());assertNull(failure.getCause());assertEquals(0,failure.getSuppressed().length);
+        assertEquals(0,mail.sent.size());assertEquals(0,attempts("TRUE"));
+        try(var connection=c.f.source.getConnection()) {
+            connection.setAutoCommit(false);
+            MigrationTest.execute(connection,"SELECT id FROM "+table+" FOR UPDATE NOWAIT");connection.rollback();
+        }
+        if(lease==null){assertEquals(0,count("notification_job WHERE template<>'AUTH'"));assertEquals(1,expander.drain(10));}
+        else assertTrue(store.load(lease).isPresent());
+    }
+
+    DataSource brokenRead(String table,boolean rollbackFailure) {
+        return GuestAccessDatabaseTest.proxy(DataSource.class,(p,m,a)->{
+            Object connection=GuestAccessDatabaseTest.invoke(c.f.source,m,a);
+            if(!m.getName().equals("getConnection"))return connection;
+            return GuestAccessDatabaseTest.proxy(Connection.class,(cp,cm,ca)->{
+                Object query=GuestAccessDatabaseTest.invoke(connection,cm,ca);
+                if(rollbackFailure && cm.getName().equals("rollback"))throw new SQLException("SYNTHETIC_ROLLBACK_ACK_FAILURE");
+                if(cm.getName().equals("createStatement"))return GuestAccessDatabaseTest.proxy(Statement.class,(sp,sm,sa)->{
+                    Object rows=GuestAccessDatabaseTest.invoke(query,sm,sa);
+                    return sm.getName().equals("executeQuery") && ((String)sa[0]).contains("FROM "+table)?failedRows(rows):rows;
+                });
+                if(!cm.getName().equals("prepareStatement") || !((String)ca[0]).contains("FROM "+table))return query;
+                return GuestAccessDatabaseTest.proxy(PreparedStatement.class,(qp,qm,qa)->{
+                    Object rows=GuestAccessDatabaseTest.invoke(query,qm,qa);
+                    if(!qm.getName().equals("executeQuery"))return rows;
+                    return failedRows(rows);
+                });
+            });
+        });
+    }
+
+    static ResultSet failedRows(Object rows) {
+        return GuestAccessDatabaseTest.proxy(ResultSet.class,(rp,rm,ra)->{
+            if(rm.getName().equals("getObject"))throw new SQLException("SYNTHETIC_READ_FAILURE");
+            return GuestAccessDatabaseTest.invoke(rows,rm,ra);
+        });
+    }
+
+    @Test void expansionCommitsIndependentlyOfAnUnrelatedCallerTransaction() {
+        book("customer@example.test",3,9);
+        new TransactionTemplate(new DataSourceTransactionManager(c.f.source)).execute(status->{
+            c.jdbc.update("INSERT INTO audit_event(id,actor_kind,type,occurred_at) VALUES(?,'SYSTEM','SYNTHETIC_OUTER_TRANSACTION',clock_timestamp())",UUID.randomUUID());
+            assertEquals(1,expander.drain(10));status.setRollbackOnly();return null;
+        });
+        assertEquals(0,count("audit_event WHERE type='SYNTHETIC_OUTER_TRANSACTION'"));
+        assertEquals(1,count("outbox_event WHERE expanded_at IS NOT NULL"));
+        assertEquals(2,count("notification_job WHERE template<>'AUTH' AND state='QUEUED'"));
+    }
+
+    @Test void anAudienceAdvisoryLockContentionDoesNotConsumeAnAttempt() throws Exception {
+        book("customer@example.test",3,9);expander.drain(10);
+        String group=c.f.value("SELECT booking_id::text||':'||audience FROM notification_job WHERE template<>'AUTH' ORDER BY due_at,id LIMIT 1");
+        try(var blocker=c.f.source.getConnection()) {
+            blocker.setAutoCommit(false);MigrationTest.execute(blocker,"SELECT pg_advisory_xact_lock(hashtextextended(?,0))",group);
+            assertTrue(queue.claimBooking().isEmpty());assertEquals(0,count("notification_job WHERE template<>'AUTH' AND attempts<>0"));
+            blocker.rollback();assertTrue(queue.claimBooking().isPresent());
+        }
+    }
+
+    @Test void anAudienceLeaseCommittedAfterCandidateSelectionPreventsASecondClaim() {
+        UUID id=book("customer@example.test",3,9);event(id,"PAYMENT_RECORDED",1);expander.drain(10);
+        c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");
+        var competing=new AtomicReference<NotificationQueue.Lease>();
+        DataSource interleaved=GuestAccessDatabaseTest.proxy(DataSource.class,(p,m,a)->{
+            Object connection=GuestAccessDatabaseTest.invoke(c.f.source,m,a);
+            if(!m.getName().equals("getConnection"))return connection;
+            return GuestAccessDatabaseTest.proxy(Connection.class,(cp,cm,ca)->{
+                Object query=GuestAccessDatabaseTest.invoke(connection,cm,ca);
+                if(!cm.getName().equals("prepareStatement") || !((String)ca[0]).contains("pg_try_advisory_xact_lock"))return query;
+                return GuestAccessDatabaseTest.proxy(PreparedStatement.class,(qp,qm,qa)->{
+                    if(qm.getName().equals("executeQuery"))competing.set(queue.claimBooking().orElseThrow());
+                    return GuestAccessDatabaseTest.invoke(query,qm,qa);
+                });
+            });
+        });
+        assertTrue(new PostgresNotificationQueue(interleaved,false).claimBooking().isEmpty());
+        assertNotNull(competing.get());assertEquals(1,count("notification_job WHERE template<>'AUTH' AND state='LEASED'"));
+        assertEquals(1,count("notification_job WHERE template<>'AUTH' AND attempts=1"));
+        assertEquals(1,count("notification_job WHERE template<>'AUTH' AND state='QUEUED' AND attempts=0"));
+    }
+
+    @Test void secondAudienceInsertFailureRollsBackTheFirstJobAndExpansionMark() throws Exception {
+        book("customer@example.test",3,9);
+        try(var connection=c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"CREATE FUNCTION reject_owner_notification() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.audience='OWNER' THEN RAISE EXCEPTION 'SYNTHETIC_FAILURE'; END IF; RETURN NEW; END $$");
+            MigrationTest.execute(connection,"CREATE TRIGGER reject_owner_notification BEFORE INSERT ON notification_job FOR EACH ROW EXECUTE FUNCTION reject_owner_notification()");
+        }
+        assertEquals("OUTBOX_EXPANSION_FAILED",assertThrows(IllegalStateException.class,expander::tick).getMessage());
+        assertEquals(0,count("notification_job WHERE template<>'AUTH'"));assertEquals(1,count("outbox_event WHERE expanded_at IS NULL"));
+        try(var connection=c.f.database.connection(MigrationTest.MIGRATOR)) {MigrationTest.execute(connection,"DROP TRIGGER reject_owner_notification ON notification_job");}
+        assertEquals(1,expander.drain(10));assertEquals(2,drainWorker().size());assertEquals(2,mail.sent.size());
+    }
+
+    @Test void expansionRollsBackWhenTheStoreFailsAndTwentyIndependentExpandersExpandEachEventExactlyOnce() throws Exception {
+        UUID id=book("customer@example.test",3,9);
+        for(int i=0;i<19;i++)event(id,"CANCELLED",2+i);
+        assertEquals(20,count("outbox_event WHERE expanded_at IS NULL"));
+        var failure=assertThrows(IllegalStateException.class,()->outbox.expandNext(type->{throw new IllegalArgumentException("SYNTHETIC_PRIVATE");}));
+        assertEquals("NOTIFICATION_STORAGE_FAILED",failure.getMessage());assertNull(failure.getCause());
+        assertEquals(20,count("outbox_event WHERE expanded_at IS NULL"));assertEquals(0,count("notification_job WHERE template<>'AUTH'"));
+        var ready=new CountDownLatch(20);var release=new CountDownLatch(1);
+        try(var pool=Executors.newVirtualThreadPerTaskExecutor()) {
+            var futures=new ArrayList<Future<Integer>>();
+            for(int i=0;i<20;i++)futures.add(pool.submit(()->{var own=new OutboxExpander(new PostgresOutboxStore(c.f.source));ready.countDown();release.await();return own.drain(5);}));
+            assertTrue(ready.await(5,TimeUnit.SECONDS));release.countDown();int total=0;for(var f:futures)total+=f.get(60,TimeUnit.SECONDS);assertEquals(20,total);
+        }
+        assertEquals(0,count("outbox_event WHERE expanded_at IS NULL"));assertEquals(40,count("notification_job WHERE template<>'AUTH'"));
+        assertEquals(19,count("notification_job WHERE audience='CUSTOMER' AND template='BOOKING_CANCELLED'"));
+        assertEquals(40,count("(SELECT DISTINCT event_id,audience,template,version FROM notification_job WHERE template<>'AUTH') s"));
+    }
+
+    @Test void twentyIndependentWorkersDeliverEveryJobExactlyOnce() throws Exception {
+        for(int i=0;i<10;i++){UUID id=book("c"+i+"@example.test",3+i,9);event(id,"REFUND_RECORDED",1);}
+        c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");assertEquals(10,expander.drain(50));
+        var ready=new CountDownLatch(20);var release=new CountDownLatch(1);
+        try(var pool=Executors.newVirtualThreadPerTaskExecutor()) {
+            var futures=new ArrayList<Future<?>>();
+            for(int i=0;i<20;i++)futures.add(pool.submit(()->{
+                var own=new BookingNotificationWorker(new PostgresNotificationQueue(c.f.source,false),new PostgresBookingNotificationStore(c.f.source),mail,false);
+                ready.countDown();release.await();for(int n=0;n<3;n++)own.tick();return null;}));
+            assertTrue(ready.await(5,TimeUnit.SECONDS));release.countDown();for(var f:futures)f.get(60,TimeUnit.SECONDS);
+        }
+        assertEquals(20,mail.sent.size());assertEquals(20,new HashSet<>(mail.sent.stream().map(MailDelivery.Message::jobId).toList()).size());
+        assertEquals(20,count("notification_job WHERE template<>'AUTH' AND state='SENT'"));assertEquals(20,attempts("a.success"));
+    }
+
+    @Test void leasesThatAreNotLiveForTheJobCannotReadSuppressOrAcknowledgeAnything() {
+        UUID id=book("customer@example.test",3,9);event(id,"REFUND_RECORDED",1);c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");expander.drain(10);c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");
+        var live=queue.claimBooking().orElseThrow();
+        var other=new NotificationQueue.Lease(live.id(),UUID.randomUUID(),live.expiresAt());
+        assertTrue(store.load(other).isEmpty());assertFalse(queue.suppressed(other,"SUPERSEDED"));assertFalse(queue.sent(other));
+        assertTrue(store.load(new NotificationQueue.Lease(UUID.randomUUID(),live.token(),live.expiresAt())).isEmpty());
+        // An authentication job is not a booking notification, even with a live lease.
+        c.f.delivery.issue(new AuthDeliveryStore.Issue("customer@example.test",AuthDeliveryStore.Purpose.CREATE,null,"a".repeat(64)));
+        var auth=queue.claimAuth().orElseThrow();assertTrue(store.load(auth).isEmpty());
+        assertEquals("REFUND_RECORDED",store.load(live).orElseThrow().template());
+        assertTrue(queue.suppressed(live,"SUPERSEDED"));assertEquals("SUPPRESSED",job("state"));assertEquals("SUPERSEDED",job("safe_error"));
+        assertFalse(queue.suppressed(live,"SUPERSEDED"));assertTrue(store.load(live).isEmpty());   // no longer leased
+        // An expired lease can neither read nor suppress.
+        event(id,"REFUND_RECORDED",1);expander.drain(10);c.jdbc.update("DELETE FROM notification_job WHERE audience='OWNER'");var expired=queue.claimBooking().orElseThrow();
+        c.jdbc.update("UPDATE notification_job SET lease_until=clock_timestamp()-interval '1 second' WHERE id=?",expired.id());
+        assertTrue(store.load(expired).isEmpty());assertFalse(queue.suppressed(expired,"SUPERSEDED"));
+        assertThrows(NullPointerException.class,()->new PostgresBookingNotificationStore(null));assertThrows(NullPointerException.class,()->new PostgresOutboxStore(null));
+        assertThrows(NullPointerException.class,()->outbox.expandNext(null));assertThrows(NullPointerException.class,()->store.load(null));
+    }
+}

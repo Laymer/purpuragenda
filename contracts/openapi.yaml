@@ -2988,6 +2988,73 @@
         },
         "description": "Show the ten new recovery codes once. No session is issued. Sign in with fresh password/TOTP after reenrollment."
       },
+      "BookingReviewContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
+        "required": [
+          "serverNow",
+          "horizon",
+          "businessZone",
+          "reservationMinutes",
+          "service",
+          "policy",
+          "notice"
+        ],
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horizon": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "description": "Europe/Brussels civil business zone."
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 120,
+            "maximum": 120
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BookingReviewPolicy"
+          },
+          "notice": {
+            "$ref": "#/components/schemas/BookingReviewNotice"
+          }
+        }
+      },
+      "BookingReviewNotice": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
+        "required": [
+          "version",
+          "text",
+          "synthetic"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16000
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        }
+      },
       "BookingReviewPolicy": {
         "type": "object",
         "additionalProperties": false,
@@ -3037,73 +3104,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "BookingReviewNotice": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
-        "required": [
-          "version",
-          "text",
-          "synthetic"
-        ],
-        "properties": {
-          "version": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
-          },
-          "text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16000
-          },
-          "synthetic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BookingReviewContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
-        "required": [
-          "serverNow",
-          "horizon",
-          "businessZone",
-          "reservationMinutes",
-          "service",
-          "policy",
-          "notice"
-        ],
-        "properties": {
-          "serverNow": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "horizon": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "businessZone": {
-            "type": "string",
-            "description": "Europe/Brussels civil business zone."
-          },
-          "reservationMinutes": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 120,
-            "maximum": 120
-          },
-          "service": {
-            "$ref": "#/components/schemas/Service"
-          },
-          "policy": {
-            "$ref": "#/components/schemas/BookingReviewPolicy"
-          },
-          "notice": {
-            "$ref": "#/components/schemas/BookingReviewNotice"
           }
         }
       },
