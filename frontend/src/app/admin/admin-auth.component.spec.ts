@@ -32,6 +32,16 @@ describe('Administrator authentication with real typed SDK', () => {
     expect(view.message()).toContain('six-digit'); expect(fixture.nativeElement.querySelector('#admin-totp').getAttribute('aria-describedby')).toBe('admin-error');
     http.expectNone('/api/v1/session/bootstrap');
   });
+  it('turns off capitalization and spellcheck on the email field and moves focus to the error after failures', async () => {
+    const email = fixture.nativeElement.querySelector('#admin-email'); expect(email.getAttribute('autocapitalize')).toBe('off'); expect(email.getAttribute('spellcheck')).toBe('false');
+    document.body.appendChild(fixture.nativeElement); const error = fixture.nativeElement.querySelector('#admin-error') as HTMLElement;
+    try {
+      fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); fixture.detectChanges();
+      expect(document.activeElement).toBe(error); error.blur();
+      const { result, request } = await pendingLogin(); request.flush({ code: 'AUTHENTICATION_FAILED' }, { status: 401, statusText: 'Unauthorized' }); await result;
+      expect(document.activeElement).toBe(error);
+    } finally { fixture.nativeElement.remove(); }
+  });
   it('submits exact credentials once, privately rotates proof and clears secret controls', async () => {
     const { result, request } = await pendingLogin(); await view.login();
     expect(request.request.body.email === 'synthetic@exämple.test' && request.request.body.password === ' synthetic exact password ' && request.request.body.totp === '123456').toBe(true);

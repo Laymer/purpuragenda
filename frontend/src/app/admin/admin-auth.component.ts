@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { AdministratorService, SessionStateRoleEnum } from '../shared/generated';
@@ -17,7 +17,7 @@ import { AccessFailure } from '../shared/access/access-failure';
         <p>Use your private administrator account and a fresh authenticator code.</p>
         <form [formGroup]="form" (ngSubmit)="login()">
           <label for="admin-email">Email address</label>
-          <input id="admin-email" type="text" inputmode="email" autocomplete="username" formControlName="email" [attr.aria-invalid]="invalid('email')" [attr.aria-describedby]="invalid('email') ? 'admin-error' : null">
+          <input id="admin-email" type="text" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" formControlName="email" [attr.aria-invalid]="invalid('email')" [attr.aria-describedby]="invalid('email') ? 'admin-error' : null">
           <label for="admin-password">Password</label>
           <input id="admin-password" type="password" autocomplete="current-password" formControlName="password" [attr.aria-invalid]="invalid('password')" [attr.aria-describedby]="invalid('password') ? 'admin-error' : null">
           <label for="admin-totp">Authenticator code</label>
@@ -35,6 +35,7 @@ import { AccessFailure } from '../shared/access/access-failure';
 export class AdminAuthComponent {
   readonly sessions = inject(SessionAccess);
   private readonly api = inject(AdministratorService);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   private active = true;
   private timer?: ReturnType<typeof setTimeout>;
   readonly busy = signal(false);
@@ -55,7 +56,7 @@ export class AdminAuthComponent {
   async login(): Promise<void> {
     if (this.busy() || this.cooling()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) { this.message.set('Enter an email address, password and six-digit authenticator code.'); return; }
+    if (this.form.invalid) { this.message.set('Enter an email address, password and six-digit authenticator code.'); this.focusError(); return; }
     const request = this.form.getRawValue(); this.busy.set(true); this.message.set(''); this.clearSecrets();
     try {
       const state = await this.sessions.authenticate(csrf => this.api.loginAdministrator(csrf, request));
@@ -77,6 +78,7 @@ export class AdminAuthComponent {
     catch { if (this.active) this.message.set('Private browser state was cleared. Sign out could not be confirmed; check the browser session before continuing.'); }
     finally { if (this.active) this.busy.set(false); }
   }
+  private focusError(): void { this.host.nativeElement.querySelector<HTMLElement>('#admin-error')?.focus(); }
   private failure(error: unknown): void {
     const failure = error instanceof AccessFailure ? error : new AccessFailure('UNCERTAIN');
     if (failure.kind === 'THROTTLED') {
@@ -87,5 +89,6 @@ export class AdminAuthComponent {
     } else if (failure.kind === 'REJECTED') this.message.set('Sign in failed. Check your credentials and use a fresh authenticator code.');
     else if (failure.kind === 'SESSION_EXPIRED') this.message.set('Your session expired or changed. Check the browser session, then sign in again.');
     else this.message.set('Sign in could not be confirmed. Check the browser session before trying again.');
+    this.focusError();
   }
 }
