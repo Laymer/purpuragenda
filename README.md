@@ -46,4 +46,4 @@ Never run `docker compose down -v` and never delete `./.secrets`: the keys there
 
 Hosted CI runs every check on each pull request, and all must pass before a squash merge. Coverage gates are at least 90% lines and branches per backend module and for Angular, with 95% lines for domain and application.
 
-More detail: [docs/local-testing.md](docs/local-testing.md). Rules for contributors and agents: [AGENTS.md](AGENTS.md), [STATUS.md](STATUS.md) and [docs/decisions.md](docs/decisions.md).
+Using the application as a guest, customer or administrator: [docs/user-manual.md](docs/user-manual.md). More detail: [docs/local-testing.md](docs/local-testing.md). Rules for contributors and agents: [AGENTS.md](AGENTS.md), [STATUS.md](STATUS.md) and [docs/decisions.md](docs/decisions.md).

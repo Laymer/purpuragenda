@@ -1,6 +1,7 @@
 """purpuragenda.sh dispatch, safety refusals and doctor detection with hermetic stub tools."""
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import stat
@@ -416,6 +417,23 @@ class ReadmeTest(unittest.TestCase):
             self.assertIn(text, readme)
         # The README must repeat the data-safety rule, never recommend volume removal.
         self.assertIn('Never run `docker compose down -v`', readme)
+
+
+
+class UserManualTest(unittest.TestCase):
+    """Every bold label in the user's manual must be text the Angular interface actually shows."""
+
+    def test_manual_labels_exist_in_the_interface(self):
+        manual = (ROOT / 'docs/user-manual.md').read_text()
+        sources = ''.join(path.read_text() for path in (ROOT / 'frontend/src/app').rglob('*')
+                          if path.suffix in ('.ts', '.html') and not path.name.endswith('.spec.ts'))
+        labels = re.findall(r'\*\*([^*]+)\*\*', manual)
+        self.assertGreater(len(labels), 25)
+        for label in labels:
+            with self.subTest(label=label):
+                self.assertIn(label, sources)
+        self.assertIn('Never run `docker compose down -v`', manual)
+        self.assertIn('docs/user-manual.md', (ROOT / 'README.md').read_text())
 
 
 if __name__ == '__main__':
