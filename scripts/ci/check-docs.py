@@ -112,6 +112,8 @@ def validate(root):
         if state in ('Draft PR', 'In review', 'Merged') and not re.search(
                 r'https://github\.com/Laymer/purpuragenda/pull/\d+', advancement):
             errors.append(f'P{match[1]} requires a PR link')
+        if state == 'Merged' and not re.search(r'[0-9a-f]{7,40}', advancement):
+            errors.append(f'P{match[1]} requires a merge commit')
         if state == 'Blocked' and not re.search(r'depends on|requires|blocked by', advancement):
             errors.append(f'P{match[1]} requires a blocking dependency')
     if ids != list(range(1, 51)):

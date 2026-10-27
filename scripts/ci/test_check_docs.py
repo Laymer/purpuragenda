@@ -76,9 +76,11 @@ class LedgerTest(unittest.TestCase):
     def test_merged_slice_cannot_keep_a_released_task_claim(self):
         ledger = self.ledger.replace(
             '| P01 — Task | In progress |',
-            '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/32 |')
+            '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/32 at 1a2b3c4 |')
         self.assertTrue(any('not active in ledger' in error for error in self.validate(ledger)))
         self.assertEqual([], self.validate(ledger.replace(self.claim, 'None.')))
+        unconfirmed = ledger.replace(' at 1a2b3c4', '').replace(self.claim, 'None.')
+        self.assertEqual(['P01 requires a merge commit'], self.validate(unconfirmed))
         label_only = ledger.replace('https://github.com/Laymer/purpuragenda/pull/32', 'PR32').replace(self.claim, 'None.')
         self.assertTrue(any('requires a PR link' in error for error in self.validate(label_only)))
         self.assertFalse(any('not active in ledger' in error for error in self.validate(label_only)))
@@ -242,7 +244,7 @@ class LedgerTest(unittest.TestCase):
         (self.root / 'docs/handoffs/p45.md').write_text(resumed)
         claim = self.claim.replace('P01/concurrency', 'P45/durable-workers').replace('task/p01;', 'task/p45;').replace('p01.md', 'p45.md')
         ledger = self.ledger.replace('| P01 — Task | In progress |',
-                                    '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/50 |')
+                                    '| P01 — Task | Merged; https://github.com/Laymer/purpuragenda/pull/50 at 1748cf5 |')
         ledger = ledger.replace('| P45 — Task | Not started |', '| P45 — Task | In progress |').replace(self.claim, claim)
         ledger = ledger.split('## Active handoff\n')[0] + '## Active handoff\n\n' + resumed
         self.assertEqual([], self.validate(ledger))
