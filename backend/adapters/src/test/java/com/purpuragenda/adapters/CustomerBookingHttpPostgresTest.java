@@ -38,9 +38,11 @@ class CustomerBookingHttpPostgresTest {
         var throttle=new RequestThrottle(new PostgresRateLimits(c.f.source,new RateKey(Files.write(directory.resolve("http-rate.key"),bytes),"http-test-v1")));
         var proofs=new GuestProofs(throttle,c.f.delivery,new GuestRecovery(new PostgresGuestRecoveryLookup(c.f.source),c.f.delivery));
         g.mvc=MockMvcBuilders.standaloneSetup(new SessionController(access,cookies),new GuestAuthController(proofs,access,cookies,Duration.ZERO),
+                new CustomerAvailabilityController(new CustomerReschedulingAvailability(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
+                new GuestBookingController(new GuestBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new CustomerBookingController(c.command,new CustomerBookingChanges(new PostgresBookingChanges(c.f.source)),
                         new CustomerBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies))
-                .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of()))).build();
+                .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of())),new AvailabilityThrottleFilter(throttle)).build();
     }
     @AfterEach void cleanup() { c.cleanup(); }
     GuestAuthPostgresTest.Browser guest(String email) throws Exception {
@@ -61,6 +63,37 @@ class CustomerBookingHttpPostgresTest {
     String booking(MockHttpServletResponse response) throws Exception { assertEquals(201,response.getStatus());return json.readTree(response.getContentAsString()).get("bookingId").textValue(); }
     MockHttpServletResponse view(GuestAuthPostgresTest.Browser b,String id) throws Exception {
         return g.send(get("/api/v1/bookings/"+id).cookie(new Cookie("__Host-purpuragenda",b.cookie())));
+    }
+    @Test void privateAndPublicAvailabilityConsumeTheSamePersistedBudgetBeforeAnyAdvice() throws Exception {
+        var browser=guest("limited-advice@example.test");var request=body(3);String id=booking(create(browser,"limited-advice",request));
+        String day=Instant.parse(request.get("startInstant").textValue()).atZone(ZoneId.of("Europe/Brussels")).toLocalDate().toString();
+        String path="/api/v1/bookings/"+id+"/availability";
+        assertEquals(200,g.send(get(path).param("from",day).param("to",day).param("displayZone","UTC").cookie(new Cookie("__Host-purpuragenda",browser.cookie()))).getStatus());
+        for(int i=1;i<120;i++)assertEquals(400,g.send(get("/api/v1/bookings/malformed/availability")).getStatus());
+        for(String target:List.of(path,"/api/v1/availability")) {
+            var denied=g.send(get(target).cookie(new Cookie("__Host-purpuragenda",browser.cookie())));
+            assertEquals(429,denied.getStatus());assertEquals("no-store",denied.getHeader("Cache-Control"));assertTrue(Long.parseLong(denied.getHeader("Retry-After"))>0);
+        }
+        assertEquals(1,c.count("rate_limit_bucket WHERE kind='AVAILABILITY_IP'"));
+        assertEquals("120",c.f.value("SELECT count FROM rate_limit_bucket WHERE kind='AVAILABILITY_IP'"));
+        assertEquals(1,c.count("request_charge"));assertEquals(1,c.load(UUID.fromString(id)).version());
+    }
+    @Test void reschedulingAdviceUsesRealProofScopeOriginalServiceAndReadOnlySchedulingFacts() throws Exception {
+        var browser=guest("advice@example.test");var request=body(3);String id=booking(create(browser,"advice",request));
+        var day=Instant.parse(request.get("startInstant").textValue()).atZone(ZoneId.of("Europe/Brussels")).toLocalDate().toString();
+        c.jdbc.update("UPDATE service SET active=false WHERE id=?",UUID.fromString(request.get("serviceId").textValue()));
+        String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE kind='GUEST'");int events=c.count("outbox_event"),charges=c.count("request_charge");
+        var path="/api/v1/bookings/"+id+"/availability";
+        var response=g.send(get(path).param("from",day).param("to",day).param("displayZone","Europe/Brussels")
+                .header("If-None-Match","*").cookie(new Cookie("__Host-purpuragenda",browser.cookie())));
+        assertEquals(200,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));assertNull(response.getHeader("ETag"));
+        var slots=json.readTree(response.getContentAsString()).get("slots");assertTrue(slots.size()>0);
+        boolean own=false;for(var slot:slots)if(slot.get("startInstant").textValue().equals(request.get("startInstant").textValue()))own=true;
+        assertTrue(own);assertFalse(response.getContentAsString().contains("Synthetic city"));
+        assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE kind='GUEST'"));assertEquals(events,c.count("outbox_event"));assertEquals(charges,c.count("request_charge"));
+        var other=g.boot();assertEquals(404,g.send(get(path).param("from",day).param("to",day).param("displayZone","UTC").cookie(new Cookie("__Host-purpuragenda",other.cookie()))).getStatus());
+        assertEquals(401,g.send(get(path).param("from",day).param("to",day).param("displayZone","UTC")).getStatus());
+        assertEquals(400,g.send(get(path).param("from",day,day).param("to",day).param("displayZone","UTC").cookie(new Cookie("__Host-purpuragenda",browser.cookie()))).getStatus());
     }
     @Test void verifiedCreationReplaysAndReadUsesExplicitPrivateContractWithoutTouchingSession() throws Exception {
         var browser=guest("synthetic@example.test");var request=body(3);var created=create(browser,"create",request);String id=booking(created);
@@ -149,4 +182,34 @@ class CustomerBookingHttpPostgresTest {
         assertEquals(1,c.count("booking"));assertEquals(1,c.count("request_charge"));assertEquals(1,c.count("booking_occupancy WHERE released_at IS NULL"));
         assertEquals(20,c.count("idempotency_record"));assertEquals(1,c.count("outbox_event WHERE type='REQUESTED'"));
     }
+    @Test void discoversOnlyTheCurrentGuestTargetAndNeverUsesAClientSuppliedTarget() throws Exception {
+        var browser=guest("scoped-http@example.test");String path="/api/v1/guest/booking";
+        var cookie=new Cookie("__Host-purpuragenda",browser.cookie());
+        assertEquals(401,g.send(get(path)).getStatus());assertEquals(404,g.send(get(path).cookie(cookie)).getStatus());
+        String id=booking(create(browser,"scoped",body(3)));
+        var another=c.guest("scoped-http@example.test");c.create(another,"other",c.request(4,9));
+        String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE browser_hash=?",browser.browserHash());
+        var response=g.send(get(path).cookie(cookie).header("If-None-Match","*").header("If-Modified-Since","Wed, 01 Jan 2099 00:00:00 GMT"));
+        assertEquals(200,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));
+        var result=json.readTree(response.getContentAsString());assertEquals(id,result.get("id").asText());
+        assertFalse(result.has("intake") || result.has("customerId") || response.getContentAsString().contains("Synthetic city"));
+        assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE browser_hash=?",browser.browserHash()));
+        assertEquals(400,g.send(get(path+"?bookingId="+UUID.randomUUID()).cookie(cookie)).getStatus());
+        c.jdbc.update("UPDATE access_grant SET revoked_at=clock_timestamp() WHERE kind='CREATE' AND booking_id=?",UUID.fromString(id));
+        assertEquals(401,g.send(get(path).cookie(cookie)).getStatus());
+    }
+
+    @Test void managementEmailRedemptionDiscoversItsExactBookingWithoutAClientIdentifier() throws Exception {
+        var owner=c.guest("management-http@example.test");UUID id=c.create(owner,"managed",c.request(3,9)).entityId();
+        String reference=c.load(id).reference();var browser=g.boot();
+        var body=json.createObjectNode().put("email","management-http@example.test").put("reference",reference);
+        assertEquals(202,g.send(g.json(browser,"/api/v1/guest/management-proofs",body.toString())).getStatus());
+        var redeemed=g.send(g.json(browser,"/api/v1/guest/redemptions",g.redeemBody(g.proofToken(),"MANAGE")));
+        assertEquals(200,redeemed.getStatus());
+        String cookie=redeemed.getHeader("Set-Cookie").split(";",2)[0].split("=",2)[1];
+        var response=g.send(get("/api/v1/guest/booking").cookie(new Cookie("__Host-purpuragenda",cookie)));
+        assertEquals(200,response.getStatus());assertTrue(id.toString().equals(json.readTree(response.getContentAsString()).get("id").asText()));
+        assertFalse(response.getContentAsString().contains("Synthetic intake"));
+    }
+
 }

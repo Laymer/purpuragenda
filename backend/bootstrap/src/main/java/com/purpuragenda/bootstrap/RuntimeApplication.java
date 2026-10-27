@@ -1,6 +1,8 @@
 package com.purpuragenda.bootstrap;
 
 import com.purpuragenda.application.scheduling.AdministratorBookingView;
+import com.purpuragenda.application.scheduling.AdministratorFinance;
+import com.purpuragenda.adapters.out.postgres.PostgresFinance;
 import com.purpuragenda.adapters.out.postgres.PostgresAdministratorBookingQuery;
 
 import com.purpuragenda.adapters.in.rest.*;
@@ -83,6 +85,10 @@ public class RuntimeApplication {
     @Bean GuestAuthController guestAuthController(GuestProofs proofs,SessionAccess access,SessionCookies cookies) {
         return new GuestAuthController(proofs,access,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AdministratorFinance administratorFinance(DataSource source,RuntimeSettings settings) {
+        return new AdministratorFinance(new PostgresFinance(source,settings.meetingHosts()),settings.meetingHosts());
+    }
+    @Bean AdministratorFinanceController administratorFinanceController(AdministratorFinance finance) { return new AdministratorFinanceController(finance); }
     @Bean AdministratorBookingView administratorBookingView(DataSource source,RuntimeSettings settings) {
         return new AdministratorBookingView(new PostgresAdministratorBookingQuery(source,settings.meetingHosts()));
     }
@@ -112,6 +118,14 @@ public class RuntimeApplication {
         return new AccountController(login,passwords,cookies,java.time.Duration.ofMillis(300));
     }
     @Bean PublicController publicController(PublicScheduling scheduling) { return new PublicController(scheduling); }
+    @Bean GuestBookingController guestBooking(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        return new GuestBookingController(new com.purpuragenda.application.scheduling.GuestBookingView(
+                new PostgresCustomerBookingQuery(source,settings.meetingHosts())),access,cookies);
+    }
+    @Bean CustomerAvailabilityController customerAvailability(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        return new CustomerAvailabilityController(new com.purpuragenda.application.scheduling.CustomerReschedulingAvailability(
+                new PostgresCustomerBookingQuery(source,settings.meetingHosts())),access,cookies);
+    }
     @Bean BookingNotice bookingNotice(Environment environment) { return RuntimeNotice.read(environment); }
     @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {
         return new BookingContextController(new PublicBookingContext(work,notice));

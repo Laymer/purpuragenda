@@ -68,4 +68,13 @@ describe('Customer booking typed HTTP boundary', () => {
     expect(failures.map(value => value.status)).toEqual([412, 409]);
     expect(failures.map(value => value.error.refreshAvailability)).toEqual([true, true]);
   });
+  it('discovers only the current guest scope without supplying a booking target', () => {
+    const http = TestBed.inject(HttpTestingController); let found: string | undefined;
+    TestBed.inject(BookingsService).getGuestBooking().subscribe(value => found = value.id);
+    const request = http.expectOne('/api/v1/guest/booking');
+    expect(request.request.method).toBe('GET'); expect(request.request.params.keys()).toEqual([]);
+    expect(request.request.body).toBeNull(); expect(request.request.headers.has('X-CSRF-Token')).toBe(false);
+    request.flush({ id, version: 1, state: 'PENDING_CONFIRMATION' }); expect(found).toBe(id);
+  });
+
 });

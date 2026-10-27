@@ -21,7 +21,8 @@ public final class AvailabilityThrottleFilter extends OncePerRequestFilter {
     /** Registered for every path; the decision uses the normalized path and fails closed on undecodable input. */
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = RequestPaths.normalize(request.getRequestURI());
-        return path != null && !path.equals(PATH);
+        return path != null && !path.equals(PATH)
+                && !(path.startsWith("/api/v1/bookings/") && path.endsWith("/availability"));
     }
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {

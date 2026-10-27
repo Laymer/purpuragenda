@@ -1987,7 +1987,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1–100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
+        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1\u2013100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
         "security": [
           {
             "sessionCookie": []
@@ -2337,6 +2337,965 @@
             "$ref": "#/components/responses/AccountProblem"
           }
         }
+      }
+    },
+    "/guest/booking": {
+      "get": {
+        "operationId": "getGuestBooking",
+        "tags": [
+          "Bookings"
+        ],
+        "description": "Derives a single booking from the persisted guest session grant. Unconsumed creation grants and account sessions never select a booking. Resolves and checks current scope in one read-only snapshot, without touching session activity. Always returns a fresh no-store representation; the ETag is the command version and does not validate independent payment facts. No query parameters are accepted.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authorized private snapshot.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted booking version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read exactly the current guest grant-bound booking"
+      }
+    },
+    "/admin/bookings/{bookingId}/receipts": {
+      "post": {
+        "operationId": "recordAdministratorReceipt",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorMoneyReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorReceiptRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}/approve": {
+      "post": {
+        "operationId": "approveAdministratorBooking",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted positive signed64-bit booking version from GET or a receipt. Missing428, stale412; weak/wildcard/multiple tags rejected400."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted booking version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorConfirmationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}/confirm-external-payment": {
+      "post": {
+        "operationId": "confirmAdministratorExternalPayment",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted positive signed64-bit booking version from GET or a receipt. Missing428, stale412; weak/wildcard/multiple tags rejected400."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted booking version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorConfirmationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}/refunds": {
+      "post": {
+        "operationId": "recordAdministratorRefund",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorMoneyReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorRefundRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}/refund-requirements": {
+      "post": {
+        "operationId": "requireAdministratorRefund",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorRefundRequirementReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorRefundRequirementRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{bookingId}/availability": {
+      "get": {
+        "operationId": "bookingReschedulingAvailability",
+        "tags": [
+          "Bookings"
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "displayZone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "description": "IANA zone identifier selecting the display zone."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Advisory choices from one authorized read-only snapshot. The mutation rechecks authority, versions and capacity. BOOKING_NOT_CHANGEABLE yields an empty slot list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST, INVALID_ZONE, INVALID_DATE_RANGE or RANGE_TOO_WIDE",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Whole seconds until the fixed throttle window ends (at least 1).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "TEMPORARILY_UNAVAILABLE (retryable)",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled (by a servlet filter, before the handler) to 120 requests per minute per client address; malformed requests are charged too.",
+        "summary": "Read authorized rescheduling choices using the immutable booked service and own-reservation exclusion"
       }
     }
   },
@@ -2699,7 +3658,7 @@
             "minLength": 8,
             "maxLength": 40,
             "writeOnly": true,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",
@@ -3147,6 +4106,73 @@
         },
         "description": "Show the ten new recovery codes once. No session is issued. Sign in with fresh password/TOTP after reenrollment."
       },
+      "BookingReviewContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
+        "required": [
+          "serverNow",
+          "horizon",
+          "businessZone",
+          "reservationMinutes",
+          "service",
+          "policy",
+          "notice"
+        ],
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horizon": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "description": "Europe/Brussels civil business zone."
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 120,
+            "maximum": 120
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BookingReviewPolicy"
+          },
+          "notice": {
+            "$ref": "#/components/schemas/BookingReviewNotice"
+          }
+        }
+      },
+      "BookingReviewNotice": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
+        "required": [
+          "version",
+          "text",
+          "synthetic"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16000
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        }
+      },
       "BookingReviewPolicy": {
         "type": "object",
         "additionalProperties": false,
@@ -3196,73 +4222,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "BookingReviewNotice": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
-        "required": [
-          "version",
-          "text",
-          "synthetic"
-        ],
-        "properties": {
-          "version": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
-          },
-          "text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16000
-          },
-          "synthetic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BookingReviewContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
-        "required": [
-          "serverNow",
-          "horizon",
-          "businessZone",
-          "reservationMinutes",
-          "service",
-          "policy",
-          "notice"
-        ],
-        "properties": {
-          "serverNow": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "horizon": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "businessZone": {
-            "type": "string",
-            "description": "Europe/Brussels civil business zone."
-          },
-          "reservationMinutes": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 120,
-            "maximum": 120
-          },
-          "service": {
-            "$ref": "#/components/schemas/Service"
-          },
-          "policy": {
-            "$ref": "#/components/schemas/BookingReviewPolicy"
-          },
-          "notice": {
-            "$ref": "#/components/schemas/BookingReviewNotice"
           }
         }
       },
@@ -3381,7 +4340,7 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 40,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",
@@ -3759,6 +4718,176 @@
           "currentPassword",
           "newPassword"
         ]
+      },
+      "AdministratorReceiptRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "amountMinor",
+          "currency",
+          "method",
+          "reference",
+          "verifiedAt"
+        ],
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "pattern": "^[A-Z]{3}$"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual verified time, no finer than microseconds; must not follow captured database time."
+          }
+        }
+      },
+      "AdministratorRefundRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receiptId",
+          "amountMinor",
+          "currency",
+          "method",
+          "reference",
+          "verifiedAt"
+        ],
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "pattern": "^[A-Z]{3}$"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual verified time, no finer than microseconds; must not follow captured database time."
+          }
+        }
+      },
+      "AdministratorConfirmationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "meetingUrl"
+        ],
+        "properties": {
+          "meetingUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      },
+      "AdministratorRefundRequirementRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receiptId",
+          "reason"
+        ],
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdministratorMoneyReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bookingId",
+          "paymentEntryId",
+          "bookingVersion"
+        ],
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "paymentEntryId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "bookingVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          }
+        }
+      },
+      "AdministratorRefundRequirementReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bookingId",
+          "receiptId",
+          "bookingVersion"
+        ],
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "receiptId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "bookingVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          }
+        }
       }
     },
     "securitySchemes": {

@@ -307,6 +307,12 @@ class RuntimeDatabaseTest {
                 """.formatted(start);
             var created=json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create");assertEquals(201,created.statusCode());
             UUID id=UUID.fromString(field(created.body(),"bookingId"));String path="/api/v1/bookings/"+id;
+            var scoped=call(port,"GET","/api/v1/guest/booking","Cookie",cookie);
+            assertEquals(200,scoped.statusCode());assertEquals("no-store",scoped.headers().firstValue("Cache-Control").orElseThrow());
+            assertTrue(id.toString().equals(field(scoped.body(),"id")),"Expected exactly the guest-bound booking");
+            var advice=call(port,"GET",path+"/availability?from="+day+"&to="+day+"&displayZone=Europe%2FBrussels","Cookie",cookie);
+            assertEquals(200,advice.statusCode());assertEquals("no-store",advice.headers().firstValue("Cache-Control").orElseThrow());
+            assertTrue(advice.body().contains(start.toString()));assertFalse(advice.body().contains("Synthetic city"));
             assertEquals(created.body(),json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create").body());
             var current=call(port,"GET",path,"Cookie",cookie);assertEquals(200,current.statusCode());assertEquals("\"1\"",current.headers().firstValue("ETag").orElseThrow());
             assertFalse(current.body().contains("Synthetic city") || current.body().contains("\"intake\""));assertTrue(current.body().contains("\"UNPAID\""));
@@ -496,6 +502,59 @@ class RuntimeDatabaseTest {
             assertEquals(403,call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",guestCookie).statusCode());
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
+
+    @Test @Order(17) void administratorFinanceOverRealHttpKeepsActualMoneyIndependentOfManualApproval() throws Exception {
+        sql("DELETE FROM app_session WHERE admin_id IS NOT NULL; DELETE FROM admin_authentication_proof; DELETE FROM admin_reenrollment_grant; DELETE FROM admin_recovery_code; DELETE FROM admin_user");
+        char[] password="synthetic runtime finance phrase".toCharArray();byte[] secret=null;
+        try(var context=Purpuragenda.launch(new String[0],properties)) {
+            context.getBean(RuntimeWorkers.class).stop();sql("DELETE FROM delivery_attempt; DELETE FROM notification_job");int port=port(context);
+            var guestBoot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String guestCookie=guestBoot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],guestCsrf=field(guestBoot.body(),"csrfToken");
+            assertEquals(202,json(port,"/api/v1/guest/create-proofs","{\"email\":\"runtime-finance@example.test\"}",guestCookie,guestCsrf).statusCode());
+            var queue=context.getBean(NotificationQueue.class);var lease=queue.claimAuth().orElseThrow();var message=context.getBean(AuthDeliveryStore.class).prepare(lease).orElseThrow();assertTrue(queue.sent(lease));
+            String proof=message.text().split("#token=",2)[1].split("&",2)[0];
+            var redeemed=json(port,"/api/v1/guest/redemptions","{\"token\":\""+proof+"\",\"purpose\":\"CREATE\"}",guestCookie,guestCsrf);assertEquals(200,redeemed.statusCode());
+            guestCookie=redeemed.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];guestCsrf=field(redeemed.body(),"csrfToken");
+            var day=java.time.LocalDate.parse(text("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Brussels')::date")).plusDays(17);
+            while(day.getDayOfWeek()==java.time.DayOfWeek.SATURDAY || day.getDayOfWeek()==java.time.DayOfWeek.SUNDAY)day=day.plusDays(1);
+            String start=day.atTime(10,0).atZone(java.time.ZoneId.of("Europe/Brussels")).toInstant().toString();
+            String body="""
+                {"serviceId":"10000000-0000-0000-0000-000000000001","serviceVersion":1,"policyVersion":1,"startInstant":"%s",
+                 "displayZone":"Europe/Brussels","noticeVersion":"local-v1","intake":{"firstName":"Synthetic","lastName":"Customer","telephone":"+32400123456",
+                 "birthDate":"1990-01-01","birthTime":"12:00:15","birthplace":"Synthetic private city","message":""}}
+                """.formatted(start);
+            var created=json(port,"/api/v1/bookings",body,guestCookie,guestCsrf,"Idempotency-Key","runtime-finance-create");assertEquals(201,created.statusCode());String id=field(created.body(),"bookingId");
+            assertEquals(PrivateAdminStore.Result.CREATED,context.getBean(PrivateAdminBootstrap.class).create("runtime-finance-admin@example.test",password.clone()));
+            var factors=context.getBean(PrivateAdminMfa.class);try(var prepared=factors.provision("runtime-finance-admin@example.test",password.clone()).orElseThrow()) { secret=prepared.bytes(); }
+            var generator=new com.eatthepath.otp.TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(30),6,"HmacSHA1");var key=new javax.crypto.spec.SecretKeySpec(secret,"HmacSHA1");
+            String enrollment=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.now()));
+            try(var codes=factors.enroll("runtime-finance-admin@example.test",password.clone(),enrollment).orElseThrow()) { assertEquals(10,codes.codes().size()); }
+            String code=null;long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(35);
+            while(code==null && System.nanoTime()<deadline) {
+                var now=java.time.Instant.now();String candidate=String.format(Locale.ROOT,"%06d",generator.generateOneTimePassword(key,java.time.Instant.ofEpochSecond((now.getEpochSecond()/30+1)*30)));
+                long previous=Long.parseLong(text("SELECT last_totp_step FROM admin_user"));
+                if(com.purpuragenda.adapters.out.security.Totp.acceptedStep(secret,candidate,now,previous)>previous)code=candidate;else Thread.sleep(100);
+            }
+            assertNotNull(code,"Expected a fresh synthetic MFA step");var boot=call(port,"POST","/api/v1/session/bootstrap","Origin",ORIGIN);
+            String cookie=boot.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0],csrf=field(boot.body(),"csrfToken");
+            var authenticated=login(port,"{\"email\":\"runtime-finance-admin@example.test\",\"password\":\""+new String(password)+"\",\"totp\":\""+code+"\"}",cookie,csrf);assertEquals(200,authenticated.statusCode());
+            cookie=authenticated.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];
+            csrf=field(authenticated.body(),"csrfToken");String base="/api/v1/admin/bookings/"+id;
+            var approved=json(port,base+"/approve","{\"meetingUrl\":\"https://zoom.us/j/582749163\"}",cookie,csrf,"Idempotency-Key","runtime-finance-approve","If-Match","\"1\"");assertEquals(200,approved.statusCode());
+            var unpaid=new com.fasterxml.jackson.databind.ObjectMapper().readTree(call(port,"GET",base,"Cookie",cookie).body());assertEquals("UNPAID",unpaid.at("/payment/status").asText());
+            String verified=text("SELECT to_char((clock_timestamp()-interval '1 second') AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')");
+            String fact="{\"amountMinor\":1500,\"currency\":\"EUR\",\"method\":\"SYNTHETIC\",\"reference\":\"runtime-finance-receipt\",\"verifiedAt\":\""+verified+"\"}";
+            var receipt=json(port,base+"/receipts",fact,cookie,csrf,"Idempotency-Key","runtime-finance-receipt");assertEquals(201,receipt.statusCode());String payment=field(receipt.body(),"paymentEntryId");
+            var replay=json(port,base+"/receipts",fact,cookie,csrf,"Idempotency-Key","runtime-finance-receipt");assertEquals(201,replay.statusCode());assertTrue(payment.equals(field(replay.body(),"paymentEntryId")),"Replay must retain the same synthetic payment entry");
+            String refund="{\"receiptId\":\""+payment+"\",\"amountMinor\":500,\"currency\":\"EUR\",\"method\":\"SYNTHETIC\",\"reference\":\"runtime-finance-refund\",\"verifiedAt\":\""+verified+"\"}";
+            assertEquals(201,json(port,base+"/refunds",refund,cookie,csrf,"Idempotency-Key","runtime-finance-refund").statusCode());
+            assertEquals(200,json(port,base+"/refund-requirements","{\"receiptId\":\""+payment+"\",\"reason\":\"Synthetic provider cancellation\"}",cookie,csrf,"Idempotency-Key","runtime-finance-required").statusCode());
+            var detail=call(port,"GET",base,"Cookie",cookie,"If-None-Match","\"2\"");assertEquals(200,detail.statusCode());assertEquals("\"2\"",detail.headers().firstValue("ETag").orElseThrow());
+            var projected=new com.fasterxml.jackson.databind.ObjectMapper().readTree(detail.body());assertEquals("CONFIRMED",projected.get("state").asText());assertEquals(1500,projected.at("/payment/receivedMinor").asLong());assertEquals(500,projected.at("/payment/refundedMinor").asLong());assertEquals("REFUND_DUE",projected.at("/payment/status").asText());
+            assertEquals(2,count("SELECT count(*) FROM payment_entry WHERE booking_id='"+id+"'"));
+        } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
+    }
+
 
 
     @Test @Order(16) void accountLoginAndPasswordChangeUseRealEnrolledCredentialsAndPersistedHttpSessions() throws Exception {

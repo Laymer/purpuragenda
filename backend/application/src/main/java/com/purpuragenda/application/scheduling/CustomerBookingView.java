@@ -22,14 +22,15 @@ public final class CustomerBookingView {
     }
     public Optional<View> find(SessionBinding session,UUID bookingId) {
         Objects.requireNonNull(session);Objects.requireNonNull(bookingId);
-        return query.find(session,bookingId).map(value->{
-            Booking b=value.booking();var service=b.snapshot().service();Instant now=value.now();
-            boolean expired=b.state()==Booking.State.PENDING_CONFIRMATION && !b.livePending(now);
-            return new View(b.id(),b.reference(),b.version(),b.state(),expired,
-                    new Service(service.name(),service.durationMinutes(),service.price()),b.start(),b.sessionEnd(),
-                    b.snapshot().displayZone(),b.deliveryEmail(),b.expiresAt(),b.start().minus(b.snapshot().policy().customerCutoff()),now,
-                    b.state()==Booking.State.CONFIRMED?b.meeting().participantUrl():null,value.ledger().summary(service.price()),
-                    b.customerMayChange(now)?Set.of(Action.CANCEL,Action.RESCHEDULE):Set.of());
-        });
+        return query.find(session,bookingId).map(CustomerBookingView::project);
+    }
+    static View project(CustomerBookingQuery.Authorized value) {
+        Booking b=value.booking();var service=b.snapshot().service();Instant now=value.now();
+        boolean expired=b.state()==Booking.State.PENDING_CONFIRMATION && !b.livePending(now);
+        return new View(b.id(),b.reference(),b.version(),b.state(),expired,
+                new Service(service.name(),service.durationMinutes(),service.price()),b.start(),b.sessionEnd(),
+                b.snapshot().displayZone(),b.deliveryEmail(),b.expiresAt(),b.start().minus(b.snapshot().policy().customerCutoff()),now,
+                b.state()==Booking.State.CONFIRMED?b.meeting().participantUrl():null,value.ledger().summary(service.price()),
+                b.customerMayChange(now)?Set.of(Action.CANCEL,Action.RESCHEDULE):Set.of());
     }
 }

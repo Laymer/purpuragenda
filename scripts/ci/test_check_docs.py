@@ -1,5 +1,6 @@
 """Synthetic ledger cases: claims must be complete, nonoverlapping and recoverable."""
 import importlib.util
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -104,6 +105,22 @@ class LedgerTest(unittest.TestCase):
         for claim in (self.claim, self.claim.replace('P01/concurrency', 'P40/coverage')):
             with self.subTest(claim=claim):
                 self.assertTrue(any('overlapping' in e for e in self.validate(self.ledger.replace(self.claim, self.claim + '\n' + claim))))
+
+    def test_distinct_claims_cannot_share_one_handoff_record(self):
+        claim = self.claim.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40')
+        ledger = self.ledger.replace('| P40 — Task | Not started |', '| P40 — Task | In progress |')
+        errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + claim))
+        self.assertIn('shared handoff record: P40/coverage', errors)
+        # One file naming both tasks satisfies each claim's field match; only the shared-record rule rejects it.
+        both = self.handoff + self.handoff.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40')
+        (self.root / 'docs/handoffs/p01.md').write_text(both)
+        shared = claim.replace('handoff=docs/handoffs/p40.md', 'handoff=docs/handoffs/p01.md')
+        self.assertEqual(['shared handoff record: P40/coverage'],
+                         self.validate(ledger.replace(self.claim, self.claim + '\n' + shared)))
+        (self.root / 'docs/handoffs/p01.md').write_text(self.handoff)
+        spelled = claim.replace('handoff=docs/handoffs/p01.md', 'handoff=docs/handoffs/./p01.md')
+        errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + spelled))
+        self.assertIn('shared handoff record: P40/coverage', errors)
 
     def test_unknown_task(self):
         self.assertTrue(any('unknown claimed task' in e for e in self.validate(self.ledger.replace('P01/concurrency', 'P99/concurrency'))))
@@ -237,7 +254,12 @@ class LedgerTest(unittest.TestCase):
                         'scripts/ci/verify-build.sh', 'scripts/ci/verify-compose.py'):
             self.assertIn(command, text)
         self.assertIn('Never** run `docker compose down -v`', text)
-        self.assertNotIn('./verify.sh', text)  # the root aggregate command does not exist yet
+        # Root entry points named by the guide must exist and be executable.
+        repository = Path(__file__).resolve().parents[2]
+        for script in ('purpuragenda.sh', 'verify.sh'):
+            self.assertIn('./' + script, text)
+            self.assertTrue(os.access(repository / script, os.X_OK), script)
+        self.assertIn('volume removal is refused', text)
 
     def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):
         for name in ('AGENTS.md', 'CLAUDE.md'):
