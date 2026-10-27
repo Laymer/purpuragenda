@@ -397,6 +397,24 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorRecoveryPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_configuration_authority_requires_both_complete_real_postgres_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresConfiguration.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic configuration adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        reports = [('AdministratorConfigurationPostgresTest', 15), ('ConfigurationAuthorityPostgresTest', 9)]
+        for name, minimum in reports:
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+        GATE.validate(self.root)
+        for name, minimum in reports:
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            for count, cases, nested in ((minimum-1, minimum-1, ''), (minimum, minimum-1, ''), (minimum+1, minimum, ''), (minimum, minimum, '<failure/>'), (minimum, minimum, '<error/>'), (minimum, minimum, '<skipped/>')):
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+                with self.assertRaises(ValueError): GATE.validate(self.root)
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+            GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()

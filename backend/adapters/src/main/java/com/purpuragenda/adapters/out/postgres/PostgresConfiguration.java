@@ -55,7 +55,10 @@ public final class PostgresConfiguration implements ConfigurationUnitOfWork {
         List<long[]> admin=jdbc.query("SELECT security_version FROM admin_user WHERE id=? AND enabled AND enrolled FOR UPDATE",(r,n)->new long[]{r.getLong(1)},initial.admin());
         Row row=session(binding,true);
         if(admin.size()!=1 || row==null || !"ADMIN".equals(row.kind()) || !initial.admin().equals(row.admin()))throw PersistedSession.unauthenticated();
-        if(row.revoked()!=null || row.issued().isAfter(now) || !now.isBefore(row.expires()) || now.isBefore(row.lastSeen())
+        // Concurrent guarded activity may advance lastSeen after resource time was captured, before this row lock.
+        // Factor time remains immutable authority and must not be in the command's future.
+        if(row.revoked()!=null || row.issued().isAfter(now) || !now.isBefore(row.expires())
+                || (row.authenticated()!=null && row.authenticated().isAfter(now))
                 || !now.isBefore(row.lastSeen().plusSeconds(ADMIN_IDLE_SECONDS)) || row.epoch()==null || row.epoch()!=admin.getFirst()[0])throw PersistedSession.unauthenticated();
         if(row.authenticated()==null || !now.isBefore(row.authenticated().plusSeconds(FRESH_MFA_SECONDS)))
             throw new Failure(Failure.Kind.FRESH_AUTHENTICATION_REQUIRED);

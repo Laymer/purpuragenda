@@ -1,0 +1,11 @@
+# Configuration mutation authority
+
+- Agent and UTC checkpoint: Codex-worker-b, 2026-10-27T00:00:00Z.
+- Current task: P31/configuration-authority; branch: task/p31-configuration-authority; base: main; PR URL: not yet created.
+- Last pushed implementation commit: base main74/affe433e83855f32dc7b0e0b6b75bca89f3a28fd; uncommitted changes: configuration predicates, real-MFA nine-case authority regression, strict mandatory report validation and documentation.
+- What works: existing resource-locked configuration commands and real persisted administrator password/TOTP/session composition. Finance86 separately fixes equivalent mutable-activity rejection.
+- What remains: deterministic actual-session interleaving test, narrow configuration authorization correction, explicit nonfuture factor boundary tests, strict report activation and all implemented categories/exact review.
+- Decisions: accept legitimate later mutable session activity after the single resource time capture; preserve issued, absolute/idle deadlines, epoch, revocation and strict fresh-MFA checks, explicitly reject future authenticated_at. Do not recapture command time or alter read-only RR queries, contracts, runtime routes or migrations.
+- Verification: Valid before-proof1PG/0failures/1error AUTHENTICATION_REQUIRED after real concurrent session resolve. After narrow predicate correction, existing15configurationPG cases pass; new9cases initially had4assertion-helper SQL errors from a nonexistent calendar_version column. Corrected JSON calendar-version assertion then9PG/12application/17domain target38Java exits0, zero failures/errors/skips. Combined current-production53Java including existing15core passes;249Python/docs checks pass. Full native/coverage/Compose/hosted and independent exact review remain pending; no stale finance receipt certifies this slice.
+- Next concrete action: publish tested source checkpoint and draft PR, integrate confirmedmain79 append-only retaining incoming worker/runtime tests, request independent exact review; coordinate full implemented gates after query76 current-main verification.
+- Recovery: preserve all worktrees/volumes/secrets and6f9405b; stacked PR dependencies: none currently, based confirmed main74, integration of confirmed main79 pending; finance86 and admin query76/read80 remain separate worktrees.
