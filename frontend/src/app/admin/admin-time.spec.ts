@@ -25,6 +25,11 @@ describe('Administrator Brussels civil-date helpers', () => {
     expect(first).toContain('02:30'); expect(second).toContain('02:30'); expect(first).toContain('UTC+2'); expect(second).toContain('UTC+1');
     expect(brusselsDisplay('not a time')).toBe('Unknown time');
   });
+  it('labels the spring-forward gap correctly and keeps month-end ranges at thirty-one dates', () => {
+    expect(brusselsDisplay('2026-03-29T00:30:00Z')).toContain('01:30'); expect(brusselsDisplay('2026-03-29T00:30:00Z')).toContain('UTC+1');
+    expect(brusselsDisplay('2026-03-29T01:00:00Z')).toContain('03:00'); expect(brusselsDisplay('2026-03-29T01:00:00Z')).toContain('UTC+2');
+    expect(rangeProblem('2026-03-01', '2026-03-31')).toBeNull(); expect(rangeProblem('2028-02-01', '2028-02-29')).toBeNull();
+  });
   it('treats the Zoom link as a hint with strict host and path rules', () => {
     expect(zoomHint('https://zoom.us/j/123456789')).toBeNull(); expect(zoomHint(' https://us02web.zoom.us/j/12345678901/ ')).toBeNull();
     for (const bad of ['', 'zoom.us/j/123456789', 'http://zoom.us/j/123456789', 'https://zoom.us.evil.test/j/123456789', 'https://evilzoom.us/j/123456789', 'https://u:p@zoom.us/j/123456789'])

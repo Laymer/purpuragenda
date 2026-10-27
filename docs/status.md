@@ -795,6 +795,13 @@ P19 corrected targeted reactor passed17domain,4application,3HTTP,3notice configu
 
 P19 final focused27Java cases pass after unknown-mode regression (35.570s), and240strictPython pass. Documentation preflight initially found the new claim still attached to the prior completed P19 catalog row; set the task back to In progress while retaining merged catalog evidence. Backend checkpoint is publishable; contract/client and every full integrated category remain pending.
 
+P19/booking-context claimed in separate worktree stacked on customerHTTP72. Added read-only service/policy/notice projection, explicit public wire mapping and shared immutable notice configuration for review/submission. Local/test/restore content is visibly synthetic; operational serving requires bounded plaintext notice file plus non-local version. Initial targeted reactor correctly failed because its selector omitted all domain tests; no suite or gate disabled. Corrected selector includes existing SchedulingTest plus new application/HTTP/config and actual runtime cases; results pending. Contract edits wait for recovery worker slot release.
+
+P19 corrected targeted reactor passed17domain,4application,3HTTP,3notice configuration and12actual runtime PostgreSQL cases (39total), zero failures/errors/skips,2m01s. Actual network test retrieves synthetic service/policy/notice context before submitting its matching versions through protected creation. Additional unknown-mode configuration regression now rejects standalone configuration misuse; focused rerun pending. Full coverage, contract/client, current-main hosted/Compose and independent review remain required.
+
+P19 final focused27Java cases pass after unknown-mode regression (35.570s), and240strictPython pass. Documentation preflight initially found the new claim still attached to the prior completed P19 catalog row; set the task back to In progress while retaining merged catalog evidence. Backend checkpoint is publishable; contract/client and every full integrated category remain pending.
+
+
 
 ### 2026-10-26 — P17 restricted recovery HTTP implementation checkpoint
 
@@ -1008,6 +1015,7 @@ Branch task/p49-run-script from main cc3fe39 adds root purpuragenda.sh, verify.s
 
 P24 booking UI integrates confirmed worker79/maincc3fe39 append-only; worker79 exactc74 passed1071Java/33Angular/249Python/allcoverage/all14/cleanCompose6/two reviews. Incoming maintenance/runtime tests are meaningful first-parent changes. Booking UI source remains unchanged from tested e064 and real-browser de64 baseline; fresh integrated full gates remain pending shared78 prerequisite.
 
+HOLD_EXPIRED approval coverage (Claude-lane-c): the domain rule is asserted in BookingTest (approve at exactly the hold expiry returns HOLD_EXPIRED) and the application path is asserted in AdministratorFinanceTest.staleTerminalExpiredInvalidAndSharedMeetingsAreExpectedFailuresWithoutEffects (due hold is reclaimed first, the stale reviewed version fails, and the expired hold is never revived). No further test was added for this path.
 P27 adopts frozen booking-flow83/current-main79 checkpoint963d25b append-only. Auth source remains independently approvedcad7e8a; existing /book wizard and /verify landing, strict CSP and shared in-memory access remain unchanged. Incoming worker/runtime/maintenance tests make integration meaningful. Fresh targeted frontend/Python checks pending; full current-main native/hosted/Compose and browser acceptance still required after78/83 prerequisite merges.
 
 P27 frozen83/main79 integration targeted verifier passes122Angular cases, production build/strict CSP,467/470handwrittenlines452/486branches and249strictPython; docs/diff pass. Administrator source unchanged from independently reviewedcad7e8a. No native/hosted/Compose or browser completion claimed for this integration.
