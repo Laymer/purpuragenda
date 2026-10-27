@@ -1,0 +1,16 @@
+{
+  "revision": "4419542151f4cfbc5d41eb822da799363bfee27f",
+  "run": 40401012864,
+  "coverage": {
+    "BRANCH": {
+      "covered": 1592,
+      "missed": 197
+    },
+    "LINE": {
+      "covered": 2042,
+      "missed": 31
+    }
+  },
+  "cause": "Mandatory branch gate failed; genuine missing cross-account, future-credential, malformed-storage and suppressed-update boundaries identified.",
+  "resolution": "Keep all gates and schema constraints; add meaningful denial/rollback cases, reject future lastSeen captured after required locks, and integrate predecessor account exchange resource-ownership correction."
+}
