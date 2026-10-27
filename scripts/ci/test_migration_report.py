@@ -461,17 +461,17 @@ class MigrationReportTest(unittest.TestCase):
         source.parent.mkdir(parents=True);source.write_text('synthetic account HTTP')
         with self.assertRaisesRegex(ValueError,'Missing mandatory'):GATE.validate(self.root)
         report=self.report.with_name('TEST-com.purpuragenda.adapters.AccountHttpPostgresTest.xml');qualified='com.purpuragenda.adapters.AccountHttpPostgresTest'
-        for count,actual,nested in ((17,17,''),(18,17,''),(18,18,'<failure/>'),(18,18,'<error/>'),(18,18,'<skipped/>')):
+        for count,actual,nested in ((18,18,''),(19,18,''),(19,19,'<failure/>'),(19,19,'<error/>'),(19,19,'<skipped/>')):
             report.write_text(f'<testsuite name="{qualified}" tests="{count}">'+'<testcase/>'*(actual-1)+f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):GATE.validate(self.root)
-        report.write_text(f'<testsuite name="{qualified}" tests="18">'+'<testcase/>'*18+'</testsuite>');GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="19">'+'<testcase/>'*19+'</testsuite>');GATE.validate(self.root)
 
     def test_stacked_account_and_administrator_suites_each_reject_hidden_nested_failures_together(self):
         # Stacked merges union the authority list; dropping any one name would let a nested failure pass silently.
         stacked = {
             'SchedulingMaintenancePostgresTest': ('backend/application/src/main/java/com/purpuragenda/application/scheduling/DueBookingExpiry.java', 6),
             'AccountPasswordDatabaseTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountPassword.java', 28),
-            'AccountHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountController.java', 18),
+            'AccountHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountController.java', 19),
             'AdministratorBookingQueryPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java', 21),
             'AdministratorBookingHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorBookingController.java', 11),
             'AdministratorFinanceHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorFinanceController.java', 17),
