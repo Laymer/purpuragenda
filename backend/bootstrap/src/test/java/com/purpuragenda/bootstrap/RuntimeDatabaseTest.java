@@ -310,6 +310,9 @@ class RuntimeDatabaseTest {
             var scoped=call(port,"GET","/api/v1/guest/booking","Cookie",cookie);
             assertEquals(200,scoped.statusCode());assertEquals("no-store",scoped.headers().firstValue("Cache-Control").orElseThrow());
             assertTrue(id.toString().equals(field(scoped.body(),"id")),"Expected exactly the guest-bound booking");
+            var advice=call(port,"GET",path+"/availability?from="+day+"&to="+day+"&displayZone=Europe%2FBrussels","Cookie",cookie);
+            assertEquals(200,advice.statusCode());assertEquals("no-store",advice.headers().firstValue("Cache-Control").orElseThrow());
+            assertTrue(advice.body().contains(start.toString()));assertFalse(advice.body().contains("Synthetic city"));
             assertEquals(created.body(),json(port,"/api/v1/bookings",body,cookie,csrf,"Idempotency-Key","runtime-create").body());
             var current=call(port,"GET",path,"Cookie",cookie);assertEquals(200,current.statusCode());assertEquals("\"1\"",current.headers().firstValue("ETag").orElseThrow());
             assertFalse(current.body().contains("Synthetic city") || current.body().contains("\"intake\""));assertTrue(current.body().contains("\"UNPAID\""));

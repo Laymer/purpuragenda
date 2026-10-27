@@ -5,6 +5,7 @@ import { AdminAuthComponent } from './admin-auth.component';
 import { provideApi } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { routes } from '../app.config';
+import { Router } from '@angular/router';
 const now = Date.parse('2026-10-26T10:00:00Z');
 const reply = (role = 'ANONYMOUS') => ({ role, csrfToken: 'synthetic-proof', idleExpiresAt: new Date(now + 600000).toISOString(), absoluteExpiresAt: new Date(now + 1200000).toISOString() });
 const settle = async () => { for (let i = 0; i < 18; i++) await Promise.resolve(); };
@@ -48,6 +49,11 @@ describe('Administrator authentication with real typed SDK', () => {
     expect(request.request.headers.get('X-CSRF-Token') === 'synthetic-proof').toBe(true); expect(view.form.controls.password.value).toBe('');
     request.flush(reply('ADMIN')); await result; fixture.detectChanges();
     expect(view.administrator()).toBe(true); expect(fixture.nativeElement.querySelector('form')).toBeNull(); expect(view.message()).toContain('complete');
+  });
+  it('moves on to the administrator area only after a confirmed administrator sign in', async () => {
+    const spy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    const failed = await pendingLogin(); failed.request.flush({ code: 'AUTHENTICATION_FAILED' }, { status: 401, statusText: 'Unauthorized' }); await failed.result; expect(spy).not.toHaveBeenCalled();
+    fill(); const result = view.login(); await settle(); http.expectOne('/api/v1/admin/login').flush(reply('ADMIN')); await result; expect(spy).toHaveBeenCalledWith('/admin');
   });
   it('handles wrong factors generically without exposing provider text or clearing the valid anonymous session', async () => {
     const { result, request } = await pendingLogin(); request.flush({ code: 'AUTHENTICATION_FAILED', detail: 'private synthetic provider detail' }, { status: 401, statusText: 'Unauthorized' }); await result;

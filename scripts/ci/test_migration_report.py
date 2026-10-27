@@ -32,12 +32,12 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingQueryPostgresTest.xml')
-        for count, actual, nested in ((23, 23, ''), (24, 23, ''), (24, 24, '<failure/>'), (24, 24, '<skipped/>'), (24, 24, '<error/>')):
+        for count, actual, nested in ((24, 24, ''), (25, 24, ''), (25, 25, '<failure/>'), (25, 25, '<skipped/>'), (25, 25, '<error/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="{count}">' +
                               '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="24">' + '<testcase/>' * 24 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingQueryPostgresTest" tests="25">' + '<testcase/>' * 25 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_customer_http_requires_real_guarded_transaction_and_race_cases(self):
@@ -48,12 +48,12 @@ class MigrationReportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
             GATE.validate(self.root)
         report = self.report.with_name('TEST-com.purpuragenda.adapters.CustomerBookingHttpPostgresTest.xml')
-        for count, actual, nested in ((7, 7, ''), (8, 7, ''), (8, 8, '<failure/>'), (8, 8, '<skipped/>'), (8, 8, '<error/>')):
+        for count, actual, nested in ((9, 9, ''), (10, 9, ''), (10, 10, '<failure/>'), (10, 10, '<skipped/>'), (10, 10, '<error/>')):
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="{count}">' +
                               '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
             with self.assertRaises(ValueError):
                 GATE.validate(self.root)
-        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="8">' + '<testcase/>' * 8 + '</testsuite>')
+        report.write_text('<testsuite name="com.purpuragenda.adapters.CustomerBookingHttpPostgresTest" tests="10">' + '<testcase/>' * 10 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_unrelated_passing_suite_cannot_replace_missing_migrations(self):

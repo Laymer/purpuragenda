@@ -37,6 +37,10 @@ describe('Management link request', () => {
     view.form.setValue({ reference: 'B-1', email: 'not-an-email' }); await view.send(); http.expectNone('/api/v1/session/bootstrap');
     expect(fixture.nativeElement.querySelector('#manage-email').getAttribute('aria-describedby')).toBe('manage-message');
   });
+  it('refuses an over-long reference or email locally', async () => {
+    view.form.setValue({ reference: 'B'.repeat(65), email: 'synthetic@example.test' }); await view.send(); http.expectNone('/api/v1/session/bootstrap');
+    view.form.setValue({ reference: 'B-1', email: 'a'.repeat(250) + '@example.test' }); await view.send(); http.expectNone('/api/v1/session/bootstrap'); expect(view.message()).toContain('valid email');
+  });
   it('sends trimmed values with CSRF and answers neutrally, then enforces a cooldown', async () => {
     const storage = vi.spyOn(Storage.prototype, 'setItem'); const { pending, request } = await submit();
     expect(request.request.body).toEqual({ reference: 'B-synthetic', email: 'synthetic@example.test' }); expect(request.request.headers.get('X-CSRF-Token')).toBe(session.csrfToken);
