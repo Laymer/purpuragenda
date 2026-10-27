@@ -34,7 +34,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 under Claude lane A |
+| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 confirmed merged 525e4a6 after 14 hosted checks and independent shell review; HTTP/UI remain |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -67,7 +67,6 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P24/booking-flow: agent=Claude-lane-b; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/claude-p24-booking-flow.md
 - P25/management-ui: agent=Claude-lane-b; branch=task/p25-management-target; base=main; handoff=docs/handoffs/claude-p25-management-ui.md
 - P27/admin-ui: agent=Claude-lane-b; branch=task/p27-admin-auth-ui; base=main; handoff=docs/handoffs/claude-p27-admin-ui.md
-- P31/configuration-authority: agent=Claude-lane-a; branch=task/p31-configuration-authority; base=main; handoff=docs/handoffs/claude-p31-configuration-authority.md
 - P36/reminders: agent=Claude-lane-a; branch=task/p36-reminders; base=main; handoff=docs/handoffs/claude-p36-reminders.md
 
 ## Active handoff
