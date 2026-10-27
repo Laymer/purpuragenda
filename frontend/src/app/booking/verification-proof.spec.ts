@@ -52,7 +52,7 @@ describe('Explicit email verification through the real typed transport', () => {
     expect(redemption.request.body.token === token).toBe(true); expect(redemption.request.headers.has('X-CSRF-Token')).toBe(true);
     redemption.flush(reply('GUEST')); await work; f.detectChanges();
     expect(f.componentInstance.verified()).toBe(true); expect(TestBed.inject(SessionAccess).state()?.role).toBe('GUEST');
-    expect(f.nativeElement.querySelector('a').getAttribute('href')).toBe(purpose === 'CREATE' ? '/book' : '/');
+    expect(f.nativeElement.querySelector('a').getAttribute('href')).toBe(purpose === 'CREATE' ? '/book' : '/manage/booking');
     await f.componentInstance.verify(); http.expectNone('/api/v1/guest/redemptions'); expect(storage).not.toHaveBeenCalled(); storage.mockRestore();
   });
   it('does not show or retry arbitrary provider errors', async () => {
