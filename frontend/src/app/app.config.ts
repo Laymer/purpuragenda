@@ -9,6 +9,7 @@ export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'Purpuragenda · Consultations with Medina' },
   { path: 'book', loadComponent: () => import('./booking/booking-flow.component').then(module => module.BookingFlowComponent), title: 'Choose a consultation · Purpuragenda' },
   { path: 'verify', loadComponent: () => import('./booking/verify-email.component').then(module => module.VerifyEmailComponent), title: 'Verify your email · Purpuragenda' },
+  { path: 'admin/login', loadComponent: () => import('./admin/admin-auth.component').then(module => module.AdminAuthComponent), title: 'Administrator sign in · Purpuragenda' },
   { path: '**', component: NotFoundComponent, title: 'Page not found · Purpuragenda' },
 ];
 
