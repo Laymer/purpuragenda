@@ -38,7 +38,7 @@ export function rangeProblem(from: string, through: string): string | null {
 /** Brussels wall time with an explicit UTC offset, unambiguous at DST overlaps. */
 export function brusselsDisplay(instant: string): string {
   const time = Date.parse(instant); if (!Number.isFinite(time)) return 'Unknown time';
-  return clock.format(new Date(time)).replace('GMT', 'UTC').replace(',', '');
+  return clock.format(new Date(time)).replace('GMT', 'UTC').replaceAll(',', '');
 }
 
 /** Hint only. The server validates the meeting URL authoritatively. */

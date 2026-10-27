@@ -10,6 +10,8 @@ export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'Purpuragenda · Consultations with Medina' },
   { path: 'book', loadComponent: () => import('./booking/booking-flow.component').then(module => module.BookingFlowComponent), title: 'Choose a consultation · Purpuragenda' },
   { path: 'verify', loadComponent: () => import('./booking/verify-email.component').then(module => module.VerifyEmailComponent), title: 'Verify your email · Purpuragenda' },
+  { path: 'manage', loadComponent: () => import('./manage/manage-request.component').then(module => module.ManageRequestComponent), title: 'Manage your booking · Purpuragenda' },
+  { path: 'manage/booking', loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
   { path: 'admin/login', loadComponent: () => import('./admin/admin-auth.component').then(module => module.AdminAuthComponent), title: 'Administrator sign in · Purpuragenda' },
   {
     path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./admin/admin-shell.component').then(module => module.AdminShellComponent),

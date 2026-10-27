@@ -52,8 +52,13 @@ describe('Explicit email verification through the real typed transport', () => {
     expect(redemption.request.body.token === token).toBe(true); expect(redemption.request.headers.has('X-CSRF-Token')).toBe(true);
     redemption.flush(reply('GUEST')); await work; f.detectChanges();
     expect(f.componentInstance.verified()).toBe(true); expect(TestBed.inject(SessionAccess).state()?.role).toBe('GUEST');
-    expect(f.nativeElement.querySelector('a').getAttribute('href')).toBe(purpose === 'CREATE' ? '/book' : '/');
+    expect(f.nativeElement.querySelector('a').getAttribute('href')).toBe(purpose === 'CREATE' ? '/book' : '/manage/booking');
     await f.componentInstance.verify(); http.expectNone('/api/v1/guest/redemptions'); expect(storage).not.toHaveBeenCalled(); storage.mockRestore();
+  });
+  it('sends a failed management verification back to request a new management link', async () => {
+    const f = setup(`#token=${token}&purpose=MANAGE`); const work = f.componentInstance.verify(); await settle(); http.expectOne('/api/v1/session/bootstrap').flush(reply()); await settle();
+    http.expectOne('/api/v1/guest/redemptions').flush({}, { status: 401, statusText: 'Unauthorized' }); await work; f.detectChanges();
+    expect(f.componentInstance.verified()).toBe(false); expect(f.nativeElement.querySelector('a').getAttribute('href')).toBe('/manage'); expect(f.nativeElement.textContent).toContain('Request a new link');
   });
   it('does not show or retry arbitrary provider errors', async () => {
     const f = setup(); const work = f.componentInstance.verify(); await settle(); http.expectOne('/api/v1/session/bootstrap').flush(reply()); await settle();

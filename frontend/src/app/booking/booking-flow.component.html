@@ -59,18 +59,7 @@
   }
   @if (phase() === 'status') {
     <h2 tabindex="-1">Your booking</h2>
-    @if (status(); as booking) {
-      <p>Reference: <strong>{{ booking.reference }}</strong></p>
-      <p>{{ booking.service.name }} · {{ booking.service.durationMinutes }} minutes</p>
-      <p>{{ inZone(booking.startInstant, booking.displayZone) }} · {{ booking.displayZone }}</p>
-      <p>Status: {{ booking.state.replaceAll('_', ' ').toLowerCase() }}.</p>
-      @if (booking.pendingExpired) { <p>The hold has expired and is awaiting processing.</p> }
-      @if (booking.state === 'PENDING_CONFIRMATION' && booking.pendingExpiresAt) { <p>Hold expires: {{ inZone(booking.pendingExpiresAt, booking.displayZone) }} · {{ booking.displayZone }}.</p> }
-      @if (booking.allowedActions.length > 0) { <p>Customer changes close: {{ inZone(booking.customerChangesUntil, booking.displayZone) }} · {{ booking.displayZone }}.</p> }
-      <p>Payment: {{ booking.payment.status.replaceAll('_', ' ').toLowerCase() }}. Confirmation does not imply payment.</p>
-      <p>Updates are sent to {{ booking.deliveryEmail }}.</p>
-      @if (booking.meetingUrl) { <a [href]="booking.meetingUrl" target="_blank" rel="noopener noreferrer">Open meeting link</a> }
-    }
+    @if (status(); as booking) { <app-booking-status [booking]="booking" /> }
     <button mat-stroked-button (click)="loadStatus()" [disabled]="busy()">Refresh booking status</button>
   }
 </section>
