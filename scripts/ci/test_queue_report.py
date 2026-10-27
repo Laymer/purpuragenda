@@ -49,6 +49,25 @@ class QueueReportTest(unittest.TestCase):
                               + '<testcase/>' * 26 + '</testsuite>')
             GATE.validate(root)
 
+    def test_reminders_require_actual_deadline_grace_revision_and_upgrade_cases(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); self.write(root)
+            migration = root / 'backend/adapters/src/main/resources/db/changelog/014-reminder-deadlines.sql'
+            migration.parent.mkdir(parents=True); migration.write_text('Synthetic reminder schema')
+            with self.assertRaisesRegex(ValueError, 'Missing mandatory reminder'):
+                GATE.validate(root)
+            report = root / 'backend/adapters/target/surefire-reports/TEST-com.purpuragenda.adapters.ReminderDatabaseTest.xml'
+            for name, count, cases, nested, summary in (
+                    ('ReminderDatabaseTest',24,24,'',''), ('ReminderDatabaseTest',25,24,'',''),
+                    ('ReminderDatabaseTest',26,25,'',''), ('OtherTest',25,25,'',''),
+                    ('ReminderDatabaseTest',25,25,'<failure/>',''), ('ReminderDatabaseTest',25,25,'<error/>',''),
+                    ('ReminderDatabaseTest',25,25,'<skipped/>',''), ('ReminderDatabaseTest',25,25,'','errors="1"')):
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}" {summary}>'
+                                  + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+                with self.assertRaises(ValueError): GATE.validate(root)
+            report.write_text('<testsuite name="com.purpuragenda.adapters.ReminderDatabaseTest" tests="25">' + '<testcase/>' * 25 + '</testsuite>')
+            GATE.validate(root)
+
     def test_missing_incomplete_phantom_skipped_and_unrelated_suites_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

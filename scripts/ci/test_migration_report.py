@@ -492,6 +492,71 @@ class MigrationReportTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Incomplete or failed authority cases', msg=name):
                     GATE.validate(self.root)
             complete(name, count)
+
+    def test_configuration_authority_requires_both_complete_real_postgres_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresConfiguration.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic configuration adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        reports = [('AdministratorConfigurationPostgresTest', 15), ('ConfigurationAuthorityPostgresTest', 9)]
+        for name, minimum in reports:
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+        GATE.validate(self.root)
+        for name, minimum in reports:
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            for count, cases, nested in ((minimum-1, minimum-1, ''), (minimum, minimum-1, ''), (minimum+1, minimum, ''), (minimum, minimum, '<failure/>'), (minimum, minimum, '<error/>'), (minimum, minimum, '<skipped/>')):
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+                with self.assertRaises(ValueError): GATE.validate(self.root)
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+            GATE.validate(self.root)
+
+    def test_configuration_and_password_suites_are_all_strict_when_both_adapters_exist(self):
+        self.write()
+        sources = ('backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresConfiguration.java',
+                   'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountPassword.java')
+        for path in sources:
+            source = self.root / path
+            source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic adapter')
+        reports = [('AdministratorConfigurationPostgresTest', 15), ('ConfigurationAuthorityPostgresTest', 9), ('AccountPasswordDatabaseTest', 28)]
+        def publish(name, count, cases):
+            self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml').write_text(
+                f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + '<testcase/>' * cases + '</testsuite>')
+        for name, minimum in reports:
+            publish(name, minimum, minimum)
+        GATE.validate(self.root)
+        for name, minimum in reports:
+            # A declared count above the minimum but not matching executed cases passes only non-strict suites.
+            publish(name, minimum + 1, minimum)
+            with self.assertRaisesRegex(ValueError, 'authority cases'): GATE.validate(self.root)
+            publish(name, minimum, minimum)
+        GATE.validate(self.root)
+
+
+    def test_admin_read_http_requires_actual_mfa_privacy_revocation_and_conditional_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorBookingController.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator controller')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (10,10,''), (11,10,''), (12,11,''), (11,11,'<failure/>'), (11,11,'<error/>'), (11,11,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingHttpPostgresTest" tests="11">' + '<testcase/>' * 11 + '</testsuite>')
+        GATE.validate(self.root)
+
+    def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator reader')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (20,20,''), (21,20,''), (22,21,''), (21,21,'<failure/>'), (21,21,'<error/>'), (21,21,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="21">' + '<testcase/>' * 21 + '</testsuite>')
         GATE.validate(self.root)
 
 
