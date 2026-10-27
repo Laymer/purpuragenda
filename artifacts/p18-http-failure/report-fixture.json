@@ -1,0 +1,1 @@
+{"suite":"MigrationReportTest","tests":31,"failures":1,"errors":0,"cause":"Synthetic invalid report vector accidentally advanced to valid minimum during integration; strict checker correctly accepted it.","resolution":"Independent literal minimum19 and explicit minimum-minus-one failure vectors; gate remains strict."}

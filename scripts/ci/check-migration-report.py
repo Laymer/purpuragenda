@@ -52,7 +52,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountPassword.java').is_file():
         suites.append(('AccountPasswordDatabaseTest', 28))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountController.java').is_file():
-        suites.append(('AccountHttpPostgresTest', 18))
+        suites.append(('AccountHttpPostgresTest', 19))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CustomerBookingController.java').is_file():
