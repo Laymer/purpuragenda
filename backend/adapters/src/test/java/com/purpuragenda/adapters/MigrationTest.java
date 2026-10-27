@@ -152,7 +152,7 @@ class MigrationTest {
     @Test void freshSchemaHasAllChangesAndSeeds() {
         assertEquals(180006,scalar(APP,"SELECT current_setting('server_version_num')::integer"));
         assertEquals(1,scalar(APP,"SELECT (current_setting('fsync')='on')::integer"));
-        assertEquals(16,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(17,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(2,scalar(APP,"SELECT count(*) FROM service"));
         assertEquals(1500,scalar(APP,"SELECT price_minor FROM service WHERE duration_minutes=30"));
         assertEquals(3000,scalar(APP,"SELECT price_minor FROM service WHERE duration_minutes=60"));
@@ -163,7 +163,7 @@ class MigrationTest {
         try(Connection c=connection(APP)) { execute(c,"UPDATE service SET name='Synthetic owner edit' WHERE id=?::uuid",SERVICE); }
         catch(SQLException failure) { throw safe(failure); }
         migrate(0); migrate(0);
-        assertEquals(16,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(17,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,scalar(APP,"SELECT count(*) FROM service WHERE name='Synthetic owner edit'"));
         assertEquals(1,scalar(APP,"SELECT count(*) FROM booking WHERE id='"+id+"'"));
     }
@@ -284,6 +284,6 @@ class MigrationTest {
         }
         assertTrue(ready,"POSTGRES_RESTART_FAILED");
         assertEquals(1,scalar(APP,"SELECT count(*) FROM booking"));
-        assertEquals(16,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(17,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
     }
 }
