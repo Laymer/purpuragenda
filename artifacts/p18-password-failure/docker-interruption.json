@@ -1,0 +1,9 @@
+{
+  "revision": "4419542151f4cfbc5d41eb822da799363bfee27f",
+  "adapterTests": 118,
+  "adapterErrors": 34,
+  "adapterFailures": 0,
+  "skipped": 0,
+  "cause": "Docker unavailable; PostgreSQL fixtures failed initialization, not acceptance evidence.",
+  "recovery": "Coordinator restored existing engine and pinned isolated Postgres smoke; no settings/secrets/volumes changed."
+}

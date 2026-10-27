@@ -51,9 +51,10 @@ def validate_claims(root, ledger):
         seen_tasks.add(task_id)
         seen_branches.add(branch)
         # One recovery record per claim: a shared file cannot hold two exact task/branch handoffs.
-        if reference in seen_handoffs:
+        record = Path(reference).as_posix()
+        if record in seen_handoffs:
             errors.append(f'shared handoff record: {task}')
-        seen_handoffs.add(reference)
+        seen_handoffs.add(record)
         relative = Path(reference)
         if (relative.is_absolute() or '..' in relative.parts
                 or relative.parts[:2] != ('docs', 'handoffs') or relative.suffix != '.md'):

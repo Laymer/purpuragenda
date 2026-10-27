@@ -110,6 +110,9 @@ class LedgerTest(unittest.TestCase):
         ledger = self.ledger.replace('| P40 — Task | Not started |', '| P40 — Task | In progress |')
         errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + claim))
         self.assertIn('shared handoff record: P40/coverage', errors)
+        spelled = claim.replace('handoff=docs/handoffs/p01.md', 'handoff=docs/handoffs/./p01.md')
+        errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + spelled))
+        self.assertIn('shared handoff record: P40/coverage', errors)
 
     def test_unknown_task(self):
         self.assertTrue(any('unknown claimed task' in e for e in self.validate(self.ledger.replace('P01/concurrency', 'P99/concurrency'))))
