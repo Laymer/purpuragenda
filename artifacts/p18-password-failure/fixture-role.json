@@ -1,0 +1,1 @@
+{"suite":"AccountPasswordDatabaseTest","tests":17,"failures":4,"errors":0,"skipped":0,"cause":"Rollback injection fixture attempted CREATE FUNCTION using restricted application role; SQLSTATE42501 correctly denied it.","resolution":"Use existing isolated migrator fixture connection for fault-injection DDL; production permissions unchanged."}
