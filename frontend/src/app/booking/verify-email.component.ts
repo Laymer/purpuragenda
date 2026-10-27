@@ -15,7 +15,7 @@ import { VERIFICATION_PROOF } from './verification-proof';
         <button mat-flat-button (click)="verify()" [disabled]="busy()">{{ busy() ? 'Verifying…' : 'Verify email' }}</button>
       }
       <p role="status">{{ message() }}</p>
-      @if (!busy()) { <a mat-stroked-button [routerLink]="management() ? '/' : '/book'">{{ management() ? 'Return home' : verified() ? 'Continue booking' : 'Request a new link' }}</a> }
+      @if (!busy()) { <a mat-stroked-button [routerLink]="management() ? (verified() ? '/manage/booking' : '/manage') : '/book'">{{ management() ? (verified() ? 'View your booking' : 'Request a new link') : verified() ? 'Continue booking' : 'Request a new link' }}</a> }
     </section>`,
   styles: [`.verification { max-width: 40rem; margin: 2rem auto; padding: 1rem; }`],
 })
@@ -37,7 +37,7 @@ export class VerifyEmailComponent {
     this.management.set(request.purpose === 'MANAGE'); this.busy.set(true); this.available.set(false);
     try {
       await this.sessions.authenticate(csrf => this.guest.redeemGuestProof(csrf, request));
-      if (this.active) { this.verified.set(true); this.message.set(this.management() ? 'Your email is verified. Return to the booking you wanted to manage in this browser.' : 'Your email is verified for this browser.'); }
+      if (this.active) { this.verified.set(true); this.message.set(this.management() ? 'Your email is verified. You can now view and manage your booking in this browser.' : 'Your email is verified for this browser.'); }
     } catch {
       if (this.active) this.message.set('We could not verify this link. It may have expired or been used. Request a new link in this browser.');
     } finally { if (this.active) this.busy.set(false); }
