@@ -61,6 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
+- P31/configuration-authority: agent=Codex-worker-b; branch=task/p31-configuration-authority; base=main; handoff=docs/handoffs/p31-configuration-authority.md
 - P36/reminders: agent=Codex-worker-c; branch=task/p36-reminders; base=main; handoff=docs/handoffs/p36-reminders.md
 
 
