@@ -12,7 +12,12 @@ public interface BookingNotificationStore {
     Optional<Facts> load(NotificationQueue.Lease lease);
     /** Intake, birth data, private notes and tokens are deliberately absent. */
     record Facts(UUID jobId,String audience,String template,long jobVersion,String recipient,String reference,String serviceName,
-                 String state,Instant start,Instant expiresAt,String meetingUrl,Set<String> laterEventTypes,Instant now) {
+                 String state,Instant start,Instant expiresAt,String meetingUrl,Set<String> laterEventTypes,Instant now,
+                 Instant scheduledAt,Integer graceSeconds) {
+        public Facts(UUID jobId,String audience,String template,long jobVersion,String recipient,String reference,String serviceName,
+                     String state,Instant start,Instant expiresAt,String meetingUrl,Set<String> laterEventTypes,Instant now) {
+            this(jobId,audience,template,jobVersion,recipient,reference,serviceName,state,start,expiresAt,meetingUrl,laterEventTypes,now,null,null);
+        }
         public Facts { laterEventTypes=Set.copyOf(laterEventTypes);Objects.requireNonNull(jobId);Objects.requireNonNull(now); }
         @Override public String toString() { return "NotificationFacts[job="+jobId+", content=REDACTED]"; }
     }

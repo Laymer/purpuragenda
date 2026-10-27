@@ -21,7 +21,13 @@ import { AdministratorAgendaPage } from '../model/administratorAgendaPage';
 // @ts-ignore
 import { AdministratorBookingDetail } from '../model/administratorBookingDetail';
 // @ts-ignore
+import { AdministratorConfirmationRequest } from '../model/administratorConfirmationRequest';
+// @ts-ignore
 import { AdministratorLoginRequest } from '../model/administratorLoginRequest';
+// @ts-ignore
+import { AdministratorMoneyReceipt } from '../model/administratorMoneyReceipt';
+// @ts-ignore
+import { AdministratorReceiptRequest } from '../model/administratorReceiptRequest';
 // @ts-ignore
 import { AdministratorRecoveryRequest } from '../model/administratorRecoveryRequest';
 // @ts-ignore
@@ -30,6 +36,14 @@ import { AdministratorRecoverySetup } from '../model/administratorRecoverySetup'
 import { AdministratorReenrollmentRequest } from '../model/administratorReenrollmentRequest';
 // @ts-ignore
 import { AdministratorReenrollmentResult } from '../model/administratorReenrollmentResult';
+// @ts-ignore
+import { AdministratorRefundRequest } from '../model/administratorRefundRequest';
+// @ts-ignore
+import { AdministratorRefundRequirementReceipt } from '../model/administratorRefundRequirementReceipt';
+// @ts-ignore
+import { AdministratorRefundRequirementRequest } from '../model/administratorRefundRequirementRequest';
+// @ts-ignore
+import { BookingReceipt } from '../model/bookingReceipt';
 // @ts-ignore
 import { Problem } from '../model/problem';
 // @ts-ignore
@@ -49,6 +63,100 @@ export class AdministratorService extends BaseService {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);
+    }
+
+    /**
+     * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.
+     * @endpoint post /admin/bookings/{bookingId}/approve
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted positive signed64-bit booking version from GET or a receipt. Missing428, stale412; weak/wildcard/multiple tags rejected400.
+     * @param administratorConfirmationRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public approveAdministratorBooking(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<BookingReceipt>;
+    public approveAdministratorBooking(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<BookingReceipt>>;
+    public approveAdministratorBooking(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<BookingReceipt>>;
+    public approveAdministratorBooking(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling approveAdministratorBooking.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling approveAdministratorBooking.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling approveAdministratorBooking.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling approveAdministratorBooking.');
+        }
+        if (administratorConfirmationRequest === null || administratorConfirmationRequest === undefined) {
+            throw new Error('Required parameter administratorConfirmationRequest was null or undefined when calling approveAdministratorBooking.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/approve`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<BookingReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorConfirmationRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
     }
 
     /**
@@ -117,6 +225,100 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorRecoveryRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.
+     * @endpoint post /admin/bookings/{bookingId}/confirm-external-payment
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted positive signed64-bit booking version from GET or a receipt. Missing428, stale412; weak/wildcard/multiple tags rejected400.
+     * @param administratorConfirmationRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public confirmAdministratorExternalPayment(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<BookingReceipt>;
+    public confirmAdministratorExternalPayment(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<BookingReceipt>>;
+    public confirmAdministratorExternalPayment(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<BookingReceipt>>;
+    public confirmAdministratorExternalPayment(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfirmationRequest: AdministratorConfirmationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling confirmAdministratorExternalPayment.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling confirmAdministratorExternalPayment.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling confirmAdministratorExternalPayment.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling confirmAdministratorExternalPayment.');
+        }
+        if (administratorConfirmationRequest === null || administratorConfirmationRequest === undefined) {
+            throw new Error('Required parameter administratorConfirmationRequest was null or undefined when calling confirmAdministratorExternalPayment.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/confirm-external-payment`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<BookingReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorConfirmationRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -367,6 +569,180 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.
+     * @endpoint post /admin/bookings/{bookingId}/receipts
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorReceiptRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public recordAdministratorReceipt(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorReceiptRequest: AdministratorReceiptRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorMoneyReceipt>;
+    public recordAdministratorReceipt(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorReceiptRequest: AdministratorReceiptRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorMoneyReceipt>>;
+    public recordAdministratorReceipt(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorReceiptRequest: AdministratorReceiptRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorMoneyReceipt>>;
+    public recordAdministratorReceipt(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorReceiptRequest: AdministratorReceiptRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling recordAdministratorReceipt.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling recordAdministratorReceipt.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling recordAdministratorReceipt.');
+        }
+        if (administratorReceiptRequest === null || administratorReceiptRequest === undefined) {
+            throw new Error('Required parameter administratorReceiptRequest was null or undefined when calling recordAdministratorReceipt.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/receipts`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorMoneyReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorReceiptRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.
+     * @endpoint post /admin/bookings/{bookingId}/refunds
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorRefundRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public recordAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequest: AdministratorRefundRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorMoneyReceipt>;
+    public recordAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequest: AdministratorRefundRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorMoneyReceipt>>;
+    public recordAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequest: AdministratorRefundRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorMoneyReceipt>>;
+    public recordAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequest: AdministratorRefundRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling recordAdministratorRefund.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling recordAdministratorRefund.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling recordAdministratorRefund.');
+        }
+        if (administratorRefundRequest === null || administratorRefundRequest === undefined) {
+            throw new Error('Required parameter administratorRefundRequest was null or undefined when calling recordAdministratorRefund.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/refunds`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorMoneyReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorRefundRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires an anonymous persisted session, exact Origin and CSRF. Distributed normalized account/IP limits apply before factors. Purpose/session/browser binding is derived only by the server. Password plus single-use recovery code permits reenrollment only; an exact retry rotates the bearer without extending the original expiry. Completion consumes the restricted grant and revokes old credentials; fresh MFA is required for ordinary access. No session or Set-Cookie is returned.
      * @endpoint post /admin/recovery/reenrollment
      * @param xCSRFToken 
@@ -432,6 +808,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorReenrollmentRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.
+     * @endpoint post /admin/bookings/{bookingId}/refund-requirements
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorRefundRequirementRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public requireAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequirementRequest: AdministratorRefundRequirementRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorRefundRequirementReceipt>;
+    public requireAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequirementRequest: AdministratorRefundRequirementRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorRefundRequirementReceipt>>;
+    public requireAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequirementRequest: AdministratorRefundRequirementRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorRefundRequirementReceipt>>;
+    public requireAdministratorRefund(bookingId: string, xCSRFToken: string, idempotencyKey: string, administratorRefundRequirementRequest: AdministratorRefundRequirementRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling requireAdministratorRefund.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling requireAdministratorRefund.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling requireAdministratorRefund.');
+        }
+        if (administratorRefundRequirementRequest === null || administratorRefundRequirementRequest === undefined) {
+            throw new Error('Required parameter administratorRefundRequirementRequest was null or undefined when calling requireAdministratorRefund.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/refund-requirements`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorRefundRequirementReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorRefundRequirementRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

@@ -12,6 +12,35 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_guest_booking_discovery_is_scoped_and_never_accepts_a_target(self):
+        operation = self.document['paths']['/guest/booking']['get']
+        self.assertEqual('getGuestBooking', operation['operationId'])
+        self.assertEqual([{'sessionCookie': []}], operation['security'])
+        self.assertNotIn('parameters', operation)
+        self.assertNotIn('requestBody', operation)
+        self.assertEqual('#/components/schemas/CustomerBookingStatus', operation['responses']['200']['content']['application/json']['schema']['$ref'])
+        self.assertIn('404', operation['responses'])
+
+    def test_finance_commands_preserve_independent_money_and_versioned_confirmation(self):
+        cases = [('receipts', 'AdministratorReceiptRequest', False, '201'), ('refunds', 'AdministratorRefundRequest', False, '201'),
+                 ('refund-requirements', 'AdministratorRefundRequirementRequest', False, '200'),
+                 ('approve', 'AdministratorConfirmationRequest', True, '200'), ('confirm-external-payment', 'AdministratorConfirmationRequest', True, '200')]
+        for suffix, schema, versioned, status in cases:
+            operation = self.document['paths']['/admin/bookings/{bookingId}/' + suffix]['post']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            headers = {value['name'] for value in operation['parameters']}
+            self.assertTrue({'X-CSRF-Token', 'Idempotency-Key'} <= headers)
+            self.assertEqual(versioned, 'If-Match' in headers)
+            self.assertEqual(versioned, '428' in operation['responses'])
+            self.assertEqual('#/components/schemas/' + schema, operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertEqual(['no-store'], operation['responses'][status]['headers']['Cache-Control']['schema']['enum'])
+            model = self.document['components']['schemas'][schema]
+            self.assertFalse(model['additionalProperties'])
+            self.assertEqual(set(model['properties']), set(model['required']))
+        money = self.document['components']['schemas']['AdministratorMoneyReceipt']['properties']
+        self.assertEqual({'bookingId', 'paymentEntryId', 'bookingVersion'}, set(money))
+        self.assertTrue(all(value['readOnly'] for value in money.values()))
+
     def setUp(self):
         self.document = json.loads((ROOT / 'contracts/openapi.yaml').read_text())
 
@@ -21,7 +50,8 @@ class ContractTest(unittest.TestCase):
         operations = [operation for path in self.document['paths'].values() for operation in path.values()]
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
                           'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
-                          'createBooking', 'getBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
+                          'recordAdministratorReceipt', 'approveAdministratorBooking', 'confirmAdministratorExternalPayment', 'recordAdministratorRefund', 'requireAdministratorRefund',
+                          'createBooking', 'getBooking', 'getGuestBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

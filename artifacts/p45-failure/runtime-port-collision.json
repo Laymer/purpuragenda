@@ -1,0 +1,13 @@
+{
+  "suite": "RuntimeDatabaseTest",
+  "tests": 3,
+  "failures": 0,
+  "errors": 1,
+  "skipped": 0,
+  "cause": "Two contexts requested ephemeral ports through lower-priority default properties; application configuration bound both to8081",
+  "diagnosticClasses": [
+    "org.springframework.boot.web.server.PortInUseException",
+    "java.net.BindException"
+  ],
+  "status": "failed-before-test-configuration-correction"
+}

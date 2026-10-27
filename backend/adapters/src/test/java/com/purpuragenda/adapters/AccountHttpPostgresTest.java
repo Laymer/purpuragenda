@@ -151,7 +151,7 @@ class AccountHttpPostgresTest {
         try(var pool=Executors.newFixedThreadPool(20)) {
             var start=new CountDownLatch(1);var results=new ArrayList<Future<Integer>>();
             for(int i=0;i<20;i++) { var backend=i%2==0?mvc:second;results.add(pool.submit(()->{start.await();return backend.perform(json(current,PASSWORD,passwordBody())).andReturn().getResponse().getStatus();})); }
-            start.countDown();int winners=0;for(var result:results) { int status=result.get();if(status==204)winners++;else assertTrue(status==401 || status==429,"EXPECTED_AUTHORITY_OR_RATE_DENIAL"); }
+            start.countDown();int winners=0;for(var result:results) { int status=result.get();if(status==204)winners++;else assertTrue(status==401 || status==429,"EXPECTED_AUTHORITY_OR_RATE_DENIAL status="+status); }
             assertEquals(1,winners);assertEquals("2",a.value("SELECT credential_version FROM customer_account"));assertEquals(1,count("audit_event WHERE type='ACCOUNT_PASSWORD_CHANGED'"));
         }
     }

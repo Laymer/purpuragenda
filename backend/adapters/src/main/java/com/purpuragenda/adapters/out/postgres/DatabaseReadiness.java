@@ -24,7 +24,7 @@ public final class DatabaseReadiness implements HealthIndicator {
             statement.setQueryTimeout(2);
             // Parse the currently required application columns without reading any customer rows.
             try(var shape=statement.executeQuery("""
-                SELECT b.expiry_ceiling,o.released_at,n.lease_token,q.customer_id,
+                SELECT b.expiry_ceiling,o.released_at,n.lease_token,n.scheduled_at,n.grace_seconds,q.customer_id,
                   g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at,
                   s.id,s.token_hash,s.browser_hash,s.csrf_hash,s.kind,s.grant_id,s.customer_id,s.account_id,s.admin_id,
                   s.admin_security_version,s.account_credential_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
@@ -44,6 +44,8 @@ public final class DatabaseReadiness implements HealthIndicator {
                 SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_constraint
                   WHERE conrelid='customer_account'::regclass AND conname='account_credential_shape_v2'
                     AND contype='c' AND convalidated)
+                  AND EXISTS(SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid='notification_job'::regclass
+                    AND conname='notification_reminder_window' AND contype='c' AND convalidated)
                 """)) { if(!shape.next() || !shape.getBoolean(1)) return false; }
             try(var rows=statement.executeQuery("""
                 SELECT NOT c.maintenance FROM operation_control c

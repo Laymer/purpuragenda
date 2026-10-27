@@ -1,6 +1,7 @@
 package com.purpuragenda.adapters.out.postgres;
 
 import com.purpuragenda.application.port.out.CustomerBookingQuery;
+import com.purpuragenda.application.port.out.GuestBookingQuery;
 import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.Failure;
 import com.purpuragenda.domain.booking.Money;
@@ -14,7 +15,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** MVCC reads never lock or mutate authority. A revocation committed before this snapshot always denies access. */
-public final class PostgresCustomerBookingQuery implements CustomerBookingQuery {
+public final class PostgresCustomerBookingQuery implements CustomerBookingQuery,GuestBookingQuery {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate reader;
     private final PostgresBookingStore bookings;
@@ -28,10 +29,17 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery 
         reader.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
     }
     @Override public Optional<Authorized> find(SessionBinding session,UUID bookingId) {
-        Objects.requireNonNull(session);Objects.requireNonNull(bookingId);
+        return read(Objects.requireNonNull(session),Objects.requireNonNull(bookingId));
+    }
+    @Override public Optional<Authorized> find(SessionBinding session) {
+        return read(Objects.requireNonNull(session),null);
+    }
+    private Optional<Authorized> read(SessionBinding session,UUID requestedId) {
         try {
             return reader.execute(status->{
                 var now=jdbc.queryForObject("SELECT clock_timestamp()",(r,n)->r.getTimestamp(1).toInstant());
+                UUID bookingId=requestedId==null?guestTarget(session):requestedId;
+                if(bookingId==null)return Optional.empty();
                 boolean permitted=Boolean.TRUE.equals(jdbc.queryForObject("""
                     SELECT EXISTS (
                       SELECT 1 FROM app_session s JOIN booking b ON b.customer_id=s.customer_id
@@ -69,4 +77,13 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery 
             });
         } catch(RuntimeException unavailable) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
     }
+    private UUID guestTarget(SessionBinding session) {
+        // This only resolves a candidate. The complete shared predicate below authorizes it
+        // against the same MVCC snapshot and captured time before any projection is returned.
+        return jdbc.query("""
+            SELECT g.booking_id FROM app_session s JOIN access_grant g ON g.id=s.grant_id
+            WHERE s.id=? AND s.browser_hash=? AND s.kind='GUEST'
+            """,r->r.next()?r.getObject(1,UUID.class):null,session.sessionId(),session.browserHash());
+    }
+
 }
