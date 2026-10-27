@@ -51,15 +51,31 @@ class ReminderTest {
         assertTrue(NotificationPlanner.schedule(spec(timing),"CONFIRMED",start,DUE.plusNanos(1000),dispatch).isEmpty());
         sends(facts(timing,dispatch));assertEquals("REMINDER_GRACE_EXPIRED",suppressed(facts(timing,DUE.plusSeconds(3600))));
     }
-    @Test void elapsedDeadlinesStayExactAcrossBrusselsDstAndLeapMonthEnds() {
-        for(Instant start:List.of(Instant.parse("2026-03-29T08:00:00Z"),Instant.parse("2026-10-25T08:00:00Z"),Instant.parse("2028-03-01T08:00:00Z"))) {
+    String renderedTimeLine(Reminder timing,Instant start,Instant due) {
+        var f=new Facts(UUID.randomUUID(),"CUSTOMER",timing.template(),3,"customer@example.test","B-SYNTH-REMINDER","Synthetic reading",
+                "CONFIRMED",start,null,MEETING,Set.of(),due,due,timing.graceSeconds());
+        var text=assertInstanceOf(NotificationContent.Send.class,NotificationContent.prepare(f)).message().text();
+        return text.lines().filter(l->l.startsWith("Time: ")).reduce((a,b)->{throw new AssertionError("several Time lines");}).orElseThrow();
+    }
+    @Test void elapsedDeadlinesAndRenderedBrusselsWallClockStayExactAcrossDstAndLeapMonthEnds() {
+        // start UTC, explicit 48h due, explicit 2h due, expected Brussels wall-clock Time line
+        String[][] cases={
+            {"2026-03-29T08:00:00Z","2026-03-27T08:00:00Z","2026-03-29T06:00:00Z","Time: Sunday 29 March 2026 at 10:00 (Brussels time; 2026-03-29T08:00:00Z UTC)"},
+            {"2026-03-29T01:30:00Z","2026-03-27T01:30:00Z","2026-03-28T23:30:00Z","Time: Sunday 29 March 2026 at 03:30 (Brussels time; 2026-03-29T01:30:00Z UTC)"},
+            {"2026-10-25T08:00:00Z","2026-10-23T08:00:00Z","2026-10-25T06:00:00Z","Time: Sunday 25 October 2026 at 09:00 (Brussels time; 2026-10-25T08:00:00Z UTC)"},
+            {"2026-10-25T00:30:00Z","2026-10-23T00:30:00Z","2026-10-24T22:30:00Z","Time: Sunday 25 October 2026 at 02:30 (Brussels time; 2026-10-25T00:30:00Z UTC)"},
+            {"2026-10-25T01:30:00Z","2026-10-23T01:30:00Z","2026-10-24T23:30:00Z","Time: Sunday 25 October 2026 at 02:30 (Brussels time; 2026-10-25T01:30:00Z UTC)"},
+            {"2028-03-01T08:00:00Z","2028-02-28T08:00:00Z","2028-03-01T06:00:00Z","Time: Wednesday 1 March 2028 at 09:00 (Brussels time; 2028-03-01T08:00:00Z UTC)"}};
+        for(String[] c:cases) {
+            Instant start=Instant.parse(c[0]);
+            Map<Reminder,Instant> due=Map.of(Reminder.FORTY_EIGHT_HOURS,Instant.parse(c[1]),Reminder.TWO_HOURS,Instant.parse(c[2]));
             for(Reminder timing:Reminder.values()) {
                 var scheduled=NotificationPlanner.schedule(spec(timing),"CONFIRMED",start,start.minus(Duration.ofDays(3))).orElseThrow();
-                assertEquals(timing.lead(),Duration.between(scheduled.dueAt(),start));
+                assertEquals(due.get(timing),scheduled.dueAt(),c[0]+" "+timing);
+                // Both reminders show the session's Brussels wall clock, never the due time or a shifted hour.
+                assertEquals(c[3],renderedTimeLine(timing,start,scheduled.dueAt()),c[0]+" "+timing);
             }
         }
-        var spring=Instant.parse("2026-03-29T08:00:00Z");
-        assertNotEquals(spring.atZone(ZoneId.of("Europe/Brussels")).getHour(),spring.minus(Duration.ofHours(48)).atZone(ZoneId.of("Europe/Brussels")).getHour());
     }
     @Test void graceWindowsAreHalfOpenAndIndependentOfMutableRetryDueTimes() {
         for(Reminder timing:Reminder.values()) {
