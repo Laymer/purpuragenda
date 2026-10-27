@@ -41,7 +41,7 @@ Commands:
   demo-seed   Create 2-3 synthetic bookings through the real public API and Mailpit.
   test        Fast unit checks: Angular tests/build and the Python suites.
   verify      Run the CI suites this host can run (./verify.sh local); 'verify all' requires every suite.
-  e2e         Core browser journey (not implemented yet; always fails).
+  e2e         Core browser journey: guest booking, email proof, administrator MFA and approval (Chromium).
 
 Examples:
   $ME doctor
@@ -155,8 +155,17 @@ EOF
     ;;
     e2e) cat <<EOF
 Usage: $ME e2e
-Automated core browser journey. Not implemented yet (P38/P39 slice pending): this
-command always fails so that it can never pass silently.
+Automated core browser journey in Chromium (Playwright for Java) against its own isolated
+real Compose stack (PostgreSQL, Mailpit, application): a guest picks a service and time,
+verifies email through Mailpit, enters intake and submits; the administrator is enrolled
+through the real private admin-setup terminal flow, signs in with password and TOTP, finds
+the pending booking and approves it with a Zoom link; both sides then show CONFIRMED and
+the customer mails are in Mailpit. Needs Docker, the pinned toolchain ($ME setup) and
+network access for the first Chromium download. Uses its own project, secrets and free
+loopback ports, so a running local stack is untouched. Takes several minutes; any missing
+tool, report or step fails. Writes artifacts/e2e/core-journey.json and, on failure, a
+sanitized artifacts/e2e/core-journey-failure.txt (no tokens, cookies or intake).
+Example: $ME e2e
 EOF
     ;;
     *) return 1 ;;
@@ -450,6 +459,14 @@ cmd_logs() {
   fi
 }
 
+cmd_e2e() {
+  local python
+  # shellcheck source=scripts/dev/toolchain-env.sh
+  source "$RUN_ROOT/scripts/dev/toolchain-env.sh"
+  python="$(python_command)"
+  exec "$python" "$RUN_ROOT/scripts/ci/verify-e2e.py"
+}
+
 cmd_test() {
   local python
   # shellcheck source=scripts/dev/toolchain-env.sh
@@ -502,10 +519,7 @@ main() {
         *) die_usage "Unknown verify mode: $1" ;;
       esac
       ;;
-    e2e)
-      echo "e2e: core journey suite not implemented yet (P38/P39 slice pending)." >&2
-      exit 1
-      ;;
+    e2e) no_arguments $# e2e; cmd_e2e ;;
     *) die_usage "Unknown command: $command" ;;
   esac
 }

@@ -135,6 +135,11 @@
       "owner": "P49",
       "state": "implemented",
       "job": "windows-preflight"
+    },
+    "e2e-core": {
+      "owner": "P38",
+      "state": "implemented",
+      "job": "e2e-core"
     }
   }
 }

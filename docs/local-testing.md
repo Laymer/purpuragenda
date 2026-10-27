@@ -4,7 +4,7 @@ What you can run and check on this Mac today. This is **not** a full v1 demo: cu
 
 All commands run from the repository root. Docker Desktop must be installed; the scripts start it if needed. Nothing here sends real mail, touches DNS or deploys anything.
 
-`./purpuragenda.sh` wraps the steps below on macOS and Linux/WSL2; `./purpuragenda.sh help` lists its commands. Start with `./purpuragenda.sh doctor` (host, Docker, Compose v2, ports, disk), then `setup`, `up`, `smoke`, `admin`, `status`, `logs [service]` and `down` (stops containers; volume removal is refused). `./purpuragenda.sh demo-seed` creates up to three synthetic pending bookings through the public API and Mailpit on the local stack only. `./purpuragenda.sh test` runs the fast Angular and Python checks; `./purpuragenda.sh verify` (default `./verify.sh local`) runs the CI suites this host can run and marks hosted-only ones SKIPPED, which is not release evidence; `./verify.sh all` requires every implemented suite and fails for those this host cannot run. `./purpuragenda.sh e2e` deliberately fails until the core journey suite exists.
+`./purpuragenda.sh` wraps the steps below on macOS and Linux/WSL2; `./purpuragenda.sh help` lists its commands. Start with `./purpuragenda.sh doctor` (host, Docker, Compose v2, ports, disk), then `setup`, `up`, `smoke`, `admin`, `status`, `logs [service]` and `down` (stops containers; volume removal is refused). `./purpuragenda.sh demo-seed` creates up to three synthetic pending bookings through the public API and Mailpit on the local stack only. `./purpuragenda.sh test` runs the fast Angular and Python checks; `./purpuragenda.sh verify` (default `./verify.sh local`) runs the CI suites this host can run and marks hosted-only ones SKIPPED, which is not release evidence; `./verify.sh all` requires every implemented suite and fails for those this host cannot run. `./purpuragenda.sh e2e` runs the core browser journey (section 5).
 
 ## 1. One-time toolchain (pinned versions, no system changes)
 
@@ -71,11 +71,14 @@ python3 scripts/ci/check-docs.py
 python3 scripts/ci/check-contract.py
 python3 scripts/ci/check-suites.py
 python3 scripts/ci/run-python-tests.py --start scripts/ci/tests
+./purpuragenda.sh e2e                               # core browser journey in Chromium against its own isolated real stack (several minutes)
 ```
+
+`./purpuragenda.sh e2e` (CI job `e2e-core`, `scripts/ci/verify-e2e.py`) starts a separate Compose project with its own secrets, network, volumes and two free loopback ports, so your running stack is untouched. Chromium (Playwright for Java, `acceptance-tests`) then drives the real UI with no mocks, test endpoints or authentication bypass: a guest picks a service and an available time, requests the email proof, reads the link from the Mailpit API and verifies in the same browser, enters intake, reviews and submits; the booking shows as pending. The administrator is enrolled through the real private `admin-setup` terminal flow on a pseudo-terminal, the six-digit code is computed from the authenticator key that flow prints, the administrator signs in at `/admin/login` with password plus code, finds the booking in the agenda and approves it with a synthetic Zoom link. Both the administrator detail and the guest status then show CONFIRMED, and the customer mails ("Booking request received", "Booking confirmed" with the meeting link) are in Mailpit. It needs Docker, the pinned toolchain (`./purpuragenda.sh setup`) and network access for the first Chromium download (`~/.cache/ms-playwright`). Output is scrubbed; `artifacts/e2e/core-journey.json` is a count-only receipt and, after a failure, `artifacts/e2e/core-journey-failure.txt` names the failed step and visible headings only (no screenshots, tokens, cookies or intake). Customer cancellation and rescheduling are not yet part of this journey.
 
 `caffeinate` only prevents sleep during the run. A laptop that sleeps mid-run can cause spurious timeouts. These commands use their own isolated projects and never touch your running stack.
 
-Hosted CI runs the same categories on every pull request; all 14 checks must pass before merge.
+Hosted CI runs the same categories on every pull request; all 15 checks must pass before merge.
 
 ## 6. Troubleshooting
 
