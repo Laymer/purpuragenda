@@ -5,7 +5,7 @@ import { AdminAuthComponent } from './admin-auth.component';
 import { provideApi } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { routes } from '../app.config';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 const now = Date.parse('2026-10-26T10:00:00Z');
 const reply = (role = 'ANONYMOUS') => ({ role, csrfToken: 'synthetic-proof', idleExpiresAt: new Date(now + 600000).toISOString(), absoluteExpiresAt: new Date(now + 1200000).toISOString() });
 const settle = async () => { for (let i = 0; i < 18; i++) await Promise.resolve(); };
@@ -96,5 +96,29 @@ describe('Administrator authentication with real typed SDK', () => {
   it('does not repopulate a destroyed view after a late response', async () => {
     const { result, request } = await pendingLogin(); fixture.destroy(); request.flush(reply('ADMIN')); await result;
     expect(view.message()).toBe(''); expect(view.form.controls.password.value).toBe('');
+  });
+});
+
+describe('Administrator re-authentication landing', () => {
+  const id = '30000000-0000-4000-8000-000000000001';
+  const make = (query: Record<string, string>) => {
+    vi.useFakeTimers(); vi.setSystemTime(now);
+    TestBed.configureTestingModule({ imports: [AdminAuthComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('/api/v1'), provideRouter([]),
+      { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } }] });
+    const fixture = TestBed.createComponent(AdminAuthComponent); fixture.detectChanges(); return fixture;
+  };
+  afterEach(() => { TestBed.resetTestingModule(); vi.useRealTimers(); });
+  it('explains the ended authenticator window, shows the form and returns to the booking after sign in', async () => {
+    const fixture = make({ reason: 'reauth', return: '/admin/bookings/' + id }), view = fixture.componentInstance, http = TestBed.inject(HttpTestingController), spy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    expect(view.message()).toContain('fresh authenticator window ended'); expect(fixture.nativeElement.querySelector('form')).not.toBeNull();
+    view.form.setValue({ email: 'synthetic@example.test', password: 'synthetic', totp: '123456' }); const result = view.login(); await settle();
+    http.expectOne('/api/v1/session/bootstrap').flush(reply()); await settle(); http.expectOne('/api/v1/admin/login').flush(reply('ADMIN')); await result;
+    expect(spy).toHaveBeenCalledWith('/admin/bookings/' + id); http.verify();
+  });
+  it('ignores an unsafe return target and shows no reason without the marker', async () => {
+    const fixture = make({ return: 'https://evil.test/admin' }), view = fixture.componentInstance, http = TestBed.inject(HttpTestingController), spy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    expect(view.message()).toBe(''); view.form.setValue({ email: 'synthetic@example.test', password: 'synthetic', totp: '123456' }); const result = view.login(); await settle();
+    http.expectOne('/api/v1/session/bootstrap').flush(reply()); await settle(); http.expectOne('/api/v1/admin/login').flush(reply('ADMIN')); await result;
+    expect(spy).toHaveBeenCalledWith('/admin'); http.verify();
   });
 });
