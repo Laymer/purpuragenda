@@ -108,7 +108,16 @@
               "src/app/shared/generated/model/administratorPaymentEntry.ts",
               "src/app/shared/generated/model/administratorRefundObligation.ts",
               "src/app/shared/generated/model/administratorBookingPayment.ts",
-              "src/app/shared/generated/model/administratorBookingDetail.ts"
+              "src/app/shared/generated/model/administratorBookingDetail.ts",
+              "src/app/shared/generated/model/administratorReceiptRequest.ts",
+              "src/app/shared/generated/model/administratorRefundRequest.ts",
+              "src/app/shared/generated/model/administratorConfirmationRequest.ts",
+              "src/app/shared/generated/model/administratorRefundRequirementRequest.ts",
+              "src/app/shared/generated/model/administratorMoneyReceipt.ts",
+              "src/app/shared/generated/model/administratorRefundRequirementReceipt.ts",
+              "src/app/shared/generated/api/account.service.ts",
+              "src/app/shared/generated/model/accountLoginRequest.ts",
+              "src/app/shared/generated/model/accountPasswordChangeRequest.ts"
             ],
             "coverageReporters": [
               "text",
