@@ -8,14 +8,28 @@ vi.mock('@angular/platform-browser', async (original) => ({
 
 describe('Bootstrap', () => {
   beforeEach(() => { vi.resetModules(); document.body.innerHTML = '<app-root></app-root>'; });
-  afterEach(() => { vi.clearAllMocks(); document.body.replaceChildren(); });
+  afterEach(() => { vi.clearAllMocks(); document.body.replaceChildren(); history.replaceState(null, '', '/'); });
 
   it('boots the standalone shell with its application providers', async () => {
     vi.mocked(bootstrapApplication).mockResolvedValue({} as ApplicationRef);
     await import('./main');
     expect(bootstrapApplication).toHaveBeenCalledOnce();
-    expect(vi.mocked(bootstrapApplication).mock.calls[0][1]?.providers.length).toBe(3);
+    expect(vi.mocked(bootstrapApplication).mock.calls[0][1]?.providers.length).toBe(4);
     expect(document.querySelector('app-root')).not.toBeNull();
+  });
+
+  it('scrubs a verification fragment before framework startup and hands it only to the private proof provider', async () => {
+    const token = 'z'.repeat(43);
+    history.replaceState(null, '', '/verify?ignored=1#token=' + token + '&purpose=CREATE');
+    vi.mocked(bootstrapApplication).mockImplementation(() => {
+      expect(location.hash).toBe(''); expect(location.search).toBe('');
+      return Promise.resolve({} as ApplicationRef);
+    });
+    await import('./main');
+    const { VERIFICATION_PROOF } = await import('./app/booking/verification-proof');
+    const provider = vi.mocked(bootstrapApplication).mock.calls[0][1]!.providers.find(value => 'provide' in value && value.provide === VERIFICATION_PROOF) as { useValue: { toJSON(): string; take(): { token: string } } };
+    expect(provider.useValue.toJSON().includes(token)).toBe(false);
+    expect(provider.useValue.take().token === token).toBe(true);
   });
 
   it('shows a safe reload message if startup fails', async () => {

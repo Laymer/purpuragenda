@@ -468,5 +468,19 @@ class MigrationReportTest(unittest.TestCase):
         GATE.validate(self.root)
 
 
+    def test_admin_booking_query_requires_actual_authority_snapshot_and_pagination_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java'
+        source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic administrator reader')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest.xml')
+        for count, cases, nested in ((0,0,''), (20,20,''), (21,20,''), (22,21,''), (21,21,'<failure/>'), (21,21,'<error/>'), (21,21,'<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="{count}">'
+                              + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorBookingQueryPostgresTest" tests="21">' + '<testcase/>' * 21 + '</testsuite>')
+        GATE.validate(self.root)
+
+
 if __name__ == '__main__':
     unittest.main()

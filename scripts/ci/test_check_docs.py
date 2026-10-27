@@ -1,5 +1,6 @@
 """Synthetic ledger cases: claims must be complete, nonoverlapping and recoverable."""
 import importlib.util
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -253,7 +254,12 @@ class LedgerTest(unittest.TestCase):
                         'scripts/ci/verify-build.sh', 'scripts/ci/verify-compose.py'):
             self.assertIn(command, text)
         self.assertIn('Never** run `docker compose down -v`', text)
-        self.assertNotIn('./verify.sh', text)  # the root aggregate command does not exist yet
+        # Root entry points named by the guide must exist and be executable.
+        repository = Path(__file__).resolve().parents[2]
+        for script in ('purpuragenda.sh', 'verify.sh'):
+            self.assertIn('./' + script, text)
+            self.assertTrue(os.access(repository / script, os.X_OK), script)
+        self.assertIn('volume removal is refused', text)
 
     def test_agent_instructions_must_reference_owner_decisions_and_delivery(self):
         for name in ('AGENTS.md', 'CLAUDE.md'):

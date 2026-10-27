@@ -9,6 +9,7 @@ import { Availability, CatalogService, Service, Slot } from '../shared/generated
 import { addDays, canonicalZone, civilDate, ConsultationSelection, retryDelay, selected, slotDuration, slotLabel, timeLabel, dateLabel, offsetLabel, validRange } from './selection-model';
 
 @Component({
+  selector: 'app-service-time',
   imports: [CurrencyPipe, ReactiveFormsModule, MatButtonModule, MatCardModule],
   templateUrl: './service-time.component.html',
   styleUrl: './service-time.component.css',
