@@ -2,6 +2,9 @@ package com.purpuragenda.adapters.out.postgres;
 
 import com.purpuragenda.application.port.out.CustomerBookingQuery;
 import com.purpuragenda.application.port.out.GuestBookingQuery;
+import com.purpuragenda.application.port.out.CustomerReschedulingQuery;
+import com.purpuragenda.domain.scheduling.ReservationInterval;
+import java.util.function.Function;
 import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.Failure;
 import com.purpuragenda.domain.booking.Money;
@@ -15,7 +18,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** MVCC reads never lock or mutate authority. A revocation committed before this snapshot always denies access. */
-public final class PostgresCustomerBookingQuery implements CustomerBookingQuery,GuestBookingQuery {
+public final class PostgresCustomerBookingQuery implements CustomerBookingQuery,GuestBookingQuery,CustomerReschedulingQuery {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate reader;
     private final PostgresBookingStore bookings;
@@ -29,12 +32,22 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery,
         reader.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
     }
     @Override public Optional<Authorized> find(SessionBinding session,UUID bookingId) {
-        return read(Objects.requireNonNull(session),Objects.requireNonNull(bookingId));
+        return read(Objects.requireNonNull(session),Objects.requireNonNull(bookingId),Function.identity());
     }
     @Override public Optional<Authorized> find(SessionBinding session) {
-        return read(Objects.requireNonNull(session),null);
+        return read(Objects.requireNonNull(session),null,Function.identity());
     }
-    private Optional<Authorized> read(SessionBinding session,UUID requestedId) {
+    @Override public Optional<CustomerReschedulingQuery.Context> find(SessionBinding session,UUID id,ReservationInterval range) {
+        Objects.requireNonNull(range);
+        return read(Objects.requireNonNull(session),Objects.requireNonNull(id),value->{
+            int active=jdbc.queryForObject("""
+                SELECT count(*) FROM booking WHERE customer_id=? AND session_end>?
+                  AND (state='CONFIRMED' OR (state='PENDING_CONFIRMATION' AND expires_at>?))
+                """,Integer.class,value.booking().customerId(),Timestamp.from(value.now()),Timestamp.from(value.now()));
+            return new CustomerReschedulingQuery.Context(value.booking(),bookings.policy(),bookings.calendar(),bookings.bookings(range),active,value.now());
+        });
+    }
+    private <T> Optional<T> read(SessionBinding session,UUID requestedId,Function<Authorized,T> projection) {
         try {
             return reader.execute(status->{
                 var now=jdbc.queryForObject("SELECT clock_timestamp()",(r,n)->r.getTimestamp(1).toInstant());
@@ -73,7 +86,7 @@ public final class PostgresCustomerBookingQuery implements CustomerBookingQuery,
                                 PersistedSession.time(r,"verified_at"),r.getObject(8,UUID.class)),bookingId);
                 var obligations=jdbc.query("SELECT o.receipt_id,o.due_minor,o.reason FROM refund_obligation o JOIN payment_entry p ON p.id=o.receipt_id WHERE p.booking_id=? ORDER BY o.receipt_id",
                         (r,n)->new PaymentLedger.Obligation(r.getObject(1,UUID.class),r.getLong(2),r.getString(3)),bookingId);
-                return Optional.of(new Authorized(booking,new PaymentLedger(entries,obligations),now));
+                return Optional.of(projection.apply(new Authorized(booking,new PaymentLedger(entries,obligations),now)));
             });
         } catch(RuntimeException unavailable) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
     }
