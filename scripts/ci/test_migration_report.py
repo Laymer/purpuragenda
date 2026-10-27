@@ -466,6 +466,34 @@ class MigrationReportTest(unittest.TestCase):
             with self.assertRaises(ValueError):GATE.validate(self.root)
         report.write_text(f'<testsuite name="{qualified}" tests="18">'+'<testcase/>'*18+'</testsuite>');GATE.validate(self.root)
 
+    def test_stacked_account_and_administrator_suites_each_reject_hidden_nested_failures_together(self):
+        # Stacked merges union the authority list; dropping any one name would let a nested failure pass silently.
+        stacked = {
+            'SchedulingMaintenancePostgresTest': ('backend/application/src/main/java/com/purpuragenda/application/scheduling/DueBookingExpiry.java', 6),
+            'AccountPasswordDatabaseTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresAccountPassword.java', 28),
+            'AccountHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountController.java', 18),
+            'AdministratorBookingQueryPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorBookingQuery.java', 21),
+            'AdministratorBookingHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorBookingController.java', 11),
+            'AdministratorFinanceHttpPostgresTest': ('backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorFinanceController.java', 17),
+        }
+        self.write()
+        for source, _ in stacked.values():
+            path = self.root / source
+            path.parent.mkdir(parents=True, exist_ok=True); path.write_text('synthetic stacked implementation')
+        def complete(name, count, nested=''):
+            self.report.with_name(f'TEST-com.purpuragenda.adapters.{name}.xml').write_text(
+                f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + '<testcase/>' * (count - 1) + f'<testcase>{nested}</testcase></testsuite>')
+        for name, (_, count) in stacked.items():
+            complete(name, count)
+        GATE.validate(self.root)
+        for name, (_, count) in stacked.items():
+            for nested in ('<failure/>', '<error/>', '<skipped/>'):
+                complete(name, count, nested)
+                with self.assertRaisesRegex(ValueError, 'Incomplete or failed authority cases', msg=name):
+                    GATE.validate(self.root)
+            complete(name, count)
+        GATE.validate(self.root)
+
 
 if __name__ == '__main__':
     unittest.main()
