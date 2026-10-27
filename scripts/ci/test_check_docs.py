@@ -105,6 +105,12 @@ class LedgerTest(unittest.TestCase):
             with self.subTest(claim=claim):
                 self.assertTrue(any('overlapping' in e for e in self.validate(self.ledger.replace(self.claim, self.claim + '\n' + claim))))
 
+    def test_distinct_claims_cannot_share_one_handoff_record(self):
+        claim = self.claim.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40')
+        ledger = self.ledger.replace('| P40 — Task | Not started |', '| P40 — Task | In progress |')
+        errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + claim))
+        self.assertIn('shared handoff record: P40/coverage', errors)
+
     def test_unknown_task(self):
         self.assertTrue(any('unknown claimed task' in e for e in self.validate(self.ledger.replace('P01/concurrency', 'P99/concurrency'))))
 

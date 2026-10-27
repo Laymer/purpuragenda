@@ -27,10 +27,10 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
-| P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layer https://github.com/Laymer/purpuragenda/pull/78 is byte-identical inside booking flow https://github.com/Laymer/purpuragenda/pull/83 and closed as subsumed; https://github.com/Laymer/purpuragenda/pull/83 under Claude lane B final gates |
+| P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management target discovery https://github.com/Laymer/purpuragenda/pull/85 under Claude lane B; status/cancel/reschedule UI is the 1.0.0 core slice; dependencies in docs/delivery.md |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
-| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
+| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | In progress; administrator MFA sign-in UI https://github.com/Laymer/purpuragenda/pull/87 under Claude lane B; agenda/pending/approval UI is the 1.0.0 core slice |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -39,7 +39,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
-| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; https://github.com/Laymer/purpuragenda/pull/64 atf4480f5 source reviewed,871Java/6Angular/234Python and all14hosted checks pass on priorbase; current-main integration and fresh gates remain;014 reserved for reminders |
+| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; notification foundation https://github.com/Laymer/purpuragenda/pull/64 merged 669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 under Claude lane A final gates |
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
@@ -48,7 +48,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P42 — Complete the specified 20-user load run and integrity receipt | Recovered WIP; dependencies in docs/delivery.md; no completed load summary |
 | P43 — Complete secret, dependency, SBOM, SAST and container scanning | Recovered WIP; SAST merged https://github.com/Laymer/purpuragenda/pull/21 at0454505 with12 green checks; secret/dependency foundations merged; full SBOM/container/config pending |
 | P44 — Complete authenticated and unauthenticated ZAP verification | Not started; dependencies in docs/delivery.md;  |
-| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; ComposePR48 merged658ea9b and private admin operator https://github.com/Laymer/purpuragenda/pull/54 merged3c9b6de; durable AUTH/cleanup lifecycle PR67 confirmed merged7216986; two-backend/operational/restore remain |
+| P45 — Build and verify hardened local, test, operational and restore Compose profiles | In progress; ComposePR48 merged658ea9b and private admin operator https://github.com/Laymer/purpuragenda/pull/54 merged3c9b6de; durable AUTH/cleanup lifecycle PR67 confirmed merged7216986; durable booking notifications and periodic hold expiry https://github.com/Laymer/purpuragenda/pull/79 confirmed merged cc3fe39; two-backend/operational/restore remain |
 | P46 — Complete encrypted backup scheduling, retention and backup-age monitoring | Recovered WIP; dependencies in docs/delivery.md; partial scripts; off-host verification pending |
 | P47 — Complete fresh restore, credential revocation, reconciliation and reviewed delivery release | Recovered WIP; dependencies in docs/delivery.md; historical local encrypted restore only |
 | P48 — Complete aggregate CI, branch protection and immutable release-image publication | Recovered WIP; protection foundation merged PR8 0c3ae04; suite inventory merged https://github.com/Laymer/purpuragenda/pull/15 at f3a4841; release publication pending |
@@ -61,20 +61,23 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-
-- P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
-- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
-- P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
-- P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
+- P18/account-stack: agent=Claude-lane-a; branch=task/p18-account-http-v2; base=main; handoff=docs/handoffs/claude-p18-account-stack.md
+- P20/reschedule-availability: agent=Claude-lane-c; branch=task/p20-reschedule-availability; base=main; handoff=docs/handoffs/claude-p20-reschedule-availability.md
+- P22/admin-http: agent=Claude-lane-c; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/claude-p22-admin-http.md
+- P24/booking-flow: agent=Claude-lane-b; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/claude-p24-booking-flow.md
+- P25/management-ui: agent=Claude-lane-b; branch=task/p25-management-target; base=main; handoff=docs/handoffs/claude-p25-management-ui.md
+- P27/admin-ui: agent=Claude-lane-b; branch=task/p27-admin-auth-ui; base=main; handoff=docs/handoffs/claude-p27-admin-ui.md
+- P31/configuration-authority: agent=Claude-lane-a; branch=task/p31-configuration-authority; base=main; handoff=docs/handoffs/claude-p31-configuration-authority.md
+- P36/reminders: agent=Claude-lane-a; branch=task/p36-reminders; base=main; handoff=docs/handoffs/claude-p36-reminders.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:30:00Z.
-- Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/79.
-- Last pushed implementation commit: e163fe0; uncommitted changes: append-only confirmed context74/mainaffe433 integration, preserving RR public reads and RC locked maintenance.
-- What works: query69 is confirmed merged; notification64 confirmed merged669bc5b after all required gates. Public context74 targets and source review pass, full final gates pending.
-- What remains: current-main integration, full native/coverage/hosted/Compose/exact review; no full local milestone claimed.
-- Decisions: separate maintenance port shares the same resource lock, one database time and transaction without creating artificial customer idempotency receipts. Runtime work lanes remain independent, readiness-gated, fixed-delay, restore-suppressed and gracefully stopped. No live SMTP or authentication bypass. Runtime Order14 reserved; admin HTTP worker owns15, account16, finance17; coordinator reserves18 for two-context isolation.
-- Verification: e163fe0 full native1060Java/31Angular/248Python and all coverage/hosted14 checks pass; exact independent review5660288867 approved. Fresh Compose was not reused after main74 advanced. Earlier evidence: baseline7e5fa84 passes1044Java/30Angular/246Python, all14hosted, clean localCompose6 and independent exact-head review5660221901; coverage domain276/277lines478/489branches, application1050/1055853/884, adapters2102/21331630/1799, bootstrap257/273215/230, Angular119/11987/88. This is baseline evidence after main advances. Earlier targets: maintenance target47Java (17domain/1application/29actual PostgreSQL) passes, including20-way two-adapter race, rollback, post-lock database time, maintenance fail-closed and no synthetic idempotency records.Five-lane lifecycle12 and real runtime13 cases now pass, with17domain/1application/6maintenancePG (49targetJava total,122seconds after deterministic port-isolation correction).25strict report regressions pass. Core d109082 independently source approved by workerB; full composition review/gates pending.
-- Next concrete action: publish public-context integration and repeat all exact-revision gates/review before merge.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: notificationPR64 before this slice merges; current-main integration and every gate/review remain mandatory.
+- Agent and UTC checkpoint: Claude-coordinator, 2026-10-27T12:00:00Z.
+- Current task: P01/release-scope; branch: task/p01-release-scope; base: main; PR URL: pending publication.
+- Last pushed implementation commit: none; uncommitted changes: ledger reconciliation and claim handoffs.
+- What works: P45 booking workers https://github.com/Laymer/purpuragenda/pull/79 confirmed merged cc3fe39; Codex claims released; #77 superseded by #81, #63 by merged #66 and #78 byte-identical inside #83.
+- What remains: land open PRs in three Claude lanes, then the P27 agenda/approval UI, P25 management UI, P49 purpuragenda.sh/verify.sh/demo-seed, core Playwright journey and README before the local 1.0.0 tag.
+- Decisions: 2026-10-27 local 1.0.0 release scope in docs/decisions.md.
+- Verification: check-docs and its synthetic ledger regressions pass locally for this reconciliation.
+- Next concrete action: publish this reconciliation PR and start lane agents.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b, every Codex branch and frozen handoff preserved; stacked PR dependencies: lane order recorded in each claim handoff.

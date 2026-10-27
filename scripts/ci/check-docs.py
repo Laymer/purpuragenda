@@ -29,7 +29,7 @@ def validate_claims(root, ledger):
         return []
     if not claims.strip():
         return ['missing active task claims']
-    seen_tasks, seen_branches = set(), set()
+    seen_tasks, seen_branches, seen_handoffs = set(), set(), set()
     pattern = (r'- (P\d{2}/[a-z0-9-]+): agent=([^;\n]+); '
                r'branch=([^;\n]+); base=([^;\n]+); handoff=([^;\n]+)')
     for line in claims.splitlines():
@@ -50,6 +50,10 @@ def validate_claims(root, ledger):
             errors.append(f'claimed task is not active in ledger: {task}')
         seen_tasks.add(task_id)
         seen_branches.add(branch)
+        # One recovery record per claim: a shared file cannot hold two exact task/branch handoffs.
+        if reference in seen_handoffs:
+            errors.append(f'shared handoff record: {task}')
+        seen_handoffs.add(reference)
         relative = Path(reference)
         if (relative.is_absolute() or '..' in relative.parts
                 or relative.parts[:2] != ('docs', 'handoffs') or relative.suffix != '.md'):
