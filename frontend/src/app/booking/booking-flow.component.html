@@ -1,0 +1,76 @@
+<section class="flow" aria-labelledby="booking-title" [attr.aria-busy]="busy()">
+  <h1 id="booking-title" tabindex="-1">Request a consultation</h1>
+  <p class="message" role="status">{{ message() }}</p>
+  @if (retrySeconds() > 0) { <p>Please wait {{ retrySeconds() }} seconds.</p> }
+  @if (phase() === 'choose') {
+    <app-service-time (selectionChanged)="choose($event)" />
+    <button mat-flat-button (click)="begin()" [disabled]="busy() || !selection()">Continue</button>
+  }
+  @if (phase() === 'email') {
+    <h2 tabindex="-1">Verify your email</h2>
+    <p>No account is required. We will send a link that works in this browser.</p>
+    <form (submit)="$event.preventDefault(); requestEmail()">
+      <label for="booking-email">Email address</label>
+      <input id="booking-email" type="text" inputmode="email" autocomplete="email" [formControl]="email" [attr.aria-invalid]="email.touched && email.invalid" aria-describedby="email-help" maxlength="254" required>
+      <p id="email-help">Use an address where you can receive booking updates.</p>
+      <button mat-flat-button type="submit" [disabled]="busy() || retrySeconds() > 0">Send verification link</button>
+    </form>
+    <button mat-stroked-button (click)="begin(true)" [disabled]="busy()">I have verified my email</button>
+  }
+  @if (phase() === 'intake') {
+    <h2 tabindex="-1">Your consultation details</h2>
+    <p>Birth date and time are the civil values you provide. We do not infer a birth time zone.</p>
+    <form [formGroup]="intake" (ngSubmit)="reviewRequest()">
+      <div class="fields">
+        <label>First name <input formControlName="firstName" autocomplete="given-name" maxlength="100" required [attr.aria-invalid]="intake.controls.firstName.touched && intake.controls.firstName.invalid"></label>
+        <label>Last name <input formControlName="lastName" autocomplete="family-name" maxlength="100" required [attr.aria-invalid]="intake.controls.lastName.touched && intake.controls.lastName.invalid"></label>
+        <label>Telephone <input type="tel" formControlName="telephone" autocomplete="tel" maxlength="40" placeholder="+32…" required [attr.aria-invalid]="intake.controls.telephone.touched && intake.controls.telephone.invalid"></label>
+        <label>Birth date <input type="date" formControlName="birthDate" autocomplete="bday" required [attr.aria-invalid]="intake.controls.birthDate.touched && intake.controls.birthDate.invalid"></label>
+        <label>Birth time <input type="time" step="1" formControlName="birthTime" required [attr.aria-invalid]="intake.controls.birthTime.touched && intake.controls.birthTime.invalid"></label>
+        <label>Birthplace <input formControlName="birthplace" maxlength="200" required [attr.aria-invalid]="intake.controls.birthplace.touched && intake.controls.birthplace.invalid"></label>
+      </div>
+      <label>Message (optional) <textarea formControlName="message" maxlength="1000" rows="4" [attr.aria-invalid]="intake.controls.message.touched && intake.controls.message.invalid"></textarea></label>
+      <p>Details stay in this page until submitted. A refresh or expired session clears the form.</p>
+      <button mat-flat-button type="submit" [disabled]="busy() || retrySeconds() > 0">Review request</button>
+    </form>
+  }
+  @if (phase() === 'review') {
+    @if (review(); as terms) {
+      <h2 tabindex="-1">Review your request</h2>
+      <p><strong>{{ terms.service.name }}</strong> · {{ terms.service.durationMinutes }} minutes · {{ terms.service.priceMinor / 100 | currency:terms.service.currency }}</p>
+      <p>{{ label(selection()!.slot, selection()!.displayZone) }} · {{ offset(selection()!.slot.offset) }} · {{ selection()!.displayZone }}</p>
+      <p>{{ intake.controls.firstName.value }} {{ intake.controls.lastName.value }} · {{ intake.controls.telephone.value }}</p>
+      <p>Birth: {{ intake.controls.birthDate.value }} at {{ intake.controls.birthTime.value }} · {{ intake.controls.birthplace.value }}</p>
+      <p class="plain-text">{{ intake.controls.message.value }}</p>
+      <p>A request is pending until the practitioner confirms it. Payment is recorded separately.</p>
+      <p>A pending hold lasts at most {{ terms.policy.pendingLifetimeSeconds / 3600 }} hours and ends at least {{ terms.policy.expiryBufferSeconds / 3600 }} hours before the consultation. Customer changes close {{ terms.policy.customerCutoffSeconds / 3600 }} hours before it starts.</p>
+      @if (terms.notice.synthetic) { <p class="synthetic">Local demonstration notice</p> }
+      <div class="notice plain-text">{{ terms.notice.text }}</div>
+      <label class="agreement"><input type="checkbox" [formControl]="agreed" [attr.disabled]="busy() ? '' : null"> I have read the notice and reviewed these details.</label>
+      <p>This time is still available to others. Availability and these terms are checked again when you submit.</p>
+      <button mat-stroked-button (click)="edit()" [disabled]="busy()">Edit details</button>
+      <button mat-flat-button (click)="submit()" [disabled]="busy() || !agreed.value || retrySeconds() > 0">{{ busy() ? 'Submitting…' : 'Submit booking request' }}</button>
+    }
+  }
+  @if (phase() === 'uncertain') {
+    <h2 tabindex="-1">Check your submission</h2>
+    <p>Retry uses the exact same submission. Do not create another request while its result is uncertain.</p>
+    <button mat-flat-button (click)="retry()" [disabled]="busy() || retrySeconds() > 0">Retry same submission</button>
+  }
+  @if (phase() === 'status') {
+    <h2 tabindex="-1">Your booking</h2>
+    @if (status(); as booking) {
+      <p>Reference: <strong>{{ booking.reference }}</strong></p>
+      <p>{{ booking.service.name }} · {{ booking.service.durationMinutes }} minutes</p>
+      <p>{{ inZone(booking.startInstant, booking.displayZone) }} · {{ booking.displayZone }}</p>
+      <p>Status: {{ booking.state.replaceAll('_', ' ').toLowerCase() }}.</p>
+      @if (booking.pendingExpired) { <p>The hold has expired and is awaiting processing.</p> }
+      @if (booking.state === 'PENDING_CONFIRMATION' && booking.pendingExpiresAt) { <p>Hold expires: {{ inZone(booking.pendingExpiresAt, booking.displayZone) }} · {{ booking.displayZone }}.</p> }
+      @if (booking.allowedActions.length > 0) { <p>Customer changes close: {{ inZone(booking.customerChangesUntil, booking.displayZone) }} · {{ booking.displayZone }}.</p> }
+      <p>Payment: {{ booking.payment.status.replaceAll('_', ' ').toLowerCase() }}. Confirmation does not imply payment.</p>
+      <p>Updates are sent to {{ booking.deliveryEmail }}.</p>
+      @if (booking.meetingUrl) { <a [href]="booking.meetingUrl" target="_blank" rel="noopener noreferrer">Open meeting link</a> }
+    }
+    <button mat-stroked-button (click)="loadStatus()" [disabled]="busy()">Refresh booking status</button>
+  }
+</section>
