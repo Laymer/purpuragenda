@@ -15,6 +15,8 @@ import com.purpuragenda.adapters.out.postgres.PostgresCustomerBookingQuery;
 import com.purpuragenda.adapters.out.security.*;
 import com.purpuragenda.application.*;
 import com.purpuragenda.application.port.out.*;
+import com.purpuragenda.application.notification.*;
+import com.purpuragenda.application.scheduling.DueBookingExpiry;
 import com.purpuragenda.application.scheduling.PublicScheduling;
 import com.purpuragenda.application.scheduling.CustomerBooking;
 import com.purpuragenda.application.scheduling.BookingNotice;
@@ -35,7 +37,7 @@ public class RuntimeApplication {
     @Bean String databaseRole() { return "purpuragenda_app"; }
     @Bean DatabaseReadiness applicationSchema(DataSource source,SchedulingUnitOfWork scheduling) { return new DatabaseReadiness(source,scheduling); }
     @Bean RuntimeSettings settings(Environment environment) { return RuntimeSettings.read(environment); }
-    @Bean SchedulingUnitOfWork scheduling(DataSource source,RuntimeSettings settings) {
+    @Bean PostgresScheduling scheduling(DataSource source,RuntimeSettings settings) {
         return new PostgresScheduling(source,settings.meetingHosts());
     }
     @Bean PublicScheduling publicScheduling(SchedulingUnitOfWork work) { return new PublicScheduling(work); }
@@ -59,9 +61,14 @@ public class RuntimeApplication {
     @Bean SecurityMaintenance securityMaintenance(AuthDeliveryStore delivery,SecurityCleanupStore store) {
         return new SecurityMaintenance(new SecurityCleanup(delivery,store));
     }
-    @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,
+    @Bean DueBookingExpiry dueBookingExpiry(SchedulingMaintenanceUnitOfWork work) { return new DueBookingExpiry(work); }
+    @Bean OutboxExpander outboxExpander(DataSource source) { return new OutboxExpander(new PostgresOutboxStore(source)); }
+    @Bean BookingNotificationWorker bookingNotificationWorker(DataSource source,NotificationQueue queue,MailDelivery mail,RuntimeSettings settings) {
+        return new BookingNotificationWorker(queue,new PostgresBookingNotificationStore(source),mail,settings.suppressed());
+    }
+    @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,DueBookingExpiry expiry,OutboxExpander outbox,BookingNotificationWorker booking,
                                        DatabaseReadiness readiness,RuntimeSettings settings) {
-        return new RuntimeWorkers(delivery::tick,maintenance::tick,
+        return new RuntimeWorkers(delivery::tick,maintenance::tick,expiry::tick,()->outbox.drain(100),booking::tick,
                 () -> org.springframework.boot.health.contributor.Status.UP.equals(readiness.health().getStatus()),settings.suppressed());
     }
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }

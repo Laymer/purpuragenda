@@ -54,5 +54,24 @@ class CustomerAvailabilityHttpTest {
             assertFalse(response.getContentAsString().contains("synthetic-provider-detail") || response.getContentAsString().contains("UNEXPECTED_DOMAIN_CODE"));
         }
     }
+    @Test void privateAvailabilitySharesPublicBudgetAcrossNormalizedAndMalformedTargetsAndFailsClosed() throws Exception {
+        var limits=new PublicHttpTest.Counting();var filter=new AvailabilityThrottleFilter(new com.purpuragenda.application.RequestThrottle(limits));
+        var calls=new java.util.concurrent.atomic.AtomicInteger();
+        String[] paths={"/api/v1/availability","/api/v1/bookings/"+id+"/availability","/API/v1/BOOKINGS/not-a-uuid/Availability",
+                "/api/v1/bookings/"+id+"/%61vailability","/api/v1/bookings/"+id+"/availability;x=1/"};
+        for(int i=0;i<120;i++) {
+            var request=new MockHttpServletRequest("GET",paths[i%paths.length]);request.setAttribute(ApiGuardFilter.CLIENT_ATTRIBUTE,"203.0.113.9");
+            filter.doFilter(request,new MockHttpServletResponse(),(q,r)->calls.incrementAndGet());
+        }
+        assertEquals(120,calls.get());
+        for(String path:paths) {
+            var request=new MockHttpServletRequest("GET",path);request.setAttribute(ApiGuardFilter.CLIENT_ATTRIBUTE,"203.0.113.9");
+            var response=new MockHttpServletResponse();filter.doFilter(request,response,(q,r)->calls.incrementAndGet());
+            assertEquals(429,response.getStatus());assertEquals("60",response.getHeader("Retry-After"));assertEquals("no-store",response.getHeader("Cache-Control"));
+        }
+        assertEquals(120,calls.get());limits.failing=true;
+        var response=new MockHttpServletResponse();filter.doFilter(new MockHttpServletRequest("GET",paths[1]),response,(q,r)->fail("Storage failure must not reach advice"));
+        assertEquals(503,response.getStatus());assertFalse(response.getContentAsString().contains("synthetic-private-detail"));
+    }
     static class AssertionFailure extends RuntimeException { AssertionFailure(){super("Query unexpectedly invoked");} }
 }

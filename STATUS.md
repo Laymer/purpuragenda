@@ -20,10 +20,10 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
-| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c; clean password-change81 running finalgates; account login/password HTTP claimed here; profile/history/enrollment HTTP remain |
-| P19 — Complete public service and availability HTTP contracts | In progress; booking review context claimed in task/p19-booking-context; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd after all required gates; customer HTTP draftPR72 and public review context74 remain |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; restricted recovery HTTP https://github.com/Laymer/purpuragenda/pull/75 confirmed merged538e335 after all required gates; broader authentication acceptance remains |
+| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
+| P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; booking-context https://github.com/Laymer/purpuragenda/pull/74 confirmed mergedaffe433 after all required gates; full browser/load acceptance remains separate |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTPPR72 confirmed merged8702161 after1032Java/30Angular/245Python/all14hosted/Compose6/review |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; query PR76 and private read HTTP implemented by Codex-worker-b with targeted real PostgreSQL/runtime evidence; current-head gates and mutation/configuration APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
@@ -72,20 +72,20 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P22/admin-finance-http: agent=Codex-worker-b; branch=task/p22-admin-finance-http; base=main; handoff=docs/handoffs/p22-admin-finance-http.md
 
 
-- P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
 
 
-- P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
 - P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:43:07Z.
-- Current task: P20/reschedule-availability; branch: task/p20-reschedule-availability; base: main; PR URL: none yet.
-- Last pushed implementation commit: none; uncommitted changes: task claim only, based on released finance86/96698e0 contract ancestry.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-27T00:06:21Z.
+- Current task: P20/reschedule-availability; branch: task/p20-reschedule-availability; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/88.
+- Last pushed implementation commit:69f7ed6; uncommitted changes: append-only main79/cc3fe39 integration, runtime18/report union and reviewed shared availability admission correction. Released contract unchanged; enrollment owns next additions.
 - What works: persisted customer changes and scoped booking reads are implemented. Public creation availability cannot correctly advise rescheduling of an archived service or exclude the customer's existing reservation.
-- What remains: authorized rescheduling availability using immutable booked duration, original pending buffer, current scheduling policy, own-reservation exclusion and current active allowance; HTTP/client contract, tests, all gates and review.
+- What remains: current-main integration, full native/coverage/hosted/Compose gates and independent review; management UI remains a separate slice.
 - Decisions: one enforced read-only RR snapshot and captured time for authority, booking and scheduling context. No mutation, expiry reclamation, quota charge or session touch. Do not use public creation availability as a substitute. Root owns this released contract slot; no migration or root-route edits.
-- Verification: no new implementation or passing checks claimed; parent86/85 targeted evidence remains separate.
-- Next concrete action: implement bounded application/query/HTTP slice and DST/cutoff/archived-service/occupancy/authority regressions; publish the typed contract then release it to enrollment.
+- Verification:106Java (44domain/7application/25queryPG/9HTTPPG/4wire/17runtime) pass with zero failures/errors/skips in297seconds.42Angular/fullbuild/CSP and complete handwritten119/119lines87/88branches pass.258strictPython/docs and SDK generation pass. First42Angular/1failure was an SDK query-encoding assertion; actual URL regression and full frontend rerun pass. Full native/coverage/hosted/Compose/review not yet run.
+- Next concrete action: publish corrected integration, renew independent review; final full native/hosted/coverage/Compose gates follow merged dependencies. Contract released to enrollment.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and every worktree/secret/volume preserved; stacked PR dependencies:86/85/84/80/76/81, with74 already merged; management UI follows this and83.
+
+Integrated target78Java (13domain/7application/25queryPG/10HTTPPG/5wire/18runtime) passes in331seconds, zero failures/errors/skips.259strictPython/docs and unchanged SDK regeneration pass. Review finding reproduced1wire failure (expected429/actual200): private advice bypassed public availability filter. Fixed normalized private paths to share persisted120/min budget; unit/path/storage and actual HTTP public/private/malformed-target boundary tests pass. Sanitized failure artifact retained.

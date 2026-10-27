@@ -15,6 +15,8 @@ def validate(root):
 
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/PublicScheduling.java').is_file():
         suites.append(('PublicSchedulingPostgresTest', 3))
+    if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/DueBookingExpiry.java').is_file():
+        suites.append(('SchedulingMaintenancePostgresTest', 6))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java').is_file():
         suites.append(('ExpiryReclamationPostgresTest', 6))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/SchedulingCommands.java').is_file():
@@ -54,7 +56,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/GuestAuthController.java').is_file():
         suites.append(('GuestAuthPostgresTest', 7))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CustomerBookingController.java').is_file():
-        suites.append(('CustomerBookingHttpPostgresTest', 9))
+        suites.append(('CustomerBookingHttpPostgresTest', 10))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorLoginController.java').is_file():
         suites.append(('AdministratorLoginPostgresTest', 12))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorRecoveryController.java').is_file():
@@ -75,7 +77,7 @@ def validate(root):
             raise ValueError('Incomplete mandatory PostgreSQL suite: ' + name)
         if any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped')):
             raise ValueError('Failed or skipped PostgreSQL checks: ' + name)
-        if name in ('PublicSchedulingPostgresTest', 'GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AdministratorBookingQueryPostgresTest', 'AdministratorBookingHttpPostgresTest', 'AdministratorFinanceHttpPostgresTest', 'AccountEnrollmentDatabaseTest', 'AccountAuthenticationDatabaseTest', 'AccountPasswordDatabaseTest', 'AccountHttpPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
+        if name in ('SchedulingMaintenancePostgresTest', 'PublicSchedulingPostgresTest', 'GuestAccessDatabaseTest', 'GuestRecoveryDatabaseTest', 'SessionDatabaseTest', 'CustomerCreationPostgresTest', 'CustomerBookingQueryPostgresTest', 'CustomerBookingHttpPostgresTest', 'RateLimitDatabaseTest', 'SecurityCleanupDatabaseTest', 'GuestAuthPostgresTest', 'AdministratorLoginPostgresTest', 'AdministratorRecoveryPostgresTest', 'AdministratorBookingQueryPostgresTest', 'AdministratorBookingHttpPostgresTest', 'AdministratorFinanceHttpPostgresTest', 'AccountEnrollmentDatabaseTest', 'AccountAuthenticationDatabaseTest', 'AccountPasswordDatabaseTest', 'AccountHttpPostgresTest') and (int(suite.get('tests')) != len(list(suite.iter('testcase')))
                 or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed authority cases')
 
@@ -86,7 +88,7 @@ def validate(root):
             raise ValueError('Missing mandatory runtime PostgreSQL report')
         suite = ET.parse(report).getroot()
         cases = suite.findall('testcase')
-        if (suite.get('name') != qualified or len(cases) < 17 or int(suite.get('tests', '0')) != len(cases)
+        if (suite.get('name') != qualified or len(cases) < 18 or int(suite.get('tests', '0')) != len(cases)
                 or any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
                 or any(suite.findall('.//' + key) for key in ('failure', 'error', 'skipped'))):
             raise ValueError('Incomplete or failed runtime PostgreSQL suite')

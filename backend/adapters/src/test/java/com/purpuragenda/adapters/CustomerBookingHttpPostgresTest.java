@@ -42,7 +42,7 @@ class CustomerBookingHttpPostgresTest {
                 new GuestBookingController(new GuestBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new CustomerBookingController(c.command,new CustomerBookingChanges(new PostgresBookingChanges(c.f.source)),
                         new CustomerBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies))
-                .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of()))).build();
+                .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of())),new AvailabilityThrottleFilter(throttle)).build();
     }
     @AfterEach void cleanup() { c.cleanup(); }
     GuestAuthPostgresTest.Browser guest(String email) throws Exception {
@@ -63,6 +63,20 @@ class CustomerBookingHttpPostgresTest {
     String booking(MockHttpServletResponse response) throws Exception { assertEquals(201,response.getStatus());return json.readTree(response.getContentAsString()).get("bookingId").textValue(); }
     MockHttpServletResponse view(GuestAuthPostgresTest.Browser b,String id) throws Exception {
         return g.send(get("/api/v1/bookings/"+id).cookie(new Cookie("__Host-purpuragenda",b.cookie())));
+    }
+    @Test void privateAndPublicAvailabilityConsumeTheSamePersistedBudgetBeforeAnyAdvice() throws Exception {
+        var browser=guest("limited-advice@example.test");var request=body(3);String id=booking(create(browser,"limited-advice",request));
+        String day=Instant.parse(request.get("startInstant").textValue()).atZone(ZoneId.of("Europe/Brussels")).toLocalDate().toString();
+        String path="/api/v1/bookings/"+id+"/availability";
+        assertEquals(200,g.send(get(path).param("from",day).param("to",day).param("displayZone","UTC").cookie(new Cookie("__Host-purpuragenda",browser.cookie()))).getStatus());
+        for(int i=1;i<120;i++)assertEquals(400,g.send(get("/api/v1/bookings/malformed/availability")).getStatus());
+        for(String target:List.of(path,"/api/v1/availability")) {
+            var denied=g.send(get(target).cookie(new Cookie("__Host-purpuragenda",browser.cookie())));
+            assertEquals(429,denied.getStatus());assertEquals("no-store",denied.getHeader("Cache-Control"));assertTrue(Long.parseLong(denied.getHeader("Retry-After"))>0);
+        }
+        assertEquals(1,c.count("rate_limit_bucket WHERE kind='AVAILABILITY_IP'"));
+        assertEquals("120",c.f.value("SELECT count FROM rate_limit_bucket WHERE kind='AVAILABILITY_IP'"));
+        assertEquals(1,c.count("request_charge"));assertEquals(1,c.load(UUID.fromString(id)).version());
     }
     @Test void reschedulingAdviceUsesRealProofScopeOriginalServiceAndReadOnlySchedulingFacts() throws Exception {
         var browser=guest("advice@example.test");var request=body(3);String id=booking(create(browser,"advice",request));
