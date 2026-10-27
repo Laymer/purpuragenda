@@ -39,7 +39,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
-| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | In progress; notification slice1 https://github.com/Laymer/purpuragenda/pull/64 confirmed merged669bc5b; reminder deadline/grace draft https://github.com/Laymer/purpuragenda/pull/82 source approvedbef42c9 and baseline native/hosted passed; current main79 integration fresh gates pending |
+| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | In progress; notification slice1 https://github.com/Laymer/purpuragenda/pull/64 confirmed merged669bc5b; reminder deadline/grace draft https://github.com/Laymer/purpuragenda/pull/82 source approvedbef42c9 and baseline native/hosted passed; main 79 and 81 (68f898b) integrated by merge, fresh hosted checks and exact-head review pending |
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
@@ -65,7 +65,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
-- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
+- P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change-v2; base=main; handoff=docs/handoffs/p18-password-change.md
 - P22/admin-read-http: agent=Codex-worker-b; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/p22-admin-read-http.md
 - P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
