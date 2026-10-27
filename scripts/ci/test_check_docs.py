@@ -110,6 +110,13 @@ class LedgerTest(unittest.TestCase):
         ledger = self.ledger.replace('| P40 — Task | Not started |', '| P40 — Task | In progress |')
         errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + claim))
         self.assertIn('shared handoff record: P40/coverage', errors)
+        # One file naming both tasks satisfies each claim's field match; only the shared-record rule rejects it.
+        both = self.handoff + self.handoff.replace('P01/concurrency', 'P40/coverage').replace('task/p01', 'task/p40')
+        (self.root / 'docs/handoffs/p01.md').write_text(both)
+        shared = claim.replace('handoff=docs/handoffs/p40.md', 'handoff=docs/handoffs/p01.md')
+        self.assertEqual(['shared handoff record: P40/coverage'],
+                         self.validate(ledger.replace(self.claim, self.claim + '\n' + shared)))
+        (self.root / 'docs/handoffs/p01.md').write_text(self.handoff)
         spelled = claim.replace('handoff=docs/handoffs/p01.md', 'handoff=docs/handoffs/./p01.md')
         errors = self.validate(ledger.replace(self.claim, self.claim + '\n' + spelled))
         self.assertIn('shared handoff record: P40/coverage', errors)

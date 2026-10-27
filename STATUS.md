@@ -73,8 +73,8 @@ Online payments are deferred and are not unfinished version 1 implementation.
 ## Active handoff
 
 - Agent and UTC checkpoint: Claude-coordinator, 2026-10-27T12:00:00Z.
-- Current task: P01/release-scope; branch: task/p01-release-scope; base: main; PR URL: pending publication.
-- Last pushed implementation commit: none; uncommitted changes: ledger reconciliation and claim handoffs.
+- Current task: P01/release-scope; branch: task/p01-release-scope; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/91.
+- Last pushed implementation commit: 9dd2395; uncommitted changes: none.
 - What works: P45 booking workers https://github.com/Laymer/purpuragenda/pull/79 confirmed merged cc3fe39; Codex claims released; #77 superseded by #81, #63 by merged #66 and #78 byte-identical inside #83; closing those three drafts awaits owner GitHub action.
 - What remains: land open PRs in three Claude lanes, then the P27 agenda/approval UI, P25 management UI, P49 purpuragenda.sh/verify.sh/demo-seed, core Playwright journey and README before the local 1.0.0 tag.
 - Decisions: 2026-10-27 local 1.0.0 release scope in docs/decisions.md.
