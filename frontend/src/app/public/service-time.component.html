@@ -1,6 +1,6 @@
-<section class="booking-start" aria-labelledby="booking-title">
+<section class="booking-start" aria-labelledby="selection-step-title">
   <p class="eyebrow">Private consultations with Medina</p>
-  <h1 id="booking-title">Choose a consultation.</h1>
+  <h2 id="selection-step-title">Choose a consultation.</h2>
   <p class="intro">Find a time that suits you. Choosing a time does not reserve it.</p>
 
   @if (catalogLoading()) { <p role="status">Loading consultations…</p> }
@@ -26,7 +26,7 @@
 
   @if (service()) {
     <form [formGroup]="form" (ngSubmit)="search()" class="search" aria-labelledby="search-title">
-      <h2 id="search-title">2. Find a time</h2>
+      <h3 id="search-title">2. Find a time</h3>
       <p>Times are shown in your selected zone. The practice uses Europe/Brussels.</p>
       @if (formError()) { <p id="search-error" role="alert">{{ formError() }}</p> }
       <div class="search-fields">
@@ -72,7 +72,7 @@
   }
   @if (choice(); as slot) {
     <section class="selection" aria-labelledby="selection-title" role="status">
-      <h2 id="selection-title">Your selection</h2>
+      <h3 id="selection-title">Your selection</h3>
       <p>{{ service()!.name }} · {{ duration(slot) }} minutes · {{ service()!.priceMinor / 100 | currency:service()!.currency }}</p>
       <p>{{ label(slot, availability()!.displayZone) }} · {{ offset(slot.offset) }} · {{ availability()!.displayZone }}</p>
       <p class="hint">This time remains available to others until you submit a booking request.</p>
