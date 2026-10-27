@@ -1,0 +1,1 @@
+{"suite":"AccountPasswordDatabaseTest","tests":28,"failures":0,"errors":1,"skipped":0,"cause":"Negative ownership fixture attempted impossible account/customer mismatch; existing composite session FK correctly rejected it23503.","resolution":"Assert existing SQLSTATE23503 boundary and preserved original authority; do not remove constraint or fabricate an impossible session."}
