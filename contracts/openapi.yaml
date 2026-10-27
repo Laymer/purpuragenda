@@ -1987,7 +1987,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1–100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
+        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1\u2013100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
         "security": [
           {
             "sessionCookie": []
@@ -3488,7 +3488,7 @@
             "minLength": 8,
             "maxLength": 40,
             "writeOnly": true,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",
@@ -3936,6 +3936,73 @@
         },
         "description": "Show the ten new recovery codes once. No session is issued. Sign in with fresh password/TOTP after reenrollment."
       },
+      "BookingReviewContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
+        "required": [
+          "serverNow",
+          "horizon",
+          "businessZone",
+          "reservationMinutes",
+          "service",
+          "policy",
+          "notice"
+        ],
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horizon": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessZone": {
+            "type": "string",
+            "description": "Europe/Brussels civil business zone."
+          },
+          "reservationMinutes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 120,
+            "maximum": 120
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BookingReviewPolicy"
+          },
+          "notice": {
+            "$ref": "#/components/schemas/BookingReviewNotice"
+          }
+        }
+      },
+      "BookingReviewNotice": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
+        "required": [
+          "version",
+          "text",
+          "synthetic"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16000
+          },
+          "synthetic": {
+            "type": "boolean"
+          }
+        }
+      },
       "BookingReviewPolicy": {
         "type": "object",
         "additionalProperties": false,
@@ -3985,73 +4052,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "BookingReviewNotice": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "Versioned plaintext; render using text binding, never HTML. Local/test/restore fixtures are explicitly synthetic. Configuration does not establish legal approval.",
-        "required": [
-          "version",
-          "text",
-          "synthetic"
-        ],
-        "properties": {
-          "version": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
-          },
-          "text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16000
-          },
-          "synthetic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BookingReviewContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "One read-only advisory snapshot for review; never holds capacity. Compare selected service/policy versions, show notice, and submit exact reviewed versions. Creation rechecks every invariant atomically.",
-        "required": [
-          "serverNow",
-          "horizon",
-          "businessZone",
-          "reservationMinutes",
-          "service",
-          "policy",
-          "notice"
-        ],
-        "properties": {
-          "serverNow": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "horizon": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "businessZone": {
-            "type": "string",
-            "description": "Europe/Brussels civil business zone."
-          },
-          "reservationMinutes": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 120,
-            "maximum": 120
-          },
-          "service": {
-            "$ref": "#/components/schemas/Service"
-          },
-          "policy": {
-            "$ref": "#/components/schemas/BookingReviewPolicy"
-          },
-          "notice": {
-            "$ref": "#/components/schemas/BookingReviewNotice"
           }
         }
       },
@@ -4170,7 +4170,7 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 40,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",

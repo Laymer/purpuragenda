@@ -20,15 +20,15 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
-| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c; clean password-change81 running finalgates; account login/password HTTP claimed here; profile/history/enrollment HTTP remain |
-| P19 — Complete public service and availability HTTP contracts | In progress; booking review context claimed in task/p19-booking-context; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; full browser/load acceptance remains separate |
-| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd after all required gates; customer HTTP draftPR72 and public review context74 remain |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; restricted recovery HTTP https://github.com/Laymer/purpuragenda/pull/75 confirmed merged538e335 after all required gates; broader authentication acceptance remains |
+| P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
+| P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; booking-context https://github.com/Laymer/purpuragenda/pull/74 confirmed mergedaffe433 after all required gates; full browser/load acceptance remains separate |
+| P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTPPR72 confirmed merged8702161 after1032Java/30Angular/245Python/all14hosted/Compose6/review |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
-| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; query PR76 and private read HTTP implemented by Codex-worker-b with targeted real PostgreSQL/runtime evidence; current-head gates and mutation/configuration APIs remain |
+| P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76, private agenda/detail read HTTP https://github.com/Laymer/purpuragenda/pull/80 and administrator finance/approval HTTP https://github.com/Laymer/purpuragenda/pull/86 stacked on PR80; PR86 also carries unmerged account HTTP PR84/password PR81 and scoped guest lookup ancestry; service/schedule APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78; full booking UI remains |
-| P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; coordinator claims scoped guest target lookup; management UI follows |
+| P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -61,26 +61,20 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P25/management-target: agent=Codex-coordinator; branch=task/p25-management-target; base=main; handoff=docs/handoffs/p25-management-target.md
-
-- P22/admin-finance-http: agent=Codex-worker-b; branch=task/p22-admin-finance-http; base=task/p22-admin-read-http; handoff=docs/handoffs/p22-admin-finance-http.md
-
-
-- P19/booking-context: agent=Codex-coordinator; branch=task/p19-booking-context; base=main; handoff=docs/handoffs/p19-booking-context.md
-- P18/account-http: agent=Codex-worker-a; branch=task/p18-account-http-v2; base=main; handoff=docs/handoffs/p18-account-http.md
-
 
 - P45/booking-workers: agent=Codex-coordinator; branch=task/p45-booking-workers; base=main; handoff=docs/handoffs/p45-booking-workers.md
+- P18/account-http: agent=Codex-worker-a; branch=task/p18-account-http-v2; base=main; handoff=docs/handoffs/p18-account-http.md
+- P22/admin-finance-http: agent=Claude-lane-c; branch=task/p22-admin-finance-http; base=task/p22-admin-read-http; handoff=docs/handoffs/p22-admin-finance-http.md
 - P24/shared-access: agent=Codex-worker-c; branch=task/p24-shared-access; base=main; handoff=docs/handoffs/p24-shared-access.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:29:54Z.
-- Current task: P25/management-target; branch: task/p25-management-target; base: main; PR URL: none yet.
-- Last pushed implementation commit: none; uncommitted changes: local feature checkpoint ec38530 plus pending clean accountHTTP0509 integration, generated endpoint and current tests.
-- What works: guest proof redemption and persisted scoped booking reads are merged; the verification landing has no authoritative booking target to display after a MANAGE proof.
-- What remains: current-main integration, full native/hosted/Compose/coverage gates and independent review; management UI follows separately.
-- Decisions: derive exactly the persisted grant-bound target, never guest history. Reuse existing complete persisted authority checks in one read-only REPEATABLE READ snapshot and captured database time. No session touch, resource lock, mutation, migration or client-supplied target. AccountHTTP84 clean contract ancestry adopted; release the extended contract at publication.
-- Verification: target76Java (17domain/6application/24queryPG/8HTTPPG/5wire/16actual runtime) passes127seconds, zero failures/errors/skips.38Angular/fullbuild,255strictPython,19contract/31report regressions and regenerated SDK pass. Full category/coverage/Compose gates remain pending.
-- Next concrete action: publish the scoped endpoint checkpoint, release contract ownership to finance, obtain independent review and integrate current main before full gates.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: accountHTTP84/adminHTTP80/query76/password81; context74 now confirmed mergedaffe433, needs append-only main integration. Management UI follows this and booking-flow83.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:30:00Z.
+- Current task: P45/booking-workers; branch: task/p45-booking-workers; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/79.
+- Last pushed implementation commit: e163fe0; uncommitted changes: append-only confirmed context74/mainaffe433 integration, preserving RR public reads and RC locked maintenance.
+- What works: query69 is confirmed merged; notification64 confirmed merged669bc5b after all required gates. Public context74 targets and source review pass, full final gates pending.
+- What remains: current-main integration, full native/coverage/hosted/Compose/exact review; no full local milestone claimed.
+- Decisions: separate maintenance port shares the same resource lock, one database time and transaction without creating artificial customer idempotency receipts. Runtime work lanes remain independent, readiness-gated, fixed-delay, restore-suppressed and gracefully stopped. No live SMTP or authentication bypass. Runtime Order14 reserved; admin HTTP worker owns15, account16, finance17; coordinator reserves18 for two-context isolation.
+- Verification: e163fe0 full native1060Java/31Angular/248Python and all coverage/hosted14 checks pass; exact independent review5660288867 approved. Fresh Compose was not reused after main74 advanced. Earlier evidence: baseline7e5fa84 passes1044Java/30Angular/246Python, all14hosted, clean localCompose6 and independent exact-head review5660221901; coverage domain276/277lines478/489branches, application1050/1055853/884, adapters2102/21331630/1799, bootstrap257/273215/230, Angular119/11987/88. This is baseline evidence after main advances. Earlier targets: maintenance target47Java (17domain/1application/29actual PostgreSQL) passes, including20-way two-adapter race, rollback, post-lock database time, maintenance fail-closed and no synthetic idempotency records.Five-lane lifecycle12 and real runtime13 cases now pass, with17domain/1application/6maintenancePG (49targetJava total,122seconds after deterministic port-isolation correction).25strict report regressions pass. Core d109082 independently source approved by workerB; full composition review/gates pending.
+- Next concrete action: publish public-context integration and repeat all exact-revision gates/review before merge.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and all worktrees/secrets/volumes preserved; stacked PR dependencies: notificationPR64 before this slice merges; current-main integration and every gate/review remain mandatory.
