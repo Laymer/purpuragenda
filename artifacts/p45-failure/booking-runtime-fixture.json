@@ -1,0 +1,9 @@
+{
+  "suite": "RuntimeDatabaseTest",
+  "tests": 12,
+  "failures": 0,
+  "errors": 1,
+  "skipped": 0,
+  "cause": "Synthetic outbox fixture omitted required creation timestamp",
+  "status": "failed-before-fixture-correction"
+}
