@@ -391,5 +391,19 @@ class ShellSyntaxTest(unittest.TestCase):
             self.assertIn('set -euo pipefail', script.read_text())
 
 
+class ReadmeTest(unittest.TestCase):
+    """The README quick start must stay aligned with the runner's command list and local endpoints."""
+
+    def test_readme_names_every_runner_command_and_local_endpoint(self):
+        readme = (ROOT / 'README.md').read_text()
+        for command in COMMANDS:
+            with self.subTest(command=command):
+                self.assertIn(f'./purpuragenda.sh {command}', readme)
+        for text in ('http://localhost:8080', 'http://localhost:8025', './verify.sh all', 'STATUS.md'):
+            self.assertIn(text, readme)
+        # The README must repeat the data-safety rule, never recommend volume removal.
+        self.assertIn('Never run `docker compose down -v`', readme)
+
+
 if __name__ == '__main__':
     unittest.main()
