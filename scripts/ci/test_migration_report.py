@@ -190,6 +190,7 @@ class MigrationReportTest(unittest.TestCase):
                                   ('<testcase><skipped/></testcase>' * 18, ''), ('<testcase><error/></testcase>' * 18, '')):
             report.write_text(f'<testsuite name="{qualified}" tests="18" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
+        # Orders 1-18: workers 14, admin read 15, account 16, finance 17 and two-context isolation 18 are all mandatory.
         report.write_text(f'<testsuite name="{qualified}" tests="17">' + '<testcase/>' * 17 + '</testsuite>')
         with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text(f'<testsuite name="{qualified}" tests="18">' + '<testcase/>' * 18 + '</testsuite>')
