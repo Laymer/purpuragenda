@@ -2,4 +2,19 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>com.purpuragenda</groupId><artifactId>purpuragenda</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>acceptance-tests</artifactId>
+  <properties>
+    <playwright.version>1.58.0</playwright.version>
+    <!-- The real-browser journey needs a running isolated stack (scripts/ci/verify-e2e.py), so the ordinary
+         build excludes the e2e tag. The orchestrator selects it explicitly: -De2e.groups=e2e -De2e.excludedGroups=disabled -->
+    <e2e.groups></e2e.groups>
+    <e2e.excludedGroups>e2e</e2e.excludedGroups>
+  </properties>
+  <dependencies>
+    <dependency><groupId>com.microsoft.playwright</groupId><artifactId>playwright</artifactId><version>${playwright.version}</version><scope>test</scope></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-launcher</artifactId><scope>test</scope></dependency>
+  </dependencies>
+  <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId>
+    <configuration><failIfNoTests>true</failIfNoTests><groups>${e2e.groups}</groups><excludedGroups>${e2e.excludedGroups}</excludedGroups></configuration>
+  </plugin></plugins></build>
 </project>

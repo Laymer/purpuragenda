@@ -200,11 +200,24 @@ class DispatchTest(ScriptCase):
         self.assertEqual(1, result.returncode)
         self.assertIn('Docker CLI not found', result.stderr)
 
-    def test_e2e_always_fails(self):
+    def test_e2e_runs_the_isolated_core_journey_and_propagates_its_failure(self):
+        write(self.tree / 'scripts/ci/verify-e2e.py',
+              'import os, sys\nopen(os.environ["FAKE_LOG"], "a").write("verify-e2e " + " ".join(sys.argv[1:]) + "\\n")\n'
+              'sys.exit(int(os.environ.get("FAKE_EXIT", "0")))\n', 0o644)
         result = self.run_script('e2e')
-        self.assertEqual(1, result.returncode)
-        self.assertIn('core journey suite not implemented yet (P38/P39 slice pending)', result.stderr)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertNotIn('readonly', result.stderr)
+        self.assertEqual(['verify-e2e '], self.calls())
+        self.log.write_text('')
+        self.assertEqual(7, self.run_script('e2e', FAKE_EXIT='7').returncode)  # A failed journey can never pass silently.
+        self.log.write_text('')
+        self.assertEqual(2, self.run_script('e2e', '--fast').returncode)
         self.assertEqual([], self.calls())
+        help_text = self.run_script('e2e', '--help').stdout
+        for expected in ('Chromium', 'isolated', 'Mailpit', 'admin-setup', 'artifacts/e2e/core-journey.json'):
+            self.assertIn(expected, help_text)
+        self.assertNotIn('not implemented', help_text)
+        self.assertNotIn('not implemented', self.run_script('help').stdout)
 
     def test_verify_test_and_demo_seed_delegate(self):
         self.assertEqual(0, self.run_script('verify').returncode)

@@ -41,7 +41,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
 | P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; notification foundation https://github.com/Laymer/purpuragenda/pull/64 merged 669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 under Claude lane A: independent exact-head review approved e98447a; main 525e4a6 and 56e9856 integrated by merge; DST rendered-time test and residual-risk documentation follow-up 3ebe5ef pending hosted checks and coordinator re-review |
 | P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
-| P38 — Complete API acceptance traceability and two-process integrity/quota races | Recovered WIP; dependencies in docs/delivery.md; historical partial evidence; coverage incomplete |
+| P38 — Complete API acceptance traceability and two-process integrity/quota races | In progress; core-journey slice P38/core-e2e (Chromium guest-to-approval journey on an isolated real Compose stack, mandatory e2e-core job) is a draft PR under Claude lane A; API traceability, two-process races and customer cancel/reschedule steps remain; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
 | P41 — Fix layout stability and pass the nine-run browser performance budget | Recovered WIP; dependencies in docs/delivery.md; historical CLS 0.1564 exceeds 0.1 |
@@ -68,6 +68,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P25/management-ui: agent=Claude-lane-b; branch=task/p25-management-ui; base=main; handoff=docs/handoffs/claude-p25-management-ui.md
 - P27/admin-ui: agent=Claude-lane-b; branch=task/p27-admin-reauth; base=main; handoff=docs/handoffs/claude-p27-admin-ui.md
 - P36/reminders: agent=Claude-lane-a; branch=task/p36-reminders; base=main; handoff=docs/handoffs/claude-p36-reminders.md
+- P38/core-e2e: agent=Claude-lane-a; branch=task/p38-core-e2e; base=main; handoff=docs/handoffs/claude-p38-core-e2e.md
 - P49/run-script: agent=Claude-lane-a; branch=task/p49-run-script; base=main; handoff=docs/handoffs/claude-p49-run-script.md
 
 ## Active handoff
