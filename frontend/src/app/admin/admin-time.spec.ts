@@ -24,6 +24,7 @@ describe('Administrator Brussels civil-date helpers', () => {
     const first = brusselsDisplay('2026-10-25T00:30:00Z'), second = brusselsDisplay('2026-10-25T01:30:00Z');
     expect(first).toContain('02:30'); expect(second).toContain('02:30'); expect(first).toContain('UTC+2'); expect(second).toContain('UTC+1');
     expect(brusselsDisplay('not a time')).toBe('Unknown time');
+    expect(first).not.toContain(','); expect(second).not.toContain(',');
   });
   it('labels the spring-forward gap correctly and keeps month-end ranges at thirty-one dates', () => {
     expect(brusselsDisplay('2026-03-29T00:30:00Z')).toContain('01:30'); expect(brusselsDisplay('2026-03-29T00:30:00Z')).toContain('UTC+1');

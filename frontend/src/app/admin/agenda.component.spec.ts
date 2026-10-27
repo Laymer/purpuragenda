@@ -59,8 +59,8 @@ describe('Administrator agenda', () => {
     const retry = view.load(); list().flush({ detail: 'synthetic-provider-detail' }, { status: 503, statusText: 'Unavailable' }); await retry;
     expect(view.message()).toContain('could not be loaded'); expect(view.busy()).toBe(false);
   });
-  it.each([401, 403])('sends a %s read to sign in and clears private state', async status => {
-    const spy = vi.spyOn(router, 'navigateByUrl'); list().flush({ code: status === 401 ? 'SESSION_REQUIRED' : 'ADMIN_ACCESS_REQUIRED' }, { status, statusText: 'No' }); await settle();
-    expect(spy).toHaveBeenCalledWith('/admin/login'); expect(view.entries().length).toBe(0);
+  it.each([401, 403])('sends a %s read to the sign-in form with a return target and clears private state', async status => {
+    const spy = vi.spyOn(router, 'navigate'); list().flush({ code: status === 401 ? 'SESSION_REQUIRED' : 'ADMIN_ACCESS_REQUIRED' }, { status, statusText: 'No' }); await settle();
+    expect(spy).toHaveBeenCalledWith(['/admin/login'], { queryParams: { reason: 'reauth', return: '/admin' } }); expect(view.entries().length).toBe(0); expect(TestBed.inject(SessionAccess).state()).toBeNull();
   });
 });
