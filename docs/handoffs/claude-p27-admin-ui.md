@@ -2,7 +2,7 @@
 
 - Agent and UTC checkpoint: Claude-lane-b, 2026-10-27T10:30:00Z.
 - Current task: P27/admin-ui; branch: task/p27-admin-auth-ui; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/87.
-- Last pushed implementation commit: 30b834e; uncommitted changes: merge of main15818e1 (PR83 merged; PR87 retargeted to main) plus review nits (focus #admin-error after failures, email autocapitalize=off/spellcheck=false) with spec.
+- Last pushed implementation commit: 30b834e; uncommitted changes: merge of main1557af0 after 5a5cec4 approval plus review nits (focus #admin-error after failures, email autocapitalize=off/spellcheck=false) with spec.
 - What works: real generated administrator MFA login through shared in-memory authentication, explicit session check and serialized logout; strict cooldown, safe failures and secret clearing.
 - What remains: hosted checks on the merged head, independent review, retarget from its current GitHub base task/p24-booking-flow to main after PR83 merges, real-browser acceptance; agenda/pending queue/approval UI remain separate slices.
 - Decisions: own lazy administrator route/components only; preserve /book and /verify. No credentials in storage, no bypass, no fake agenda. STATUS.md conflict resolved by keeping the base P24 row/claim and re-applying this PR's P27 row/claim.
