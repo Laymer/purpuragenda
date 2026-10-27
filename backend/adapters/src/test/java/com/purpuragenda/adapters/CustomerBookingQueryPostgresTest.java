@@ -32,6 +32,18 @@ class CustomerBookingQueryPostgresTest {
     @AfterEach void cleanup() { c.cleanup(); }
     PostgresCustomerBookingQuery reader(DataSource source) { return new PostgresCustomerBookingQuery(source,Set.of("zoom.us")); }
 
+    @Test void reschedulingContextUsesCapturedReadOnlySnapshotAndKeepsOwnOccupancyForApplicationExclusion() {
+        var session=c.guest("advice@example.test");UUID id=c.create(session,"advice",c.request(3,9)).entityId();
+        var booking=c.load(id);var range=new com.purpuragenda.domain.scheduling.ReservationInterval(booking.start().minusSeconds(86400),booking.start().plusSeconds(86400));
+        String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",session.reference().id());
+        var count=new AtomicInteger();Instant now=c.jdbc.queryForObject("SELECT clock_timestamp()",(r,n)->r.getTimestamp(1).toInstant());
+        var context=reader(c.clock(now,count)).find(c.binding(session),id,range).orElseThrow();
+        assertEquals(1,count.get());assertEquals(now,context.now());assertEquals(booking,context.booking());assertEquals(1,context.active());
+        assertTrue(context.occupied().contains(booking));assertEquals(1,context.policy().version());assertFalse(context.calendar().weekly().isEmpty());
+        assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",session.reference().id()));
+        var other=c.guest("other@example.test");assertTrue(query.find(c.binding(other),id,range).isEmpty());
+        c.sessions.revoke(session.reference());assertTrue(query.find(c.binding(session),id,range).isEmpty());
+    }
     @Test void exactGuestScopeAndAccountOwnershipNeverBecomeGuestHistory() {
         var a=c.guest("one@example.test");var b=c.guest("one@example.test");
         UUID mine=c.create(a,"a",c.request(3,9)).entityId(),other=c.create(b,"b",c.request(4,9)).entityId();
@@ -107,6 +119,7 @@ class CustomerBookingQueryPostgresTest {
         String seen=c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",s.reference().id());
         int events=c.count("outbox_event"),audit=c.count("audit_event"),receipts=c.count("idempotency_record");
         assertTrue(query.find(c.binding(s),id).isPresent());assertTrue(query.find(c.binding(s)).isPresent());
+        assertTrue(query.find(c.binding(s),id,c.load(id).interval()).isPresent());
         assertEquals(seen,c.f.value("SELECT last_seen_at FROM app_session WHERE id=?",s.reference().id()));
         assertEquals(Booking.State.PENDING_CONFIRMATION,c.load(due).state());
         assertEquals(events,c.count("outbox_event"));assertEquals(audit,c.count("audit_event"));assertEquals(receipts,c.count("idempotency_record"));
@@ -117,7 +130,8 @@ class CustomerBookingQueryPostgresTest {
             lock.setAutoCommit(false);
             for(String table:List.of("scheduling_resource","app_session","access_grant","booking"))statement.executeQuery("SELECT * FROM "+table+" FOR UPDATE").close();
             assertTrue(executor.submit(()->query.find(c.binding(s),id).isPresent()).get(3,TimeUnit.SECONDS));
-            assertTrue(executor.submit(()->query.find(c.binding(s)).isPresent()).get(3,TimeUnit.SECONDS));lock.rollback();
+            assertTrue(executor.submit(()->query.find(c.binding(s)).isPresent()).get(3,TimeUnit.SECONDS));
+            assertTrue(executor.submit(()->query.find(c.binding(s),id,c.load(id).interval()).isPresent()).get(3,TimeUnit.SECONDS));lock.rollback();
         }
     }
     @Test void moneyAndBookingUseOneReadOnlySnapshotAcrossAConcurrentConfirmation() {
