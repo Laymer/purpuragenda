@@ -37,6 +37,16 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(['java', 'architecture', 'coverage', 'postgres-migrations', 'outbox', 'angular'],
                          dict(planned)['build'])
 
+    def test_core_journey_suite_runs_the_isolated_orchestrator_and_requires_its_fresh_receipt(self):
+        step = VERIFY.STEPS['e2e-core']
+        self.assertEqual('e2e-core', VERIFY.SUITE_STEPS['e2e-core'])
+        self.assertEqual(((VERIFY.PYTHON, 'scripts/ci/verify-e2e.py'),), step.commands)
+        self.assertEqual(('git', 'docker-daemon', 'java'), step.tools)
+        self.assertEqual(('artifacts/e2e/core-journey.json',), step.reports)
+        self.assertEqual('', step.hosted_only)  # Unlike sast, a developer host with Docker can run it.
+        self.assertEqual([('e2e-core', ['e2e-core'])], [pair for pair in VERIFY.plan(
+            {'schemaVersion': 1, 'suites': {'e2e-core': {'state': 'implemented'}}}) if pair[0] == 'e2e-core'])
+
     def test_unmapped_implemented_suite_fails_before_anything_runs(self):
         document = inventory(documentation='implemented', zap='implemented')
         with self.assertRaisesRegex(ValueError, 'no mapped local command: zap'):

@@ -17,9 +17,11 @@ OWNERS = {
     'dependencies': 'P43', 'sbom': 'P43', 'sast': 'P43', 'containers': 'P43',
     'configuration': 'P43', 'zap': 'P44', 'persistence': 'P45',
     'backup': 'P46', 'restore': 'P47', 'macos-bootstrap': 'P49', 'windows-preflight': 'P49',
+    'e2e-core': 'P38',
 }
 ACTIVATION = {
     'persistence': 'compose.yaml',
+    'e2e-core': 'acceptance-tests/src/test/java/com/purpuragenda/acceptance/CoreJourneyE2eTest.java',
     'windows-preflight': 'scripts/ops/preflight-wsl.ps1',
     'postgres-migrations': 'backend/adapters/src/main/resources/db/changelog/db.changelog-master.yaml',
     'angular': 'frontend/package.json',

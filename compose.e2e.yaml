@@ -1,0 +1,12 @@
+# Used only by scripts/ci/verify-e2e.py together with compose.yaml. The browser journey needs the real stack on loopback
+# ports that cannot clash with a developer's running stack, so each run publishes two free 127.0.0.1 ports and the
+# backend's public origin follows the first one (local mode accepts only http://localhost:<port>). Everything else,
+# including secrets, networks, the private operator profile and the unchanged hardening, comes from compose.yaml.
+services:
+  web:
+    ports: !override
+      - "127.0.0.1:${PURPURAGENDA_E2E_PORT:?e2e application port required}:8080"
+      - "127.0.0.1:${PURPURAGENDA_E2E_MAIL_PORT:?e2e mail port required}:8025"
+  backend:
+    environment:
+      APP_PUBLIC_ORIGIN: http://localhost:${PURPURAGENDA_E2E_PORT:?e2e application port required}
