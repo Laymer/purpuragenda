@@ -4,18 +4,20 @@
 # Bash 3.2 compatible: macOS /bin/bash works. Never removes data volumes or secrets.
 set -euo pipefail
 
+# RUN_ROOT, not PURPURAGENDA_ROOT: scripts/dev/toolchain-env.sh assigns that name when sourced.
 case "$0" in
-  */*) PURPURAGENDA_ROOT="$(cd "${0%/*}" && pwd)" ;;
-  *) PURPURAGENDA_ROOT="$(pwd)" ;;
+  */*) RUN_ROOT="$(CDPATH='' cd -- "${0%/*}" && pwd)" ;;
+  *) RUN_ROOT="$(pwd)" ;;
 esac
-readonly PURPURAGENDA_ROOT
 readonly ME="./purpuragenda.sh"
 # Same Docker Desktop discovery as scripts/dev/local.py; overridable only so tests stay hermetic.
 DOCKER_DESKTOP_BIN="${PURPURAGENDA_DOCKER_DESKTOP_BIN:-/Applications/Docker.app/Contents/Resources/bin}"
 # Fixed loopback ports published by compose.yaml (web: application and Mailpit).
-DOCTOR_PORTS="${PURPURAGENDA_DOCTOR_PORTS:-8080 8025}"
+DOCTOR_PORTS="${PURPURAGENDA_DOCTOR_PORTS-8080 8025}"
 readonly MIN_DISK_KB=$((5 * 1024 * 1024))
 readonly LOW_DISK_KB=$((15 * 1024 * 1024))
+# WSL2 interop marker; overridable only so tests stay hermetic on WSL hosts.
+WSL_INTEROP_FILE="${PURPURAGENDA_WSL_INTEROP_FILE:-/proc/sys/fs/binfmt_misc/WSLInterop}"
 readonly COMMANDS="help doctor setup up smoke admin down status logs demo-seed test verify e2e"
 
 usage() {
@@ -38,7 +40,7 @@ Commands:
   logs        Follow logs, optionally for one service (docker compose logs -f).
   demo-seed   Create 2-3 synthetic bookings through the real public API and Mailpit.
   test        Fast unit checks: Angular tests/build and the Python suites.
-  verify      Run every implemented CI suite locally (./verify.sh all).
+  verify      Run the CI suites this host can run (./verify.sh local); 'verify all' requires every suite.
   e2e         Core browser journey (not implemented yet; always fails).
 
 Examples:
@@ -142,11 +144,13 @@ Example: $ME test
 EOF
     ;;
     verify) cat <<EOF
-Usage: $ME verify
-Run every implemented suite from scripts/ci/suites.json through the CI scripts
-(./verify.sh all) and print a pass/fail summary. Fails closed on missing tools,
-missing reports and suites that need another host (hosted CI stays authoritative).
-Example: $ME verify
+Usage: $ME verify [local|all]
+local (default): run every implemented suite this host can run (./verify.sh local);
+  hosted-only suites are reported SKIPPED (HOSTED-ONLY). Not release evidence.
+all: require every implemented suite (./verify.sh all); fails closed on missing tools,
+  missing reports and suites that need another host. Hosted CI stays authoritative.
+Examples: $ME verify
+          $ME verify all
 EOF
     ;;
     e2e) cat <<EOF
@@ -166,8 +170,8 @@ die_usage() {
 }
 
 python_command() {
-  if [[ -x "$PURPURAGENDA_ROOT/.toolchain/python/bin/python3" ]]; then
-    printf '%s\n' "$PURPURAGENDA_ROOT/.toolchain/python/bin/python3"
+  if [[ -x "$RUN_ROOT/.toolchain/python/bin/python3" ]]; then
+    printf '%s\n' "$RUN_ROOT/.toolchain/python/bin/python3"
   else
     printf 'python3\n'
   fi
@@ -184,7 +188,7 @@ discover_docker() {
 compose() {
   discover_docker || { echo "Docker CLI not found. Run '$ME doctor' for a fix." >&2; exit 1; }
   unset COMPOSE_FILE
-  docker compose -f "$PURPURAGENDA_ROOT/compose.yaml" "$@"
+  docker compose -f "$RUN_ROOT/compose.yaml" "$@"
 }
 
 # ---- doctor -------------------------------------------------------------------
@@ -211,9 +215,21 @@ detect_os() {
       esac
       ;;
     Linux)
+      # WSL2 kernels report "microsoft-standard"; WSL1 reports "Microsoft" with no real Linux kernel.
       case "$release" in
-        *[Mm]icrosoft*|*WSL*) HOST_OS=wsl; ok "Linux on WSL2 ($arch, kernel $release)" ;;
-        *) HOST_OS=linux; ok "Linux ($arch, kernel $release)" ;;
+        *microsoft-standard*|*WSL2*) HOST_OS=wsl; ok "Linux on WSL2 ($arch, kernel $release)" ;;
+        *[Mm]icrosoft*)
+          HOST_OS=wsl
+          warn "Linux on WSL1 ($arch, kernel $release): Docker is not supported on WSL1"
+          fix "in Windows PowerShell: wsl --set-version <distribution> 2 (or wsl --set-default-version 2)"
+          ;;
+        *)
+          if [[ -n "${WSL_INTEROP:-}" || -e "$WSL_INTEROP_FILE" ]]; then
+            HOST_OS=wsl; ok "Linux on WSL2 with a custom kernel ($arch, kernel $release)"
+          else
+            HOST_OS=linux; ok "Linux ($arch, kernel $release)"
+          fi
+          ;;
       esac
       ;;
     *)
@@ -296,31 +312,39 @@ check_docker() {
   fi
 }
 
+# Exit 0: in use; 10: free; anything else (missing Python, exception): unknown, never "free".
 port_busy() {
   "$(python_command)" - "$1" <<'PY'
-import socket, sys
-port = int(sys.argv[1])
-busy = False
-probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+import errno, socket, sys
 try:
-    probe.bind(('127.0.0.1', port))
-except OSError:
-    busy = True
-finally:
-    probe.close()
-if not busy:
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.settimeout(1)
-    busy = client.connect_ex(('127.0.0.1', port)) == 0
-    client.close()
-sys.exit(0 if busy else 1)
+    port = int(sys.argv[1])
+    busy = False
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # SO_REUSEADDR ignores TIME_WAIT leftovers; an active listener still refuses the bind.
+    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        probe.bind(('127.0.0.1', port))
+    except OSError as error:
+        if error.errno != errno.EADDRINUSE:
+            raise
+        busy = True
+    finally:
+        probe.close()
+    if not busy:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.settimeout(1)
+        busy = client.connect_ex(('127.0.0.1', port)) == 0
+        client.close()
+except Exception:
+    sys.exit(3)
+sys.exit(0 if busy else 10)
 PY
 }
 
 port_owned() {
   local published
   [[ "$DOCKER_DAEMON" == yes ]] || return 1
-  published="$(unset COMPOSE_FILE; docker compose -f "$PURPURAGENDA_ROOT/compose.yaml" port web "$1" 2>/dev/null)" || return 1
+  published="$(unset COMPOSE_FILE; docker compose -f "$RUN_ROOT/compose.yaml" port web "$1" 2>/dev/null)" || return 1
   [[ "$published" == *":$1" ]]
 }
 
@@ -329,10 +353,11 @@ check_ports() {
   for port in $DOCTOR_PORTS; do
     probe=0
     port_busy "$port" 2>/dev/null || probe=$?
-    if (( probe == 1 )); then
+    if (( probe == 10 )); then
       ok "loopback port $port is free"
     elif (( probe != 0 )); then
-      warn "could not check loopback port $port (Python unavailable)"
+      fail "could not check loopback port $port (probe exit $probe)"
+      fix "install Python 3.9+ and rerun '$ME doctor'; the port must be free or used by this project"
     elif port_owned "$port"; then
       ok "loopback port $port is used by this project's running stack"
     else
@@ -348,7 +373,7 @@ check_ports() {
 
 check_disk() {
   local available
-  available="$(df -Pk "$PURPURAGENDA_ROOT" 2>/dev/null | awk 'NR == 2 { print $4 }')"
+  available="$(df -Pk "$RUN_ROOT" 2>/dev/null | awk 'NR == 2 { print $4 }')"
   if [[ ! "$available" =~ ^[0-9]+$ ]]; then
     warn "could not read free disk space"
   elif (( available < MIN_DISK_KB )); then
@@ -362,13 +387,13 @@ check_disk() {
 }
 
 check_workspace() {
-  if [[ -x "$PURPURAGENDA_ROOT/.toolchain/jdk/bin/java" ]]; then
+  if [[ -x "$RUN_ROOT/.toolchain/jdk/bin/java" ]]; then
     ok "pinned toolchain installed"
   else
     warn "pinned toolchain not installed"
     fix "$ME setup"
   fi
-  if [[ -d "$PURPURAGENDA_ROOT/.secrets" ]]; then
+  if [[ -d "$RUN_ROOT/.secrets" ]]; then
     ok "private ./.secrets present (keep it; it matches the database volume)"
   else
     warn "private ./.secrets not created yet"
@@ -428,11 +453,11 @@ cmd_logs() {
 cmd_test() {
   local python
   # shellcheck source=scripts/dev/toolchain-env.sh
-  source "$PURPURAGENDA_ROOT/scripts/dev/toolchain-env.sh"
+  source "$RUN_ROOT/scripts/dev/toolchain-env.sh"
   python="$(python_command)"
-  bash "$PURPURAGENDA_ROOT/scripts/ci/verify-frontend.sh"
-  "$python" "$PURPURAGENDA_ROOT/scripts/ci/run-python-tests.py" --start "$PURPURAGENDA_ROOT/scripts/ci"
-  "$python" "$PURPURAGENDA_ROOT/scripts/ci/run-python-tests.py" --start "$PURPURAGENDA_ROOT/scripts/ci/tests"
+  bash "$RUN_ROOT/scripts/ci/verify-frontend.sh"
+  "$python" "$RUN_ROOT/scripts/ci/run-python-tests.py" --start "$RUN_ROOT/scripts/ci"
+  "$python" "$RUN_ROOT/scripts/ci/run-python-tests.py" --start "$RUN_ROOT/scripts/ci/tests"
   echo "Fast checks passed (Angular unit tests/build and Python suites). Full gates: $ME verify"
 }
 
@@ -450,7 +475,7 @@ main() {
     command_help "$command"
     return 0
   fi
-  cd "$PURPURAGENDA_ROOT"
+  cd "$RUN_ROOT"
   case "$command" in
     help|--help|-h)
       if (( $# == 0 )); then usage; return 0; fi
@@ -470,7 +495,13 @@ main() {
     logs) cmd_logs "$@" ;;
     demo-seed) exec "$(python_command)" scripts/dev/demo_seed.py "$@" ;;
     test) no_arguments $# test; cmd_test ;;
-    verify) no_arguments $# verify; exec bash verify.sh all ;;
+    verify)
+      (( $# <= 1 )) || die_usage "verify accepts one mode: local or all"
+      case "${1:-local}" in
+        local|all) exec bash verify.sh "${1:-local}" ;;
+        *) die_usage "Unknown verify mode: $1" ;;
+      esac
+      ;;
     e2e)
       echo "e2e: core journey suite not implemented yet (P38/P39 slice pending)." >&2
       exit 1

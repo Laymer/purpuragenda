@@ -87,7 +87,8 @@ class DispatchTest(ScriptCase):
         for relative in ('scripts/dev/local.sh', 'scripts/dev/install-toolchain.sh', 'verify.sh',
                          'scripts/ci/verify-frontend.sh'):
             write(self.tree / relative, RECORDER.format(name=relative))
-        write(self.tree / 'scripts/dev/toolchain-env.sh', '# stub environment\n', 0o644)
+        # The real environment file: it assigns PURPURAGENDA_ROOT, which the runner must not make readonly.
+        shutil.copy2(ROOT / 'scripts/dev/toolchain-env.sh', self.tree / 'scripts/dev/toolchain-env.sh')
         write(self.tree / 'scripts/dev/demo_seed.py',
               'import os, sys\nopen(os.environ["FAKE_LOG"], "a").write("demo_seed.py " + " ".join(sys.argv[1:]) + "\\n")\n', 0o644)
         write(self.tree / 'scripts/ci/run-python-tests.py',
@@ -95,13 +96,34 @@ class DispatchTest(ScriptCase):
         self.bin = self.temp / 'bin'
         write(self.bin / 'docker', FAKE_DOCKER)
 
-    def run_script(self, *arguments, **extra):
+    def run_script(self, *arguments, script=None, **extra):
         environment = dict(os.environ, FAKE_LOG=str(self.log), PATH=str(self.bin) + os.pathsep + os.environ['PATH'],
                            PURPURAGENDA_DOCKER_DESKTOP_BIN=str(self.temp / 'no-desktop'))
         environment.update(extra)
         environment.pop('COMPOSE_FILE', None)
-        return subprocess.run([BASH, str(self.tree / 'purpuragenda.sh'), *arguments], cwd=self.temp,
+        return subprocess.run([BASH, script or str(self.tree / 'purpuragenda.sh'), *arguments], cwd=self.temp,
                               env=environment, capture_output=True, text=True, timeout=60)
+
+    def test_test_command_sources_the_real_toolchain_environment(self):
+        self.assertIn('PURPURAGENDA_ROOT=', (self.tree / 'scripts/dev/toolchain-env.sh').read_text())
+        result = self.run_script('test')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertNotIn('readonly', result.stderr)
+        self.assertIn('Fast checks passed', result.stdout)
+
+    def test_relative_invocation_ignores_cdpath(self):
+        decoy = self.temp / 'decoy'
+        write(decoy / 'tree/scripts/dev/local.sh', RECORDER.format(name='decoy'))
+        shutil.copy2(ROOT / 'verify.sh', self.tree / 'verify.sh')
+        write(self.tree / 'scripts/dev/verify_local.py',
+              'import os, sys\nopen(os.environ["FAKE_LOG"], "a").write("verify_local " + " ".join(sys.argv[1:]) + "\\n")\n', 0o644)
+        write(decoy / 'tree/scripts/dev/verify_local.py',
+              'import os\nopen(os.environ["FAKE_LOG"], "a").write("decoy\\n")\n', 0o644)
+        shutil.copy2(ROOT / 'scripts/dev/toolchain-env.sh', decoy / 'tree/scripts/dev/toolchain-env.sh')
+        self.assertEqual(0, self.run_script('up', script='tree/purpuragenda.sh', CDPATH=str(decoy)).returncode)
+        result = self.run_script('list', script='tree/verify.sh', CDPATH=str(decoy))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(['scripts/dev/local.sh up', 'verify_local list'], self.calls())
 
     def test_help_lists_every_command_with_examples(self):
         for arguments in (['help'], ['--help'], ['-h']):
@@ -186,7 +208,16 @@ class DispatchTest(ScriptCase):
 
     def test_verify_test_and_demo_seed_delegate(self):
         self.assertEqual(0, self.run_script('verify').returncode)
-        self.assertEqual(['verify.sh all'], self.calls())
+        self.assertEqual(0, self.run_script('verify', 'local').returncode)
+        self.assertEqual(0, self.run_script('verify', 'all').returncode)
+        self.assertEqual(['verify.sh local', 'verify.sh local', 'verify.sh all'], self.calls())
+        self.log.write_text('')
+        self.assertEqual(2, self.run_script('verify', 'release').returncode)
+        self.assertEqual(2, self.run_script('verify', 'local', 'all').returncode)
+        self.assertEqual([], self.calls())
+        help_text = self.run_script('verify', '--help').stdout
+        self.assertIn('local (default)', help_text)
+        self.assertIn('Not release evidence', help_text)
         self.log.write_text('')
         result = self.run_script('test')
         self.assertEqual(0, result.returncode, result.stderr)
@@ -217,7 +248,8 @@ class DoctorTest(ScriptCase):
         self.environment = {'PATH': str(self.bin), 'FAKE_LOG': str(self.log), 'HOME': str(self.temp),
                             'FAKE_UNAME_S': 'Linux', 'FAKE_UNAME_R': '6.8.0-45-generic', 'FAKE_UNAME_M': 'x86_64',
                             'FAKE_DF_KB': str(100 * 1024 * 1024), 'PURPURAGENDA_DOCTOR_PORTS': '',
-                            'PURPURAGENDA_DOCKER_DESKTOP_BIN': str(self.temp / 'no-desktop')}
+                            'PURPURAGENDA_DOCKER_DESKTOP_BIN': str(self.temp / 'no-desktop'),
+                            'PURPURAGENDA_WSL_INTEROP_FILE': str(self.temp / 'no-interop')}
 
     def doctor(self, **extra):
         return subprocess.run([BASH, str(self.tree / 'purpuragenda.sh'), 'doctor'], cwd=self.temp, env={**self.environment, **extra},
@@ -238,6 +270,7 @@ class DoctorTest(ScriptCase):
         self.assertIn('Docker Compose 2.29.7', result.stdout)
         self.assertIn('git version 2.47.0', result.stdout)
         self.assertIn('no blocking problems', result.stdout)
+        self.assertNotIn('loopback port', result.stdout)  # An empty port list is honoured, not defaulted.
 
     def test_operating_system_detection(self):
         cases = ((('Darwin', '24.6.0', 'x86_64'), 'macOS on Intel'), (('Darwin', '24.6.0', 'arm64'), 'macOS on Apple silicon'),
@@ -302,6 +335,29 @@ class DoctorTest(ScriptCase):
         probe.close()
         result = self.doctor(PURPURAGENDA_DOCTOR_PORTS=free)
         self.assertIn(f'[ok]   loopback port {free} is free', result.stdout)
+
+    def test_wsl1_warns_and_custom_wsl2_kernels_are_recognized(self):
+        result = self.doctor(FAKE_UNAME_R='4.4.0-19041-Microsoft')
+        self.assertIn('[warn] Linux on WSL1', result.stdout)
+        self.assertIn('Docker is not supported on WSL1', result.stdout)
+        self.assertIn('wsl --set-version', result.stdout)
+        self.assertNotIn('WSL2', result.stdout.split('Docker CLI')[0])
+        result = self.doctor(FAKE_UNAME_R='6.1.21-custom', WSL_INTEROP='/run/WSL/1_interop')
+        self.assertIn('[ok]   Linux on WSL2 with a custom kernel', result.stdout)
+        interop = self.temp / 'interop'
+        interop.write_text('enabled\n')
+        result = self.doctor(FAKE_UNAME_R='6.1.21-custom', PURPURAGENDA_WSL_INTEROP_FILE=str(interop))
+        self.assertIn('[ok]   Linux on WSL2 with a custom kernel', result.stdout)
+        result = self.doctor(FAKE_UNAME_R='6.1.21-custom')
+        self.assertIn('[ok]   Linux (x86_64, kernel 6.1.21-custom)', result.stdout)
+
+    def test_port_probe_errors_are_never_reported_free(self):
+        for port in ('70000', 'eighty'):
+            with self.subTest(port=port):
+                result = self.doctor(PURPURAGENDA_DOCTOR_PORTS=port)
+                self.assertEqual(1, result.returncode, result.stdout)
+                self.assertIn(f'[FAIL] could not check loopback port {port} (probe exit 3)', result.stdout)
+                self.assertNotIn('is free', result.stdout)
 
     def test_disk_space_thresholds(self):
         result = self.doctor(FAKE_DF_KB=str(1024 * 1024))

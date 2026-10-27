@@ -28,6 +28,22 @@ class SeedError(Exception):
     """A failure whose message is safe to print: never a token, cookie or response body."""
 
 
+class TransportError(SeedError):
+    """The request outcome is unknown (no HTTP response); only these and 5xx are retried."""
+
+
+class RefuseRedirects(urllib.request.HTTPRedirectHandler):
+    """Never follow a redirect: it would carry the cookie, CSRF value or proof token to another URL."""
+
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        return None
+
+
+def safe_opener():
+    # An empty ProxyHandler ignores http_proxy/https_proxy/all_proxy from the environment.
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirects())
+
+
 class Response:
     def __init__(self, status, headers, body):
         self.status, self.headers, self.body = status, headers, body
@@ -37,6 +53,12 @@ class Response:
             return json.loads(self.body.decode('utf-8'))
         except (UnicodeDecodeError, ValueError):
             raise SeedError('unexpected non-JSON response') from None
+
+    def refresh_availability(self):
+        try:
+            return json.loads(self.body.decode('utf-8')).get('refreshAvailability') is True
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            return False
 
     def problem_code(self):
         try:
@@ -52,7 +74,7 @@ class Http:
     def __init__(self, timeout=15, opener=None):
         self.timeout = timeout
         self.cookies = {}
-        self.opener = opener or urllib.request.build_opener()
+        self.opener = opener or safe_opener()
 
     def request(self, method, url, body=None, headers=None):
         data = None if body is None else json.dumps(body).encode('utf-8')
@@ -115,7 +137,7 @@ class Seeder:
         try:
             response = http.request(method, self.target + API + path, body, headers)
         except (urllib.error.URLError, OSError):
-            raise SeedError(f'{method} {path.split("?")[0]}: application not reachable at {self.target}') from None
+            raise TransportError(f'{method} {path.split("?")[0]}: application not reachable at {self.target}') from None
         if response.status not in expect:
             raise SeedError(describe(method, path.split('?')[0], response))
         return response
@@ -220,7 +242,8 @@ class Seeder:
                 self.out(f'Booking {number}: {receipt.get("bookingId")} pending approval, '
                          f'{chosen.get("businessDate")} {chosen.get("displayLocalTime")} {DISPLAY_ZONE} ({email})')
                 return receipt
-            if response.status == 409 and attempt < 2:
+            # Only a conflict the server marks refreshAvailability selects a new start (new key and body).
+            if response.status == 409 and response.refresh_availability() and attempt < 2:
                 self.used_starts.add(chosen['startInstant'])  # Taken meanwhile: choose another start.
                 continue
             raise SeedError(describe('POST', '/bookings', response))
@@ -231,9 +254,10 @@ class Seeder:
         key = str(uuid.uuid4())
         for attempt in range(3):
             try:
+                # Any other status (a deterministic 4xx) raises SeedError at once and is never retried.
                 response = self.api(http, 'POST', '/bookings', body, csrf, {'Idempotency-Key': key},
                                     expect=(201, 409) + RETRYABLE_STATUS)
-            except SeedError:
+            except TransportError:
                 if attempt == 2:
                     raise
                 self.sleep(2)

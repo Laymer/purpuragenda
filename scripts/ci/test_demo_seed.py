@@ -4,12 +4,14 @@ import http.server
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import secrets
 import threading
 import unittest
 from unittest import mock
 import urllib.parse
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('demo_seed', ROOT / 'scripts/dev/demo_seed.py')
@@ -25,6 +27,10 @@ class FakeStack:
         self.requests, self.sessions, self.tokens, self.messages = [], {}, {}, []
         self.secrets_seen = []
         self.fail_bookings = 0
+        # Scripted booking outcomes consumed first: 'drop' closes the connection without a response,
+        # (status, code, refreshAvailability) returns a problem.
+        self.booking_script = []
+        self.redirects = {}
         self.missing = set()
         self.bookings = {}
         self.slots = [{'startInstant': f'2030-01-0{day}T{hour}:00:00Z', 'sessionEndInstant': 'x',
@@ -69,6 +75,12 @@ class FakeStack:
         route = (method, parsed.path)
         if route in self.missing:
             return self.reply(handler, 404, b'', 'text/plain')
+        if route in self.redirects:
+            handler.send_response(302)
+            handler.send_header('Location', self.redirects[route])
+            handler.send_header('Content-Length', '0')
+            handler.end_headers()
+            return None
         if method == 'POST' and handler.headers.get('Origin') != self.url:
             return self.problem(handler, 403, 'ORIGIN_REJECTED')
         if method == 'POST' and parsed.path != '/api/v1/session/bootstrap' and (
@@ -115,6 +127,12 @@ class FakeStack:
         if route == ('POST', '/api/v1/bookings'):
             if session['role'] != 'GUEST':
                 return self.problem(handler, 403, 'ACCESS_DENIED')
+            if self.booking_script:
+                outcome = self.booking_script.pop(0)
+                if outcome == 'drop':
+                    handler.close_connection = True
+                    return None
+                return self.problem(handler, *outcome)
             if self.fail_bookings:
                 self.fail_bookings -= 1
                 return self.problem(handler, 503, 'TEMPORARILY_UNAVAILABLE')
@@ -126,9 +144,9 @@ class FakeStack:
             return self.reply(handler, 201, {'bookingId': identifier, 'version': 1})
         return self.problem(handler, 404, 'NOT_FOUND')
 
-    def problem(self, handler, status, code):
+    def problem(self, handler, status, code, refresh=False):
         return self.reply(handler, status, {'status': status, 'code': code, 'correlationId': 'x', 'retryable': False,
-                                            'refreshAvailability': False}, 'application/problem+json')
+                                            'refreshAvailability': refresh}, 'application/problem+json')
 
     def reply(self, handler, status, document, content_type='application/json', cookie=None):
         payload = document if isinstance(document, bytes) else json.dumps(document).encode()
@@ -200,6 +218,47 @@ class SeedTest(unittest.TestCase):
         self.assertEqual(1, len(self.stack.bookings))
         self.assertEqual([2], self.sleeps)
 
+    def bookings(self):
+        return [r for r in self.stack.requests if r['path'] == '/api/v1/bookings']
+
+    def test_lost_response_is_retried_with_the_same_key_and_body(self):
+        self.stack.booking_script = ['drop']
+        self.seeder().run(1)
+        bookings = self.bookings()
+        self.assertEqual(2, len(bookings))
+        self.assertEqual(bookings[0]['key'], bookings[1]['key'])
+        self.assertEqual(bookings[0]['body'], bookings[1]['body'])
+        self.assertEqual(1, len(self.stack.bookings))
+
+    def test_deterministic_client_errors_are_never_retried(self):
+        for outcome in ((400, 'INVALID_REQUEST'), (403, 'ACCESS_DENIED'), (422, 'INTAKE_INVALID'),
+                        (409, 'IDEMPOTENCY_CONFLICT'), (429, 'RATE_LIMITED')):
+            with self.subTest(outcome=outcome):
+                before = len(self.bookings())
+                self.stack.booking_script = [outcome]
+                with self.assertRaises(SEED.SeedError) as raised:
+                    self.seeder().run(1)
+                self.assertEqual(f'POST /bookings failed with HTTP {outcome[0]} {outcome[1]}', str(raised.exception))
+                self.assertEqual(before + 1, len(self.bookings()))
+                self.assertEqual([], self.sleeps)
+        self.assertEqual({}, self.stack.bookings)
+
+    def test_taken_start_selects_a_new_start_with_a_new_key(self):
+        self.stack.booking_script = [(409, 'START_NOT_AVAILABLE', True)]
+        self.seeder().run(1)
+        first, second = self.bookings()
+        self.assertNotEqual(first['key'], second['key'])
+        self.assertNotEqual(first['body']['startInstant'], second['body']['startInstant'])
+
+    def test_redirects_are_not_followed_with_session_credentials(self):
+        elsewhere = FakeStack()
+        self.addCleanup(elsewhere.close)
+        self.stack.redirects[('POST', '/api/v1/session/bootstrap')] = elsewhere.url + '/collect'
+        with self.assertRaises(SEED.SeedError) as raised:
+            self.seeder().run(1)
+        self.assertEqual('POST /session/bootstrap failed with HTTP 302', str(raised.exception))
+        self.assertEqual([], elsewhere.requests)
+
     def test_missing_endpoint_fails_with_a_clear_message(self):
         self.stack.missing.add(('POST', '/api/v1/guest/create-proofs'))
         with self.assertRaises(SEED.SeedError) as raised:
@@ -234,6 +293,40 @@ class SeedTest(unittest.TestCase):
             self.assertEqual(1, SEED.main([], seeder_factory=lambda target, mailpit: seeder))
         self.assertIn('DEMO_SEED_FAILED: POST /bookings is not available', errors.getvalue())
         self.assert_no_secret_in(errors.getvalue() + '\n'.join(self.output))
+
+
+class OpenerTest(unittest.TestCase):
+    """The default client ignores proxy variables and never follows redirects."""
+
+    def setUp(self):
+        self.stack, self.proxy, self.elsewhere = FakeStack(), FakeStack(), FakeStack()
+        for server in (self.stack, self.proxy, self.elsewhere):
+            self.addCleanup(server.close)
+        variables = {'http_proxy': self.proxy.url, 'HTTP_PROXY': self.proxy.url, 'all_proxy': self.proxy.url,
+                     'no_proxy': '', 'NO_PROXY': ''}
+        patcher = mock.patch.dict(os.environ, variables)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_environment_proxy_is_ignored(self):
+        # An empty ProxyHandler replaces the default one and registers no proxy-capable methods.
+        self.assertFalse([h for h in SEED.Http().opener.handlers if isinstance(h, urllib.request.ProxyHandler)])
+        response = SEED.Http().request('GET', self.stack.url + '/healthz', headers={'X-CSRF-Token': 'synthetic'})
+        self.assertEqual(200, response.status)
+        self.assertEqual([], self.proxy.requests)
+        self.assertEqual(['/healthz'], [r['path'] for r in self.stack.requests])
+        # Sensitivity check: the stock opener in this environment would have used the proxy.
+        with contextlib.suppress(Exception):
+            urllib.request.build_opener().open(self.stack.url + '/healthz', timeout=5).close()
+        self.assertEqual(1, len(self.proxy.requests))
+
+    def test_redirect_is_returned_not_followed(self):
+        self.stack.redirects[('GET', '/start')] = self.elsewhere.url + '/collect'
+        client = SEED.Http()
+        client.cookies['purpuragenda-local'] = 'synthetic-cookie'
+        response = client.request('GET', self.stack.url + '/start', headers={'X-CSRF-Token': 'synthetic'})
+        self.assertEqual(302, response.status)
+        self.assertEqual([], self.elsewhere.requests)
 
 
 class RefusalTest(unittest.TestCase):

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 case "$0" in
-  */*) root="$(cd "${0%/*}" && pwd)" ;;
+  */*) root="$(CDPATH='' cd -- "${0%/*}" && pwd)" ;;
   *) root="$(pwd)" ;;
 esac
 
@@ -18,10 +18,14 @@ Commands:
          Fails closed on a missing tool, a missing report, an implemented suite without a
          local command, or a suite that needs another host (macOS, native Windows or the
          GitHub CodeQL action); hosted CI stays the merge gate for those.
+  local  Run every implemented suite this host can run with the same scripts. Suites that
+         need another host are reported SKIPPED (HOSTED-ONLY or HOST). This is a developer
+         check, NOT release evidence. Exits 0 only when every locally runnable suite passed.
   list   Show the suite-to-command mapping without running anything.
   help   Show this help.
 
 Examples:
+  ./verify.sh local
   ./verify.sh all
   ./verify.sh list
 EOF
@@ -29,7 +33,7 @@ EOF
 
 case "${1:-}" in
   help|--help|-h) usage; exit 0 ;;
-  all|list) (( $# == 1 )) || { usage >&2; exit 2; } ;;
+  all|local|list) (( $# == 1 )) || { usage >&2; exit 2; } ;;
   *) usage >&2; exit 2 ;;
 esac
 
