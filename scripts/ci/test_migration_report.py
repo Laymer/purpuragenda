@@ -118,6 +118,22 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.PublicSchedulingPostgresTest" tests="3">' + '<testcase/>' * 3 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_periodic_expiry_requires_actual_transaction_rollback_lock_and_race_cases(self):
+        self.write()
+        source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/DueBookingExpiry.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic maintenance implementation')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+            GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.SchedulingMaintenancePostgresTest.xml')
+        for count, actual, nested in ((5, 5, ''), (6, 5, ''), (6, 6, '<failure/>'), (6, 6, '<error/>'), (6, 6, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.SchedulingMaintenancePostgresTest" tests="{count}">' +
+                              '<testcase/>' * (actual - 1) + f'<testcase>{nested}</testcase></testsuite>')
+            with self.assertRaises(ValueError):
+                GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.SchedulingMaintenancePostgresTest" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_expiry_requires_its_own_complete_unskipped_database_suite(self):
         self.write()
         source = self.root / 'backend/application/src/main/java/com/purpuragenda/application/scheduling/ExpiryReclamation.java'
@@ -170,11 +186,13 @@ class MigrationReportTest(unittest.TestCase):
         report = self.root / 'backend/bootstrap/target/surefire-reports/TEST-com.purpuragenda.bootstrap.RuntimeDatabaseTest.xml'
         report.parent.mkdir(parents=True)
         qualified = 'com.purpuragenda.bootstrap.RuntimeDatabaseTest'
-        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 13, ''), ('<testcase/>' * 14, 'errors="1"'),
-                                  ('<testcase><skipped/></testcase>' * 14, ''), ('<testcase><error/></testcase>' * 14, '')):
-            report.write_text(f'<testsuite name="{qualified}" tests="14" {attributes}>{cases}</testsuite>')
+        for cases, attributes in (('', ''), ('<testcase/>', ''), ('<testcase/>' * 14, ''), ('<testcase/>' * 15, 'errors="1"'),
+                                  ('<testcase><skipped/></testcase>' * 15, ''), ('<testcase><error/></testcase>' * 15, '')):
+            report.write_text(f'<testsuite name="{qualified}" tests="15" {attributes}>{cases}</testsuite>')
             with self.assertRaises(ValueError): GATE.validate(self.root)
         report.write_text(f'<testsuite name="{qualified}" tests="14">' + '<testcase/>' * 14 + '</testsuite>')
+        with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text(f'<testsuite name="{qualified}" tests="15">' + '<testcase/>' * 15 + '</testsuite>')
         GATE.validate(self.root)
 
     def test_operator_migration_requires_its_own_database_report(self):
