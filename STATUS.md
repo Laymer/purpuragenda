@@ -20,14 +20,14 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P14 — Complete durable SMTP delivery, encrypted authentication envelopes and fenced leases | In progress; queue/SMTP/auth persistence and worker https://github.com/Laymer/purpuragenda/pull/36 merged526290f; heartbeat/fenced callbacks/expiry sweep verified; operational composition remains P45 |
 | P15 — Complete guest email proof, scoped management access and recovery | In progress; redemption PR40 merged765cbf5; management recovery https://github.com/Laymer/purpuragenda/pull/44 merged9ac2f8d; protected HTTP/session integration remains P17 |
 | P16 — Complete private administrator bootstrap, password/TOTP authentication and recovery | In progress; private bootstrap PR27, MFA PR29, recovery isolation PR33 and persisted recovery https://github.com/Laymer/purpuragenda/pull/41 merged0cbfc88; operator and secure HTTP integration remain |
-| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; recovery HTTP remains |
+| P17 — Complete JDBC sessions, CSRF, canonical-origin checks, throttles and cleanup | In progress; sessions/origin/CSRF/throttles/cleanup and guest proof HTTP https://github.com/Laymer/purpuragenda/pull/68 confirmed merged8f346ad; administrator login PR71 confirmed merged d96e0a6 after all required gates; restricted recovery HTTP https://github.com/Laymer/purpuragenda/pull/75 confirmed merged538e335 after all required gates; broader authentication acceptance remains |
 | P18 — Complete optional accounts, immutable login identity and separate profile storage | In progress; explicit optional enrollment https://github.com/Laymer/purpuragenda/pull/66 confirmed merged5d7d8be with migrations015/016; account authenticationPR73 confirmed mergedcde517c after1013Java/11Angular/242Python/all14hosted/Compose6/review;017 proofs/epochs implemented; profile/history and HTTP remain |
 | P19 — Complete public service and availability HTTP contracts | Merged; public services/advisory availability https://github.com/Laymer/purpuragenda/pull/61 confirmedf654c53; booking-context https://github.com/Laymer/purpuragenda/pull/74 confirmed mergedaffe433 after all required gates; full browser/load acceptance remains separate |
 | P20 — Complete protected booking creation and customer-change HTTP contracts | In progress; query PR69 confirmed merged f99a8dd; customer HTTPPR72 confirmed merged8702161 after1032Java/30Angular/245Python/all14hosted/Compose6/review |
 | P21 — Complete administrator receipt, confirmation and refund commands and APIs | In progress; receiptsPR56 merged2f9c894, approvalPR59 mergeda322914, refunds https://github.com/Laymer/purpuragenda/pull/62 merged0128f21; HTTP remains P22 |
 | P22 — Complete administrator booking, service and schedule APIs with version checks | In progress; authorized queryPR76 and stacked admin-read-http; command APIs remain |
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
-| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; shared memory-only session/CSRF/intent layerPR78 and verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83;109Angular tests/build pass, real browser/full integrated gates pending |
+| P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main cc3fe39, 110Angular tests/build pass locally and prior head963d25b passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,7 +61,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P24/booking-flow: agent=Codex-coordinator; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/p24-booking-flow.md
+- P24/booking-flow: agent=Claude-lane-b; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/p24-booking-flow.md
 
 
 - P18/password-change: agent=Codex-worker-a; branch=task/p18-password-change; base=main; handoff=docs/handoffs/p18-password-change.md
@@ -69,12 +69,12 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-26T23:58:00Z.
+- Agent and UTC checkpoint: Claude-lane-b, 2026-10-27T06:45:00Z.
 - Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/83.
-- Last pushed implementation commit: e06481b; uncommitted changes: append-only confirmed worker79/maincc3fe39 integration with incoming meaningful runtime/maintenance tests.
-- What works: real typed email issuance/redemption, memory-only fragment capture before router startup, intake validation, authoritative plaintext review/consent, immutable submission with explicit uncertain retries, and actual booking status rendering are implemented.
-- What remains: fresh integrated source review and current-main full native/hosted/Compose gates. Exactde64 real PostgreSQL/Mailpit full journey passed3Chromium viewports, final source review approved. Customer management/account/admin UI remain separate slices.
-- Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits. Account/admin UI and management changes remain separate slices.
-- Verification: full frontend verifier passes109Angular tests and production build; complete handwritten coverage406/409lines393/416branches, strict CSP passes. Log /private/tmp/p24-main74-frontend.log. 248strictPython, documentation and regenerated contract checks pass at the implementation checkpoint. Independent findings reproduced99tests/7failures for late private responses, cleared selection during bootstrap and wrong-path fragments; keyboard91tests/1failure and IDNA100tests/1failure separately reproduced, then all100pass. Sanitized failure counts retained. Full backend/browser checks are not yet claimed.
-- Next concrete action: publish current-main integration, run fresh full native/hosted/Compose gates and obtain exact review; shared-access78 remains the unmerged prerequisite.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies:78;74 confirmed mergedaffe433,75 merged538e335,72 merged8702161; public selection70 confirmed merged6fc7e0a.
+- Last pushed implementation commit: 963d25b; uncommitted changes: restored main's P17 ledger row lost in an earlier merge resolution, claim reassigned to Claude-lane-b, bootstrap-failure test added.
+- What works: real typed email issuance/redemption, memory-only fragment capture before router startup, intake validation, authoritative plaintext review/consent, immutable submission with explicit uncertain retries, and actual booking status rendering are implemented. PR78 shared access is included byte-identically and is closed as subsumed.
+- What remains: independent exact-head review, then coordinator squash merge. Customer management/account/admin UI remain separate slices; P27 admin auth UI PR87 is stacked on this branch.
+- Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits.
+- Verification: branch already contains main cc3fe39 (no merge needed). Local verify-frontend passes110Angular tests and production build; handwritten coverage407/409lines393/416branches. Prior head963d25b passed all14hosted checks. Docker unavailable locally, so Compose/backend runs rely on hosted CI; local system Python3.14 runs248/249 CI tests, the unchanged native-toolchain tar-link case needs the pinned Python and passes hosted. Earlier sanitized failure counts (99tests/7failures, 91/1, 100/1) retained in docs/status.md.
+- Next concrete action: gh pr checks 83 --watch on the new head, then request independent review.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies: none unmerged (74, 75, 72, 70, 79 merged); PR87 depends on this PR.

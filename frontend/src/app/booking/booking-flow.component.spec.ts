@@ -46,6 +46,13 @@ describe('Real typed booking flow and private state', () => {
     flow.choose(choice); const pending = flow.begin(); await flow.begin(); await settle(); http.expectOne('/api/v1/session/bootstrap').flush(session('ADMIN')); await pending;
     expect(flow.phase()).toBe('choose'); expect(flow.message()).toContain('administrator');
   });
+  it('keeps the selection and hides provider detail when the session bootstrap fails, then allows a clean retry', async () => {
+    const start = flow.begin(); await settle();
+    http.expectOne('/api/v1/session/bootstrap').flush({ detail: 'synthetic-provider-detail' }, { status: 503, statusText: 'Unavailable' }); await start;
+    expect(flow.phase()).toBe('choose'); expect(flow.selection()).toBe(choice); expect(flow.busy()).toBe(false);
+    expect(flow.message()).toContain('could not complete'); expect(flow.message()).not.toContain('synthetic-provider-detail');
+    await enter(); expect(flow.phase()).toBe('intake'); expect(flow.message()).toBe('');
+  });
   it('requests a real email with CSRF, enforces cooldown, and refreshes a rotated browser session explicitly', async () => {
     await enter('ANONYMOUS'); expect(flow.phase()).toBe('email');
     await flow.requestEmail(); http.expectNone('/api/v1/guest/create-proofs');
