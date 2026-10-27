@@ -1,11 +1,11 @@
 # P24/booking-flow (1.0.0 local release lane)
 
-- Agent and UTC checkpoint: Claude-lane-b, 2026-10-27T12:00:00Z.
-- Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: see scope below.
-- Last pushed implementation commit: unchanged existing PR heads; uncommitted changes: none.
-- What works: Codex claims released; existing draft PR heads preserved without force-push.
-- What remains: #83 verified booking flow (subsumes #78); current-main integration, all hosted checks and independent exact-head review before coordinator squash merge.
-- Decisions: 2026-10-27 local 1.0.0 release scope in docs/decisions.md; stacked children are retargeted to main after their base merges.
-- Verification: none claimed by this claim record; evidence is recorded per PR in docs/status.md.
-- Next concrete action: merge current main or the new base into the PR branch and run scripts/ci/verify-build.sh.
-- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing branch preserved; stacked PR dependencies: #83 verified booking flow (subsumes #78).
+- Agent and UTC checkpoint: Claude-lane-b, 2026-10-27T09:10:00Z.
+- Current task: P24/booking-flow; branch: task/p24-booking-flow; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/83.
+- Last pushed implementation commit: 9f26df2 (restored main's P17 ledger row, claim reassigned to Claude-lane-b, bootstrap-failure test); then 07fd411 merged main68f898b (PR81); then 7b262e3 merged main525e4a6; uncommitted changes: merge of main d2d4dfe (#81,#89,#91), ledger conflicts resolved keeping main's claims/evidence and re-applying P24 entries.
+- What works: real typed email issuance/redemption, memory-only fragment capture before router startup, intake validation, authoritative plaintext review/consent, immutable submission with explicit uncertain retries, and actual booking status rendering are implemented. PR78 shared access is included byte-identically and is closed as subsumed.
+- What remains: independent exact-head review, then coordinator squash merge. Customer management/account/admin UI remain separate slices; P27 admin auth UI PR87 is stacked on this branch.
+- Decisions: root owns main/app routes; use generated API and shared access, no mocked backend. Capture and scrub verification fragments before router startup; keep tokens/intake in memory only. No migration or contract edits.
+- Verification: merged main68f898b,525e4a6,56e9856 and d2d4dfe (no frontend/contract changes); Local verify-frontend passes110Angular tests and production build; handwritten coverage407/409lines393/416branches. Heads963d25b,9f26df2 and07fd411 passed all14hosted checks (07fd411 after one transient toolchain-download rerun). Docker unavailable locally, so Compose/backend runs rely on hosted CI; local system Python3.14 runs251/252 CI tests, the unchanged native-toolchain tar-link case needs the pinned Python and passes hosted. Earlier sanitized failure counts (99tests/7failures, 91/1, 100/1) retained in docs/status.md.
+- Next concrete action: gh pr checks 83 --watch on the new head, then request independent review.
+- Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing worktree/secret/volume retained; stacked PR dependencies: none unmerged (74, 75, 72, 70, 79, 81, 89 merged); PR87 depends on this PR.
