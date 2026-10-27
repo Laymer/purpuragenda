@@ -181,7 +181,7 @@ class ReminderDatabaseTest {
         jdbc.update("INSERT INTO notification_job(id,audience,template,due_at,state,grace_seconds) VALUES(?,'OWNER','LEGACY_NOTICE',?,'QUEUED',900)",id,Timestamp.from(NOW));
         var ready=new DatabaseReadiness(source,new PostgresScheduling(source));assertEquals(Status.DOWN,ready.health().getStatus());
         fixture.migrate(0);fixture.migrate(0);assertEquals(Status.UP,ready.health().getStatus());
-        assertEquals(17,fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(18,fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,count("notification_job WHERE id='"+id+"' AND state='QUEUED' AND scheduled_at IS NULL AND grace_seconds=900"));
         assertEquals(NOW,jdbc.queryForObject("SELECT due_at FROM notification_job WHERE id=?",Timestamp.class,id).toInstant());
     }
