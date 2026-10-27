@@ -51,6 +51,8 @@ STEPS = {
                          reports=('artifacts/security/dependencies.json', 'artifacts/security/java.cdx.json')),
     'persistence': Step(commands=((PYTHON, 'scripts/ci/verify-compose.py'),), tools=('git', 'docker-daemon'),
                         reports=('artifacts/compose/persistence.json',)),
+    'e2e-core': Step(commands=((PYTHON, 'scripts/ci/verify-e2e.py'),), tools=('git', 'docker-daemon', 'java'),
+                     reports=('artifacts/e2e/core-journey.json',)),
     'macos-bootstrap': Step(commands=((PYTHON, 'scripts/ci/check-toolchain.py'),
                                       (PYTHON, 'scripts/ci/run-python-tests.py', '--start', 'scripts/ci'),
                                       (PYTHON, 'scripts/ci/run-python-tests.py', '--start', 'scripts/ci/tests'),
@@ -71,6 +73,7 @@ SUITE_STEPS = {
     'dependencies': 'dependencies',
     'sast': 'sast',
     'persistence': 'persistence',
+    'e2e-core': 'e2e-core',
     'macos-bootstrap': 'macos-bootstrap',
     'windows-preflight': 'windows-preflight',
 }
