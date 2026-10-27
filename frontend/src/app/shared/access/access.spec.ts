@@ -220,6 +220,15 @@ describe('Shared in-memory session and frozen command access', () => {
   });
 });
 
+describe('Conflict codes', () => {
+  it('exposes only a short uppercase conflict code, never arbitrary provider text', () => {
+    const code = (value: unknown) => safeFailure(new HttpErrorResponse({ status: 409, error: { code: value } }), true).code;
+    expect(code('MEETING_IN_USE')).toBe('MEETING_IN_USE'); expect(code('lower case provider text')).toBeUndefined();
+    expect(code(42)).toBeUndefined(); expect(code('A'.repeat(41))).toBeUndefined();
+    expect(safeFailure(new HttpErrorResponse({ status: 412, error: { code: 'MEETING_IN_USE' } }), true).code).toBeUndefined();
+  });
+});
+
 describe('Safe transport failures and Retry-After', () => {
   it('projects only known safe categories and never provider bodies or error causes', () => {
     for (const [status, kind] of [[401, 'SESSION_EXPIRED'], [403, 'REJECTED'], [409, 'CONFLICT'], [412, 'VERSION_CONFLICT'], [0, 'UNCERTAIN'], [200, 'UNCERTAIN'], [408, 'UNCERTAIN'], [503, 'UNCERTAIN']] as const) {

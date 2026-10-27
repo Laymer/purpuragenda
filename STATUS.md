@@ -30,7 +30,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main d2d4dfe; 110Angular tests/build pass locally and heads9f26df2/07fd411 passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management target discovery https://github.com/Laymer/purpuragenda/pull/85 under Claude lane B; status/cancel/reschedule UI is the 1.0.0 core slice; dependencies in docs/delivery.md |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
-| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | In progress; administrator MFA sign-in UI https://github.com/Laymer/purpuragenda/pull/87 under Claude lane B, independently approved at5a5cec4 and integrated with main1557af0 (PR83/PR92 merged); focus-to-error and email autocapitalize/spellcheck review nits applied; agenda, pending queue and approval UI remain |
+| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | In progress; administrator MFA sign-in UI https://github.com/Laymer/purpuragenda/pull/87 merged e2429f1; agenda, pending queue, detail and approval UI draft https://github.com/Laymer/purpuragenda/pull/95 stacked on unmerged HTTP stack (PR76/80/93); 172 Angular tests/build pass locally, hosted gates and review pending; confirm-external-payment and rejection (no API endpoint) remain follow-ups |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -66,7 +66,7 @@ Online payments are deferred and are not unfinished version 1 implementation.
 - P22/admin-http: agent=Claude-lane-c; branch=task/p22-admin-read-http; base=main; handoff=docs/handoffs/claude-p22-admin-http.md
 - P24/booking-flow: agent=Claude-lane-b; branch=task/p24-booking-flow; base=main; handoff=docs/handoffs/claude-p24-booking-flow.md
 - P25/management-ui: agent=Claude-lane-b; branch=task/p25-management-target; base=main; handoff=docs/handoffs/claude-p25-management-ui.md
-- P27/admin-ui: agent=Claude-lane-b; branch=task/p27-admin-auth-ui; base=main; handoff=docs/handoffs/claude-p27-admin-ui.md
+- P27/admin-ui: agent=Claude-lane-b; branch=task/p27-admin-agenda; base=main; handoff=docs/handoffs/claude-p27-admin-ui.md
 - P36/reminders: agent=Claude-lane-a; branch=task/p36-reminders; base=main; handoff=docs/handoffs/claude-p36-reminders.md
 - P49/run-script: agent=Claude-lane-a; branch=task/p49-run-script; base=main; handoff=docs/handoffs/claude-p49-run-script.md
 
