@@ -802,6 +802,7 @@ P19 corrected targeted reactor passed17domain,4application,3HTTP,3notice configu
 P19 final focused27Java cases pass after unknown-mode regression (35.570s), and240strictPython pass. Documentation preflight initially found the new claim still attached to the prior completed P19 catalog row; set the task back to In progress while retaining merged catalog evidence. Backend checkpoint is publishable; contract/client and every full integrated category remain pending.
 
 
+
 ### 2026-10-26 — P17 restricted recovery HTTP implementation checkpoint
 
 PR71 administrator login is confirmed merged d96e0a65a51c96b2c3b7cd9b22659596cb3b1474 at18:39:37Z after exactba8 source review, all14hosted,921Java/11Angular/237Python, coverage and clean localCompose6. The earlier Docker interruption remains failed evidence and was superseded by a complete fresh native run, not retried into a purported first-run pass.
@@ -1030,3 +1031,7 @@ HOLD_EXPIRED approval coverage (Claude-lane-c): the domain rule is asserted in B
 P27 adopts frozen booking-flow83/current-main79 checkpoint963d25b append-only. Auth source remains independently approvedcad7e8a; existing /book wizard and /verify landing, strict CSP and shared in-memory access remain unchanged. Incoming worker/runtime/maintenance tests make integration meaningful. Fresh targeted frontend/Python checks pending; full current-main native/hosted/Compose and browser acceptance still required after78/83 prerequisite merges.
 
 P27 frozen83/main79 integration targeted verifier passes122Angular cases, production build/strict CSP,467/470handwrittenlines452/486branches and249strictPython; docs/diff pass. Administrator source unchanged from independently reviewedcad7e8a. No native/hosted/Compose or browser completion claimed for this integration.
+
+HOLD_EXPIRED approval coverage (Claude-lane-c): the domain rule is asserted in BookingTest (approve at exactly the hold expiry returns HOLD_EXPIRED) and the application path is asserted in AdministratorFinanceTest.staleTerminalExpiredInvalidAndSharedMeetingsAreExpectedFailuresWithoutEffects (due hold is reclaimed first, the stale reviewed version fails, and the expired hold is never revived). No further test was added for this path.
+
+P27 agenda/approval UI (Claude-lane-b, 2026-10-27) draft PR 95 from the PR93 finance HTTP stack plus main e2429f1-era merge: guarded lazy /admin shell, Brussels-range agenda with cursor paging and pending queue, detail with ETag If-Match and frozen idempotent approval. Local verify-frontend passes with695/698lines635/680branches; two first-run spec failures (login redirect test expecting a second bootstrap, and a 401 case asserting navigation that the access layer performs via invalidation) were corrected in the tests, not the gates. Hosted gates and independent review pending.
