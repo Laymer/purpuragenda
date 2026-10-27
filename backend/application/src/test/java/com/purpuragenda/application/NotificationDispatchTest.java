@@ -33,6 +33,9 @@ class NotificationDispatchTest {
         expected.put("PAYMENT_RECONCILIATION_REQUIRED",List.of("OWNER:OWNER_ACTION_RECONCILIATION"));
         expected.put("REFUND_REQUIRED",List.of("OWNER:OWNER_ACTION_REFUND"));
         expected.put("CONFIGURATION_CONFLICT",List.of());
+        for(String type:List.of("ADMIN_CREATED","APPROVED","CONFIRMED_EXTERNAL_PAYMENT","RESCHEDULED")) {
+            var all=new ArrayList<>(expected.get(type));all.add("CUSTOMER:REMINDER_48H");all.add("CUSTOMER:REMINDER_2H");expected.put(type,all);
+        }
         expected.forEach((type,specs)->{
             var plan=assertInstanceOf(Jobs.class,NotificationPlanner.plan(type),type);
             assertEquals(specs,plan.specs().stream().map(s->s.audience()+":"+s.template()).toList(),type);
@@ -134,7 +137,7 @@ class NotificationDispatchTest {
         assertEquals("Action needed: payment reconciliation",message(prepare("OWNER","OWNER_ACTION_RECONCILIATION","EXPIRED",none)).subject());
         assertEquals("Payment recorded",message(prepare("OWNER","OWNER_PAYMENT_RECORDED","CONFIRMED",none)).subject());
         // Facts have no field for intake, notes or tokens: names, telephone and birth data cannot reach a body.
-        assertEquals(List.of("jobId","audience","template","jobVersion","recipient","reference","serviceName","state","start","expiresAt","meetingUrl","laterEventTypes","now"),
+        assertEquals(List.of("jobId","audience","template","jobVersion","recipient","reference","serviceName","state","start","expiresAt","meetingUrl","laterEventTypes","now","scheduledAt","graceSeconds"),
                 Arrays.stream(Facts.class.getRecordComponents()).map(c->c.getName()).toList());
         var sample=facts("CUSTOMER","BOOKING_REQUESTED","CONFIRMED",none,null,"a@example.test");
         assertEquals("NotificationFacts[job="+sample.jobId()+", content=REDACTED]",sample.toString());

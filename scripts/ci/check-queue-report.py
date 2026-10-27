@@ -33,6 +33,20 @@ def validate(root):
             raise ValueError('Failed or skipped booking notification cases')
 
 
+    if (root / 'backend/adapters/src/main/resources/db/changelog/014-reminder-deadlines.sql').is_file():
+        report = root / 'backend/adapters/target/surefire-reports/TEST-com.purpuragenda.adapters.ReminderDatabaseTest.xml'
+        if not report.is_file():
+            raise ValueError('Missing mandatory reminder report')
+        suite = ET.parse(report).getroot()
+        count = int(suite.get('tests', '0'))
+        if (suite.get('name') != 'com.purpuragenda.adapters.ReminderDatabaseTest'
+                or count < 25 or count != len(list(suite.iter('testcase')))):
+            raise ValueError('Incomplete mandatory reminder suite')
+        if (any(int(suite.get(key, '0')) for key in ('failures', 'errors', 'skipped'))
+                or any(list(suite.iter(tag)) for tag in ('failure', 'error', 'skipped'))):
+            raise ValueError('Failed or skipped reminder cases')
+
+
 if __name__ == '__main__':
     try:
         validate(Path(__file__).resolve().parents[2])
