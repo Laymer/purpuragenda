@@ -40,7 +40,7 @@ def validate(root):
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerBookingQuery.java').is_file():
         suites.append(('CustomerBookingQueryPostgresTest', 22))
     if (root / 'backend/application/src/main/java/com/purpuragenda/application/AccountEnrollmentRequest.java').is_file():
-        suites.append(('AccountEnrollmentBudgetDatabaseTest', 5))
+        suites.append(('AccountEnrollmentBudgetDatabaseTest', 6))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresRateLimits.java').is_file():
         suites.append(('RateLimitDatabaseTest', 21))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/security/PostgresSecurityCleanup.java').is_file():

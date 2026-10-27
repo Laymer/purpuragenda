@@ -56,6 +56,24 @@ class AccountEnrollmentBudgetDatabaseTest {
         assertEquals(micros<0,invoke(command,proof).enrolled());assertEquals(micros<0?0:1,charged());
         assertEquals(micros<0?1:0,enrollment.count("customer_account"));
     }
+    @Test void failedAuditRollsBackEnrollmentButKeepsItsIndependentNetworkChargeAndRedeemableProof() throws Exception {
+        var proof=enrollment.proof("synthetic@example.test");var command=request(enrollment.store,()->{});
+        try(var connection=enrollment.c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"CREATE FUNCTION reject_budget_enrollment() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.type='ACCOUNT_ENROLLED' THEN RAISE EXCEPTION 'SYNTHETIC_FAILURE'; END IF; RETURN NEW; END $$");
+            MigrationTest.execute(connection,"CREATE TRIGGER reject_budget_enrollment BEFORE INSERT ON audit_event FOR EACH ROW EXECUTE FUNCTION reject_budget_enrollment()");
+        }
+        var failure=assertThrows(IllegalStateException.class,()->invoke(command,proof));
+        assertEquals("ACCOUNT_ENROLLMENT_UNAVAILABLE",failure.getMessage());assertNull(failure.getCause());assertEquals(0,failure.getSuppressed().length);
+        assertEquals(1,charged());assertEquals(0,enrollment.count("customer_account"));assertEquals(0,enrollment.count("customer_identity"));assertEquals(0,enrollment.count("customer_profile"));
+        assertEquals(0,enrollment.count("audit_event WHERE type='ACCOUNT_ENROLLED'"));
+        assertNull(enrollment.value("SELECT consumed_at FROM email_challenge WHERE id=?",proof.id()));
+        try(var connection=enrollment.c.f.database.connection(MigrationTest.MIGRATOR)) {
+            MigrationTest.execute(connection,"DROP TRIGGER reject_budget_enrollment ON audit_event");
+        }
+        assertTrue(invoke(command,proof).enrolled());assertEquals(1,charged());
+        assertEquals(1,enrollment.count("customer_account"));assertEquals(1,enrollment.count("audit_event WHERE type='ACCOUNT_ENROLLED'"));
+    }
+
     @Test void twoCompositionsAndTwentyCallersAllowOnlyFiveDerivationsAndOneEnrollment() throws Exception {
         var proof=enrollment.proof("synthetic@example.test");var entered=new CountDownLatch(5);var release=new CountDownLatch(1);
         Runnable hold=()->{entered.countDown();try {if(!release.await(30,TimeUnit.SECONDS))throw new AssertionError("Hash gate timed out");}catch(InterruptedException failure){Thread.currentThread().interrupt();throw new AssertionError("Interrupted synthetic hash");}};
