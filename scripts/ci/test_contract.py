@@ -12,6 +12,17 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_rescheduling_advice_is_private_and_has_no_service_or_mutation_parameters(self):
+        operation = self.document['paths']['/bookings/{bookingId}/availability']['get']
+        self.assertEqual([{'sessionCookie': []}], operation['security'])
+        self.assertEqual({'bookingId', 'from', 'to', 'displayZone'}, {value['name'] for value in operation['parameters']})
+        self.assertTrue(all(value['required'] for value in operation['parameters']))
+        self.assertNotIn('requestBody', operation)
+        self.assertIn('401', operation['responses'])
+        self.assertIn('404', operation['responses'])
+        self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+        self.assertEqual(self.document['paths']['/availability']['get']['responses']['200']['content'], operation['responses']['200']['content'])
+
     def test_guest_booking_discovery_is_scoped_and_never_accepts_a_target(self):
         operation = self.document['paths']['/guest/booking']['get']
         self.assertEqual('getGuestBooking', operation['operationId'])
@@ -51,7 +62,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
                           'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
                           'recordAdministratorReceipt', 'approveAdministratorBooking', 'confirmAdministratorExternalPayment', 'recordAdministratorRefund', 'requireAdministratorRefund',
-                          'createBooking', 'getBooking', 'getGuestBooking', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
+                          'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)
