@@ -8,10 +8,11 @@ import { ConsultationSelection, offsetLabel, slotLabel } from '../public/selecti
 import { BookingReceipt, BookingReviewContext, BookingsService, CatalogService, CustomerBookingStatus, GuestService } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
+import { BookingStatusComponent, zonedInstant } from '../shared/booking-status.component';
 import { AccessFailure, safeFailure } from '../shared/access/access-failure';
 
 @Component({
-  imports: [ServiceTimeComponent, ReactiveFormsModule, MatButtonModule, CurrencyPipe],
+  imports: [ServiceTimeComponent, BookingStatusComponent, ReactiveFormsModule, MatButtonModule, CurrencyPipe],
   templateUrl: './booking-flow.component.html', styleUrl: './booking-flow.component.css',
 })
 export class BookingFlowComponent {
@@ -46,11 +47,7 @@ export class BookingFlowComponent {
   });
   readonly label = slotLabel;
   readonly offset = offsetLabel;
-  readonly inZone = (instant: string, zone: string) => {
-    const date = new Date(instant);
-    const offset = new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'longOffset' }).formatToParts(date).find(part => part.type === 'timeZoneName')!.value.replace(/^GMT$/, 'UTC+00:00').replace(/^GMT/, 'UTC');
-    return new Intl.DateTimeFormat('en', { dateStyle: 'full', timeStyle: 'short', timeZone: zone }).format(date) + ' · ' + offset;
-  };
+  readonly inZone = zonedInstant;
   constructor() {
     let previousStep = this.phase();
     afterRenderEffect(() => {

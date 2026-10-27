@@ -7,6 +7,7 @@ import { AdministratorBookingDetail, AdministratorBookingDetailStateEnum, Admini
 import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { AccessFailure, safeFailure } from '../shared/access/access-failure';
+import { reauthenticate } from './admin-reauth';
 import { brusselsDisplay, zoomHint } from './admin-time';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -86,18 +87,20 @@ export class BookingDetailComponent {
     return b !== null && b.state === AdministratorBookingDetailStateEnum.PendingConfirmation && !b.pendingExpired;
   }
 
-  async load(): Promise<void> {
-    if (!UUID.test(this.id)) { this.message.set('That booking could not be found.'); return; }
+  async load(): Promise<boolean> {
+    if (!UUID.test(this.id)) { this.message.set('That booking could not be found.'); return false; }
     const generation = ++this.generation;
     this.busy.set(true);
     try {
       const response = await firstValueFrom(this.api.getAdministratorBooking(this.id, 'response').pipe(timeout(25000)));
-      if (!this.active || generation !== this.generation || response.body === null) return;
+      if (!this.active || generation !== this.generation || response.body === null) return false;
       const tag = response.headers.get('ETag');
       this.etag = tag !== null && STRONG_ETAG.test(tag) ? tag : '"' + response.body.version + '"';
       this.booking.set(response.body); this.hint.set(null);
+      return true;
     } catch (error) {
       if (this.active && generation === this.generation) await this.readFailure(error);
+      return false;
     } finally { if (this.active) this.busy.set(false); }
   }
 
@@ -124,7 +127,7 @@ export class BookingDetailComponent {
       if (!this.active || generation !== this.generation) return;
       this.uncertain.set(false); this.command = null; this.meeting.reset();
       this.message.set('Booking approved.');
-      await this.load();
+      if (!await this.load() && this.active) this.message.set('Booking approved, but its latest details could not be loaded. Refresh the page.');
     } catch (error) {
       if (this.active && generation === this.generation) await this.commandFailure(error);
     } finally { if (this.active) this.busy.set(false); }
@@ -134,20 +137,21 @@ export class BookingDetailComponent {
     const failure = error instanceof AccessFailure ? error : safeFailure(error, true);
     this.uncertain.set(failure.kind === 'UNCERTAIN');
     if (failure.kind === 'SESSION_EXPIRED') { await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
-    if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428) { this.command = null; await this.load(); this.message.set('This booking changed. The latest details are shown; review them and approve again.'); }
+    if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428) { this.command = null; this.message.set(await this.load() ? 'This booking changed. The latest details are shown; review them and approve again.' : 'This booking changed, but its latest details could not be loaded. Refresh the page before approving.'); }
     else if (failure.kind === 'CONFLICT' && failure.code === 'MEETING_IN_USE') this.message.set('That meeting link is already used by another booking. Use a different link.');
-    else if (failure.kind === 'CONFLICT' && failure.code === 'HOLD_EXPIRED') { this.command = null; await this.load(); this.message.set('The pending hold has expired, so this booking can no longer be approved.'); }
-    else if (failure.kind === 'CONFLICT') { this.command = null; await this.load(); this.message.set('That approval conflicts with the current booking. The latest details are shown.'); }
+    else if (failure.kind === 'CONFLICT' && failure.code === 'HOLD_EXPIRED') { this.command = null; await this.load(); if (this.booking() !== null) this.message.set('The pending hold has expired, so this booking can no longer be approved.'); }
+    else if (failure.kind === 'CONFLICT') { this.command = null; this.message.set(await this.load() ? 'That approval conflicts with the current booking. The latest details are shown.' : 'That approval conflicts with the current booking, but its latest details could not be loaded. Refresh the page.'); }
     else if (failure.kind === 'THROTTLED') this.message.set('Please wait before trying again.');
     else if (failure.kind === 'UNCERTAIN') this.message.set('The response did not arrive. The approval may have succeeded. Use Retry to check the same approval; do not start a second one.');
-    else if (failure.status === 403) this.message.set('Sign in again with a fresh authenticator code to approve bookings.');
+    else if (failure.status === 403) { this.command = null; await reauthenticate(this.sessions, this.router, '/admin/bookings/' + this.id); return; }
     else this.message.set('The booking could not be approved. Check the link and try again.');
     this.focus('#detail-error');
   }
 
   private async readFailure(error: unknown): Promise<void> {
     const failure = safeFailure(error, false);
-    if (failure.kind === 'SESSION_EXPIRED' || failure.status === 403) { await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
+    if (failure.status === 403) { await reauthenticate(this.sessions, this.router, '/admin/bookings/' + this.id); return; }
+    if (failure.kind === 'SESSION_EXPIRED') { await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
     this.booking.set(null);
     this.message.set(failure.status === 404 ? 'That booking could not be found.' : 'The booking could not be loaded. Try again.');
     this.focus('#detail-error');

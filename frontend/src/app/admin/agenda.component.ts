@@ -7,6 +7,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { AdministratorAgendaEntry, AdministratorAgendaEntryStateEnum, AdministratorService } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { safeFailure } from '../shared/access/access-failure';
+import { reauthenticate } from './admin-reauth';
 import { brusselsDate, brusselsDisplay, rangeProblem, weekOf } from './admin-time';
 
 @Component({
@@ -83,7 +84,7 @@ export class AgendaComponent {
     } catch (error) {
       if (!this.active || generation !== this.generation) return;
       const failure = safeFailure(error, false);
-      if (failure.kind === 'SESSION_EXPIRED' || failure.status === 403) { this.sessions.invalidate(); await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
+      if (failure.kind === 'SESSION_EXPIRED' || failure.status === 403) { await reauthenticate(this.sessions, this.router, '/admin'); return; }
       this.message.set(failure.kind === 'REJECTED' ? 'Choose a valid range of at most 31 dates.' : 'The agenda could not be loaded. Try again.');
       this.focusError();
     } finally { if (this.active) this.busy.set(false); }

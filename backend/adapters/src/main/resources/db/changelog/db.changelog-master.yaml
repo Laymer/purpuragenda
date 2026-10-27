@@ -135,3 +135,11 @@ databaseChangeLog:
             path: 014-reminder-deadlines.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 018-account-enrollment-budget
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 018-account-enrollment-budget.sql
+            relativeToChangelogFile: true
+            splitStatements: false

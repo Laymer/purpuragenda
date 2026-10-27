@@ -260,6 +260,53 @@ class RateLimitDatabaseTest {
         assertEquals(0, count(Kind.ADMIN_ATTEMPT));
     }
 
+    @Test void additiveEnrollmentBudgetUpgradePreservesExistingWindowsAndFailsReadinessUntilApplied() throws Exception {
+        fixture.migration.newSchema();fixture.migration.migrate(16); // Through017; no014 reminder migration yet.
+        Properties settings=new Properties();settings.setProperty("currentSchema",fixture.migration.schema+",public");
+        fixture.source.setConnectionProperties(settings);
+        var readiness=new com.purpuragenda.adapters.out.postgres.DatabaseReadiness(fixture.source,
+                new com.purpuragenda.adapters.out.postgres.PostgresScheduling(fixture.source));
+        assertEquals(org.springframework.boot.health.contributor.Status.DOWN,readiness.health().getStatus());
+        assertTrue(admit(T0,charge(Kind.ACCOUNT_ATTEMPT)).allowed());
+        fixture.migration.migrate(0);fixture.migration.migrate(0);
+        assertEquals(org.springframework.boot.health.contributor.Status.UP,readiness.health().getStatus());
+        assertEquals(1,count(Kind.ACCOUNT_ATTEMPT));
+        assertEquals(18,fixture.migration.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        var admission=new RequestThrottle(limits).accountEnrollment("203.0.113.7");
+        assertTrue(admission.allowed());assertEquals(1,count(Kind.ACCOUNT_ENROLLMENT_IP));
+        clock.set(T0.plusSeconds(900));
+        var fresh=new RequestThrottle(limits).accountEnrollment("203.0.113.7");
+        assertFalse(admission.attempt().succeeded());assertEquals(1,count(Kind.ACCOUNT_ENROLLMENT_IP));
+        assertTrue(fresh.attempt().succeeded());assertEquals(0,count(Kind.ACCOUNT_ENROLLMENT_IP));
+    }
+
+    @Test void concurrentEnrollmentNetworksReserveOnlyFiveBeforeCredentialWork() throws Exception {
+        var throttle = new RequestThrottle(new PostgresRateLimits(fixture.source("p18_enrollment_race"), key));
+        var barrier = new CyclicBarrier(20);
+        var attempts = new ConcurrentLinkedQueue<RequestThrottle.AdminAttempt>();
+        var retries = new ConcurrentLinkedQueue<Long>();
+        try (var pool = Executors.newFixedThreadPool(20)) {
+            var futures = new ArrayList<Future<?>>();
+            for (int w = 0; w < 20; w++) futures.add(pool.submit(() -> {
+                barrier.await(30, TimeUnit.SECONDS);
+                var admission = throttle.accountEnrollment("2001:db8:1234:5678::" + Integer.toHexString(ThreadLocalRandom.current().nextInt(1, 60000)));
+                if (admission.allowed()) attempts.add(admission.attempt()); else retries.add(admission.retryAfterSeconds());
+                return null;
+            }));
+            for (var future : futures) future.get(60, TimeUnit.SECONDS);
+        }
+        assertEquals(5, attempts.size());
+        assertEquals(15, retries.size());
+        assertTrue(retries.stream().allMatch(seconds -> seconds >= 899 && seconds <= 900));
+        assertEquals(5, count(Kind.ACCOUNT_ENROLLMENT_IP));
+        // Concurrent successes each return exactly one slot.
+        try (var pool = Executors.newFixedThreadPool(5)) {
+            var futures = attempts.stream().map(attempt -> pool.submit(attempt::succeeded)).toList();
+            for (var future : futures) assertTrue(future.get(30, TimeUnit.SECONDS));
+        }
+        assertEquals(0, count(Kind.ACCOUNT_ENROLLMENT_IP));
+    }
+
     @Test void sharedBucketPairsSubmittedInOppositeOrdersNeverDeadlockAndCountExactly() throws Exception {
         var real = new PostgresRateLimits(fixture.source("p17_pairs"), key);
         int rounds = 10, workers = 20;
