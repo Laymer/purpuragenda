@@ -517,6 +517,18 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.ContactHttpPostgresTest" tests="7">' + '<testcase/>' * 7 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_administrator_history_requires_private_authority_and_snapshot_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorHistory.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorHistoryPostgresTest.xml')
+        for count, cases, nested in ((11, 11, ''), (12, 11, ''), (13, 12, ''), (12, 12, '<failure/>'), (12, 12, '<error/>'), (12, 12, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorHistoryPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorHistoryPostgresTest" tests="12">' + '<testcase/>' * 12 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_private_notes_require_authority_atomicity_replay_and_race_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresNotes.java'
