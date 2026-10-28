@@ -40,13 +40,14 @@ public final class AdministratorConfigurationController {
         var session=access.inspect(cookies.read(request));
         if(session.isEmpty()) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
         if(session.get().kind()!=Kind.ADMIN) { BookingHttp.problem(response,403,"ADMIN_ACCESS_REQUIRED",false,false);return null; }
-        return handle(response,()->{
+        // Its own try: sharing a callback with the command path would make this read look state-changing to analysis.
+        try {
             var current=view.current(binding(session.get()));
             ObjectNode body=JSON.createObjectNode().put("observedAt",current.observedAt().toString())
                     .put("calendarVersion",current.calendar().version()).put("policyVersion",current.policy().version());
             calendar(body,current.calendar());policy(body.putObject("policy"),current.policy());
             return ok(body,null);
-        });
+        } catch(RuntimeException failure) { failed(response,failure);return null; }
     }
     @PostMapping("/conflicts")
     public ResponseEntity<String> conflicts(HttpServletRequest request,HttpServletResponse response) throws IOException {
@@ -97,7 +98,6 @@ public final class AdministratorConfigurationController {
         return command(request,response,(session,key,version,body)->configuration.updatePolicy(session,key,version,values(body.get("policy")),review(body)),"policy");
     }
 
-    private interface Body { ResponseEntity<String> run() throws BookingHttp.Invalid,IOException; }
     private interface Guarded { ResponseEntity<String> run(SessionBinding session) throws BookingHttp.Invalid,IOException; }
     private interface Command { Receipt run(SessionBinding session,String key,long version,JsonNode body) throws BookingHttp.Invalid; }
     /** Every command body carries the review fields and, except removals, exactly one named change. */
@@ -118,23 +118,24 @@ public final class AdministratorConfigurationController {
         if(!(request.getAttribute(ApiGuardFilter.SESSION_ATTRIBUTE) instanceof Snapshot session)) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
         if(session.kind()!=Kind.ADMIN) { BookingHttp.problem(response,403,"ADMIN_ACCESS_REQUIRED",false,false);return null; }
         if(versioned && request.getHeader("If-Match")==null) { BookingHttp.problem(response,428,"VERSION_REQUIRED",false,false);return null; }
-        return handle(response,()->{
+        try {
             if(!versioned && request.getHeader("If-Match")!=null)throw new BookingHttp.Invalid();
             return work.run(binding(session));
-        });
+        } catch(BookingHttp.Invalid invalid) { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false); }
+        catch(RuntimeException failure) { failed(response,failure); }
+        return null;
     }
-    private static ResponseEntity<String> handle(HttpServletResponse response,Body work) throws IOException {
-        try { return work.run(); }
-        catch(BookingHttp.Invalid | DomainFailure | IllegalArgumentException | DateTimeException | ArithmeticException invalid) { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false); }
-        catch(Failure failure) {
-            switch(failure.kind()) {
+    private static void failed(HttpServletResponse response,RuntimeException failure) throws IOException {
+        if(failure instanceof DomainFailure || failure instanceof IllegalArgumentException || failure instanceof DateTimeException || failure instanceof ArithmeticException)
+            BookingHttp.problem(response,400,"INVALID_REQUEST",false,false);
+        else if(failure instanceof Failure denial) {
+            switch(denial.kind()) {
                 case AUTHENTICATION_REQUIRED -> BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);
                 case FRESH_AUTHENTICATION_REQUIRED -> BookingHttp.problem(response,403,"AUTHENTICATION_REQUIRED",false,false);
                 case FORBIDDEN -> BookingHttp.problem(response,403,"ADMIN_ACCESS_REQUIRED",false,false);
                 default -> BookingHttp.problem(response,503,"TEMPORARILY_UNAVAILABLE",true,false);
             }
-        } catch(RuntimeException unavailable) { BookingHttp.problem(response,503,"TEMPORARILY_UNAVAILABLE",true,false); }
-        return null;
+        } else BookingHttp.problem(response,503,"TEMPORARILY_UNAVAILABLE",true,false);
     }
     private static SessionBinding binding(Snapshot session) { var reference=session.reference();return new SessionBinding(reference.id(),reference.browserHash()); }
     private static ResponseEntity<String> ok(ObjectNode body,Long version) {

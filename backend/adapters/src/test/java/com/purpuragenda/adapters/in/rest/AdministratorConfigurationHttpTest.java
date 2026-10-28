@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /** Status and wire mapping; real authority, conflicts and persistence are exercised by the PostgreSQL HTTP suite. */
@@ -33,7 +34,9 @@ class AdministratorConfigurationHttpTest {
     };
     MockMvc mvc;
     @BeforeEach void setup() {
-        var sessions=(SessionStore)Proxy.newProxyInstance(SessionStore.class.getClassLoader(),new Class<?>[]{SessionStore.class},(p,m,a)->{throw new AssertionError("GET is covered by PostgreSQL");});
+        var sessions=(SessionStore)Proxy.newProxyInstance(SessionStore.class.getClassLoader(),new Class<?>[]{SessionStore.class},(p,m,a)->{
+            if(m.getName().equals("inspect"))return Optional.of(session(Kind.ADMIN));throw new AssertionError("only inspection is expected");
+        });
         mvc=MockMvcBuilders.standaloneSetup(new AdministratorConfigurationController(new AdministratorConfiguration(unit),new AdministratorConfigurationView(query),
                 new SessionAccess(sessions),SessionCookies.operational())).build();
     }
@@ -67,6 +70,16 @@ class AdministratorConfigurationHttpTest {
         }
         failure=new IllegalStateException("SYNTHETIC_PRIVATE_PROVIDER");problem(send(request("/policy",policy(),Kind.ADMIN)),503,"TEMPORARILY_UNAVAILABLE");
         problem(send(request("/conflicts","{}",Kind.ADMIN)),400,"INVALID_REQUEST");
+    }
+    @Test void theReadMapsItsOwnAdapterFailuresWithoutAnyCommand() throws Exception {
+        var cookie=new jakarta.servlet.http.Cookie("__Host-purpuragenda","a".repeat(43));
+        problem(send(get(BASE).param("unexpected","1").cookie(cookie)),400,"INVALID_REQUEST");
+        for(var kind:Map.of(Failure.Kind.STORAGE_FAILURE,503,Failure.Kind.AUTHENTICATION_REQUIRED,401,Failure.Kind.FORBIDDEN,403).entrySet()) {
+            failure=new Failure(kind.getKey());assertEquals(kind.getValue(),send(get(BASE).cookie(cookie)).getStatus());
+        }
+        failure=new com.purpuragenda.domain.DomainFailure("INVALID_CALENDAR");problem(send(get(BASE).cookie(cookie)),400,"INVALID_REQUEST");
+        failure=new IllegalStateException("SYNTHETIC_PRIVATE_PROVIDER");problem(send(get(BASE).cookie(cookie)),503,"TEMPORARILY_UNAVAILABLE");
+        assertTrue(commands.isEmpty());
     }
     @Test void strictBodiesRejectAmbiguousOrOutOfRangeValuesBeforeAnyCommand() throws Exception {
         for(String body:List.of("{"+REVIEW+"}","{\"policy\":{},"+REVIEW+"}",policy().replace("\"PT0S\"","\"PT\""),policy().replace("\"dailyCapacity\":0","\"dailyCapacity\":1.5"),
