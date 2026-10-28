@@ -19,13 +19,31 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 // @ts-ignore
 import { AdministratorAgendaPage } from '../model/administratorAgendaPage';
 // @ts-ignore
+import { AdministratorBlackoutRequest } from '../model/administratorBlackoutRequest';
+// @ts-ignore
 import { AdministratorBookingDetail } from '../model/administratorBookingDetail';
 // @ts-ignore
+import { AdministratorCalendarReceipt } from '../model/administratorCalendarReceipt';
+// @ts-ignore
+import { AdministratorConfiguration } from '../model/administratorConfiguration';
+// @ts-ignore
+import { AdministratorConfigurationReview } from '../model/administratorConfigurationReview';
+// @ts-ignore
 import { AdministratorConfirmationRequest } from '../model/administratorConfirmationRequest';
+// @ts-ignore
+import { AdministratorConflictPreview } from '../model/administratorConflictPreview';
+// @ts-ignore
+import { AdministratorConflictPreviewRequest } from '../model/administratorConflictPreviewRequest';
+// @ts-ignore
+import { AdministratorDateExceptionRequest } from '../model/administratorDateExceptionRequest';
 // @ts-ignore
 import { AdministratorLoginRequest } from '../model/administratorLoginRequest';
 // @ts-ignore
 import { AdministratorMoneyReceipt } from '../model/administratorMoneyReceipt';
+// @ts-ignore
+import { AdministratorPolicyChangeRequest } from '../model/administratorPolicyChangeRequest';
+// @ts-ignore
+import { AdministratorPolicyReceipt } from '../model/administratorPolicyReceipt';
 // @ts-ignore
 import { AdministratorReceiptRequest } from '../model/administratorReceiptRequest';
 // @ts-ignore
@@ -42,6 +60,8 @@ import { AdministratorRefundRequest } from '../model/administratorRefundRequest'
 import { AdministratorRefundRequirementReceipt } from '../model/administratorRefundRequirementReceipt';
 // @ts-ignore
 import { AdministratorRefundRequirementRequest } from '../model/administratorRefundRequirementRequest';
+// @ts-ignore
+import { AdministratorWeeklyChangeRequest } from '../model/administratorWeeklyChangeRequest';
 // @ts-ignore
 import { BookingReceipt } from '../model/bookingReceipt';
 // @ts-ignore
@@ -63,6 +83,96 @@ export class AdministratorService extends BaseService {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);
+    }
+
+    /**
+     * Adds a hard blackout that ends in the future. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/blackouts
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED.
+     * @param administratorBlackoutRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public addAdministratorBlackout(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorBlackoutRequest: AdministratorBlackoutRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCalendarReceipt>;
+    public addAdministratorBlackout(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorBlackoutRequest: AdministratorBlackoutRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCalendarReceipt>>;
+    public addAdministratorBlackout(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorBlackoutRequest: AdministratorBlackoutRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCalendarReceipt>>;
+    public addAdministratorBlackout(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorBlackoutRequest: AdministratorBlackoutRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling addAdministratorBlackout.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling addAdministratorBlackout.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling addAdministratorBlackout.');
+        }
+        if (administratorBlackoutRequest === null || administratorBlackoutRequest === undefined) {
+            throw new Error('Required parameter administratorBlackoutRequest was null or undefined when calling addAdministratorBlackout.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/blackouts`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCalendarReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorBlackoutRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
     }
 
     /**
@@ -389,6 +499,61 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Current weekly schedule, date exceptions, blackouts and scheduling policy with their versions. Requires a live persisted MFA administrator session rechecked in the same read snapshot; fresh MFA is not required for reads. No session touch or mutation. Replies are no-store.
+     * @endpoint get /admin/configuration
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorConfiguration(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorConfiguration>;
+    public getAdministratorConfiguration(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorConfiguration>>;
+    public getAdministratorConfiguration(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorConfiguration>>;
+    public getAdministratorConfiguration(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorConfiguration>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1–100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.
      * @endpoint get /admin/bookings
      * @param from 
@@ -558,6 +723,82 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorLoginRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Advisory read-only list of future occupying bookings that a complete proposed calendar or policy would newly conflict with, and the current versions it was based on. Requires exact Origin/CSRF and a live persisted MFA administrator session; nothing is written and If-Match is rejected. Commands re-evaluate under the resource lock.
+     * @endpoint post /admin/configuration/conflicts
+     * @param xCSRFToken 
+     * @param administratorConflictPreviewRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public previewAdministratorConfigurationConflicts(xCSRFToken: string, administratorConflictPreviewRequest: AdministratorConflictPreviewRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorConflictPreview>;
+    public previewAdministratorConfigurationConflicts(xCSRFToken: string, administratorConflictPreviewRequest: AdministratorConflictPreviewRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorConflictPreview>>;
+    public previewAdministratorConfigurationConflicts(xCSRFToken: string, administratorConflictPreviewRequest: AdministratorConflictPreviewRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorConflictPreview>>;
+    public previewAdministratorConfigurationConflicts(xCSRFToken: string, administratorConflictPreviewRequest: AdministratorConflictPreviewRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling previewAdministratorConfigurationConflicts.');
+        }
+        if (administratorConflictPreviewRequest === null || administratorConflictPreviewRequest === undefined) {
+            throw new Error('Required parameter administratorConflictPreviewRequest was null or undefined when calling previewAdministratorConfigurationConflicts.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/conflicts`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorConflictPreview>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorConflictPreviewRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -819,6 +1060,284 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Removes an existing blackout. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/blackouts/{blackoutId}/removal
+     * @param blackoutId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED.
+     * @param administratorConfigurationReview 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public removeAdministratorBlackout(blackoutId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCalendarReceipt>;
+    public removeAdministratorBlackout(blackoutId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCalendarReceipt>>;
+    public removeAdministratorBlackout(blackoutId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCalendarReceipt>>;
+    public removeAdministratorBlackout(blackoutId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (blackoutId === null || blackoutId === undefined) {
+            throw new Error('Required parameter blackoutId was null or undefined when calling removeAdministratorBlackout.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling removeAdministratorBlackout.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling removeAdministratorBlackout.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling removeAdministratorBlackout.');
+        }
+        if (administratorConfigurationReview === null || administratorConfigurationReview === undefined) {
+            throw new Error('Required parameter administratorConfigurationReview was null or undefined when calling removeAdministratorBlackout.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/blackouts/${this.configuration.encodeParam({name: "blackoutId", value: blackoutId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/removal`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCalendarReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorConfigurationReview,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Removes an existing date exception for today or a later Brussels date. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/date-exceptions/{date}/removal
+     * @param date 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED.
+     * @param administratorConfigurationReview 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public removeAdministratorDateException(date: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCalendarReceipt>;
+    public removeAdministratorDateException(date: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCalendarReceipt>>;
+    public removeAdministratorDateException(date: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCalendarReceipt>>;
+    public removeAdministratorDateException(date: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorConfigurationReview: AdministratorConfigurationReview, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (date === null || date === undefined) {
+            throw new Error('Required parameter date was null or undefined when calling removeAdministratorDateException.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling removeAdministratorDateException.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling removeAdministratorDateException.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling removeAdministratorDateException.');
+        }
+        if (administratorConfigurationReview === null || administratorConfigurationReview === undefined) {
+            throw new Error('Required parameter administratorConfigurationReview was null or undefined when calling removeAdministratorDateException.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/date-exceptions/${this.configuration.encodeParam({name: "date", value: date, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "date"})}/removal`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCalendarReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorConfigurationReview,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Replaces all weekly windows. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/weekly
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED.
+     * @param administratorWeeklyChangeRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public replaceAdministratorWeeklySchedule(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorWeeklyChangeRequest: AdministratorWeeklyChangeRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCalendarReceipt>;
+    public replaceAdministratorWeeklySchedule(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorWeeklyChangeRequest: AdministratorWeeklyChangeRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCalendarReceipt>>;
+    public replaceAdministratorWeeklySchedule(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorWeeklyChangeRequest: AdministratorWeeklyChangeRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCalendarReceipt>>;
+    public replaceAdministratorWeeklySchedule(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorWeeklyChangeRequest: AdministratorWeeklyChangeRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling replaceAdministratorWeeklySchedule.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling replaceAdministratorWeeklySchedule.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling replaceAdministratorWeeklySchedule.');
+        }
+        if (administratorWeeklyChangeRequest === null || administratorWeeklyChangeRequest === undefined) {
+            throw new Error('Required parameter administratorWeeklyChangeRequest was null or undefined when calling replaceAdministratorWeeklySchedule.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/weekly`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCalendarReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorWeeklyChangeRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Independent actual-money fact, including terminal bookings; does not change booking command version. If-Match is unsupported and rejected400. No currency conversion. Refunds link and cannot exceed their actual receipt; late receipts create reconciliation without revival.
      * @endpoint post /admin/bookings/{bookingId}/refund-requirements
      * @param bookingId 
@@ -895,6 +1414,186 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorRefundRequirementRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Adds or replaces one date exception for today or a later Brussels date. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/date-exceptions
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED.
+     * @param administratorDateExceptionRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public setAdministratorDateException(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorDateExceptionRequest: AdministratorDateExceptionRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCalendarReceipt>;
+    public setAdministratorDateException(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorDateExceptionRequest: AdministratorDateExceptionRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCalendarReceipt>>;
+    public setAdministratorDateException(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorDateExceptionRequest: AdministratorDateExceptionRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCalendarReceipt>>;
+    public setAdministratorDateException(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorDateExceptionRequest: AdministratorDateExceptionRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling setAdministratorDateException.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling setAdministratorDateException.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling setAdministratorDateException.');
+        }
+        if (administratorDateExceptionRequest === null || administratorDateExceptionRequest === undefined) {
+            throw new Error('Required parameter administratorDateExceptionRequest was null or undefined when calling setAdministratorDateException.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/date-exceptions`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCalendarReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorDateExceptionRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Appends the next immutable scheduling policy version; lowered limits only block new bookings. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
+     * @endpoint post /admin/configuration/policy
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted current policy version from GET /admin/configuration or a receipt. Missing 428, stale 412 POLICY_CHANGED.
+     * @param administratorPolicyChangeRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public updateAdministratorPolicy(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorPolicyChangeRequest: AdministratorPolicyChangeRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorPolicyReceipt>;
+    public updateAdministratorPolicy(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorPolicyChangeRequest: AdministratorPolicyChangeRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorPolicyReceipt>>;
+    public updateAdministratorPolicy(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorPolicyChangeRequest: AdministratorPolicyChangeRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorPolicyReceipt>>;
+    public updateAdministratorPolicy(xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorPolicyChangeRequest: AdministratorPolicyChangeRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling updateAdministratorPolicy.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling updateAdministratorPolicy.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling updateAdministratorPolicy.');
+        }
+        if (administratorPolicyChangeRequest === null || administratorPolicyChangeRequest === undefined) {
+            throw new Error('Required parameter administratorPolicyChangeRequest was null or undefined when calling updateAdministratorPolicy.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/policy`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorPolicyReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorPolicyChangeRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

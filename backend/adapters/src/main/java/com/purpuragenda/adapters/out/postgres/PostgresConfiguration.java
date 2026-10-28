@@ -1,5 +1,6 @@
 package com.purpuragenda.adapters.out.postgres;
 
+import com.purpuragenda.application.port.out.ConfigurationQuery;
 import com.purpuragenda.application.port.out.ConfigurationUnitOfWork;
 import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
@@ -18,8 +19,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * Administrator schedule and policy persistence. Authority is the locked persisted ADMIN session of the enabled, enrolled
  * administrator at the current security epoch with fresh MFA; no caller flag can substitute. Calendar versions advance by
  * one in business_settings and policy versions are appended immutably; booking snapshots are never touched.
+ * Reads require the same persisted authority except fresh MFA.
  */
-public final class PostgresConfiguration implements ConfigurationUnitOfWork {
+public final class PostgresConfiguration implements ConfigurationUnitOfWork, ConfigurationQuery {
     static final long ADMIN_IDLE_SECONDS=900,FRESH_MFA_SECONDS=600;
     private final PostgresScheduling scheduling;
     private final JdbcTemplate jdbc;
@@ -39,6 +41,11 @@ public final class PostgresConfiguration implements ConfigurationUnitOfWork {
                 return receipt;
             });
         });
+    }
+    /** Authority and configuration share one read-only repeatable-read snapshot; no lock, touch or fresh-MFA requirement. */
+    @Override public <T> T read(SessionBinding session,Function<View,T> work) {
+        Objects.requireNonNull(session);Objects.requireNonNull(work);
+        return scheduling.read(view -> { PersistedSession.administrator(jdbc,session,view.now());return work.apply(view); });
     }
     private record Row(UUID admin,Long epoch,Instant issued,Instant lastSeen,Instant expires,Instant authenticated,Instant revoked,String kind) { }
     private Row session(SessionBinding binding,boolean lock) {
