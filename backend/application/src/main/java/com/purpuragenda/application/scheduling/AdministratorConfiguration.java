@@ -150,7 +150,7 @@ public final class AdministratorConfiguration {
     /** Appends the next immutable policy version. Existing bookings keep their snapshots; lowered limits only block new bookings. */
     public Receipt updatePolicy(SessionBinding session,String key,long expectedPolicyVersion,PolicyValues values,Review review) {
         Objects.requireNonNull(values);Objects.requireNonNull(review);require(expectedPolicyVersion>0,"INVALID_CONFIGURATION_REQUEST");
-        values.next(expectedPolicyVersion+1);   // validates the values before any transaction
+        values.next(Math.addExact(expectedPolicyVersion,1));   // validates the values before any transaction
         List<String> fields=new ArrayList<>(List.of(Long.toString(expectedPolicyVersion)));fields.addAll(values.fields());fields.addAll(review.fields());
         return unit.execute(new Command(session,Operation.UPDATE_POLICY,key,CommandKey.fingerprint(fields)),
                 tx -> SchedulingCommands.within(tx,() -> {

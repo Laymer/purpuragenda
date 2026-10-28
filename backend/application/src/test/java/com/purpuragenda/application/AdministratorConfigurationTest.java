@@ -108,6 +108,12 @@ class AdministratorConfigurationTest {
         assertThrows(NullPointerException.class,()->new AdministratorConfiguration(null));
     }
 
+    @Test void anOverflowingPolicyVersionIsRejectedBeforeOpeningTheTransaction() {
+        assertThrows(ArithmeticException.class,()->config.updatePolicy(session,"overflow",Long.MAX_VALUE,values(60,3),review()));
+        assertNull(f.command);assertEquals(0,f.saves);
+        assertEquals(Code.POLICY_CHANGED,config.updatePolicy(session,"last-safe",Long.MAX_VALUE-1,values(60,3),review()).code());
+    }
+
     @Test void reviewsCopyTheirAcknowledgementsAndBoundTheReason() {
         var ids=new HashSet<>(Set.of(UUID.randomUUID()));var review=new Review(REASON,ids);ids.clear();
         assertEquals(1,review.acknowledgedBookingIds().size());assertThrows(UnsupportedOperationException.class,()->review.acknowledgedBookingIds().clear());

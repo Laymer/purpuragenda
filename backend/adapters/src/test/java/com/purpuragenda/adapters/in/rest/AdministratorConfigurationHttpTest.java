@@ -83,6 +83,11 @@ class AdministratorConfigurationHttpTest {
         failure=null;storeFailure=true;problem(send(get(BASE).cookie(cookie)),503,"TEMPORARILY_UNAVAILABLE");
         assertTrue(commands.isEmpty());
     }
+    @Test void theLargestPolicyVersionFailsSafelyBeforeOpeningACommand() throws Exception {
+        problem(send(post(BASE+"/policy").requestAttr(ApiGuardFilter.SESSION_ATTRIBUTE,session(Kind.ADMIN))
+                .header("Idempotency-Key","overflow").header("If-Match","\"9223372036854775807\"").contentType("application/json").content(policy())),400,"INVALID_REQUEST");
+        assertTrue(commands.isEmpty());
+    }
     @Test void strictBodiesRejectAmbiguousOrOutOfRangeValuesBeforeAnyCommand() throws Exception {
         for(String body:List.of("{"+REVIEW+"}","{\"policy\":{},"+REVIEW+"}",policy().replace("\"PT0S\"","\"PT\""),policy().replace("\"dailyCapacity\":0","\"dailyCapacity\":1.5"),
                 policy().replace("[]","[\"11111111-1111-4111-8111-111111111111\",\"11111111-1111-4111-8111-111111111111\"]"),policy().replace("[]","{}"),policy().replace("\"gridMinutes\":30","\"gridMinutes\":0")))
