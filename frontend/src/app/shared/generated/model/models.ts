@@ -64,6 +64,7 @@ export * from './bookingReviewContext';
 export * from './bookingReviewNotice';
 export * from './bookingReviewPolicy';
 export * from './bookingServiceSnapshot';
+export * from './contactConfirmation';
 export * from './createBookingRequest';
 export * from './createProofRequest';
 export * from './customerBookingStatus';

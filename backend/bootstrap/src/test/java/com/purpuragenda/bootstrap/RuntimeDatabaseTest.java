@@ -331,6 +331,13 @@ class RuntimeDatabaseTest {
             assertEquals(412,json(port,path+"/cancel","{}",cookie,csrf,"Idempotency-Key","runtime-stale","If-Match","\"1\"").statusCode());
             assertEquals(200,json(port,path+"/cancel","{}",cookie,csrf,"Idempotency-Key","runtime-cancel","If-Match","\"2\"").statusCode());
             assertEquals("CANCELLED",text("SELECT state FROM booking WHERE id='"+id+"'"));assertEquals("1",text("SELECT count(*) FROM request_charge WHERE booking_id='"+id+"'"));
+            assertEquals(202,json(port,path+"/contact-proofs","{\"email\":\"synthetic-new-contact@example.test\"}",cookie,csrf).statusCode());
+            var contactLease=queue.claimAuth().orElseThrow();var contactMail=context.getBean(AuthDeliveryStore.class).prepare(contactLease).orElseThrow();assertTrue(queue.sent(contactLease));
+            String contactToken=contactMail.text().split("#token=",2)[1].split("&",2)[0];
+            assertEquals(200,json(port,path+"/contact","{\"token\":\""+contactToken+"\"}",cookie,csrf,"Idempotency-Key","runtime-contact","If-Match","\"3\"").statusCode());
+            assertEquals("synthetic-new-contact@example.test",text("SELECT delivery_email FROM booking WHERE id='"+id+"'"));
+            assertEquals("synthetic-booking@example.test",text("SELECT c.email_key FROM customer_identity c JOIN booking b ON b.customer_id=c.id WHERE b.id='"+id+"'"));
+
         }
     }
     static HttpResponse<String> json(int port,String path,String body,String cookie,String csrf,String... extra) throws Exception {

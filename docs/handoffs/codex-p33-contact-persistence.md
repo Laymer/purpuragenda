@@ -9,3 +9,5 @@
 - Verification: PR125 run40700378375 all15 green, zero scanning alerts, independent exact-head reviewbe7b6bd clean; local303 application/108 domain tests and coverage gates passed. Main0f02a29 run40699579785 green. Docker unavailable locally; PostgreSQL tests run only in hosted CI. Current local304 application/108 domain tests and coverage gates passed; adapter/test compilation and42 report-gate tests passed. Independent source review clean; added expiry/invalid-callback tests await exact-head confirmation.
 - Next concrete action: push task/p33-contact-persistence, create draft PR and verify all hosted checks plus exact-head independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+- Closed 2026-10-28T14:28:52Z: PR126 confirmed merged929fc23 after15 hosted checks (run40703981281), zero scanning alerts and independent exact-head review0765b5a. Claim released; next P33/contact-http.

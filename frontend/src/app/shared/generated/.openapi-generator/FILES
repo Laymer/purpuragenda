@@ -80,6 +80,7 @@ model/bookingReviewContext.ts
 model/bookingReviewNotice.ts
 model/bookingReviewPolicy.ts
 model/bookingServiceSnapshot.ts
+model/contactConfirmation.ts
 model/createBookingRequest.ts
 model/createProofRequest.ts
 model/customerBookingStatus.ts
