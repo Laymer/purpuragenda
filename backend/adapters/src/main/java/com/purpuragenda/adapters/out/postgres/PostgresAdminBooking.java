@@ -32,7 +32,7 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
     @Override public Receipt create(Command command,Function<Creation,Receipt> work) {
         Objects.requireNonNull(command);Objects.requireNonNull(work);
         return scheduling.resolved(now -> {
-            UUID admin=authorize(command.session(),now);
+            UUID admin=authorize(jdbc,command.session(),now);
             var key=new CommandKey(new Scope(admin,"ADMIN_CREATE_BOOKING",null),command.key(),command.fingerprint());
             return new PostgresScheduling.Resolved(key,receipt -> receipt,tx -> {
                 CreationState state=new CreationState(tx,admin);
@@ -43,13 +43,14 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
         });
     }
     private record AdminRow(boolean enabled,boolean enrolled,long epoch) { }
-    private UUID authorize(SessionBinding binding,Instant now) {
-        PersistedAdmin initial=find(binding,false);if(initial==null)throw PersistedSession.unauthenticated();
+    /** Shared by administrator booking commands: locks the administrator and session and returns the administrator id. */
+    static UUID authorize(JdbcTemplate jdbc,SessionBinding binding,Instant now) {
+        PersistedAdmin initial=find(jdbc,binding,false);if(initial==null)throw PersistedSession.unauthenticated();
         if(!initial.kind().equals("ADMIN"))throw PersistedSession.denied();
         AdminRow row=jdbc.query("SELECT enabled,enrolled,security_version FROM admin_user WHERE id=? FOR UPDATE",
                 (r,n)->new AdminRow(r.getBoolean(1),r.getBoolean(2),r.getLong(3)),initial.admin())
                 .stream().findFirst().orElseThrow(PersistedSession::unauthenticated);
-        PersistedAdmin current=find(binding,true);
+        PersistedAdmin current=find(jdbc,binding,true);
         if(current==null || !current.valid(initial,row,now))throw PersistedSession.unauthenticated();
         // A live session whose factor is older than ten minutes needs a new MFA login, not a new session.
         if(!current.fresh(now))throw new Failure(Failure.Kind.FRESH_AUTHENTICATION_REQUIRED);
@@ -67,7 +68,7 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
         }
         boolean fresh(Instant now) { return now.isBefore(authenticated.plusSeconds(FRESH_SECONDS)); }
     }
-    private PersistedAdmin find(SessionBinding binding,boolean lock) {
+    private static PersistedAdmin find(JdbcTemplate jdbc,SessionBinding binding,boolean lock) {
         return jdbc.query("SELECT * FROM app_session WHERE id=? AND browser_hash=?"+(lock?" FOR UPDATE":""),(r,n)->new PersistedAdmin(
                 r.getObject("id",UUID.class),r.getString("kind"),r.getObject("admin_id",UUID.class),r.getLong("admin_security_version"),
                 PersistedSession.time(r,"issued_at"),PersistedSession.time(r,"last_seen_at"),PersistedSession.time(r,"absolute_expires_at"),
@@ -130,7 +131,7 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
                 throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
     }
-    private static String json(List<String> values) {
+    static String json(List<String> values) {
         // Rule names and UUIDs only: no quoting hazards.
         return values.stream().map(v -> "\""+v+"\"").collect(java.util.stream.Collectors.joining(",","[","]"));
     }
