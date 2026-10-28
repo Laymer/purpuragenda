@@ -573,6 +573,10 @@ class RuntimeDatabaseTest {
             assertEquals(200,json(port,base+"/refund-requirements","{\"receiptId\":\""+payment+"\",\"reason\":\"Synthetic provider cancellation\"}",cookie,csrf,"Idempotency-Key","runtime-finance-required").statusCode());
             var detail=call(port,"GET",base,"Cookie",cookie,"If-None-Match","\"2\"");assertEquals(200,detail.statusCode());assertEquals("\"2\"",detail.headers().firstValue("ETag").orElseThrow());
             var projected=new com.fasterxml.jackson.databind.ObjectMapper().readTree(detail.body());assertEquals("CONFIRMED",projected.get("state").asText());assertEquals(1500,projected.at("/payment/receivedMinor").asLong());assertEquals(500,projected.at("/payment/refundedMinor").asLong());assertEquals("REFUND_DUE",projected.at("/payment/status").asText());
+            var reconciliation=call(port,"GET","/api/v1/admin/reconciliation?bookingId="+id,"Cookie",cookie);assertEquals(200,reconciliation.statusCode());assertEquals(1000,new com.fasterxml.jackson.databind.ObjectMapper().readTree(reconciliation.body()).at("/entries/0/outstandingMinor").asLong());
+            String job=UUID.randomUUID().toString();sql("INSERT INTO notification_job(id,booking_id,audience,template,version,due_at,state,attempts) VALUES('"+job+"','"+id+"','CUSTOMER','BOOKING_CONFIRMED',2,clock_timestamp(),'FAILED',7)");
+            var notifications=call(port,"GET","/api/v1/admin/notifications?state=FAILED&bookingId="+id,"Cookie",cookie);assertEquals(200,notifications.statusCode());assertTrue(notifications.body().contains(job));
+            var retried=json(port,"/api/v1/admin/notifications/"+job+"/retry","{\"reason\":\"Synthetic runtime retry reason\"}",cookie,csrf,"Idempotency-Key","runtime-retry","If-Match","\"7\"");assertEquals(202,retried.statusCode());assertEquals("QUEUED",text("SELECT state FROM notification_job WHERE id='"+job+"'"));
             assertEquals(2,count("SELECT count(*) FROM payment_entry WHERE booking_id='"+id+"'"));
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }

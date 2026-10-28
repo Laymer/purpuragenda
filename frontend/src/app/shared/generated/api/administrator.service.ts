@@ -59,6 +59,12 @@ import { AdministratorNoteReceipt } from '../model/administratorNoteReceipt';
 // @ts-ignore
 import { AdministratorNoteRequest } from '../model/administratorNoteRequest';
 // @ts-ignore
+import { AdministratorNotificationPage } from '../model/administratorNotificationPage';
+// @ts-ignore
+import { AdministratorNotificationRetryReceipt } from '../model/administratorNotificationRetryReceipt';
+// @ts-ignore
+import { AdministratorNotificationRetryRequest } from '../model/administratorNotificationRetryRequest';
+// @ts-ignore
 import { AdministratorOutcomeRequest } from '../model/administratorOutcomeRequest';
 // @ts-ignore
 import { AdministratorPolicyChangeRequest } from '../model/administratorPolicyChangeRequest';
@@ -66,6 +72,8 @@ import { AdministratorPolicyChangeRequest } from '../model/administratorPolicyCh
 import { AdministratorPolicyReceipt } from '../model/administratorPolicyReceipt';
 // @ts-ignore
 import { AdministratorReceiptRequest } from '../model/administratorReceiptRequest';
+// @ts-ignore
+import { AdministratorReconciliationPage } from '../model/administratorReconciliationPage';
 // @ts-ignore
 import { AdministratorRecoveryRequest } from '../model/administratorRecoveryRequest';
 // @ts-ignore
@@ -1371,6 +1379,192 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1–100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Booking notification follow-up only; excludes authentication jobs, recipients, envelopes and lease credentials. Omit state for all booking-job states.
+     * @endpoint get /admin/notifications
+     * @param bookingId Omit to view all bookings.
+     * @param state 
+     * @param limit 
+     * @param cursor 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorNotifications(bookingId?: string, state?: 'QUEUED' | 'LEASED' | 'SENT' | 'SUPPRESSED' | 'FAILED', limit?: number, cursor?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorNotificationPage>;
+    public getAdministratorNotifications(bookingId?: string, state?: 'QUEUED' | 'LEASED' | 'SENT' | 'SUPPRESSED' | 'FAILED', limit?: number, cursor?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorNotificationPage>>;
+    public getAdministratorNotifications(bookingId?: string, state?: 'QUEUED' | 'LEASED' | 'SENT' | 'SUPPRESSED' | 'FAILED', limit?: number, cursor?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorNotificationPage>>;
+    public getAdministratorNotifications(bookingId?: string, state?: 'QUEUED' | 'LEASED' | 'SENT' | 'SUPPRESSED' | 'FAILED', limit?: number, cursor?: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+
+        let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'bookingId',
+            <any>bookingId,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'state',
+            <any>state,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'limit',
+            <any>limit,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'cursor',
+            <any>cursor,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/notifications`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorNotificationPage>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1–100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Outstanding receipt refund obligations minus immutable linked refunds; full due and separate currencies are preserved.
+     * @endpoint get /admin/reconciliation
+     * @param bookingId Omit to view all bookings.
+     * @param limit 
+     * @param cursor 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorReconciliation(bookingId?: string, limit?: number, cursor?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorReconciliationPage>;
+    public getAdministratorReconciliation(bookingId?: string, limit?: number, cursor?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorReconciliationPage>>;
+    public getAdministratorReconciliation(bookingId?: string, limit?: number, cursor?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorReconciliationPage>>;
+    public getAdministratorReconciliation(bookingId?: string, limit?: number, cursor?: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+
+        let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'bookingId',
+            <any>bookingId,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'limit',
+            <any>limit,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'cursor',
+            <any>cursor,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/reconciliation`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorReconciliationPage>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1–100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.
      * @endpoint get /admin/bookings
      * @param from 
@@ -2607,6 +2801,100 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorServiceStateRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Queues one explicit retry of a FAILED booking notification. Requires exact Origin/CSRF, idempotency, strong If-Match of the observed attempt count (1–2147483646), normalized reason and persisted fresh administrator MFA before receipt replay. Preserves original job identity, content revision and monotonic attempt history; ordinary worker still checks relevance/suppression before sending. Authentication/unscoped jobs return NOTIFICATION_NOT_FOUND. Operator suppression returns DELIVERY_SUPPRESSED; nonfailed jobs return NOTIFICATION_NOT_RETRYABLE. Receipt is an audit result, not proof of delivery. Responses are no-store.
+     * @endpoint post /admin/notifications/{jobId}/retry
+     * @param jobId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted observed attempt count (not the content revision), from notification follow-up. Missing428, stale412; weak/wildcard/multiple tags and counts outside1–2147483646 rejected400.
+     * @param administratorNotificationRetryRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public retryAdministratorNotification(jobId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorNotificationRetryRequest: AdministratorNotificationRetryRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorNotificationRetryReceipt>;
+    public retryAdministratorNotification(jobId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorNotificationRetryRequest: AdministratorNotificationRetryRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorNotificationRetryReceipt>>;
+    public retryAdministratorNotification(jobId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorNotificationRetryRequest: AdministratorNotificationRetryRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorNotificationRetryReceipt>>;
+    public retryAdministratorNotification(jobId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorNotificationRetryRequest: AdministratorNotificationRetryRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (jobId === null || jobId === undefined) {
+            throw new Error('Required parameter jobId was null or undefined when calling retryAdministratorNotification.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling retryAdministratorNotification.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling retryAdministratorNotification.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling retryAdministratorNotification.');
+        }
+        if (administratorNotificationRetryRequest === null || administratorNotificationRetryRequest === undefined) {
+            throw new Error('Required parameter administratorNotificationRetryRequest was null or undefined when calling retryAdministratorNotification.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/notifications/${this.configuration.encodeParam({name: "jobId", value: jobId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/retry`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorNotificationRetryReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorNotificationRetryRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
