@@ -64,7 +64,13 @@ public final class PostgresAccountData implements AccountDataStore {
             jdbc.update("UPDATE app_session SET last_seen_at=? WHERE id=?",stamp(now),command.session().sessionId());
             var cached=jdbc.query("SELECT fingerprint,receipt::text FROM idempotency_record WHERE scope=? AND key=?",(r,n)->
                     key.fingerprint().equals(r.getString(1))?PersistedJson.read(r.getString(2),Receipt.class):Receipt.failure(Code.IDEMPOTENCY_KEY_REUSED),key.scope().storageKey(),key.key());
-            if(!cached.isEmpty())return cached.getFirst();
+            if(!cached.isEmpty()) {
+                Receipt receipt=cached.getFirst();
+                if(receipt.success()) {
+                    if(!account.customer().equals(receipt.entityId()) || receipt.version()<2 || receipt.version()>current(account.customer(),true).version())throw unavailable();
+                } else if(receipt.code()!=Code.STALE_VERSION && receipt.code()!=Code.IDEMPOTENCY_KEY_REUSED)throw unavailable();
+                return receipt;
+            }
             Profile current=current(account.customer(),true);Receipt receipt;
             try {
                 Profile next=Objects.requireNonNull(update.apply(current));

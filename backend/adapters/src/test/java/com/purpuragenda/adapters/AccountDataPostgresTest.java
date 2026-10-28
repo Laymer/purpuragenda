@@ -133,7 +133,17 @@ class AccountDataPostgresTest {
         assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->store.change(command,current->null)).kind());
         assertEquals("INVALID_PROFILE",assertThrows(DomainFailure.class,()->store.change(command,current->{throw new DomainFailure("INVALID_PROFILE");})).code());
         assertEquals(0,count("customer_profile"));assertEquals(0,count("idempotency_record"));assertEquals(0,count("audit_event"));
-        app.update(owner.binding(),"saved",1,fields());c.jdbc.update("UPDATE idempotency_record SET receipt='{}'::jsonb WHERE key='saved'");
+        app.update(owner.binding(),"saved",1,fields());
+        for(String corrupt:List.of(
+                "{\"code\":\"OK\",\"entityId\":\""+UUID.randomUUID()+"\",\"version\":2}",
+                "{\"code\":\"OK\",\"entityId\":\""+owner.customer()+"\",\"version\":1}",
+                "{\"code\":\"OK\",\"entityId\":\""+owner.customer()+"\",\"version\":3}",
+                "{\"code\":\"OK\",\"entityId\":null,\"version\":0}",
+                "{\"code\":\"INVALID_TRANSITION\",\"entityId\":null,\"version\":0}")) {
+            c.jdbc.update("UPDATE idempotency_record SET receipt=?::jsonb WHERE key='saved'",corrupt);
+            assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->app.update(owner.binding(),"saved",1,fields())).kind());
+        }
+        c.jdbc.update("UPDATE idempotency_record SET receipt='{}'::jsonb WHERE key='saved'");
         assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->app.update(owner.binding(),"saved",1,fields())).kind());
         c.jdbc.update("UPDATE customer_profile SET document='{}'::jsonb WHERE customer_id=?",owner.customer());assertEquals(Failure.Kind.STORAGE_FAILURE,failure(()->app.profile(owner.binding())).kind());
     }
