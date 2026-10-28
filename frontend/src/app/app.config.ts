@@ -17,6 +17,7 @@ export const routes: Routes = [
     path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./admin/admin-shell.component').then(module => module.AdminShellComponent),
     children: [
       { path: '', loadComponent: () => import('./admin/agenda.component').then(module => module.AgendaComponent), title: 'Agenda · Purpuragenda' },
+      { path: 'bookings/new', loadComponent: () => import('./admin/manual-booking.component').then(module => module.ManualBookingComponent), title: 'Create booking · Purpuragenda' },
       { path: 'bookings/:id', loadComponent: () => import('./admin/booking-detail.component').then(module => module.BookingDetailComponent), title: 'Booking · Purpuragenda' },
     ],
   },

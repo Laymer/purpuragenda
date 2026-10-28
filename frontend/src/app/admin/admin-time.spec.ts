@@ -1,4 +1,4 @@
-import { addDays, brusselsDate, brusselsDisplay, parseDay, rangeProblem, weekOf, zoomHint } from './admin-time';
+import { brusselsInstants, addDays, brusselsDate, brusselsDisplay, parseDay, rangeProblem, weekOf, zoomHint } from './admin-time';
 
 describe('Administrator Brussels civil-date helpers', () => {
   it('derives the Brussels civil date across the midnight and DST boundaries', () => {
@@ -36,5 +36,16 @@ describe('Administrator Brussels civil-date helpers', () => {
     for (const bad of ['', 'zoom.us/j/123456789', 'http://zoom.us/j/123456789', 'https://zoom.us.evil.test/j/123456789', 'https://evilzoom.us/j/123456789', 'https://u:p@zoom.us/j/123456789'])
       expect(zoomHint(bad)).not.toBeNull();
     expect(zoomHint('https://zoom.us/my/room')).toContain('meeting link'); expect(zoomHint('https://zoom.us/j/12')).not.toBeNull();
+  });
+});
+
+describe('Manual Brussels start selection', () => {
+  it('rejects invalid dates, times and spring gaps without normalization', () => {
+    for (const [day, time] of [['2027-02-29', '10:00'], ['2027-03-28', '02:30'], ['', '10:00'], ['2027-01-01', '24:00'], ['2027-01-01', '10:60']]) expect(brusselsInstants(day, time)).toEqual([]);
+  });
+  it('offers both autumn occurrences, in instant order, and ordinary winter/summer times', () => {
+    expect(brusselsInstants('2027-10-31', '02:30')).toEqual(['2027-10-31T00:30:00.000Z', '2027-10-31T01:30:00.000Z']);
+    expect(brusselsInstants('2027-03-28', '03:00')).toEqual(['2027-03-28T01:00:00.000Z']);
+    expect(brusselsInstants('2028-02-29', '00:00')).toEqual(['2028-02-28T23:00:00.000Z']);
   });
 });

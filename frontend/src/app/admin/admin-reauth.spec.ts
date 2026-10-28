@@ -10,7 +10,7 @@ describe('Administrator re-authentication hand-off', () => {
   const id = '30000000-0000-4000-8000-000000000001';
   afterEach(() => TestBed.resetTestingModule());
   it('accepts only administrator agenda and booking pages as return targets', () => {
-    expect(safeReturn('/admin')).toBe('/admin'); expect(safeReturn('/admin/bookings/' + id)).toBe('/admin/bookings/' + id);
+    expect(safeReturn('/admin/bookings/new')).toBe('/admin/bookings/new'); expect(safeReturn('/admin')).toBe('/admin'); expect(safeReturn('/admin/bookings/' + id)).toBe('/admin/bookings/' + id);
     for (const bad of [null, undefined, '', 'https://evil.test/admin', '//evil.test', '/admin/login', '/admin/bookings/not-a-uuid', '/book', '/admin/bookings/' + id + '/x', '/admin?x=1'])
       expect(safeReturn(bad)).toBe('/admin');
   });
