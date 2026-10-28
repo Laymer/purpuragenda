@@ -30,6 +30,27 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('^[A-Za-z0-9_-]{43}$', schema['properties']['token']['pattern'])
 
 
+    def test_operations_contract_preserves_money_and_separates_attempt_preconditions_from_content_revision(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        money = schemas['AdministratorRefundFollowUp']['properties']; notification = schemas['AdministratorNotification']['properties']
+        self.assertTrue({'dueMinor', 'refundedMinor', 'outstandingMinor', 'currency'}.issubset(money))
+        for private in ('recipient', 'encryptedEnvelope', 'leaseToken', 'challengeId'):
+            self.assertNotIn(private, notification)
+        self.assertEqual(2147483647, notification['attempts']['maximum'])
+        self.assertEqual({'reason'}, set(schemas['AdministratorNotificationRetryRequest']['properties']))
+        retry = paths['/admin/notifications/{jobId}/retry']['post']
+        self.assertEqual({'jobId', 'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, {p['name'] for p in retry['parameters']})
+        self.assertIn('attempt count', retry['parameters'][3]['description'])
+        self.assertIn('NOTIFICATION_NOT_FOUND', retry['responses']['404']['description'])
+        self.assertEqual({'jobId', 'auditId', 'version'}, set(schemas['AdministratorNotificationRetryReceipt']['properties']))
+        self.assertNotIn('ETag', retry['responses']['202']['headers'])
+        for path in ('/admin/reconciliation', '/admin/notifications'):
+            self.assertEqual({'get'}, set(paths[path]))
+            operation = paths[path]['get']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+        self.assertEqual({'400', '401', '403', '404', '409', '412', '428', '503'}, {key for key in retry['responses'] if key.startswith(('4', '5'))})
+
     def test_administrator_customer_reads_expose_minimal_stable_identity_and_strict_pagination(self):
         paths = self.document['paths']; schemas = self.document['components']['schemas']
         search = paths['/admin/customers']['get']; history = paths['/admin/customers/{customerId}/bookings']['get']
@@ -228,7 +249,7 @@ class ContractTest(unittest.TestCase):
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
                           'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
-                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings'},
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings', 'getAdministratorReconciliation', 'getAdministratorNotifications', 'retryAdministratorNotification'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

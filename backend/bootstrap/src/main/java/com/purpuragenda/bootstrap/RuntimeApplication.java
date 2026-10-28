@@ -2,6 +2,9 @@ package com.purpuragenda.bootstrap;
 
 import com.purpuragenda.application.scheduling.AdminBooking;
 import com.purpuragenda.application.scheduling.AdministratorNotes;
+import com.purpuragenda.application.scheduling.AdministratorNotificationRetry;
+import com.purpuragenda.adapters.out.postgres.PostgresNotificationRetry;
+import com.purpuragenda.adapters.out.postgres.PostgresAdministratorOperations;
 import com.purpuragenda.adapters.out.postgres.PostgresNotes;
 import com.purpuragenda.adapters.out.postgres.PostgresAdministratorHistory;
 import com.purpuragenda.adapters.out.postgres.PostgresAdministratorCustomers;
@@ -106,6 +109,12 @@ public class RuntimeApplication {
     }
     @Bean AdministratorNoteController administratorNoteController(DataSource source,RuntimeSettings settings) {
         return new AdministratorNoteController(new AdministratorNotes(new PostgresNotes(source,settings.meetingHosts())));
+    }
+    @Bean AdministratorOperationsController administratorOperationsController(DataSource source,SessionAccess access,SessionCookies cookies) {
+        return new AdministratorOperationsController(new PostgresAdministratorOperations(source),access,cookies);
+    }
+    @Bean AdministratorNotificationRetryController administratorNotificationRetryController(DataSource source,RuntimeSettings settings) {
+        return new AdministratorNotificationRetryController(new AdministratorNotificationRetry(new PostgresNotificationRetry(source,settings.meetingHosts())));
     }
     @Bean AdministratorCustomerController administratorCustomerController(DataSource source,SessionAccess access,SessionCookies cookies) {
         return new AdministratorCustomerController(new PostgresAdministratorCustomers(source),access,cookies);
