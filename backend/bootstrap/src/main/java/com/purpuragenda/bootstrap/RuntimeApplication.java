@@ -122,6 +122,9 @@ public class RuntimeApplication {
     @Bean AdministratorLoginController administratorLoginController(AdministratorLogin login,SessionCookies cookies) {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AccountEnrollmentProofs accountEnrollmentProofs(RequestThrottle throttle,AuthDeliveryStore delivery) { return new AccountEnrollmentProofs(throttle,delivery); }
+    @Bean AccountEnrollmentRequest accountEnrollmentRequest(DataSource source,RequestThrottle throttle) { return new AccountEnrollmentRequest(new AccountEnrollment(new PostgresAccountEnrollment(source),new Argon2PasswordHash()),throttle); }
+    @Bean AccountEnrollmentController accountEnrollmentController(AccountEnrollmentProofs proofs,AccountEnrollmentRequest enrollment) { return new AccountEnrollmentController(proofs,enrollment,java.time.Duration.ofMillis(300)); }
     @Bean AccountData accountData(DataSource source) { return new AccountData(new PostgresAccountData(source)); }
     @Bean AccountDataController accountDataController(AccountData data,SessionAccess sessions,SessionCookies cookies) { return new AccountDataController(data,sessions,cookies); }
     @Bean AccountProfileController accountProfileController(AccountData data) { return new AccountProfileController(data); }

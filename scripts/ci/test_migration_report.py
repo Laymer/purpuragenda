@@ -517,6 +517,18 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AccountDataHttpPostgresTest" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_account_enrollment_http_requires_complete_real_proof_budget_and_identity_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountEnrollmentController.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AccountEnrollmentHttpPostgresTest.xml')
+        for count, cases, nested in ((5, 5, ''), (6, 5, ''), (7, 6, ''), (6, 6, '<failure/>'), (6, 6, '<error/>'), (6, 6, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AccountEnrollmentHttpPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AccountEnrollmentHttpPostgresTest" tests="6">' + '<testcase/>' * 6 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_service_http_requires_complete_real_authority_and_lifecycle_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorServiceController.java'

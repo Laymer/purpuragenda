@@ -6228,6 +6228,261 @@
           }
         ]
       }
+    },
+    "/account/enrollment-proofs": {
+      "post": {
+        "operationId": "requestAccountEnrollmentProof",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountEnrollmentProofRequest"
+              }
+            }
+          }
+        },
+        "description": "Explicit optional account enrollment request. Exact Origin, live session and CSRF required. Email limits apply before issuing a single-use15-minute ACCOUNT proof bound to this browser. Known and unknown account membership receive the same202 response and no session authority. The link uses /verify#token=...&purpose=ACCOUNT; remove the fragment immediately and require an explicit password enrollment POST. No query parameters.",
+        "responses": {
+          "202": {
+            "description": "Accepted. Identical for known and unknown contacts; carries no authority.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: 60 second cooldown, 5 per hour per address, 30 per hour per client address",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "TEMPORARILY_UNAVAILABLE (retryable)",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/enrollments": {
+      "post": {
+        "operationId": "enrollAccount",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountEnrollmentRequest"
+              }
+            }
+          }
+        },
+        "description": "Explicitly choose a password and consume the browser-bound ACCOUNT proof. Exact Origin/session/CSRF required. Reserve the network enrollment budget before memory-hard hashing. Wrong-browser, expired, replayed, wrong-purpose and already-enrolled proofs return generic PROOF_INVALID. Success preserves stable customer identity, bookings and quotas, grants no session, and requires separate ordinary password login. Never retry automatically after an uncertain response; try ordinary login or request another proof. No query parameters.",
+        "responses": {
+          "400": {
+            "description": "INVALID_REQUEST for malformed input or password policy; PROOF_INVALID for unavailable enrollment proof.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AccountProblem"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccountProblem"
+          },
+          "503": {
+            "$ref": "#/components/responses/AccountProblem"
+          },
+          "default": {
+            "$ref": "#/components/responses/AccountProblem"
+          },
+          "204": {
+            "description": "Account enrolled; empty body and no session cookie. Use ordinary password login.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: five reserved failed enrollment attempts per fixed15-minute client-network window before password hashing; positive Retry-After seconds. Successful enrollment releases its reservation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8906,6 +9161,44 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "AccountEnrollmentProofRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "AccountEnrollmentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "token",
+          "password"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "writeOnly": true
+          },
+          "password": {
+            "type": "string",
+            "minLength": 15,
+            "maxLength": 128,
+            "writeOnly": true,
+            "description": "Exact password; never trim, normalize or persist in browser storage."
           }
         }
       }
