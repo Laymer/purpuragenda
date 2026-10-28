@@ -58,6 +58,7 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
         }
         @if (canManage()) {
           <h2>Manage booking</h2>
+          @if (!busy() && !uncertain()) { <a [routerLink]="'/admin/bookings/' + b.id + '/reschedule'">Reschedule booking</a> }
           <form (submit)="$event.preventDefault()">
             <label for="action-reason">Reason (10–500 characters)</label>
             <textarea id="action-reason" maxlength="500" [formControl]="reason" [attr.aria-describedby]="changeHint() ? 'action-hint' : null"></textarea>

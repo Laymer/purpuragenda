@@ -10,15 +10,8 @@ import { safeFailure } from '../shared/access/access-failure';
 import { brusselsDisplay, brusselsInstants, zoomHint } from './admin-time';
 import { reauthenticate } from './admin-reauth';
 
-const RULES: Record<string, { rule: string; label: string }> = {
-  START_NOT_AVAILABLE: { rule: 'START_RULES', label: 'Outside scheduled start times' },
-  MINIMUM_NOTICE: { rule: 'NOTICE', label: 'Less than minimum notice' },
-  OUTSIDE_HORIZON: { rule: 'HORIZON', label: 'Outside the booking horizon' },
-  DAILY_CAPACITY_REACHED: { rule: 'DAILY_CAPACITY', label: 'Daily booking limit reached' },
-  ACTIVE_LIMIT_REACHED: { rule: 'ACTIVE_LIMIT', label: 'Customer active booking limit reached' },
-  REQUEST_LIMIT_REACHED: { rule: 'REQUEST_LIMIT', label: 'Request limit reached' },
-  HARD_BLACKOUT: { rule: 'HARD_BLACKOUT', label: 'Reservation intersects a blackout' },
-};
+import { OVERRIDE_RULES } from './scheduling-overrides';
+
 const text = (max: number) => new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(max)] });
 
 @Component({
@@ -172,7 +165,7 @@ export class ManualBookingComponent {
     this.uncertain.set(failure.kind === 'UNCERTAIN');
     if (this.uncertain()) { this.message.set('The response did not arrive. The booking may exist. Retry the same booking before starting another.'); return; }
     this.command?.discard(); this.command = null;
-    const violation = failure.code ? RULES[failure.code] : undefined;
+    const violation = failure.code ? OVERRIDE_RULES[failure.code] : undefined;
     if (violation) {
       if (!this.violations().some(v => v.rule === violation.rule)) this.violations.update(values => [...values, violation]);
       this.message.set('The booking violates a rule. Review the explicit exception choices.');
