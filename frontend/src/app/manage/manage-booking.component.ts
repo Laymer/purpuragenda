@@ -6,6 +6,7 @@ import { BookingStatusComponent, zonedInstant } from '../shared/booking-status.c
 import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { AccessFailure, safeFailure } from '../shared/access/access-failure';
+import { ContactRequestComponent } from './contact-request.component';
 import { ReschedulePickerComponent, RescheduleChoice } from './reschedule-picker.component';
 
 const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
@@ -13,7 +14,7 @@ type Phase = 'view' | 'cancel' | 'pick' | 'confirm';
 type Action = 'cancel' | 'reschedule';
 
 @Component({
-  imports: [RouterLink, MatButtonModule, BookingStatusComponent, ReschedulePickerComponent],
+  imports: [RouterLink, MatButtonModule, BookingStatusComponent, ReschedulePickerComponent, ContactRequestComponent],
   template: `
     <section aria-labelledby="booking-title" [attr.aria-busy]="busy()">
       <h1 id="booking-title" tabindex="-1">Your booking</h1>
@@ -23,6 +24,7 @@ type Action = 'cancel' | 'reschedule';
         @if (phase() === 'view') {
           <button mat-stroked-button type="button" (click)="load()" [disabled]="busy()">Refresh booking status</button>
           @if (canReschedule()) { <button mat-stroked-button type="button" (click)="askReschedule()" [disabled]="busy()">Change time</button> }
+          <app-contact-request [bookingId]="b.id" [disabled]="busy() || uncertain()" />
           @if (canCancel()) { <button mat-stroked-button type="button" (click)="askCancel()" [disabled]="busy()">Cancel this booking</button> }
         }
         @if (uncertain()) {

@@ -4,12 +4,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { GuestService } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { VERIFICATION_PROOF } from './verification-proof';
+import { ContactConfirmationComponent } from '../manage/contact-confirmation.component';
 import { EnrollmentCompletionComponent } from '../account/enrollment-completion.component';
 
 @Component({
-  imports: [RouterLink, MatButtonModule, EnrollmentCompletionComponent],
+  imports: [RouterLink, MatButtonModule, EnrollmentCompletionComponent, ContactConfirmationComponent],
   template: `
-    @if (accountProof) { <app-enrollment-completion /> } @else {
+    @if (contactProof) { <app-contact-confirmation /> } @else if (accountProof) { <app-enrollment-completion /> } @else {
     <section class="verification" aria-labelledby="verify-title" [attr.aria-busy]="busy()">
       <h1 id="verify-title">Verify your email</h1>
       @if (available()) {
@@ -26,6 +27,7 @@ export class VerifyEmailComponent {
   private readonly guest = inject(GuestService);
   private readonly sessions = inject(SessionAccess);
   readonly accountProof = this.proof.account;
+  readonly contactProof = this.proof.contact;
   private active = true;
   readonly available = signal(this.proof.available);
   readonly busy = signal(false);

@@ -23,6 +23,15 @@ describe('Verification fragment privacy', () => {
     expect(scrub).toHaveBeenCalledOnce(); expect(account.account).toBe(true); expect(account.take()).toBeNull(); expect(account.available).toBe(true); expect(JSON.stringify(account).includes(token)).toBe(false); expect(account.takeAccount() === token).toBe(true); expect(account.takeAccount()).toBeNull(); expect(account.available).toBe(false);
     const guest = captureVerificationProof('/verify', `#token=${token}&purpose=CREATE`, scrub); expect(guest.takeAccount()).toBeNull(); expect(guest.available).toBe(true); expect(guest.take()?.purpose).toBe('CREATE');
   });
+  it('keeps CONTACT tokens out of guest and enrollment flows and preserves exact booking context', () => {
+    const id = '20000000-0000-4000-8000-000000000001'; const proof = captureVerificationProof('/verify', `#token=${token}&purpose=CONTACT&bookingId=${id}`, () => {});
+    expect(proof.contact).toBe(true); expect(proof.take()).toBeNull(); expect(proof.takeAccount()).toBeNull(); expect(proof.available).toBe(true);
+    expect(proof.takeContact()).toEqual({ token, purpose: 'CONTACT', bookingId: id }); expect(proof.takeContact()).toBeNull();
+    const guest = captureVerificationProof('/verify', `#token=${token}&purpose=CREATE`, () => {}); expect(guest.takeContact()).toBeNull(); expect(guest.available).toBe(true);
+  });
+  it.each(['', '&bookingId=bad', '&bookingId=20000000-0000-4000-8000-000000000001&extra=1', '&bookingId=20000000-0000-4000-8000-000000000001&bookingId=20000000-0000-4000-8000-000000000001'])('rejects missing, invalid or repeated CONTACT scope %s', suffix => {
+    expect(captureVerificationProof('/verify', `#token=${token}&purpose=CONTACT${suffix}`, () => {}).available).toBe(false);
+  });
   it.each(['', '#token=a&purpose=CREATE', `#token=${token}`, `#purpose=CREATE`,
     `#token=${token}&purpose=UNKNOWN`, `#token=${token}&purpose=CREATE&purpose=MANAGE`,
     `#token=${token}&token=${token}&purpose=CREATE`, `#token=${token}&purpose=CREATE&next=/admin`, '#'+ 'x'.repeat(201)])('scrubs and rejects malformed fragments', fragment => {
