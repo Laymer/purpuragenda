@@ -90,7 +90,11 @@ public final class PostgresAccountData implements AccountDataStore {
     }
     private Profile current(UUID customer,boolean lock) {
         return jdbc.query("SELECT version,document::text FROM customer_profile WHERE customer_id=?"+(lock?" FOR UPDATE":""),
-                (r,n)->new Profile(r.getLong(1),PersistedJson.read(r.getString(2),Fields.class)),customer).stream().findFirst().orElseGet(Profile::empty);
+                (r,n)->{
+                    long version=r.getLong(1);String document=r.getString(2);
+                    // Enrollment predates explicit profile fields and persists its empty version-one placeholder.
+                    return version==1 && document.equals("{}")?Profile.empty():new Profile(version,PersistedJson.read(document,Fields.class));
+                },customer).stream().findFirst().orElseGet(Profile::empty);
     }
     private record Authority(UUID id,UUID customer,String email) { @Override public String toString() { return "AccountAuthority[REDACTED]"; } }
     private Authority authorize(SessionBinding session,Instant now) {

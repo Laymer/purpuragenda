@@ -49,6 +49,8 @@ class AccountDataPostgresTest {
     @Test void profileIsExplicitVersionedIdempotentAndSeparateFromIdentitySnapshotsAndQuotas() {
         Account owner=account("synthetic@example.test");UUID booking=c.command.create(owner.binding(),"booking",c.request(3,9)).entityId();var original=c.load(booking);
         assertEquals(Profile.empty(),app.profile(owner.binding()).profile());assertEquals("synthetic@example.test",app.profile(owner.binding()).loginEmail());assertEquals(0,count("customer_profile"));
+        c.jdbc.update("INSERT INTO customer_profile(customer_id,version,document) VALUES(?,1,'{}'::jsonb)",owner.customer());
+        assertEquals(Profile.empty(),app.profile(owner.binding()).profile());assertEquals("{}",c.f.value("SELECT document::text FROM customer_profile WHERE customer_id=?",owner.customer()));
         int audit=count("audit_event"),events=count("outbox_event"),charges=count("request_charge");
         Receipt first=app.update(owner.binding(),"profile",1,fields());assertEquals(2,first.version());assertEquals(first,app.update(owner.binding(),"profile",1,fields()));
         assertEquals(Code.IDEMPOTENCY_KEY_REUSED,app.update(owner.binding(),"profile",1,new Fields("Different","","")).code());

@@ -36,7 +36,7 @@ class AccountDataHttpPostgresTest {
     MockHttpServletRequestBuilder write(AccountHttpPostgresTest.Browser browser,String key,String version,String body) { return h.json(browser,BASE+"/profile",body).header("Idempotency-Key",key).header("If-Match",version); }
     MockHttpServletResponse send(MockHttpServletRequestBuilder request) throws Exception { return h.mvc.perform(request).andReturn().getResponse(); }
     @Test void explicitProfileVersionReplayAndConflictsPreserveImmutableIdentity() throws Exception {
-        var browser=h.login();var empty=send(read(browser,"/profile"));assertEquals(200,empty.getStatus());assertEquals("\"1\"",empty.getHeader("ETag"));assertEquals(0,h.count("customer_profile"));
+        var browser=h.login();var empty=send(read(browser,"/profile"));assertEquals(200,empty.getStatus());assertEquals("\"1\"",empty.getHeader("ETag"));assertEquals(1,h.count("customer_profile"));
         var first=send(write(browser,"save","\"1\"",BODY));assertEquals(200,first.getStatus());assertEquals("{\"version\":2}",first.getContentAsString());assertEquals("no-store",first.getHeader("Cache-Control"));
         assertEquals(first.getContentAsString(),send(write(browser,"save","\"1\"",BODY)).getContentAsString());assertEquals(1,h.count("audit_event WHERE type='ACCOUNT_PROFILE_CHANGED'"));
         h.problem(send(write(browser,"save","\"1\"",BODY.replace("Synthetic","Different"))),409,"IDEMPOTENCY_KEY_REUSED");h.problem(send(write(browser,"stale","\"1\"",BODY)),412,"STALE_VERSION");
@@ -62,7 +62,7 @@ class AccountDataHttpPostgresTest {
         h.problem(send(write(browser,"key","\"1\"",BODY).with(r->{r.removeHeader("If-Match");return r;})),428,"VERSION_REQUIRED");
         h.problem(send(write(browser,"key","W/\"1\"",BODY)),400,"INVALID_REQUEST");
         h.problem(send(write(browser,"key","\"1\"",BODY).with(r->{r.removeHeader("Idempotency-Key");return r;})),400,"INVALID_REQUEST");
-        h.problem(send(write(browser,"key","\"1\"",BODY+"{}")),400,"INVALID_REQUEST");h.problem(send(read(browser,"/history").param("limit","1","2")),400,"INVALID_REQUEST");assertEquals(0,h.count("customer_profile"));
+        h.problem(send(write(browser,"key","\"1\"",BODY+"{}")),400,"INVALID_REQUEST");h.problem(send(read(browser,"/history").param("limit","1","2")),400,"INVALID_REQUEST");assertEquals(1,h.count("customer_profile"));assertEquals("1",h.a.value("SELECT version FROM customer_profile"));assertEquals("{}",h.a.value("SELECT document::text FROM customer_profile"));
     }
     @Test void anonymousAndGuestSessionsNeverGainProfileOrHistory() throws Exception {
         var anonymous=h.boot();h.problem(send(read(anonymous,"/history")),403,"ACCOUNT_ACCESS_REQUIRED");h.problem(send(read(anonymous,"/profile")),403,"ACCOUNT_ACCESS_REQUIRED");h.problem(send(write(anonymous,"key","\"1\"",BODY)),403,"ACCOUNT_ACCESS_REQUIRED");
