@@ -9,3 +9,5 @@
 - Verification: local11 real PostgreSQL note tests and44 Python report tests passed; documentation/diff checks passed. Independent review P2 replay-fingerprint finding fixed with same-actor/booking wrong-note regression;11 PostgreSQL tests and44 report tests passed again; exact-head follow-up review pending. PR129 run40715078190 all15 green after unchanged-head image-build/browser rerun, zero alerts, independent reviewc6f32d4 clean. Local108 domain and313 application tests/coverage passed. Local broad adapter run had78 connection failures; all78 passed in serial reruns. Docker now available.
 - Next concrete action: push task/p32-note-persistence, create draft PR and require exact-head independent review plus all15 hosted checks.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+- Closure: PR130 confirmed merged1756eed after15 hosted checks and independent exact-head review1bbea71; zero alerts; replay finding resolved. Claim released.
