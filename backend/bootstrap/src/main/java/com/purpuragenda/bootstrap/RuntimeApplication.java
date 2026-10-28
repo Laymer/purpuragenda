@@ -1,6 +1,9 @@
 package com.purpuragenda.bootstrap;
 
 import com.purpuragenda.application.scheduling.AdminBooking;
+import com.purpuragenda.application.scheduling.AdministratorNotes;
+import com.purpuragenda.adapters.out.postgres.PostgresNotes;
+import com.purpuragenda.adapters.out.postgres.PostgresAdministratorHistory;
 import com.purpuragenda.application.scheduling.AdministratorBookingChanges;
 import com.purpuragenda.application.scheduling.AdministratorBookingView;
 import com.purpuragenda.application.scheduling.AdministratorConfiguration;
@@ -99,6 +102,12 @@ public class RuntimeApplication {
     }
     @Bean AdministratorFinance administratorFinance(DataSource source,RuntimeSettings settings) {
         return new AdministratorFinance(new PostgresFinance(source,settings.meetingHosts()),settings.meetingHosts());
+    }
+    @Bean AdministratorNoteController administratorNoteController(DataSource source,RuntimeSettings settings) {
+        return new AdministratorNoteController(new AdministratorNotes(new PostgresNotes(source,settings.meetingHosts())));
+    }
+    @Bean AdministratorHistoryController administratorHistoryController(DataSource source,SessionAccess access,SessionCookies cookies) {
+        return new AdministratorHistoryController(new PostgresAdministratorHistory(source),access,cookies);
     }
     @Bean AdministratorFinanceController administratorFinanceController(AdministratorFinance finance) { return new AdministratorFinanceController(finance); }
     @Bean AdministratorBookingView administratorBookingView(DataSource source,RuntimeSettings settings) {

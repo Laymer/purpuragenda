@@ -557,6 +557,9 @@ class RuntimeDatabaseTest {
             var authenticated=login(port,"{\"email\":\"runtime-finance-admin@example.test\",\"password\":\""+new String(password)+"\",\"totp\":\""+code+"\"}",cookie,csrf);assertEquals(200,authenticated.statusCode());
             cookie=authenticated.headers().firstValue("Set-Cookie").orElseThrow().split(";",2)[0];
             csrf=field(authenticated.body(),"csrfToken");String base="/api/v1/admin/bookings/"+id;
+            var privateNote=json(port,base+"/notes","{\"text\":\"Synthetic runtime private note\"}",cookie,csrf,"Idempotency-Key","runtime-note");assertEquals(201,privateNote.statusCode());
+            var notePage=call(port,"GET",base+"/notes","Cookie",cookie);assertEquals(200,notePage.statusCode());assertTrue(notePage.body().contains("Synthetic runtime private note"));
+            var auditPage=call(port,"GET","/api/v1/admin/audit?bookingId="+id,"Cookie",cookie);assertEquals(200,auditPage.statusCode());assertTrue(auditPage.body().contains("NOTE_ADDED"));assertFalse(auditPage.body().contains("Synthetic runtime private note"));
             var approved=json(port,base+"/approve","{\"meetingUrl\":\"https://zoom.us/j/582749163\"}",cookie,csrf,"Idempotency-Key","runtime-finance-approve","If-Match","\"1\"");assertEquals(200,approved.statusCode());
             var unpaid=new com.fasterxml.jackson.databind.ObjectMapper().readTree(call(port,"GET",base,"Cookie",cookie).body());assertEquals("UNPAID",unpaid.at("/payment/status").asText());
             String verified=text("SELECT to_char((clock_timestamp()-interval '1 second') AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')");
