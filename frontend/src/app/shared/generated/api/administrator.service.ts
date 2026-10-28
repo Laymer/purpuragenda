@@ -452,7 +452,7 @@ export class AdministratorService extends BaseService {
     }
 
     /**
-     * Replaces the participant meeting link of a live pending or confirmed booking. Requires exact Origin/CSRF, idempotency, the reviewed booking version and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Unknown bookings return 404. Replies are no-store.
+     * Replaces the participant meeting link of a confirmed booking; a pending request gets its link through approval (409 INVALID_TRANSITION). Requires exact Origin/CSRF, idempotency, the reviewed booking version and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Unknown bookings return 404. Replies are no-store.
      * @endpoint post /admin/bookings/{bookingId}/meeting
      * @param bookingId 
      * @param xCSRFToken 

@@ -5135,7 +5135,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Replaces the participant meeting link of a live pending or confirmed booking. Requires exact Origin/CSRF, idempotency, the reviewed booking version and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Unknown bookings return 404. Replies are no-store.",
+        "description": "Replaces the participant meeting link of a confirmed booking; a pending request gets its link through approval (409 INVALID_TRANSITION). Requires exact Origin/CSRF, idempotency, the reviewed booking version and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Unknown bookings return 404. Replies are no-store.",
         "security": [
           {
             "sessionCookie": []
@@ -7653,7 +7653,7 @@
             "maxLength": 500
           }
         },
-        "description": "An allowed Zoom participant URL different from the current one and not held by another booking (409 MEETING_IN_USE); malformed URLs return 400 INVALID_MEETING. A confirmed booking advances its calendar revision; both audiences are notified."
+        "description": "An allowed Zoom participant URL different from the current one and not held by another booking (409 MEETING_IN_USE); malformed URLs return 400 INVALID_MEETING. The confirmed booking advances its calendar revision; both audiences are notified."
       }
     },
     "securitySchemes": {

@@ -65,15 +65,18 @@ public final class AdministratorBookingChanges {
         @Override public String toString() { return "AdminMeetingChange[REDACTED]"; }
     }
 
-    /** Replaces the participant link of a live pending or confirmed booking; the link stays unique across bookings. */
+    /**
+     * Replaces the participant link of a confirmed booking; the link stays unique across bookings. A pending request has no
+     * link yet and receives one only through approval, so assigning one here would reserve it even after rejection or expiry.
+     */
     public Receipt changeMeeting(SessionBinding session,UUID bookingId,String key,MeetingChange request) {
         Objects.requireNonNull(request);
         // A malformed participant URL is a caller error before any persistence, as for creation and approval.
         Meeting meeting=Meeting.parse(request.meetingUrl(),meetingHosts);
         return run(session,bookingId,Operation.MEETING,key,List.of(Long.toString(request.expectedVersion()),meeting.participantUrl(),request.reason()),tx -> {
-            Booking original=current(tx,request.expectedVersion());Instant now=tx.now();
-            require(original.livePending(now) || original.state()==Booking.State.CONFIRMED,"INVALID_TRANSITION");
-            require(original.meeting()==null || !original.meeting().participantUrl().equals(meeting.participantUrl()),"INVALID_BOOKING_CHANGE");
+            Booking original=current(tx,request.expectedVersion());
+            require(original.state()==Booking.State.CONFIRMED && original.meeting()!=null,"INVALID_TRANSITION");
+            require(!original.meeting().participantUrl().equals(meeting.participantUrl()),"INVALID_BOOKING_CHANGE");
             require(!tx.meetingInUse(meeting.meetingId()),"MEETING_IN_USE");
             Booking updated=original.updateMeeting(meeting);
             tx.save(updated);tx.meetingEffects(original,updated,request.reason());return receipt(updated);

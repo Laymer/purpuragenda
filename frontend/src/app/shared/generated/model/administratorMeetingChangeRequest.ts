@@ -10,7 +10,7 @@
 
 
 /**
- * An allowed Zoom participant URL different from the current one and not held by another booking (409 MEETING_IN_USE); malformed URLs return 400 INVALID_MEETING. A confirmed booking advances its calendar revision; both audiences are notified.
+ * An allowed Zoom participant URL different from the current one and not held by another booking (409 MEETING_IN_USE); malformed URLs return 400 INVALID_MEETING. The confirmed booking advances its calendar revision; both audiences are notified.
  */
 export interface AdministratorMeetingChangeRequest { 
     meetingUrl: string;

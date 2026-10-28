@@ -85,7 +85,7 @@ class AdministratorBookingChangesTest {
         assertTrue(changes.reschedule(session,live.id(),"live",move(2,Instant.parse("2026-01-08T09:00:00Z"))).success());
     }
 
-    @Test void meetingChangesReplaceAUniqueValidLinkOnLiveBookingsOnly() {
+    @Test void meetingChangesReplaceAUniqueValidLinkOnConfirmedBookingsOnly() {
         Booking original=confirmed(Instant.parse("2026-01-05T09:00:00Z"));UUID id=original.id();String next="https://zoom.us/j/987654321";
         var receipt=changes.changeMeeting(session,id,"meeting",new MeetingChange(2,next,REASON));
         assertEquals(new Receipt(Code.OK,id,3),receipt);assertEquals(next,f.saved.meeting().participantUrl());assertEquals(original.calendarRevision()+1,f.saved.calendarRevision());
@@ -93,9 +93,10 @@ class AdministratorBookingChangesTest {
         f.usedMeetings.add("987654321");assertEquals(Receipt.failure(Code.MEETING_IN_USE),changes.changeMeeting(session,id,"used",new MeetingChange(2,next,REASON)));
         assertThrows(DomainFailure.class,()->changes.changeMeeting(session,id,"same",new MeetingChange(2,original.meeting().participantUrl(),REASON)));
         assertEquals("INVALID_MEETING",assertThrows(DomainFailure.class,()->changes.changeMeeting(session,id,"bad",new MeetingChange(2,"https://example.test/j/123456789",REASON))).code());
+        // A pending request has no link to change; it gets one only through approval.
         Booking pending=pending(Instant.parse("2026-01-05T12:00:00Z"));f.usedMeetings.clear();
-        assertTrue(changes.changeMeeting(session,pending.id(),"pending",new MeetingChange(1,next,REASON)).success());assertEquals(Booking.State.PENDING_CONFIRMATION,f.saved.state());
-        f.target=pending.reject();assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.changeMeeting(session,pending.id(),"terminal",new MeetingChange(2,next,REASON)));
+        assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.changeMeeting(session,pending.id(),"pending",new MeetingChange(1,next,REASON)));
+        f.target=original.cancel(f.now,false);assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.changeMeeting(session,id,"terminal",new MeetingChange(3,next,REASON)));
         assertThrows(DomainFailure.class,()->new MeetingChange(1,null,REASON));assertEquals("AdminMeetingChange[REDACTED]",new MeetingChange(1,next,REASON).toString());
         assertThrows(DomainFailure.class,()->new AdministratorBookingChanges(f,Set.of()));
     }
