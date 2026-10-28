@@ -9,10 +9,11 @@ import { SessionAccess } from '../shared/access/session-access';
     <nav aria-label="Administrator">
       <a routerLink="/admin">Agenda</a>
       <a routerLink="/admin/bookings/new">Create booking</a>
+      <a routerLink="/admin/services">Services</a>
       <button mat-stroked-button type="button" (click)="signOut()" [disabled]="busy()">Sign out</button>
     </nav>
     <router-outlet />`,
-  styles: [`nav { display: flex; gap: 1rem; align-items: center; justify-content: space-between; max-width: 60rem; margin: 1rem auto 0; padding: 0 1rem; }`],
+  styles: [`nav { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; max-width: 60rem; margin: 1rem auto 0; padding: 0 1rem; }`],
 })
 export class AdminShellComponent {
   private readonly sessions = inject(SessionAccess);
