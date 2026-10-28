@@ -216,6 +216,10 @@ class RuntimeDatabaseTest {
             for(String path:List.of("/api/v1/account/profile","/api/v1/account/history"))assertEquals(403,call(port,"GET",path,"Cookie",cookie).statusCode());
             var profile=call(port,"POST","/api/v1/account/profile","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",csrf);
             assertEquals(403,profile.statusCode());assertTrue(profile.body().contains("ACCOUNT_ACCESS_REQUIRED"));
+            for(String path:List.of("/api/v1/account/enrollment-proofs","/api/v1/account/enrollments")) {
+                var invalid=call(port,"POST",path,"Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",csrf);
+                assertEquals(400,invalid.statusCode());assertTrue(invalid.body().contains("INVALID_REQUEST"));assertTrue(invalid.headers().firstValue("Set-Cookie").isEmpty());
+            }
             var state=call(port,"GET","/api/v1/session","Cookie",cookie);
             assertEquals(200,state.statusCode());assertFalse(state.body().contains("csrfToken"));
             assertEquals(401,call(port,"GET","/api/v1/session").statusCode());

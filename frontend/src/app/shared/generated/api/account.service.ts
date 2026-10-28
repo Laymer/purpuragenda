@@ -17,6 +17,10 @@ import { Observable }                                        from 'rxjs';
 import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 
 // @ts-ignore
+import { AccountEnrollmentProofRequest } from '../model/accountEnrollmentProofRequest';
+// @ts-ignore
+import { AccountEnrollmentRequest } from '../model/accountEnrollmentRequest';
+// @ts-ignore
 import { AccountHistory } from '../model/accountHistory';
 // @ts-ignore
 import { AccountLoginRequest } from '../model/accountLoginRequest';
@@ -30,6 +34,8 @@ import { AccountProfileReceipt } from '../model/accountProfileReceipt';
 import { AccountProfileRequest } from '../model/accountProfileRequest';
 // @ts-ignore
 import { Problem } from '../model/problem';
+// @ts-ignore
+import { ProofAccepted } from '../model/proofAccepted';
 // @ts-ignore
 import { SessionBootstrap } from '../model/sessionBootstrap';
 
@@ -114,6 +120,81 @@ export class AccountService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: accountPasswordChangeRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Explicitly choose a password and consume the browser-bound ACCOUNT proof. Exact Origin/session/CSRF required. Reserve the network enrollment budget before memory-hard hashing. Wrong-browser, expired, replayed, wrong-purpose and already-enrolled proofs return generic PROOF_INVALID. Success preserves stable customer identity, bookings and quotas, grants no session, and requires separate ordinary password login. Never retry automatically after an uncertain response; try ordinary login or request another proof. No query parameters.
+     * @endpoint post /account/enrollments
+     * @param xCSRFToken 
+     * @param accountEnrollmentRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public enrollAccount(xCSRFToken: string, accountEnrollmentRequest: AccountEnrollmentRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public enrollAccount(xCSRFToken: string, accountEnrollmentRequest: AccountEnrollmentRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public enrollAccount(xCSRFToken: string, accountEnrollmentRequest: AccountEnrollmentRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public enrollAccount(xCSRFToken: string, accountEnrollmentRequest: AccountEnrollmentRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling enrollAccount.');
+        }
+        if (accountEnrollmentRequest === null || accountEnrollmentRequest === undefined) {
+            throw new Error('Required parameter accountEnrollmentRequest was null or undefined when calling enrollAccount.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/account/enrollments`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<any>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: accountEnrollmentRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -333,6 +414,82 @@ export class AccountService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: accountLoginRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Explicit optional account enrollment request. Exact Origin, live session and CSRF required. Email limits apply before issuing a single-use15-minute ACCOUNT proof bound to this browser. Known and unknown account membership receive the same202 response and no session authority. The link uses /verify#token&#x3D;...&amp;purpose&#x3D;ACCOUNT; remove the fragment immediately and require an explicit password enrollment POST. No query parameters.
+     * @endpoint post /account/enrollment-proofs
+     * @param xCSRFToken 
+     * @param accountEnrollmentProofRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public requestAccountEnrollmentProof(xCSRFToken: string, accountEnrollmentProofRequest: AccountEnrollmentProofRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<ProofAccepted>;
+    public requestAccountEnrollmentProof(xCSRFToken: string, accountEnrollmentProofRequest: AccountEnrollmentProofRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<ProofAccepted>>;
+    public requestAccountEnrollmentProof(xCSRFToken: string, accountEnrollmentProofRequest: AccountEnrollmentProofRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<ProofAccepted>>;
+    public requestAccountEnrollmentProof(xCSRFToken: string, accountEnrollmentProofRequest: AccountEnrollmentProofRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling requestAccountEnrollmentProof.');
+        }
+        if (accountEnrollmentProofRequest === null || accountEnrollmentProofRequest === undefined) {
+            throw new Error('Required parameter accountEnrollmentProofRequest was null or undefined when calling requestAccountEnrollmentProof.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/account/enrollment-proofs`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<ProofAccepted>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: accountEnrollmentProofRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

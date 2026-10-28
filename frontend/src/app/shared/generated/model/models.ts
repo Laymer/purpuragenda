@@ -1,3 +1,5 @@
+export * from './accountEnrollmentProofRequest';
+export * from './accountEnrollmentRequest';
 export * from './accountHistory';
 export * from './accountHistoryBooking';
 export * from './accountHistoryCursor';
