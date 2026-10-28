@@ -7126,6 +7126,229 @@
           }
         }
       }
+    },
+    "/admin/customers": {
+      "get": {
+        "operationId": "searchAdministratorCustomers",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator literal customer search by stable email, profile or booking name, delivery email or booking reference. Delivery matches do not transfer ownership. Read-only persisted authority; no session touch or fresh-MFA requirement. UUID ascending pages, limit 1\u2013100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. No-store; conditional cache headers never suppress responses.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 254
+            },
+            "description": "Trimmed NFC-normalized literal text; SQL wildcard characters have no special meaning."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCustomerPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          }
+        }
+      }
+    },
+    "/admin/customers/{customerId}/bookings": {
+      "get": {
+        "operationId": "getAdministratorCustomerBookings",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator history for the stable customer identity, independent of current delivery addresses. Minimal immutable booking summaries ordered newest start/id first. Read-only persisted authority; no session touch or fresh-MFA requirement. Limit 1\u2013100 default 50; copy nextCursor unchanged. Reject unknown, duplicate and malformed query fields. No-store; conditional cache headers never suppress responses. Unknown customer returns CUSTOMER_NOT_FOUND only after authority checks.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCustomerBookings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND after administrator authority checks",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10008,6 +10231,84 @@
             "maxItems": 100,
             "items": {
               "$ref": "#/components/schemas/AdministratorAuditEntry"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdministratorCustomer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "email",
+          "enrolled"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "enrolled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdministratorCustomerPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entries",
+          "nextCursor",
+          "serverNow"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorCustomer"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdministratorCustomerBookings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "customer",
+          "bookings",
+          "nextCursor",
+          "serverNow"
+        ],
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/AdministratorCustomer"
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountHistoryBooking"
             }
           },
           "nextCursor": {

@@ -30,6 +30,22 @@ class ContractTest(unittest.TestCase):
         self.assertEqual('^[A-Za-z0-9_-]{43}$', schema['properties']['token']['pattern'])
 
 
+    def test_administrator_customer_reads_expose_minimal_stable_identity_and_strict_pagination(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        search = paths['/admin/customers']['get']; history = paths['/admin/customers/{customerId}/bookings']['get']
+        self.assertEqual({'query', 'limit', 'cursor'}, {p['name'] for p in search['parameters']})
+        self.assertEqual({'customerId', 'limit', 'cursor'}, {p['name'] for p in history['parameters']})
+        self.assertTrue(search['parameters'][0]['required'])
+        self.assertEqual(254, search['parameters'][0]['schema']['maxLength'])
+        self.assertEqual({'id', 'email', 'enrolled'}, set(schemas['AdministratorCustomer']['properties']))
+        self.assertFalse(schemas['AdministratorCustomer']['additionalProperties'])
+        self.assertEqual('#/components/schemas/AccountHistoryBooking', schemas['AdministratorCustomerBookings']['properties']['bookings']['items']['$ref'])
+        self.assertIn('CUSTOMER_NOT_FOUND', history['responses']['404']['description'])
+        for operation in (search, history):
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+            self.assertEqual(100, operation['parameters'][1]['schema']['maximum'])
+
     def test_private_note_and_audit_contracts_keep_commands_and_reads_separate(self):
         contract = json.loads((ROOT / 'contracts/openapi.yaml').read_text())
         paths = contract['paths']; schemas = contract['components']['schemas']
@@ -212,7 +228,7 @@ class ContractTest(unittest.TestCase):
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
                           'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
-                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote'},
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)
