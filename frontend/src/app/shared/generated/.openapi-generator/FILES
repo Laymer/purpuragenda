@@ -44,6 +44,9 @@ model/administratorConfirmationRequest.ts
 model/administratorConflictPreview.ts
 model/administratorConflictPreviewRequest.ts
 model/administratorConflictPreviewRequestProposal.ts
+model/administratorCustomer.ts
+model/administratorCustomerBookings.ts
+model/administratorCustomerPage.ts
 model/administratorDateException.ts
 model/administratorDateExceptionRequest.ts
 model/administratorIntakeSnapshot.ts
