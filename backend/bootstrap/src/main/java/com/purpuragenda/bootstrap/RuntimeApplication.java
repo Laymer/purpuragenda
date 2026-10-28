@@ -7,6 +7,7 @@ import com.purpuragenda.application.scheduling.AdministratorConfiguration;
 import com.purpuragenda.application.scheduling.AdministratorConfigurationView;
 import com.purpuragenda.application.scheduling.AdministratorFinance;
 import com.purpuragenda.adapters.out.postgres.PostgresFinance;
+import com.purpuragenda.adapters.out.postgres.PostgresAccountData;
 import com.purpuragenda.adapters.out.postgres.PostgresConfiguration;
 import com.purpuragenda.adapters.out.postgres.PostgresAdminBooking;
 import com.purpuragenda.adapters.out.postgres.PostgresAdminChanges;
@@ -121,6 +122,9 @@ public class RuntimeApplication {
     @Bean AdministratorLoginController administratorLoginController(AdministratorLogin login,SessionCookies cookies) {
         return new AdministratorLoginController(login,cookies,java.time.Duration.ofMillis(300));
     }
+    @Bean AccountData accountData(DataSource source) { return new AccountData(new PostgresAccountData(source)); }
+    @Bean AccountDataController accountDataController(AccountData data,SessionAccess sessions,SessionCookies cookies) { return new AccountDataController(data,sessions,cookies); }
+    @Bean AccountProfileController accountProfileController(AccountData data) { return new AccountProfileController(data); }
     @Bean AccountAuthentication accountAuthentication(DataSource source,RequestThrottle throttle) {
         return new AccountAuthentication(new PostgresAccountAuthentication(source),new Argon2PasswordHash(),new AdminCrypto(),throttle);
     }

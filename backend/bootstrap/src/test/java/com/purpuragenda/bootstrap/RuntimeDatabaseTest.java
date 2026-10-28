@@ -85,6 +85,9 @@ class RuntimeDatabaseTest {
             assertEquals("{\"status\":\"UP\"}",health.body());
             assertEquals(404,get(port(context),"/actuator/env").statusCode());
             assertEquals(404,get(port(context),"/api/v1/admin/register").statusCode());
+            for(String path:List.of("/api/v1/account/profile","/api/v1/account/history")) {
+                var denied=get(port(context),path);assertEquals(401,denied.statusCode());assertTrue(denied.body().contains("SESSION_REQUIRED"));assertEquals("no-store",denied.headers().firstValue("Cache-Control").orElseThrow());
+            }
             assertNotNull(context.getBean(PrivateAdminBootstrap.class));assertNotNull(context.getBean(PrivateAdminMfa.class));
             assertNotNull(context.getBean(PrivateAdminRecovery.class));
             assertTrue(context.getBean(GuestAccessStore.class).redeem(new GuestAccessStore.Redemption(
@@ -210,6 +213,9 @@ class RuntimeDatabaseTest {
             String cookie=setCookie.substring(0,setCookie.indexOf(';')),csrf=field(boot.body(),"csrfToken");
             assertEquals("1",text("SELECT count(*) FROM app_session"));assertEquals("ANONYMOUS",field(boot.body(),"role"));
             assertEquals("0",text("SELECT count(*) FROM app_session WHERE token_hash='"+cookie.substring(cookie.indexOf('=')+1)+"' OR csrf_hash='"+csrf+"'"));
+            for(String path:List.of("/api/v1/account/profile","/api/v1/account/history"))assertEquals(403,call(port,"GET",path,"Cookie",cookie).statusCode());
+            var profile=call(port,"POST","/api/v1/account/profile","Origin",ORIGIN,"Cookie",cookie,"X-CSRF-Token",csrf);
+            assertEquals(403,profile.statusCode());assertTrue(profile.body().contains("ACCOUNT_ACCESS_REQUIRED"));
             var state=call(port,"GET","/api/v1/session","Cookie",cookie);
             assertEquals(200,state.statusCode());assertFalse(state.body().contains("csrfToken"));
             assertEquals(401,call(port,"GET","/api/v1/session").statusCode());
