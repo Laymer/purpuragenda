@@ -29,7 +29,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main d2d4dfe; 110Angular tests/build pass locally and heads9f26df2/07fd411 passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
-| P26 — Complete account enrollment, history, profile and session-recovery UI | In progress; account access/history on task/p26-account-access; enrollment/profile/password UI remains;  |
+| P26 — Complete account enrollment, history, profile and session-recovery UI | In progress; account access/history PR122 confirmed merged b9a0ca7 after 15 hosted checks and independent review; enrollment on task/p26-enrollment-ui; profile/password UI remains;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Merged; outcomes PR112 b211d2f; manual creation PR113 3509eb0; rescheduling https://github.com/Laymer/purpuragenda/pull/114 confirmed merged d9ed47b after15 hosted checks and independent review; explicit violated-rule/blackout choices and reasons covered |
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P26/account-access: agent=Codex-coordinator; branch=task/p26-account-access; base=main; handoff=docs/handoffs/codex-p26-account-access.md
+- P26/enrollment-ui: agent=Codex-coordinator; branch=task/p26-enrollment-ui; base=main; handoff=docs/handoffs/codex-p26-enrollment-ui.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T12:31:34Z.
-- Current task: P26/account-access; branch: task/p26-account-access; base: main d0fe1ef; PR URL: pending draft creation.
-- Last pushed implementation commit: 7f11032 (PR121, mergedd0fe1ef); uncommitted changes: tested account sign-in/history and booking-route UI ready for draft PR.
-- What works: P18 complete; PR121 confirmed mergedd0fe1ef after15 hosted checks and independent review. Enrollment, login, password, profile/history backend and typed client are available.
-- What remains: hosted checks and exact-head review; enrollment/profile/password screens follow in subsequent P26 slices.
-- Decisions: reuse SessionAccess for serialized CSRF/authentication, keep private state in memory and clear on invalidation; reuse existing customer booking controls with account-owned ID access.
-- Verification: PR121 run40686481210 all15 green, zero scanning alerts, independent exact-head review7f11032 clean. Local289 application/5 HTTP/68 Python/396 Angular tests and build/coverage passed; PostgreSQL/runtime only CI. Main133be60 run40685394537 green. P26 local422 Angular tests/build/CSP passed with1873/1878 lines and2040/2154 branches; docs/diff checks passed. Independent review found stale conflict-reload messages after route changes; fixed with current-generation checks and412/409 regressions, follow-up review clean.
-- Next concrete action: push task/p26-account-access, create draft PR and verify hosted checks plus exact-head independent review.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T12:59:48Z.
+- Current task: P26/enrollment-ui; branch: task/p26-enrollment-ui; base: main b9a0ca7; PR URL: pending draft creation.
+- Last pushed implementation commit: 0aa62b0 (PR122, mergedb9a0ca7); uncommitted changes: tested optional enrollment UI ready for draft PR.
+- What works: PR122 confirmed mergedb9a0ca7 after15 hosted checks and independent review; account sign-in/history/booking management UI and complete P18 backend available.
+- What remains: hosted checks and exact-head review; profile/password-change UI follows separately.
+- Decisions: ACCOUNT proof never reaches guest redemption; no automatic enrollment or login, no secret persistence and no automatic credential retry after uncertainty.
+- Verification: PR122 run40690276185 all15 green, zero scanning alerts, independent exact-head review0aa62b0 clean after route-reuse finding fixed. Local422 Angular tests/build/CSP passed with1873/1878 lines and2040/2154 branches. Maind0fe1ef run40688414367 green. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches; independent review found Unicode password counting mismatch, fixed before proof consumption and re-reviewed clean.
+- Next concrete action: push task/p26-enrollment-ui, create draft PR and verify hosted checks plus exact-head independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.

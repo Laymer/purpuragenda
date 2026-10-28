@@ -26,7 +26,7 @@ describe('Account authentication', () => {
     document.body.appendChild(fixture.nativeElement);
     try { fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); fixture.detectChanges(); expect(view.message()).toContain('email and password'); expect(document.activeElement).toBe(fixture.nativeElement.querySelector('#account-login-error')); expect(fixture.nativeElement.querySelector('#account-email').getAttribute('aria-describedby')).toBe('account-login-error'); }
     finally { fixture.nativeElement.remove(); }
-    http.expectNone('/api/v1/session/bootstrap');
+    expect(fixture.nativeElement.querySelector('a[href="/account/create"]')).not.toBeNull(); http.expectNone('/api/v1/session/bootstrap');
   });
   it('sends exact credentials once, clears secrets and enters the account only after confirmation', async () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);

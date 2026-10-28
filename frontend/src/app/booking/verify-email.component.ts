@@ -4,10 +4,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { GuestService } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { VERIFICATION_PROOF } from './verification-proof';
+import { EnrollmentCompletionComponent } from '../account/enrollment-completion.component';
 
 @Component({
-  imports: [RouterLink, MatButtonModule],
+  imports: [RouterLink, MatButtonModule, EnrollmentCompletionComponent],
   template: `
+    @if (accountProof) { <app-enrollment-completion /> } @else {
     <section class="verification" aria-labelledby="verify-title" [attr.aria-busy]="busy()">
       <h1 id="verify-title">Verify your email</h1>
       @if (available()) {
@@ -16,13 +18,14 @@ import { VERIFICATION_PROOF } from './verification-proof';
       }
       <p role="status">{{ message() }}</p>
       @if (!busy()) { <a mat-stroked-button [routerLink]="management() ? (verified() ? '/manage/booking' : '/manage') : '/book'">{{ management() ? (verified() ? 'View your booking' : 'Request a new link') : verified() ? 'Continue booking' : 'Request a new link' }}</a> }
-    </section>`,
+    </section> }`,
   styles: [`.verification { max-width: 40rem; margin: 2rem auto; padding: 1rem; }`],
 })
 export class VerifyEmailComponent {
   private readonly proof = inject(VERIFICATION_PROOF);
   private readonly guest = inject(GuestService);
   private readonly sessions = inject(SessionAccess);
+  readonly accountProof = this.proof.account;
   private active = true;
   readonly available = signal(this.proof.available);
   readonly busy = signal(false);

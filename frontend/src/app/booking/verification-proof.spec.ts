@@ -18,6 +18,11 @@ describe('Verification fragment privacy', () => {
     expect(JSON.stringify(proof).includes(token)).toBe(false);
     expect(proof.take()?.purpose).toBe(purpose); expect(proof.take()).toBeNull();
   });
+  it('keeps ACCOUNT proofs separate from guest redemption and consumes each purpose only once', () => {
+    const scrub = vi.fn(); const account = captureVerificationProof('/verify', `#token=${token}&purpose=ACCOUNT`, scrub);
+    expect(scrub).toHaveBeenCalledOnce(); expect(account.account).toBe(true); expect(account.take()).toBeNull(); expect(account.available).toBe(true); expect(JSON.stringify(account).includes(token)).toBe(false); expect(account.takeAccount() === token).toBe(true); expect(account.takeAccount()).toBeNull(); expect(account.available).toBe(false);
+    const guest = captureVerificationProof('/verify', `#token=${token}&purpose=CREATE`, scrub); expect(guest.takeAccount()).toBeNull(); expect(guest.available).toBe(true); expect(guest.take()?.purpose).toBe('CREATE');
+  });
   it.each(['', '#token=a&purpose=CREATE', `#token=${token}`, `#purpose=CREATE`,
     `#token=${token}&purpose=UNKNOWN`, `#token=${token}&purpose=CREATE&purpose=MANAGE`,
     `#token=${token}&token=${token}&purpose=CREATE`, `#token=${token}&purpose=CREATE&next=/admin`, '#'+ 'x'.repeat(201)])('scrubs and rejects malformed fragments', fragment => {

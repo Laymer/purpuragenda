@@ -22,6 +22,7 @@ import { AccessFailure } from '../shared/access/access-failure';
           <input id="account-password" type="password" autocomplete="current-password" formControlName="password" [attr.aria-invalid]="invalid('password')" [attr.aria-describedby]="invalid('password') ? 'account-login-error' : null">
           <button mat-flat-button type="submit" [disabled]="busy() || cooling()">{{ busy() ? 'Signing in…' : 'Sign in' }}</button>
         </form>
+        <a mat-stroked-button routerLink="/account/create">Create an optional account</a>
         <p>You can still manage an individual booking using a new email link.</p><a mat-stroked-button routerLink="/manage">Request a booking link</a>
       }
       <button mat-stroked-button type="button" (click)="checkSession()" [disabled]="busy()">Check browser session</button>
