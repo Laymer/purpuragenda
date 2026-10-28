@@ -34,7 +34,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Merged; outcomes PR112 b211d2f; manual creation PR113 3509eb0; rescheduling https://github.com/Laymer/purpuragenda/pull/114 confirmed merged d9ed47b after15 hosted checks and independent review; explicit violated-rule/blackout choices and reasons covered |
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
-| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; backend PR60 56336ac, authority PR89 525e4a6 and HTTP PR105 79d560a merged; policy UI on task/p31-policy-ui; calendar controls remain |
+| P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; configuration APIs merged; policy UI https://github.com/Laymer/purpuragenda/pull/117 confirmed merged f5a4756 after15 hosted checks and independent review; calendar controls on task/p31-calendar-ui |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P31/policy-ui: agent=Codex-coordinator; branch=task/p31-policy-ui; base=main; handoff=docs/handoffs/codex-p31-policy-ui.md
+- P31/calendar-ui: agent=Codex-coordinator; branch=task/p31-calendar-ui; base=main; handoff=docs/handoffs/codex-p31-calendar-ui.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T10:38:36Z.
-- Current task: P31/policy-ui; branch: task/p31-policy-ui; base: main de63b5f; PR URL: https://github.com/Laymer/purpuragenda/pull/117.
-- Last pushed implementation commit: edc1612; uncommitted changes: tested duration HTTP-boundary fix awaiting commit.
-- What works: service UI PR116 confirmed merged de63b5f after15 hosted checks and independent review; configuration APIs and conflict preview merged.
-- What remains: policy controls with conflict acknowledgement; weekly/date-exception/blackout controls follow separately.
-- Decisions: exact conflict-preview booking IDs, explicit acknowledgement and reason; re-preview on409 CONFLICT_REVIEW_REQUIRED; immutable booking snapshots retained.
-- Verification: PR116 run40671699976 all15 checks green, no scanning alerts, clean independent review of3b65a58. Local343 Angular tests/build/CSP passed. Main bff4b0e Verify40671294512 fully green. Local370 Angular tests/build/CSP passed with1587/1591 lines1696/1788 branches; documentation/diff checks passed. Independent review ofedc1612 clean; subsequent HTTP-parser inspection found fractional-duration mismatch. Fixed with bounded whole-unit conversion and exact normalized round trips; local371 tests/build/CSP pass1594/1598 lines1720/1812 branches. Independent fix source review clean; exact-head confirmation pending.
-- Next concrete action: push duration fix, confirm exact-head fix review, inspect gh pr checks 117 and scanning alerts before merge.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T10:57:42Z.
+- Current task: P31/calendar-ui; branch: task/p31-calendar-ui; base: main f5a4756; PR URL: pending draft creation.
+- Last pushed implementation commit: 8b2a779 (PR117, merged f5a4756); uncommitted changes: tested calendar UI awaiting first commit.
+- What works: policy UI PR117 confirmed merged f5a4756 after15 hosted checks and independent review; calendar APIs and conflict review display merged.
+- What remains: weekly/date-exception/blackout controls, local verification, review and hosted gates.
+- Decisions: full proposed calendar preview; exact acknowledged booking IDs and reason; no silent changes to existing reservations or snapshots.
+- Verification: PR117 run40674484931 all15 checks passed, no scanning alerts, clean independent reviews ofedc1612 and8b2a779. Local371 Angular tests/build/CSP passed. Main de63b5f Verify40673601341 fully green. Local396 Angular tests/build/CSP passed with1738/1742 lines1913/2012 branches; documentation/diff checks passed. Independent source review clean; final exact-head confirmation pending.
+- Next concrete action: push task/p31-calendar-ui, open draft PR, confirm exact-head review and observe hosted gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; stacked PR dependencies: none.
