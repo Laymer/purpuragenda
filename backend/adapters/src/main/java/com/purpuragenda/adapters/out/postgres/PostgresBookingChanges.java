@@ -26,7 +26,7 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
     public PostgresBookingChanges(DataSource source,Set<String> meetingHosts) {
         scheduling=new PostgresScheduling(source,meetingHosts);jdbc=new JdbcTemplate(source);
     }
-    private record Authority(UUID actor,UUID customer,boolean guest) { }
+    record Authority(UUID actor,UUID customer,boolean guest) { }
     @Override public Receipt change(Command command,Function<Change,Receipt> work) {
         Objects.requireNonNull(command);Objects.requireNonNull(work);
         return scheduling.resolved(now -> {
@@ -45,7 +45,7 @@ public final class PostgresBookingChanges implements BookingChangesUnitOfWork {
             });
         });
     }
-    private Authority authorize(SessionBinding binding,UUID bookingId,Instant now) {
+    Authority authorize(SessionBinding binding,UUID bookingId,Instant now) {
         PersistedSession initial=PersistedSession.find(jdbc,binding,false);if(initial==null)throw unauthenticated();
         UUID actor;
         if(initial.kind().equals("GUEST")) actor=manageGrant(initial,binding.browserHash(),bookingId,now);

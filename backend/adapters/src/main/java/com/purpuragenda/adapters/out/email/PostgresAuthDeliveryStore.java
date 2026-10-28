@@ -29,18 +29,21 @@ public final class PostgresAuthDeliveryStore implements AuthDeliveryStore {
     }
     @Override public Receipt issue(Issue request) {
         Objects.requireNonNull(request);
-        return transaction(c->{
-            if (suppressed || suppression(c)) throw new IllegalStateException();
-            Instant now=now(c), expires=now.plusSeconds(900);
-            UUID challenge=UUID.randomUUID(), job=UUID.randomUUID(); String token=Secrets.token();
-            var envelope=new Envelope(challenge,job,request.email(),request.purpose(),request.bookingId(),request.browserHash(),expires,token);
-            String encrypted=delivery.encrypt(envelope.encode());
-            update(c,"INSERT INTO email_challenge(id,token_hash,email_key,purpose,booking_id,browser_hash,expires_at) VALUES(?,?,?,?,?,?,?)",
-                    challenge,Secrets.hash(token),request.email(),request.purpose().name(),request.bookingId(),request.browserHash(),expires);
-            update(c,"INSERT INTO notification_job(id,booking_id,audience,template,due_at,encrypted_envelope,challenge_id) VALUES(?,?,'CUSTOMER','AUTH',?,?,?)",
-                    job,request.bookingId(),now,encrypted,challenge);
-            return new Receipt(challenge,job,expires);
-        });
+        return transaction(c->issueWithin(c,request,now(c)));
+    }
+    /** The caller owns the transaction and its authoritative time; challenge and encrypted delivery commit together. */
+    public Receipt issueWithin(Connection c,Issue request,Instant now) throws SQLException {
+        Objects.requireNonNull(request);Objects.requireNonNull(now);
+        if(c.getAutoCommit() || suppressed || suppression(c))throw new IllegalStateException("AUTH_DELIVERY_UNAVAILABLE");
+        Instant expires=now.plusSeconds(900);
+        UUID challenge=UUID.randomUUID(),job=UUID.randomUUID();String token=Secrets.token();
+        var envelope=new Envelope(challenge,job,request.email(),request.purpose(),request.bookingId(),request.browserHash(),expires,token);
+        String encrypted=delivery.encrypt(envelope.encode());
+        update(c,"INSERT INTO email_challenge(id,token_hash,email_key,purpose,booking_id,browser_hash,expires_at) VALUES(?,?,?,?,?,?,?)",
+                challenge,Secrets.hash(token),request.email(),request.purpose().name(),request.bookingId(),request.browserHash(),expires);
+        update(c,"INSERT INTO notification_job(id,booking_id,audience,template,due_at,encrypted_envelope,challenge_id) VALUES(?,?,'CUSTOMER','AUTH',?,?,?)",
+                job,request.bookingId(),now,encrypted,challenge);
+        return new Receipt(challenge,job,expires);
     }
     @Override public int eraseExpired() {
         return transaction(c->{
@@ -105,7 +108,7 @@ public final class PostgresAuthDeliveryStore implements AuthDeliveryStore {
                         || !same(e.email,email) || !same(e.purpose.name(),purpose) || !Objects.equals(e.browser,browser)
                         || !e.token.matches("[A-Za-z0-9_-]{43}") || !same(Secrets.hash(e.token),hash)) throw new IllegalArgumentException();
                 return Optional.of(new MailDelivery.Message(lease.id(),e.email,"Verify your Purpuragenda email",
-                    "Open this link and choose Verify email:\n"+origin+"/verify#token="+e.token+"&purpose="+e.purpose.name()
+                    "Open this link and choose Verify email:\n"+origin+"/verify#token="+e.token+"&purpose="+e.purpose.name()+(e.purpose==Purpose.CONTACT?"&bookingId="+e.booking:"")
                     +"\n\nThis single-use link expires after 15 minutes."
                     +(e.browser==null?"":" Open it in the browser that requested it.")
                     +" If you did not request this email, ignore it."));

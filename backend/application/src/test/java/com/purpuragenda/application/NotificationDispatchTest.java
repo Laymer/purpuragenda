@@ -32,6 +32,7 @@ class NotificationDispatchTest {
         expected.put("REFUND_RECORDED",List.of("CUSTOMER:REFUND_RECORDED","OWNER:OWNER_REFUND_RECORDED"));
         expected.put("PAYMENT_RECONCILIATION_REQUIRED",List.of("OWNER:OWNER_ACTION_RECONCILIATION"));
         expected.put("REFUND_REQUIRED",List.of("OWNER:OWNER_ACTION_REFUND"));
+        expected.put("CONTACT_CHANGED",List.of("CUSTOMER:CONTACT_CHANGED","CUSTOMER:CONTACT_CHANGED_OLD"));
         expected.put("MEETING_CHANGED",List.of("CUSTOMER:BOOKING_MEETING_CHANGED","OWNER:OWNER_BOOKING_MEETING_CHANGED"));
         expected.put("CONFIGURATION_CONFLICT",List.of());
         for(String type:List.of("ADMIN_CREATED","APPROVED","CONFIRMED_EXTERNAL_PAYMENT","RESCHEDULED")) {
@@ -77,6 +78,16 @@ class NotificationDispatchTest {
     }
     String code(NotificationContent.Prepared p){return assertInstanceOf(NotificationContent.Suppress.class,p).code();}
     MailDelivery.Message message(NotificationContent.Prepared p){return assertInstanceOf(NotificationContent.Send.class,p).message();}
+
+    @Test void contactSecurityNoticesSurviveLaterChangesWithoutLeakingCurrentBookingDetails() {
+        for(String template:List.of("CONTACT_CHANGED","CONTACT_CHANGED_OLD")) {
+            var notice=message(prepare("CUSTOMER",template,"CANCELLED",Set.of("CONTACT_CHANGED","RESCHEDULED","CANCELLED")));
+            assertEquals("Booking delivery contact changed",notice.subject());assertTrue(notice.text().contains("B-SYNTH-1"));assertTrue(notice.text().contains("does not change booking ownership"));
+            for(String privateValue:List.of("Synthetic service",ZOOM,START.toString(),"customer@example.test"))assertFalse(notice.text().contains(privateValue));
+            assertEquals("INVALID_CONTACT_AUDIENCE",code(prepare("OWNER",template,"CONFIRMED",Set.of())));
+            assertEquals("RECIPIENT_UNAVAILABLE",code(NotificationContent.prepare(facts("CUSTOMER",template,"CONFIRMED",Set.of(),null,null))));
+        }
+    }
 
     @Test void staleSupersededAndExpiredJobsAreSuppressedWithFixedCodes() {
         var none=Set.<String>of();
