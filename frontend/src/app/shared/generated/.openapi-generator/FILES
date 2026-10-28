@@ -26,6 +26,7 @@ model/administratorBookingPayment.ts
 model/administratorBookingSnapshot.ts
 model/administratorCalendarProposal.ts
 model/administratorCalendarReceipt.ts
+model/administratorCancellationRequest.ts
 model/administratorConfiguration.ts
 model/administratorConfigurationConflict.ts
 model/administratorConfigurationReview.ts
@@ -38,6 +39,7 @@ model/administratorDateExceptionRequest.ts
 model/administratorIntakeSnapshot.ts
 model/administratorLoginRequest.ts
 model/administratorMoneyReceipt.ts
+model/administratorOutcomeRequest.ts
 model/administratorOverride.ts
 model/administratorPaymentEntry.ts
 model/administratorPolicy.ts
@@ -52,6 +54,8 @@ model/administratorRefundObligation.ts
 model/administratorRefundRequest.ts
 model/administratorRefundRequirementReceipt.ts
 model/administratorRefundRequirementRequest.ts
+model/administratorRejectionRequest.ts
+model/administratorRescheduleRequest.ts
 model/administratorTimeWindow.ts
 model/administratorWeeklyChangeRequest.ts
 model/administratorWeeklySchedule.ts
