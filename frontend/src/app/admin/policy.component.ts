@@ -9,6 +9,7 @@ import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { safeFailure } from '../shared/access/access-failure';
 import { ConfigurationReviewComponent } from './configuration-review.component';
+import { policyDuration } from './policy-duration';
 import { reauthenticate } from './admin-reauth';
 
 const DURATIONS = ['minimumNotice', 'pendingLifetime', 'expiryBuffer', 'customerCutoff'] as const;
@@ -22,7 +23,7 @@ const DURATIONS = ['minimumNotice', 'pendingLifetime', 'expiryBuffer', 'customer
         <form [formGroup]="form" (ngSubmit)="preview()"><fieldset [disabled]="busy() || uncertain()"><legend>Proposed policy</legend>
           <label for="policy-grid">Start grid (1–120 minutes)</label><input id="policy-grid" type="number" min="1" max="120" step="1" formControlName="gridMinutes">
           <label for="policy-capacity">Daily booking capacity (zero closes new capacity)</label><input id="policy-capacity" type="number" min="0" step="1" formControlName="dailyCapacity">
-          <p>Durations use hours, minutes and seconds: for example 24h, 1h30m or 30s. Zero is 0s.</p>
+          <p>Durations use whole hours, minutes and seconds: for example 24h, 1h30m or 30s. Zero is 0s.</p>
           @for (field of durationFields; track field.key) { <label [for]="field.key">{{ field.label }}</label><input [id]="field.key" [formControlName]="field.key" autocomplete="off"> }
           <button mat-stroked-button type="submit" [disabled]="busy() || uncertain()">Preview affected bookings</button>
         </fieldset></form>
@@ -76,11 +77,11 @@ export class PolicyComponent {
     const config = this.configuration();
     if (this.busy() || this.uncertain() || config === null) return;
     const values = this.form.getRawValue();
-    const durations = DURATIONS.map(key => values[key].trim().toLowerCase().replaceAll(' ', ''));
-    if (!Number.isInteger(values.gridMinutes) || values.gridMinutes < 1 || values.gridMinutes > 120 || !Number.isInteger(values.dailyCapacity) || values.dailyCapacity < 0 || values.dailyCapacity > 2147483647 || durations.some(value => !/^(?=\d)(?:\d+h)?(?:\d+m)?(?:\d+(?:\.\d{1,9})?s)?$/.test(value)) || !/[1-9]/.test(durations[1])) {
+    const durations = DURATIONS.map(key => policyDuration(values[key]));
+    if (!Number.isInteger(values.gridMinutes) || values.gridMinutes < 1 || values.gridMinutes > 120 || !Number.isInteger(values.dailyCapacity) || values.dailyCapacity < 0 || values.dailyCapacity > 2147483647 || durations.some(value => value === null) || durations[1] === 'PT0S') {
       this.message.set('Enter a whole grid of 1–120 minutes, a non-negative whole capacity, and valid durations with a positive pending lifetime.'); this.clearReview(); return;
     }
-    const proposal: AdministratorPolicy = { gridMinutes: values.gridMinutes, dailyCapacity: values.dailyCapacity, minimumNotice: 'PT' + durations[0].toUpperCase(), pendingLifetime: 'PT' + durations[1].toUpperCase(), expiryBuffer: 'PT' + durations[2].toUpperCase(), customerCutoff: 'PT' + durations[3].toUpperCase() };
+    const proposal: AdministratorPolicy = { gridMinutes: values.gridMinutes, dailyCapacity: values.dailyCapacity, minimumNotice: durations[0]!, pendingLifetime: durations[1]!, expiryBuffer: durations[2]!, customerCutoff: durations[3]! };
     this.busy.set(true); this.clearReview(); this.message.set(''); const generation = this.generation;
     try {
       const result = await this.sessions.perform(csrf => this.http.post<AdministratorConflictPreview>('/api/v1/admin/configuration/conflicts', { proposal }, { headers: { 'X-CSRF-Token': csrf } }));

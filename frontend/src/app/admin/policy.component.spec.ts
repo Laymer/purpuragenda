@@ -5,7 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideApi } from '../shared/generated';
 import { CommandAccess } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
-import { ConfigurationReviewComponent } from './configuration-review.component';
+import { policyDuration } from './policy-duration';
 import { PolicyComponent } from './policy.component';
 
 const now = Date.parse('2026-10-28T10:00:00Z'), id = '30000000-0000-4000-8000-000000000001';
@@ -34,8 +34,8 @@ describe('Administrator policy conflict review', () => {
 
   it('previews the complete policy with CSRF and requires explicit acknowledgement and reason', async () => {
     await loaded(); expect(view.form.controls.minimumNotice.value).toBe('24h'); await view.save();
-    view.form.patchValue({ dailyCapacity: 0, minimumNotice: ' 1h 30m ', pendingLifetime: '0.000000001s', expiryBuffer: '0s' }); const p = view.preview(); const r = await request('conflicts');
-    expect(r.request.headers.get('X-CSRF-Token')).toBe(session.csrfToken); expect(r.request.headers.has('If-Match')).toBe(false); expect(r.request.body).toEqual({ proposal: { ...policy, dailyCapacity: 0, minimumNotice: 'PT1H30M', pendingLifetime: 'PT0.000000001S', expiryBuffer: 'PT0S' } }); r.flush(review); await p; fixture.detectChanges();
+    view.form.patchValue({ dailyCapacity: 0, minimumNotice: ' 1h 30m ', pendingLifetime: '1s', expiryBuffer: '0s' }); const p = view.preview(); const r = await request('conflicts');
+    expect(r.request.headers.get('X-CSRF-Token')).toBe(session.csrfToken); expect(r.request.headers.has('If-Match')).toBe(false); expect(r.request.body).toEqual({ proposal: { ...policy, dailyCapacity: 0, minimumNotice: 'PT1H30M', pendingLifetime: 'PT1S', expiryBuffer: 'PT0S' } }); r.flush(review); await p; fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Outside the proposed start schedule'); expect(fixture.nativeElement.textContent).toContain('Intersects a proposed blackout'); expect(fixture.nativeElement.textContent).toContain('Exceeds the proposed daily capacity'); expect(fixture.nativeElement.textContent).toContain('Requires review'); expect(fixture.nativeElement.querySelector('li a b')).toBeNull();
     await view.save(); http.expectNone('/api/v1/admin/configuration/policy'); view.acknowledged.set(true); await view.save(); expect(view.message()).toContain('reason');
     acknowledge(); const save = view.save(); const command = await request('policy'); expect(command.request.headers.get('If-Match')).toBe('"7"'); expect(JSON.parse(command.request.body).acknowledgedBookingIds).toEqual([id]); expect(JSON.parse(command.request.body).policy.dailyCapacity).toBe(0);
@@ -97,5 +97,15 @@ describe('Administrator policy conflict review', () => {
   });
   it('ignores mutation responses after destruction', async () => {
     await reviewed(); acknowledge(); const p = view.save(); const r = await request('policy'); fixture.destroy(); r.flush({ policyVersion: 8 }); await p; expect(view.configuration()).toBeNull();
+  });
+});
+
+describe('Policy duration HTTP bounds', () => {
+  it('accepts normalized durations and emits bounded integral HTTP fields', () => {
+    expect(policyDuration('16666h39m')).toBe('PT9999H400059M');
+    expect(policyDuration('9999h999999m99999999s')).toBe('PT9999H999999M99999999S');
+    expect(policyDuration('9999h999999m100000000s')).toBeNull();
+    expect(policyDuration('0.1s')).toBeNull(); expect(policyDuration('0h')).toBe('PT0S');
+    expect(policyDuration(' 1H 30M ')).toBe('PT1H30M'); expect(policyDuration('86400s')).toBe('PT24H');
   });
 });
