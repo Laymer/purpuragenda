@@ -26,7 +26,7 @@ describe('Administrator route guard and shell', () => {
     const paths = routes.map(route => route.path), admin = routes.find(route => route.path === 'admin')!;
     expect(paths.indexOf('admin/login')).toBeLessThan(paths.indexOf('admin')); expect(paths.indexOf('admin')).toBeLessThan(paths.indexOf('**'));
     expect(admin.canActivate).toContain(adminGuard); expect(await admin.loadComponent!()).toBe(AdminShellComponent);
-    expect(admin.children!.map(child => child.path)).toEqual(['', 'services', 'bookings/new', 'bookings/:id/reschedule', 'bookings/:id/finance', 'bookings/:id']);
+    expect(admin.children!.map(child => child.path)).toEqual(['', 'policy', 'services', 'bookings/new', 'bookings/:id/reschedule', 'bookings/:id/finance', 'bookings/:id']);
     for (const child of admin.children!) expect(await child.loadComponent!()).toBeTruthy();
   });
   it('admits only a server-confirmed administrator and otherwise redirects to sign in', async () => {

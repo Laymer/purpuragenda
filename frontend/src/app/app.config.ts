@@ -17,6 +17,7 @@ export const routes: Routes = [
     path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./admin/admin-shell.component').then(module => module.AdminShellComponent),
     children: [
       { path: '', loadComponent: () => import('./admin/agenda.component').then(module => module.AgendaComponent), title: 'Agenda · Purpuragenda' },
+      { path: 'policy', loadComponent: () => import('./admin/policy.component').then(module => module.PolicyComponent), title: 'Booking policy · Purpuragenda' },
       { path: 'services', loadComponent: () => import('./admin/services.component').then(module => module.ServicesComponent), title: 'Services · Purpuragenda' },
       { path: 'bookings/new', loadComponent: () => import('./admin/manual-booking.component').then(module => module.ManualBookingComponent), title: 'Create booking · Purpuragenda' },
       { path: 'bookings/:id/reschedule', loadComponent: () => import('./admin/reschedule-booking.component').then(module => module.RescheduleBookingComponent), title: 'Reschedule booking · Purpuragenda' },
