@@ -36,7 +36,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P33 — Complete verified delivery-contact changes without ownership transfer | In progress; application boundary on task/p33-contact-commands; persistence, notification, HTTP and UI follow |
+| P33 — Complete verified delivery-contact changes without ownership transfer | In progress; application boundary PR125 confirmed merged 285d124 after 15 hosted checks and independent review; persistence and notifications on task/p33-contact-persistence; HTTP and UI follow |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
 | P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; notification foundation https://github.com/Laymer/purpuragenda/pull/64 merged 669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 under Claude lane A: independent exact-head review approved e98447a; main 525e4a6 and 56e9856 integrated by merge; DST rendered-time test and residual-risk documentation follow-up 3ebe5ef pending hosted checks and coordinator re-review |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P33/contact-commands: agent=Codex-coordinator; branch=task/p33-contact-commands; base=main; handoff=docs/handoffs/codex-p33-contact-commands.md
+- P33/contact-persistence: agent=Codex-coordinator; branch=task/p33-contact-persistence; base=main; handoff=docs/handoffs/codex-p33-contact-persistence.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T13:48:52Z.
-- Current task: P33/contact-commands; branch: task/p33-contact-commands; base: main 0f02a29; PR URL: pending draft creation.
-- Last pushed implementation commit: 3e5fc0e (PR124, merged0f02a29); uncommitted changes: tested contact proof/command application boundary ready for draft PR.
-- What works: P26 complete; PR124 confirmed merged0f02a29 after15 hosted checks and independent review including real account journey.
-- What remains: application contact proof/command boundary and unit tests in this slice; PostgreSQL atomic proof consumption, old-contact notice, HTTP/SDK and UI follow in sequential P33 slices.
-- Decisions: contact proofs require existing exact-booking authority both when requested and consumed; current delivery contact never changes stable ownership, login identity, quota or immutable snapshots. No lost-mailbox transfer.
-- Verification: PR124 run40697289690 all15 green, zero scanning alerts, independent exact-head review3e5fc0e clean. Local487 Angular tests/build/CSP and16 acceptance-support tests passed; actual PostgreSQL/browser tests only in hosted CI. Current application slice passed303 application tests and domain tests with both coverage gates; documentation and whitespace checks passed. Independent review requested.
-- Next concrete action: push task/p33-contact-commands and create draft PR; require all hosted checks and independent review.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T14:03:49Z.
+- Current task: P33/contact-persistence; branch: task/p33-contact-persistence; base: main 285d124; PR URL: pending draft creation.
+- Last pushed implementation commit: be7b6bd (PR125, merged285d124); uncommitted changes: compiled PostgreSQL contact proof/consumption and notices ready for draft PR.
+- What works: PR125 confirmed merged285d124 after15 hosted checks and independent review; application boundary preserves stable ownership and immutable booking facts.
+- What remains: atomic persisted authority, scoped proof issuance/consumption, old/new-address notices and real PostgreSQL regression tests; HTTP/SDK/UI follows separately.
+- Decisions: reuse existing booking_contact_change history keyed by the contact event id; no schema duplication. Reuse locked customer booking authority and the scheduling transaction. No runtime HTTP endpoint until the next slice.
+- Verification: PR125 run40700378375 all15 green, zero scanning alerts, independent exact-head reviewbe7b6bd clean; local303 application/108 domain tests and coverage gates passed. Main0f02a29 run40699579785 green. Docker unavailable locally; PostgreSQL tests run only in hosted CI. Current local304 application/108 domain tests and coverage gates passed; adapter/test compilation and42 report-gate tests passed. Independent source review clean; added expiry/invalid-callback tests await exact-head confirmation.
+- Next concrete action: push task/p33-contact-persistence, create draft PR and verify all hosted checks plus exact-head independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.

@@ -77,6 +77,8 @@ class AuthDeliveryDatabaseTest {
             assertTrue(receipt.jobId().equals(lease.id())); var message=store.prepare(lease).orElseThrow();
             assertTrue(message.recipient().equals(issue.email())); assertTrue(message.text().contains("https://example.test/verify#token="));
             assertEquals(issue.browserHash()!=null,message.text().contains("browser that requested it"));
+            assertEquals(purpose==Purpose.CONTACT,message.text().contains("&bookingId="));
+            if(purpose==Purpose.CONTACT)assertTrue(message.text().contains("&bookingId="+issue.bookingId()));
             String token=message.text().split("#token=",2)[1].split("&",2)[0]; assertTrue(token.matches("[A-Za-z0-9_-]{43}"));
             assertTrue(text("SELECT token_hash FROM email_challenge WHERE id=?",receipt.challengeId()).equals(Secrets.hash(token)));
             assertFalse(text("SELECT encrypted_envelope FROM notification_job WHERE id=?",receipt.jobId()).contains(token));
@@ -84,6 +86,10 @@ class AuthDeliveryDatabaseTest {
             assertFalse(message.toString().contains(token)); assertTrue(queue.sent(lease));
         }
         assertEquals(4,count("SELECT count(*) FROM notification_job WHERE state='SENT' AND encrypted_envelope IS NULL"));
+    }
+    @Test void callerOwnedIssuanceRefusesAutocommitBeforeWritingAnything() throws Exception {
+        try(var connection=source.getConnection()) { assertThrows(IllegalStateException.class,()->store.issueWithin(connection,request(Purpose.ACCOUNT),Instant.now())); }
+        assertEquals(0,count("SELECT count(*) FROM email_challenge"));assertEquals(0,count("SELECT count(*) FROM notification_job"));
     }
     @Test void failedJobInsertRollsBackChallengeAndRestoreCannotIssue() {
         try(var c=database.connection(MigrationTest.MIGRATOR)) {

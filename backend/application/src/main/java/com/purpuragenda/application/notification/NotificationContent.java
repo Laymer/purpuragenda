@@ -23,6 +23,14 @@ public final class NotificationContent {
 
     public static Prepared prepare(Facts f) {
         Objects.requireNonNull(f);
+        if(Set.of("CONTACT_CHANGED","CONTACT_CHANGED_OLD").contains(f.template())) {
+            if(!f.audience().equals("CUSTOMER"))return new Suppress("INVALID_CONTACT_AUDIENCE");
+            if(f.recipient()==null)return new Suppress("RECIPIENT_UNAVAILABLE");
+            // Historical security notices carry no current service, session time, meeting link or replacement address.
+            return new Send(new MailDelivery.Message(f.jobId(),f.recipient(),"Booking delivery contact changed",
+                    "Booking reference: "+f.reference()+"\nThe delivery email for this booking was changed after verification.\n"
+                    +"This does not change booking ownership or account login. If you did not request this change, contact the practitioner.\n"));
+        }
         String bare=f.template().startsWith("OWNER_")?f.template().substring(6):f.template();
         boolean known=ALWAYS.contains(f.template()) || Set.of("BOOKING_REQUESTED","REQUEST_RECEIVED","BOOKING_CREATED","BOOKING_CONFIRMED","BOOKING_REJECTED",
                 "BOOKING_EXPIRED","BOOKING_CANCELLED","BOOKING_RESCHEDULED","BOOKING_MEETING_CHANGED","REMINDER_48H","REMINDER_2H").contains(bare);

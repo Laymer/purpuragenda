@@ -505,6 +505,18 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.AccountDataPostgresTest" tests="14">' + '<testcase/>' * 14 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_contact_changes_requires_real_authority_proof_atomicity_and_notice_cases(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresContactChanges.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.ContactChangesPostgresTest.xml')
+        for count, cases, nested in ((12, 12, ''), (13, 12, ''), (14, 13, ''), (13, 13, '<failure/>'), (13, 13, '<error/>'), (13, 13, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.ContactChangesPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.ContactChangesPostgresTest" tests="13">' + '<testcase/>' * 13 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_account_data_http_requires_complete_real_login_and_guard_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AccountDataController.java'
