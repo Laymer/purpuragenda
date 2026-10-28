@@ -23,7 +23,8 @@ describe('Application shell and typed API boundary', () => {
     expect(root.querySelector('header mat-toolbar')).not.toBeNull();
     expect(root.querySelector('footer')?.textContent).toContain('Europe/Brussels');
     expect(root.querySelector('a.brand')?.getAttribute('href')).toBe('/');
-    expect(root.querySelectorAll('a').length).toBe(3);
+    expect(root.querySelectorAll('a').length).toBe(4);
+    expect(root.querySelector('header a.account-link')?.getAttribute('href')).toBe('/account');
     expect(root.querySelector('main a')?.getAttribute('href')).toBe('/book');
   });
 

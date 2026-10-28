@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, convertToParamMap } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { provideApi } from '../shared/generated';
 import { SessionAccess } from '../shared/access/session-access';
 import { ManageBookingComponent } from './manage-booking.component';
@@ -172,5 +173,42 @@ describe('Customer booking management', () => {
       const picker = fixture.debugElement.query(d => d.name === 'app-reschedule-picker').componentInstance; picker.search(); availability().flush({}, { status: 404, statusText: 'x' }); await settle(); fixture.detectChanges();
       expect(view.lost()).toBe(true); expect(view.booking()).toBeNull(); expect(fixture.nativeElement.querySelector('a[href="/manage"]')).not.toBeNull();
     });
+  });
+});
+
+describe('Account-owned booking management', () => {
+  let http: HttpTestingController;
+  let parameters: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(now); });
+  afterEach(() => { try { http.verify(); } finally { TestBed.resetTestingModule(); vi.useRealTimers(); } });
+  async function configure(target: string) {
+    const { ActivatedRoute, convertToParamMap } = await import('@angular/router');
+    parameters = new BehaviorSubject(convertToParamMap({ id: target }));
+    TestBed.configureTestingModule({ imports: [ManageBookingComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideApi('/api/v1'), provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { paramMap: parameters.value }, paramMap: parameters } }] });
+    http = TestBed.inject(HttpTestingController); const fixture = TestBed.createComponent(ManageBookingComponent); fixture.detectChanges(); await settle(); return fixture;
+  }
+  it('reads the explicit owned booking and uses its version for the existing cancel command', async () => {
+    const fixture = await configure(id), view = fixture.componentInstance; http.expectOne('/api/v1/session/bootstrap').flush({ ...session, role: 'ACCOUNT' }); await settle(); http.expectOne('/api/v1/bookings/' + id).flush(status(), { headers: { ETag: '"3"' } }); await settle(); fixture.detectChanges();
+    expect(view.accountView).toBe(true); http.expectNone('/api/v1/guest/booking'); expect(fixture.nativeElement.querySelector('a[href="/account"]')).not.toBeNull();
+    view.askCancel(); const result = view.cancel(); await settle(); const command = http.expectOne('/api/v1/bookings/' + id + '/cancel'); expect(command.request.headers.get('If-Match')).toBe('"3"'); command.flush({ bookingId: id, version: 4 }); await settle(); http.expectOne('/api/v1/bookings/' + id).flush(status({ state: 'CANCELLED', allowedActions: [], version: 4 })); await result; expect(view.booking()?.state).toBe('CANCELLED');
+    TestBed.inject(SessionAccess).invalidate(); fixture.detectChanges(); expect(view.booking()).toBeNull(); expect(view.message()).toContain('Sign in again'); expect(fixture.nativeElement.querySelector('a[href="/account/login"]')).not.toBeNull();
+  });
+  it('clears the previous booking and ignores its late response when Angular reuses the route', async () => {
+    const fixture = await configure(id), view = fixture.componentInstance; http.expectOne('/api/v1/session/bootstrap').flush({ ...session, role: 'ACCOUNT' }); await settle(); const old = http.expectOne('/api/v1/bookings/' + id);
+    const nextId = '20000000-0000-4000-8000-000000000002'; parameters.next(convertToParamMap({ id: nextId })); expect(view.booking()).toBeNull(); old.flush(status()); await settle(); expect(view.booking()).toBeNull();
+    http.expectOne('/api/v1/bookings/' + nextId).flush(status({ id: nextId })); await settle(); expect(view.booking()?.id).toBe(nextId);
+    view.askCancel(); const pending = view.cancel(); await settle(); const command = http.expectOne('/api/v1/bookings/' + nextId + '/cancel'); parameters.next(convertToParamMap({ id })); command.flush({ bookingId: nextId, version: 4 }); await pending; await settle(); http.expectOne('/api/v1/bookings/' + id).flush(status()); await settle(); expect(view.booking()?.id).toBe(id); expect(view.message()).not.toContain('cancellation was received');
+  });
+  it.each([412, 409])('ignores an old %s conflict reload message after navigating to another booking', async code => {
+    const fixture = await configure(id), view = fixture.componentInstance; http.expectOne('/api/v1/session/bootstrap').flush({ ...session, role: 'ACCOUNT' }); await settle(); http.expectOne('/api/v1/bookings/' + id).flush(status()); await settle();
+    view.askCancel(); const pending = view.cancel(); await settle(); http.expectOne('/api/v1/bookings/' + id + '/cancel').flush({}, { status: code, statusText: 'Conflict' }); await settle(); const reload = http.expectOne('/api/v1/bookings/' + id);
+    const nextId = '20000000-0000-4000-8000-000000000002'; parameters.next(convertToParamMap({ id: nextId })); reload.flush(status()); await pending; await settle(); expect(view.message()).toBe(''); expect(view.booking()).toBeNull();
+    http.expectOne('/api/v1/bookings/' + nextId).flush(status({ id: nextId })); await settle(); expect(view.booking()?.id).toBe(nextId); expect(view.message()).toBe('');
+  });
+  it('never falls back to guest discovery for malformed account IDs', async () => {
+    const fixture = await configure('../private'), view = fixture.componentInstance; expect(view.booking()).toBeNull(); expect(view.lost()).toBe(true); expect(view.message()).toContain('Sign in again'); http.expectNone('/api/v1/session/bootstrap'); http.expectNone('/api/v1/guest/booking');
+  });
+  it('does not expose unowned or missing bookings and offers account recovery', async () => {
+    const fixture = await configure(id); http.expectOne('/api/v1/session/bootstrap').flush({ ...session, role: 'ACCOUNT' }); await settle(); http.expectOne('/api/v1/bookings/' + id).flush({ code: 'BOOKING_NOT_FOUND' }, { status: 404, statusText: 'Not found' }); await settle(); fixture.detectChanges(); expect(fixture.componentInstance.booking()).toBeNull(); expect(fixture.nativeElement.querySelector('a[href="/account/login"]')).not.toBeNull();
   });
 });

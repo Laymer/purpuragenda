@@ -8,6 +8,7 @@ a:focus-visible { outline: 3px solid #68458c; outline-offset: 4px; }
 .site-header.mat-toolbar { height: auto; min-height: 80px; padding: 24px clamp(20px, 5vw, 64px); background: transparent; }
 .brand { font-size: 1.6rem; font-weight: 650; letter-spacing: -.04em; text-decoration: none; color: #30263b; }
 .brand span { color: #68458c; }
+.account-link { margin-left: auto; padding: .65rem 0 .65rem 1rem; font-size: 1rem; }
 .skip-link { position: absolute; left: 12px; top: -80px; background: white; padding: 14px; z-index: 10; }
 .skip-link:focus { top: 12px; }
 main { min-height: 72vh; }
