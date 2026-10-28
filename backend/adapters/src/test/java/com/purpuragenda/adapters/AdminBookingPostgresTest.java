@@ -260,13 +260,13 @@ class AdminBookingPostgresTest {
         var good=request(3,9);
         if(micros<0)assertTrue(fixed.create(session,"absolute",good).success());
         else assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->fixed.create(session,"absolute",good)).kind());
-        // Idle: the ten-minute MFA window is always stricter than the 15-minute idle limit, so an idle session is refused at and around the limit.
+        // Idle: just before the 15-minute limit the live session only lacks a fresh factor; at and after it the idle session is refused.
         UUID other=session(adminId,0).sessionId();
         c.jdbc.update("UPDATE app_session SET last_seen_at=issued_at+interval '1 second',authenticated_at=issued_at WHERE id=?",other);
         Instant idle=c.jdbc.queryForObject("SELECT last_seen_at+interval '15 minutes' FROM app_session WHERE id=?",(r,n)->r.getTimestamp(1).toInstant(),other);
         var idleUnit=new AdminBooking(new PostgresAdminBooking(c.clock(idle.plusNanos(micros*1000),new AtomicInteger())),"local-v1",Set.of("zoom.us"));
         var binding=new SessionBinding(other,"d".repeat(64));
-        assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->idleUnit.create(binding,"idle",request(4,9))).kind());
+        assertEquals(micros<0?Failure.Kind.FRESH_AUTHENTICATION_REQUIRED:Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->idleUnit.create(binding,"idle",request(4,9))).kind());
     }
 
     @Test void credentialsIssuedAfterTheCapturedTimeCannotAuthorize() {
