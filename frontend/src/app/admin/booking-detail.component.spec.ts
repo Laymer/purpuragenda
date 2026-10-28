@@ -226,4 +226,42 @@ describe('Administrator booking detail and approval', () => {
     await view.change('reject'); expect(view.message()).toContain('could not be submitted'); TestBed.inject(SessionAccess).invalidate(); expect(view.reason.value).toBe('');
   });
 
+  it.each(['COMPLETED', 'NO_SHOW'] as const)('records %s after session start with a reason and reviewed version', async outcome => {
+    await loaded(detail({ state: 'CONFIRMED', meetingUrl: link, startInstant: new Date(now).toISOString(), sessionEndInstant: new Date(now + 3600000).toISOString() }));
+    expect(view.canRecordOutcome()).toBe(true); expect(view.outcomeReasonRequired()).toBe(true); expect(fixture.nativeElement.textContent).toContain('has not ended');
+    await view.recordOutcome(outcome); expect(view.changeHint()).toContain('10–500'); http.expectNone('/api/v1/session/bootstrap');
+    view.reason.setValue(reason); const pending = view.recordOutcome(outcome); const request = await actionPost('outcome');
+    expect(JSON.parse(request.request.body)).toEqual({ outcome, reason }); expect(request.request.headers.get('If-Match')).toBe('"7"');
+    request.flush({}); await settle(); get().flush(detail({ state: outcome, version: 8 })); await pending; fixture.detectChanges();
+    expect(view.message()).toBe('Outcome recorded.'); expect(view.canRecordOutcome()).toBe(false); expect(fixture.nativeElement.textContent).not.toContain('Mark completed');
+  });
+  it('permits an omitted reason at exact session end and rejects invalid nonempty reasons', async () => {
+    await loaded(detail({ state: 'CONFIRMED', startInstant: new Date(now - 3600000).toISOString(), sessionEndInstant: new Date(now).toISOString() }));
+    expect(view.outcomeReasonRequired()).toBe(false);
+    for (const invalid of ['short', 'a'.repeat(501), 'Synthetic\u0001reason']) { view.reason.setValue(invalid); await view.recordOutcome('NO_SHOW'); expect(view.changeHint()).toContain('10–500'); }
+    view.reason.setValue(' '); const pending = view.recordOutcome('COMPLETED'); const request = await actionPost('outcome'); expect(JSON.parse(request.request.body)).toEqual({ outcome: 'COMPLETED', reason: null });
+    request.flush({}); await settle(); get().flush(detail({ state: 'COMPLETED' })); await pending;
+  });
+  it('uses refreshed authoritative time for outcome eligibility and never offers outcomes before start', async () => {
+    await loaded(detail({ state: 'CONFIRMED', startInstant: new Date(now + 1).toISOString() }));
+    expect(view.canRecordOutcome()).toBe(false); await view.recordOutcome('COMPLETED'); http.expectNone('/api/v1/session/bootstrap');
+    const button = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(b => b.textContent?.trim() === 'Refresh details')!;
+    button.click(); await settle(); get().flush(detail({ state: 'CONFIRMED', startInstant: new Date(now + 1).toISOString(), serverNow: new Date(now + 1).toISOString() })); await settle();
+    expect(view.canRecordOutcome()).toBe(true);
+    TestBed.inject(SessionAccess).invalidate(); expect(view.outcomeReasonRequired()).toBe(false); expect(view.canRecordOutcome()).toBe(false);
+  });
+  it('retries exactly the same outcome after an uncertain response and reloads a server boundary rejection', async () => {
+    await loaded(detail({ state: 'CONFIRMED', startInstant: new Date(now - 3600000).toISOString(), sessionEndInstant: new Date(now).toISOString() }));
+    const pending = view.recordOutcome('COMPLETED'); const first = await actionPost('outcome'); const key = first.request.headers.get('Idempotency-Key'); first.error(new ProgressEvent('error')); await pending;
+    await view.recordOutcome('NO_SHOW'); http.expectNone('/api/v1/admin/bookings/' + id + '/outcome');
+    const retry = view.retry(); const second = await actionPost('outcome'); expect(second.request.headers.get('Idempotency-Key')).toBe(key); expect(JSON.parse(second.request.body).outcome).toBe('COMPLETED');
+    second.flush({ code: 'SESSION_NOT_STARTED' }, { status: 409, statusText: 'Conflict' }); await settle(); get().flush(detail({ state: 'CONFIRMED', startInstant: new Date(now + 1).toISOString() })); await retry;
+    expect(view.message()).toContain('conflicts'); expect(view.canRecordOutcome()).toBe(false);
+  });
+  it('fails safely if an outcome cannot be prepared', async () => {
+    await loaded(detail({ state: 'CONFIRMED', startInstant: new Date(now - 3600000).toISOString(), sessionEndInstant: new Date(now).toISOString() }));
+    vi.spyOn(TestBed.inject(CommandAccess), 'prepare').mockImplementation(() => { throw new Error('synthetic'); });
+    await view.recordOutcome('COMPLETED'); expect(view.message()).toContain('outcome could not be submitted');
+  });
+
 });
