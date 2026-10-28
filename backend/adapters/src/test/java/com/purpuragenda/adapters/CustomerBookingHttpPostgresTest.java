@@ -40,6 +40,7 @@ class CustomerBookingHttpPostgresTest {
         g.mvc=MockMvcBuilders.standaloneSetup(new SessionController(access,cookies),new GuestAuthController(proofs,access,cookies,Duration.ZERO),
                 new CustomerAvailabilityController(new CustomerReschedulingAvailability(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new GuestBookingController(new GuestBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
+                new CustomerContactController(new CustomerContactChanges(new PostgresContactChanges(c.f.source,c.f.delivery),throttle)),
                 new CustomerBookingController(c.command,new CustomerBookingChanges(new PostgresBookingChanges(c.f.source)),
                         new CustomerBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies))
                 .addFilters(new ApiGuardFilter(GuestAuthPostgresTest.ORIGIN,access,cookies,new ClientAddress(List.of())),new AvailabilityThrottleFilter(throttle)).build();

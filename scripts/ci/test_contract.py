@@ -12,6 +12,24 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_contact_confirmation_requires_booking_scope_version_and_proof_without_identity_fields(self):
+        proof = self.document['paths']['/bookings/{bookingId}/contact-proofs']['post']
+        confirm = self.document['paths']['/bookings/{bookingId}/contact']['post']
+        self.assertEqual({'bookingId', 'X-CSRF-Token'}, {p['name'] for p in proof['parameters']})
+        self.assertEqual({'bookingId', 'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, {p['name'] for p in confirm['parameters']})
+        self.assertIn('429', proof['responses'])
+        for operation in (proof, confirm):
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertIn('404', operation['responses'])
+        for code in ('200', '400', '409', '412', '428'):
+            self.assertIn(code, confirm['responses'])
+        schema = self.document['components']['schemas']['ContactConfirmation']
+        self.assertEqual({'token'}, set(schema['properties']))
+        self.assertFalse(schema['additionalProperties'])
+        self.assertEqual(['token'], schema['required'])
+        self.assertEqual('^[A-Za-z0-9_-]{43}$', schema['properties']['token']['pattern'])
+
+
     def test_account_enrollment_is_explicit_browser_proved_and_never_returns_a_session(self):
         paths = self.document['paths']
         proof, enroll = paths['/account/enrollment-proofs']['post'], paths['/account/enrollments']['post']
@@ -178,7 +196,7 @@ class ContractTest(unittest.TestCase):
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
                           'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
-                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount'},
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

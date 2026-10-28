@@ -21,11 +21,17 @@ import { Availability } from '../model/availability';
 // @ts-ignore
 import { BookingReceipt } from '../model/bookingReceipt';
 // @ts-ignore
+import { ContactConfirmation } from '../model/contactConfirmation';
+// @ts-ignore
 import { CreateBookingRequest } from '../model/createBookingRequest';
+// @ts-ignore
+import { CreateProofRequest } from '../model/createProofRequest';
 // @ts-ignore
 import { CustomerBookingStatus } from '../model/customerBookingStatus';
 // @ts-ignore
 import { Problem } from '../model/problem';
+// @ts-ignore
+import { ProofAccepted } from '../model/proofAccepted';
 // @ts-ignore
 import { RescheduleBookingRequest } from '../model/rescheduleBookingRequest';
 
@@ -242,6 +248,100 @@ export class BookingsService extends BaseService {
     }
 
     /**
+     * Requires exact Origin, CSRF, current persisted booking authority, one strong If-Match version and Idempotency-Key. Consume a live CONTACT proof for this exact booking and atomically change only its delivery email, recording security notices to old/new addresses. Stable ownership, login identity, immutable snapshots and quotas do not change. Replay requires current authority; retain the same token, key and version after an uncertain response. Invalid, expired, consumed or wrong-booking/purpose proof returns400 PROOF_INVALID.
+     * @endpoint post /bookings/{bookingId}/contact
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted positive signed64-bit booking version from GET or a receipt. Missing428, stale412; weak/wildcard/multiple tags rejected400.
+     * @param contactConfirmation 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public confirmContactChange(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, contactConfirmation: ContactConfirmation, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<BookingReceipt>;
+    public confirmContactChange(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, contactConfirmation: ContactConfirmation, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<BookingReceipt>>;
+    public confirmContactChange(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, contactConfirmation: ContactConfirmation, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<BookingReceipt>>;
+    public confirmContactChange(bookingId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, contactConfirmation: ContactConfirmation, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling confirmContactChange.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling confirmContactChange.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling confirmContactChange.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling confirmContactChange.');
+        }
+        if (contactConfirmation === null || contactConfirmation === undefined) {
+            throw new Error('Required parameter contactConfirmation was null or undefined when calling confirmContactChange.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/contact`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<BookingReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: contactConfirmation,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Create one booking with the verified creation grant or account. Exact Origin, live persisted session and CSRF required. Authority, snapshots,120-minute occupancy,quota and effects commit atomically; the grant becomes exact-booking management authority.
      * @endpoint post /bookings
      * @param xCSRFToken 
@@ -429,6 +529,86 @@ export class BookingsService extends BaseService {
         return this.httpClient.request<CustomerBookingStatus>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Requires exact Origin, CSRF and current account ownership or exact guest management authority for this booking. Emails a single-use 15-minute CONTACT proof to the proposed delivery address, subject to the shared email cooldown and budgets. No ownership, quota, account login or booking details change. The inert link uses /verify#token&#x3D;...&amp;purpose&#x3D;CONTACT&amp;bookingId&#x3D;...; only explicit authenticated confirmation changes delivery.
+     * @endpoint post /bookings/{bookingId}/contact-proofs
+     * @param bookingId 
+     * @param xCSRFToken 
+     * @param createProofRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public requestContactProof(bookingId: string, xCSRFToken: string, createProofRequest: CreateProofRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<ProofAccepted>;
+    public requestContactProof(bookingId: string, xCSRFToken: string, createProofRequest: CreateProofRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<ProofAccepted>>;
+    public requestContactProof(bookingId: string, xCSRFToken: string, createProofRequest: CreateProofRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<ProofAccepted>>;
+    public requestContactProof(bookingId: string, xCSRFToken: string, createProofRequest: CreateProofRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling requestContactProof.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling requestContactProof.');
+        }
+        if (createProofRequest === null || createProofRequest === undefined) {
+            throw new Error('Required parameter createProofRequest was null or undefined when calling requestContactProof.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/contact-proofs`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<ProofAccepted>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: createProofRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

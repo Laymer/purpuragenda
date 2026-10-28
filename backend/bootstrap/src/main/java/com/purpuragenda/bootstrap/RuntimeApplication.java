@@ -60,8 +60,12 @@ public class RuntimeApplication {
     }
     @Bean GuestAccessStore guestAccess(DataSource source) { return new PostgresGuestAccess(source); }
     @Bean NotificationQueue notificationQueue(DataSource source,RuntimeSettings settings) { return new PostgresNotificationQueue(source,settings.suppressed()); }
-    @Bean AuthDeliveryStore authDeliveryStore(DataSource source,RuntimeSettings settings) {
+    @Bean PostgresAuthDeliveryStore authDeliveryStore(DataSource source,RuntimeSettings settings) {
         return new PostgresAuthDeliveryStore(source,settings.delivery(),settings.origin(),settings.suppressed());
+    }
+    @Bean CustomerContactController customerContactController(DataSource source,PostgresAuthDeliveryStore delivery,RequestThrottle throttle,RuntimeSettings settings) {
+        return new CustomerContactController(new com.purpuragenda.application.scheduling.CustomerContactChanges(
+                new com.purpuragenda.adapters.out.postgres.PostgresContactChanges(source,delivery,settings.meetingHosts()),throttle));
     }
     @Bean RateLimitStore rateLimits(DataSource source,RuntimeSettings settings) { return new PostgresRateLimits(source,settings.rate()); }
     @Bean RequestThrottle requestThrottle(RateLimitStore limits) { return new RequestThrottle(limits); }
