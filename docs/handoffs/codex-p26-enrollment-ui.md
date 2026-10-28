@@ -9,3 +9,5 @@
 - Verification: PR122 run40690276185 all15 green, zero scanning alerts, independent exact-head review0aa62b0 clean after route-reuse finding fixed. Local422 Angular tests/build/CSP passed with1873/1878 lines and2040/2154 branches. Maind0fe1ef run40688414367 green. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches; independent review found Unicode password counting mismatch, fixed before proof consumption and re-reviewed clean.
 - Next concrete action: push task/p26-enrollment-ui, create draft PR and verify hosted checks plus exact-head independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+Claim released: PR123 confirmed merged8173ea4 after15 hosted checks (40693826429), zero scanning alerts and clean independent exact-head reviewfec4216. Unicode validation finding fixed. Next claim P26/account-settings.
