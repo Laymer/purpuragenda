@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, Routes } from '@angular/router';
 import { provideApi } from './shared/generated/provide-api';
 import { adminGuard } from './admin/admin-guard';
+import { accountGuard } from './account/account-guard';
 import { HomeComponent } from './home.component';
 import { NotFoundComponent } from './not-found.component';
 
@@ -12,6 +13,9 @@ export const routes: Routes = [
   { path: 'verify', loadComponent: () => import('./booking/verify-email.component').then(module => module.VerifyEmailComponent), title: 'Verify your email · Purpuragenda' },
   { path: 'manage', loadComponent: () => import('./manage/manage-request.component').then(module => module.ManageRequestComponent), title: 'Manage your booking · Purpuragenda' },
   { path: 'manage/booking', loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
+  { path: 'account/login', loadComponent: () => import('./account/account-login.component').then(module => module.AccountLoginComponent), title: 'Account sign in · Purpuragenda' },
+  { path: 'account', canActivate: [accountGuard], loadComponent: () => import('./account/account-history.component').then(module => module.AccountHistoryComponent), title: 'Your account · Purpuragenda' },
+  { path: 'account/bookings/:id', canActivate: [accountGuard], loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
   { path: 'admin/login', loadComponent: () => import('./admin/admin-auth.component').then(module => module.AdminAuthComponent), title: 'Administrator sign in · Purpuragenda' },
   {
     path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./admin/admin-shell.component').then(module => module.AdminShellComponent),

@@ -1,5 +1,5 @@
 import { Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { CustomerBookingStatus, CustomerBookingStatusAllowedActionsEnum, BookingsService } from '../shared/generated';
 import { BookingStatusComponent, zonedInstant } from '../shared/booking-status.component';
@@ -61,7 +61,8 @@ type Action = 'cancel' | 'reschedule';
         }
       }
       @if (!booking() && !busy() && message()) { <button mat-stroked-button type="button" (click)="load()">Try again</button> }
-      @if (lost()) { <a mat-stroked-button routerLink="/manage">Request a new link</a> }
+      @if (lost()) { <a mat-stroked-button [routerLink]="accountView ? '/account/login' : '/manage'">{{ accountView ? 'Sign in again' : 'Request a new link' }}</a> }
+      @if (accountView) { <a mat-stroked-button routerLink="/account">Back to your history</a> }
     </section>`,
   styles: [`section { max-width: 40rem; margin: 2rem auto; padding: 1rem; } .panel { border: 1px solid #d6bfdc; border-radius: .5rem; padding: 1rem; margin-block: 1rem; background: #f8f2fa; } button, a { margin: .5rem .75rem .5rem 0; }`],
 })
@@ -70,6 +71,11 @@ export class ManageBookingComponent {
   private readonly commands = inject(CommandAccess);
   private readonly sessions = inject(SessionAccess);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private accountBookingId = this.route?.snapshot?.paramMap?.get('id') ?? null;
+  private viewGeneration = 0;
+  get accountView(): boolean { return this.accountBookingId !== null; }
+  private get recovery(): string { return this.accountView ? 'Sign in again to manage your booking.' : 'Request a new link to manage your booking.'; }
   private active = true;
   private etag: string | null = null;
   private command: FrozenCommand<unknown> | null = null;
@@ -84,8 +90,12 @@ export class ManageBookingComponent {
   readonly message = signal('');
 
   constructor() {
-    const remove = this.sessions.onInvalidated(() => this.clear('Your session expired. Request a new link to manage your booking.', true));
-    inject(DestroyRef).onDestroy(() => { this.active = false; remove(); this.clear('', false); });
+    const remove = this.sessions.onInvalidated(() => this.clear('Your session expired. ' + this.recovery, true));
+    const routeChanges = this.route?.paramMap?.subscribe(params => {
+      const id = params.get('id'); if (id === this.accountBookingId) return;
+      this.accountBookingId = id; this.clear('', false); void this.load();
+    });
+    inject(DestroyRef).onDestroy(() => { this.active = false; remove(); routeChanges?.unsubscribe(); this.clear('', false); });
     void this.load();
   }
 
@@ -98,14 +108,16 @@ export class ManageBookingComponent {
   pickSlot(value: RescheduleChoice | null): void { this.choice.set(value); }
   review(): void { if (this.choice() !== null) { this.phase.set('confirm'); queueMicrotask(() => this.focus('#confirm-title')); } }
   backToPick(): void { this.phase.set('pick'); }
-  sessionEnded(): void { this.clear('Your session expired. Request a new link to manage your booking.', true); }
+  sessionEnded(): void { this.clear('Your session expired. ' + this.recovery, true); }
 
   async load(): Promise<boolean> {
-    const generation = this.sessions.invalidations();
-    const current = () => this.active && this.sessions.invalidations() === generation;
+    const generation = this.sessions.invalidations(), view = this.viewGeneration;
+    const current = () => this.active && this.sessions.invalidations() === generation && this.viewGeneration === view;
     this.busy.set(true);
     try {
-      const response = await this.sessions.perform(() => this.bookings.getGuestBooking('response'));
+      const id = this.accountBookingId;
+      if (id !== null && !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id)) throw new AccessFailure('REJECTED', 400);
+      const response = await this.sessions.perform(() => id === null ? this.bookings.getGuestBooking('response') : this.bookings.getBooking(id, 'response'));
       if (!current() || response.body === null) return false;
       const tag = response.headers.get('ETag');
       this.etag = tag !== null && STRONG_ETAG.test(tag) ? tag : '"' + response.body.version + '"';
@@ -115,10 +127,10 @@ export class ManageBookingComponent {
       if (!current()) return false;
       const failure = safeFailure(error, false);
       this.booking.set(null); this.etag = null; this.lost.set(true);
-      this.message.set(failure.kind === 'REJECTED' || failure.kind === 'SESSION_EXPIRED' ? 'We could not find a booking for this browser session. Request a new link to manage your booking.' : 'Your booking could not be loaded right now. Try again shortly.');
+      this.message.set(failure.kind === 'REJECTED' || failure.kind === 'SESSION_EXPIRED' ? 'We could not find a booking for this browser session. ' + this.recovery : 'Your booking could not be loaded right now. Try again shortly.');
       this.focus('#booking-message');
       return false;
-    } finally { if (this.active) this.busy.set(false); }
+    } finally { if (current()) this.busy.set(false); }
   }
 
   async cancel(): Promise<void> {
@@ -145,43 +157,46 @@ export class ManageBookingComponent {
   }
 
   private async send(): Promise<void> {
-    const command = this.command!, action = this.action(), generation = this.sessions.invalidations();
+    const command = this.command!, action = this.action(), generation = this.sessions.invalidations(), view = this.viewGeneration;
+    const current = () => this.active && this.sessions.invalidations() === generation && this.viewGeneration === view;
     this.busy.set(true); this.message.set('');
     try {
       await command.attempt();
-      if (!this.active || this.sessions.invalidations() !== generation) return;
+      if (!current()) return;
       this.command = null; this.uncertain.set(false); this.phase.set('view'); this.choice.set(null);
       const loaded = await this.load();
-      if (this.active && loaded) this.message.set(action === 'cancel' ? 'Your cancellation was received. The current status is shown below.' : 'Your booking was moved. The current status is shown below.');
+      if (current() && loaded) this.message.set(action === 'cancel' ? 'Your cancellation was received. The current status is shown below.' : 'Your booking was moved. The current status is shown below.');
     } catch (error) {
-      if (this.active && this.sessions.invalidations() === generation) await this.failure(error, action);
-    } finally { if (this.active) this.busy.set(false); }
+      if (current()) await this.failure(error, action, current);
+    } finally { if (current()) this.busy.set(false); }
   }
 
-  private async failure(error: unknown, action: Action): Promise<void> {
+  private async failure(error: unknown, action: Action, current: () => boolean): Promise<void> {
     const failure = error instanceof AccessFailure ? error : safeFailure(error, true);
     this.uncertain.set(failure.kind === 'UNCERTAIN');
     if (failure.kind === 'UNCERTAIN') { this.message.set('The response did not arrive. Your request may have succeeded.'); this.focus('#retry-title'); return; }
     this.command = null;
     if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428) {
       this.phase.set('view'); this.choice.set(null);
-      this.message.set(await this.load() ? 'Your booking changed. The latest details are shown; review them before changing anything.' : 'Your booking changed, but its latest details could not be loaded. Refresh and try again.');
+      const loaded = await this.load(); if (!current()) return;
+      this.message.set(loaded ? 'Your booking changed. The latest details are shown; review them before changing anything.' : 'Your booking changed, but its latest details could not be loaded. Refresh and try again.');
     } else if (failure.kind === 'CONFLICT' && action === 'reschedule') {
       this.choice.set(null); this.phase.set('pick');
       this.message.set('That time is no longer available. Choose another time; your current booking is unchanged.');
     } else if (failure.kind === 'CONFLICT') {
       this.phase.set('view');
-      this.message.set(await this.load() ? 'Cancelling is no longer possible for this booking. The latest details are shown.' : 'Cancelling is no longer possible, but the latest details could not be loaded. Refresh the page.');
+      const loaded = await this.load(); if (!current()) return;
+      this.message.set(loaded ? 'Cancelling is no longer possible for this booking. The latest details are shown.' : 'Cancelling is no longer possible, but the latest details could not be loaded. Refresh the page.');
     } else if (failure.kind === 'THROTTLED') this.message.set('Please wait a moment before trying again.');
-    else if (failure.kind === 'SESSION_EXPIRED') { this.message.set('Your session expired. Request a new link to manage your booking.'); this.lost.set(true); }
-    else if (failure.status === 404) { this.booking.set(null); this.lost.set(true); this.message.set('We could not find that booking. Request a new link to manage your booking.'); }
+    else if (failure.kind === 'SESSION_EXPIRED') { this.message.set('Your session expired. ' + this.recovery); this.lost.set(true); }
+    else if (failure.status === 404) { this.booking.set(null); this.lost.set(true); this.message.set('We could not find that booking. ' + this.recovery); }
     else if (failure.status === 403) { this.phase.set('view'); this.message.set('This booking can no longer be changed by you. Contact the practitioner if you need help.'); await this.load(); }
     else { this.phase.set('view'); this.message.set(action === 'cancel' ? 'The booking could not be cancelled right now. Try again shortly.' : 'The booking could not be moved right now. Try again shortly.'); }
-    this.focus('#booking-message');
+    if (current()) this.focus('#booking-message');
   }
 
   private clear(message: string, lost: boolean): void {
-    this.booking.set(null); this.etag = null; this.command?.discard(); this.command = null;
+    this.viewGeneration++; this.busy.set(false); this.booking.set(null); this.etag = null; this.command?.discard(); this.command = null;
     this.phase.set('view'); this.choice.set(null); this.uncertain.set(false);
     if (this.active) { this.lost.set(lost); this.message.set(message); }
   }
