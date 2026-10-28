@@ -29,7 +29,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main d2d4dfe; 110Angular tests/build pass locally and heads9f26df2/07fd411 passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
-| P26 — Complete account enrollment, history, profile and session-recovery UI | In progress; account access/history PR122 confirmed merged b9a0ca7 after 15 hosted checks and independent review; enrollment on task/p26-enrollment-ui; profile/password UI remains;  |
+| P26 — Complete account enrollment, history, profile and session-recovery UI | In progress; account access/history PR122 confirmed merged b9a0ca7 after 15 hosted checks and independent review; enrollment PR123 confirmed merged 8173ea4 after 15 hosted checks and independent review; profile/password UI and account journey on task/p26-account-settings;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Merged; outcomes PR112 b211d2f; manual creation PR113 3509eb0; rescheduling https://github.com/Laymer/purpuragenda/pull/114 confirmed merged d9ed47b after15 hosted checks and independent review; explicit violated-rule/blackout choices and reasons covered |
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P26/enrollment-ui: agent=Codex-coordinator; branch=task/p26-enrollment-ui; base=main; handoff=docs/handoffs/codex-p26-enrollment-ui.md
+- P26/account-settings: agent=Codex-coordinator; branch=task/p26-account-settings; base=main; handoff=docs/handoffs/codex-p26-account-settings.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T12:59:48Z.
-- Current task: P26/enrollment-ui; branch: task/p26-enrollment-ui; base: main b9a0ca7; PR URL: pending draft creation.
-- Last pushed implementation commit: 0aa62b0 (PR122, mergedb9a0ca7); uncommitted changes: tested optional enrollment UI ready for draft PR.
-- What works: PR122 confirmed mergedb9a0ca7 after15 hosted checks and independent review; account sign-in/history/booking management UI and complete P18 backend available.
-- What remains: hosted checks and exact-head review; profile/password-change UI follows separately.
-- Decisions: ACCOUNT proof never reaches guest redemption; no automatic enrollment or login, no secret persistence and no automatic credential retry after uncertainty.
-- Verification: PR122 run40690276185 all15 green, zero scanning alerts, independent exact-head review0aa62b0 clean after route-reuse finding fixed. Local422 Angular tests/build/CSP passed with1873/1878 lines and2040/2154 branches. Maind0fe1ef run40688414367 green. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches; independent review found Unicode password counting mismatch, fixed before proof consumption and re-reviewed clean.
-- Next concrete action: push task/p26-enrollment-ui, create draft PR and verify hosted checks plus exact-head independent review.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T13:31:27Z.
+- Current task: P26/account-settings; branch: task/p26-account-settings; base: main 8173ea4; PR URL: pending draft creation.
+- Last pushed implementation commit: fec4216 (PR123, merged8173ea4); uncommitted changes: tested profile/password UI and extended account journey ready for draft PR.
+- What works: PR123 confirmed merged8173ea4 after15 hosted checks and independent review; P26 sign-in/history/booking access and explicit enrollment UI merged.
+- What remains: hosted real-stack account journey, all required checks and exact-head independent review before completing P26.
+- Decisions: immutable login email displayed read-only; profile retries preserve original command/version; password changes never automatically retry and clear private state on confirmed/uncertain outcomes.
+- Verification: PR123 run40693826429 all15 green, zero scanning alerts, exact-head reviewfec4216 clean after Unicode policy finding fixed. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches. Main8173ea4 run40695445863 green. Local487 Angular tests/build/CSP passed,2075/2080 lines2262/2388 branches;16 acceptance-support tests passed and extended real-browser suite compiled. Docker unavailable locally: actual journey only in hosted CI. Independent review requested.
+- Next concrete action: push task/p26-account-settings and create draft PR; wait for current-head hosted checks and independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.

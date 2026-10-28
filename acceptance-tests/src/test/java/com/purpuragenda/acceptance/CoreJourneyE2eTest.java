@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * The 1.0.0 core journey in a real Chromium against the isolated real Compose stack: PostgreSQL, Mailpit and the
+ * The core booking and optional account journey in a real Chromium against the isolated real Compose stack: PostgreSQL, Mailpit and the
  * application behind Caddy. No mocks, no test endpoints and no authentication bypass. The administrator was enrolled
  * through the private admin-setup terminal flow by scripts/ci/verify-e2e.py; the code is computed from its key.
  */
@@ -37,6 +37,7 @@ class CoreJourneyE2eTest {
 
     private String step = "start";
     private Page focus;
+    private Instant guestProofRequestedAt;
 
     private void at(String name, Page page) {
         step = name;
@@ -74,6 +75,7 @@ class CoreJourneyE2eTest {
                     MailpitClient.Mail received = requestReceivedMail(guest, mail, guestEmail);
                     Page agenda = administratorApproves(administrator, config, today, reference);
                     guestSeesConfirmation(guest, mail, guestEmail, received);
+                    accountEnrollmentAndSettings(guest, origin, guestEmail, reference, mail);
                     agenda.close();
                 }
             } catch (Throwable failure) {
@@ -105,6 +107,7 @@ class CoreJourneyE2eTest {
         assertThat(heading(page, "Verify your email")).isVisible();
         page.locator("#booking-email").fill(email);
         button(page, "Send verification link").click();
+        guestProofRequestedAt = Instant.now();
         assertThat(page.getByText("Check your inbox.")).isVisible();
 
         at("guest reads the proof link from Mailpit and verifies in the same browser", page);
@@ -208,6 +211,66 @@ class CoreJourneyE2eTest {
         assertTrue(confirmed.text().contains("Meeting link: " + ZOOM), "confirmation mail carries the approved meeting link");
         assertNotEquals(received.id(), confirmed.id());
         assertEquals(List.of(email), confirmed.recipients());
+    }
+
+    private void accountEnrollmentAndSettings(BrowserContext guest, String origin, String email, String reference, MailpitClient mail) throws Exception {
+        Page page = guest.newPage();
+        at("guest requests optional account enrollment", page);
+        // Email issuance shares a cooldown across proof purposes; exercise it without altering server time or policy.
+        Duration remaining = Duration.between(Instant.now(), guestProofRequestedAt.plusSeconds(65));
+        if (!remaining.isNegative()) sleep(remaining);
+        page.navigate(origin + "/account/create");
+        field(page, "Email address").fill(email);
+        button(page, "Email me an account link").click();
+        assertThat(page.getByText("Check your inbox for an account creation link.", new Page.GetByTextOptions().setExact(false))).isVisible();
+        MailpitClient.Mail proof = mail.await(email, candidate -> MailpitClient.proofLink(candidate.text()).filter(link -> link.endsWith("purpose=ACCOUNT")).isPresent(), MAIL_TIMEOUT, "optional account email");
+        at("guest explicitly chooses an account password", page);
+        page.navigate(MailpitClient.proofLink(proof.text()).orElseThrow());
+        assertThat(heading(page, "Create your optional account")).isVisible();
+        assertFalse(page.url().contains("#"), "account proof fragment is removed");
+        String password = java.util.UUID.randomUUID().toString(), replacement = java.util.UUID.randomUUID().toString();
+        page.locator("#new-account-password").fill(password);
+        page.locator("#confirm-account-password").fill(password);
+        button(page, "Create my account").click();
+        assertThat(page.getByText("Your account was created. Sign in with your login email and password.")).isVisible();
+        accountSignIn(page, origin, email, password);
+        at("account history retains the guest booking", page);
+        Locator booking = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(reference).setExact(true));
+        assertThat(booking).isVisible(); booking.click();
+        assertThat(page.getByText("Status: confirmed.")).isVisible();
+        assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Open meeting link"))).hasAttribute("href", ZOOM);
+        at("account saves an optional profile without changing booking snapshots", page);
+        page.navigate(origin + "/account/settings");
+        assertThat(heading(page, "Account settings")).isVisible();
+        page.locator("#profile-first").fill("Synthetic profile");
+        page.locator("#profile-last").fill("Updated");
+        page.locator("#profile-phone").fill("+32 470 00 00 02");
+        button(page, "Save profile").click();
+        assertThat(page.getByText("Your optional profile was saved.")).isVisible();
+        page.reload(); assertThat(page.locator("#profile-first")).hasValue("Synthetic profile");
+        at("account changes password and signs in again", page);
+        page.locator("#current-password").fill(password);
+        page.locator("#replacement-password").fill(replacement);
+        page.locator("#repeat-password").fill(replacement);
+        button(page, "Change password and sign out").click();
+        assertThat(page.getByText("Your password was changed and all account sessions were signed out. Sign in again.")).isVisible();
+        assertThat(page.locator("#profile-first")).hasCount(0);
+        accountSignIn(page, origin, email, replacement);
+        assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(reference).setExact(true))).isVisible();
+        page.navigate(origin + "/account/settings");
+        assertThat(page.locator("#profile-first")).hasValue("Synthetic profile");
+        assertThat(page.locator("#profile-phone")).hasValue("+32470000002");
+        page.close();
+    }
+
+    private void accountSignIn(Page page, String origin, String email, String password) {
+        at("account signs in explicitly", page);
+        page.navigate(origin + "/account/login");
+        page.locator("#account-email").fill(email);
+        page.locator("#account-password").fill(password);
+        button(page, "Sign in").click();
+        page.waitForURL(origin + "/account");
+        assertThat(heading(page, "Your account")).isVisible();
     }
 
     private void keepEvidence(E2eConfig config, Throwable failure) {

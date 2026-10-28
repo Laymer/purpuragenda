@@ -15,6 +15,7 @@ export const routes: Routes = [
   { path: 'manage/booking', loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
   { path: 'account/create', loadComponent: () => import('./account/enrollment-request.component').then(module => module.EnrollmentRequestComponent), title: 'Create an optional account · Purpuragenda' },
   { path: 'account/login', loadComponent: () => import('./account/account-login.component').then(module => module.AccountLoginComponent), title: 'Account sign in · Purpuragenda' },
+  { path: 'account/settings', canActivate: [accountGuard], loadComponent: () => import('./account/account-settings.component').then(module => module.AccountSettingsComponent), title: 'Account settings · Purpuragenda' },
   { path: 'account', canActivate: [accountGuard], loadComponent: () => import('./account/account-history.component').then(module => module.AccountHistoryComponent), title: 'Your account · Purpuragenda' },
   { path: 'account/bookings/:id', canActivate: [accountGuard], loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
   { path: 'admin/login', loadComponent: () => import('./admin/admin-auth.component').then(module => module.AdminAuthComponent), title: 'Administrator sign in · Purpuragenda' },

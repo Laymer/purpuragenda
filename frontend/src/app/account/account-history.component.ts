@@ -13,6 +13,7 @@ import { zonedInstant } from '../shared/booking-status.component';
     <section aria-labelledby="account-title" [attr.aria-busy]="busy()">
       <h1 id="account-title">Your account</h1>
       <a mat-flat-button routerLink="/book">Book a consultation</a>
+      <a mat-stroked-button routerLink="/account/settings">Profile and password</a>
       <button mat-stroked-button type="button" (click)="logout()" [disabled]="busy()">Sign out</button>
       <h2>Your bookings</h2><p>Times shown in Europe/Brussels, newest scheduled time first.</p>
       <button mat-stroked-button type="button" (click)="load()" [disabled]="busy() || lost()">Refresh history</button>

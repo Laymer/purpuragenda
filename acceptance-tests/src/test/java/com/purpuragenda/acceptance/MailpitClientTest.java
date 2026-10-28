@@ -69,6 +69,7 @@ class MailpitClientTest {
         assertEquals("http://localhost:18080/verify#token=" + TOKEN + "&purpose=CREATE", MailpitClient.proofLink(text).orElseThrow());
         assertEquals("http://127.0.0.1:1/verify#token=" + TOKEN + "&purpose=MANAGE",
                 MailpitClient.proofLink("x http://127.0.0.1:1/verify#token=" + TOKEN + "&purpose=MANAGE.").orElseThrow());
+        assertEquals("http://localhost:18080/verify#token=" + TOKEN + "&purpose=ACCOUNT", MailpitClient.proofLink("http://localhost:18080/verify#token=" + TOKEN + "&purpose=ACCOUNT").orElseThrow());
         assertTrue(MailpitClient.proofLink("http://localhost:18080/verify#token=short&purpose=CREATE").isEmpty());
         assertTrue(MailpitClient.proofLink("http://localhost:18080/verify#token=" + TOKEN + "X&purpose=CREATE").isEmpty());
         assertTrue(MailpitClient.proofLink("https://evil.example/verify#token=" + TOKEN + "&purpose=CREATE").isEmpty());
