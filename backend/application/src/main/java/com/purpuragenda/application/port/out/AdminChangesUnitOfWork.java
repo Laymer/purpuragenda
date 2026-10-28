@@ -14,7 +14,7 @@ import static com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
  */
 public interface AdminChangesUnitOfWork {
     Receipt change(Command command,Function<Change,Receipt> work);
-    enum Operation { REJECT, CANCEL, RESCHEDULE, OUTCOME }
+    enum Operation { REJECT, CANCEL, RESCHEDULE, OUTCOME, MEETING }
     /** PROVIDER and eligible CUSTOMER cancellations refund existing receipts; a late customer cancellation does not. */
     enum Classification { PROVIDER, CUSTOMER, LATE_CUSTOMER }
     record Command(SessionBinding session,UUID bookingId,Operation operation,String key,String fingerprint) {
@@ -35,6 +35,10 @@ public interface AdminChangesUnitOfWork {
         void cancelledEffects(Booking original,Booking cancelled,Classification classification,String reason);
         /** Audit with reason, the immutable override record when used, and both-audience outbox; money is untouched. */
         void rescheduledEffects(Booking original,Booking moved,String reason,SchedulingRules.Override override);
+        /** True when another booking already holds this participant meeting id. */
+        boolean meetingInUse(String meetingId);
+        /** Audit with reason and both-audience outbox; a confirmed booking's calendar revision has already advanced. */
+        void meetingEffects(Booking original,Booking updated,String reason);
         /** Audit only: outcomes never notify the customer automatically. */
         void outcomeEffects(Booking original,Booking recorded,String reason);
     }

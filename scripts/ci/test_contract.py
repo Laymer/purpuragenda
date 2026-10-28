@@ -100,7 +100,8 @@ class ContractTest(unittest.TestCase):
     def test_administrator_changes_are_versioned_reasoned_and_never_take_late_classification_from_clients(self):
         paths, schemas = self.document['paths'], self.document['components']['schemas']
         for suffix, request in (('reject', 'AdministratorRejectionRequest'), ('cancel', 'AdministratorCancellationRequest'),
-                                ('reschedule', 'AdministratorRescheduleRequest'), ('outcome', 'AdministratorOutcomeRequest')):
+                                ('reschedule', 'AdministratorRescheduleRequest'), ('outcome', 'AdministratorOutcomeRequest'),
+                                ('meeting', 'AdministratorMeetingChangeRequest')):
             operation = paths['/admin/bookings/{bookingId}/' + suffix]['post']
             headers = {value['name'] for value in operation['parameters'] if value['in'] == 'header'}
             self.assertEqual({'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, headers)
@@ -122,7 +123,7 @@ class ContractTest(unittest.TestCase):
                           'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
                           'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
-                          'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome'},
+                          'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

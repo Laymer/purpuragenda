@@ -32,6 +32,7 @@ class NotificationDispatchTest {
         expected.put("REFUND_RECORDED",List.of("CUSTOMER:REFUND_RECORDED","OWNER:OWNER_REFUND_RECORDED"));
         expected.put("PAYMENT_RECONCILIATION_REQUIRED",List.of("OWNER:OWNER_ACTION_RECONCILIATION"));
         expected.put("REFUND_REQUIRED",List.of("OWNER:OWNER_ACTION_REFUND"));
+        expected.put("MEETING_CHANGED",List.of("CUSTOMER:BOOKING_MEETING_CHANGED","OWNER:OWNER_BOOKING_MEETING_CHANGED"));
         expected.put("CONFIGURATION_CONFLICT",List.of());
         for(String type:List.of("ADMIN_CREATED","APPROVED","CONFIRMED_EXTERNAL_PAYMENT","RESCHEDULED")) {
             var all=new ArrayList<>(expected.get(type));all.add("CUSTOMER:REMINDER_48H");all.add("CUSTOMER:REMINDER_2H");expected.put(type,all);
@@ -91,6 +92,13 @@ class NotificationDispatchTest {
         assertEquals("BOOKING_NOT_CANCELLED",code(prepare("CUSTOMER","BOOKING_CANCELLED","CONFIRMED",none)));
         assertEquals("BOOKING_NOT_EXPIRED",code(prepare("CUSTOMER","BOOKING_EXPIRED","CONFIRMED",none)));
         assertEquals("BOOKING_NOT_REJECTED",code(prepare("CUSTOMER","BOOKING_REJECTED","CONFIRMED",none)));
+        for(String later:List.of("CANCELLED","RESCHEDULED","MEETING_CHANGED"))
+            assertEquals("SUPERSEDED",code(prepare("CUSTOMER","BOOKING_MEETING_CHANGED","CONFIRMED",Set.of(later))));
+        assertEquals("BOOKING_NOT_ACTIVE",code(prepare("OWNER","OWNER_BOOKING_MEETING_CHANGED","COMPLETED",none)));
+        var meeting=message(prepare("CUSTOMER","BOOKING_MEETING_CHANGED","CONFIRMED",Set.of("PAYMENT_RECORDED")));
+        assertEquals("Meeting link changed",meeting.subject());assertTrue(meeting.text().contains("Meeting link: "+ZOOM));
+        assertFalse(message(prepare("CUSTOMER","BOOKING_MEETING_CHANGED","PENDING_CONFIRMATION",none)).text().contains("Meeting link:"));
+        assertEquals("Meeting link changed",message(prepare("OWNER","OWNER_BOOKING_MEETING_CHANGED","CONFIRMED",none)).subject());
         assertEquals("UNKNOWN_TEMPLATE",code(prepare("CUSTOMER","SURPRISE","CONFIRMED",none)));
         assertEquals("RECIPIENT_UNAVAILABLE",code(NotificationContent.prepare(facts("OWNER","OWNER_ACTION_REFUND","CANCELLED",none,null,null))));
     }

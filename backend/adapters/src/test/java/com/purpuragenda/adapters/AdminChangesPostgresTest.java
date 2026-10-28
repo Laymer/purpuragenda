@@ -30,7 +30,7 @@ class AdminChangesPostgresTest {
     CustomerCreationPostgresTest c;AdministratorBookingChanges changes;
     @BeforeAll static void start() { MigrationTest.start(); }
     @AfterAll static void stop() { MigrationTest.stop(); }
-    @BeforeEach void setup() throws Exception { b.directory=directory;b.setup();c=b.c;changes=new AdministratorBookingChanges(new PostgresAdminChanges(c.f.source)); }
+    @BeforeEach void setup() throws Exception { b.directory=directory;b.setup();c=b.c;changes=new AdministratorBookingChanges(new PostgresAdminChanges(c.f.source),Set.of("zoom.us")); }
     @AfterEach void cleanup() { b.cleanup(); }
 
     UUID create(int days,int hour,String meeting) {
@@ -54,7 +54,7 @@ class AdminChangesPostgresTest {
                 Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.minusSeconds(60).plus(Duration.ofHours(8))),Timestamp.from(at.minusSeconds(60)));
         return new SessionBinding(sid,browser);
     }
-    AdministratorBookingChanges at(Instant time) { return new AdministratorBookingChanges(new PostgresAdminChanges(c.clock(time,new AtomicInteger()))); }
+    AdministratorBookingChanges at(Instant time) { return new AdministratorBookingChanges(new PostgresAdminChanges(c.clock(time,new AtomicInteger())),Set.of("zoom.us")); }
 
     @Test void rejectionReleasesOccupancyAndRequestsRefundFollowUpExactlyOnce() {
         UUID id=create(3,10,null);UUID receipt=paid(id,1500);
@@ -81,6 +81,19 @@ class AdminChangesPostgresTest {
         UUID eligible=create(5,10,null);UUID eligibleReceipt=paid(eligible,700);
         assertTrue(changes.cancel(b.session,eligible,"customer",new Cancellation(1,Classification.CUSTOMER,REASON)).success());
         assertEquals("CUSTOMER_CANCELLED",c.jdbc.queryForObject("SELECT reason FROM refund_obligation WHERE receipt_id=?",String.class,eligibleReceipt));
+    }
+
+    @Test void meetingChangesKeepLinksUniqueAdvanceTheCalendarRevisionAndNotifyBothAudiences() {
+        UUID first=create(3,10,"https://zoom.us/j/123456789"),second=create(4,10,"https://zoom.us/j/123456780");
+        int revision=c.jdbc.queryForObject("SELECT calendar_revision FROM booking WHERE id=?",Integer.class,first);
+        assertEquals(Receipt.failure(Code.MEETING_IN_USE),changes.changeMeeting(b.session,first,"taken",new MeetingChange(1,"https://zoom.us/j/123456780",REASON)));
+        var changed=changes.changeMeeting(b.session,first,"meeting",new MeetingChange(1,"https://zoom.us/j/987654321",REASON));assertEquals(new Receipt(Code.OK,first,2),changed);
+        assertEquals(changed,changes.changeMeeting(b.session,first,"meeting",new MeetingChange(1,"https://zoom.us/j/987654321",REASON)));
+        assertEquals("987654321",c.jdbc.queryForObject("SELECT meeting_id FROM booking WHERE id=?",String.class,first));
+        assertEquals(revision+1,c.jdbc.queryForObject("SELECT calendar_revision FROM booking WHERE id=?",Integer.class,first));
+        assertEquals(1,count("outbox_event WHERE type='MEETING_CHANGED'"));assertEquals(1,count("audit_event WHERE type='MEETING_CHANGED' AND reason='"+REASON+"'"));
+        // The released link may be reused by another booking.
+        assertTrue(changes.changeMeeting(b.session,second,"reuse",new MeetingChange(1,"https://zoom.us/j/123456789",REASON)).success());
     }
 
     @Test void theUnitRefusesChangesWhoseEffectsDoNotMatchTheCommittedTransition() {

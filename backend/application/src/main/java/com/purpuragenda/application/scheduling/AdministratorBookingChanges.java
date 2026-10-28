@@ -6,6 +6,7 @@ import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBi
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
 import com.purpuragenda.domain.DomainFailure;
 import com.purpuragenda.domain.booking.Booking;
+import com.purpuragenda.domain.booking.Meeting;
 import com.purpuragenda.domain.customer.Input;
 import com.purpuragenda.domain.scheduling.*;
 import java.time.*;
@@ -21,7 +22,11 @@ import static com.purpuragenda.domain.scheduling.SchedulingPolicy.BUSINESS_ZONE;
  */
 public final class AdministratorBookingChanges {
     private final AdminChangesUnitOfWork unit;
-    public AdministratorBookingChanges(AdminChangesUnitOfWork unit) { this.unit=Objects.requireNonNull(unit); }
+    private final Set<String> meetingHosts;
+    public AdministratorBookingChanges(AdminChangesUnitOfWork unit,Set<String> meetingHosts) {
+        this.unit=Objects.requireNonNull(unit);
+        require(meetingHosts!=null && !meetingHosts.isEmpty(),"INVALID_MEETING");this.meetingHosts=Set.copyOf(meetingHosts);
+    }
 
     public record Rejection(long expectedVersion,String reason) {
         public Rejection { require(expectedVersion>0,"INVALID_BOOKING_CHANGE");reason=Input.reason(reason); }
@@ -55,6 +60,25 @@ public final class AdministratorBookingChanges {
         @Override public String toString() { return "AdminOutcome[REDACTED]"; }
     }
 
+    public record MeetingChange(long expectedVersion,String meetingUrl,String reason) {
+        public MeetingChange { require(expectedVersion>0 && meetingUrl!=null,"INVALID_BOOKING_CHANGE");reason=Input.reason(reason); }
+        @Override public String toString() { return "AdminMeetingChange[REDACTED]"; }
+    }
+
+    /** Replaces the participant link of a live pending or confirmed booking; the link stays unique across bookings. */
+    public Receipt changeMeeting(SessionBinding session,UUID bookingId,String key,MeetingChange request) {
+        Objects.requireNonNull(request);
+        // A malformed participant URL is a caller error before any persistence, as for creation and approval.
+        Meeting meeting=Meeting.parse(request.meetingUrl(),meetingHosts);
+        return run(session,bookingId,Operation.MEETING,key,List.of(Long.toString(request.expectedVersion()),meeting.participantUrl(),request.reason()),tx -> {
+            Booking original=current(tx,request.expectedVersion());Instant now=tx.now();
+            require(original.livePending(now) || original.state()==Booking.State.CONFIRMED,"INVALID_TRANSITION");
+            require(original.meeting()==null || !original.meeting().participantUrl().equals(meeting.participantUrl()),"INVALID_BOOKING_CHANGE");
+            require(!tx.meetingInUse(meeting.meetingId()),"MEETING_IN_USE");
+            Booking updated=original.updateMeeting(meeting);
+            tx.save(updated);tx.meetingEffects(original,updated,request.reason());return receipt(updated);
+        });
+    }
     public Receipt reject(SessionBinding session,UUID bookingId,String key,Rejection request) {
         Objects.requireNonNull(request);
         return run(session,bookingId,Operation.REJECT,key,List.of(Long.toString(request.expectedVersion()),request.reason()),tx -> {

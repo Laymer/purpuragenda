@@ -32,7 +32,7 @@ class AdministratorBookingChangeHttpPostgresTest {
         h.mvc=MockMvcBuilders.standaloneSetup(new SessionController(login.access,login.cookies),new AdministratorLoginController(
                 new AdministratorLogin(new RequestThrottle(login.limits),f.mfa,login.sessions,new AdminCrypto()),login.cookies,Duration.ZERO),
                 new AdministratorBookingCommandController(new AdminBooking(new PostgresAdminBooking(f.source,Set.of("zoom.us")),"local-v1",Set.of("zoom.us"))),
-                new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(f.source,Set.of("zoom.us")))))
+                new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(f.source,Set.of("zoom.us")),Set.of("zoom.us"))))
                 .addFilters(new ApiGuardFilter(AdministratorLoginPostgresTest.ORIGIN,login.access,login.cookies,new ClientAddress(List.of()))).build();
         login.mvc=h.mvc;h.reads.mvc=h.mvc;
     }

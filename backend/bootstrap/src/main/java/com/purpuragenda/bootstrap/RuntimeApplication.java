@@ -152,7 +152,7 @@ public class RuntimeApplication {
         return new AdministratorBookingCommandController(new AdminBooking(new PostgresAdminBooking(source,settings.meetingHosts()),notice.version(),settings.meetingHosts()));
     }
     @Bean AdministratorBookingChangeController administratorBookingChanges(DataSource source,RuntimeSettings settings) {
-        return new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(source,settings.meetingHosts())));
+        return new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(source,settings.meetingHosts()),settings.meetingHosts()));
     }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));

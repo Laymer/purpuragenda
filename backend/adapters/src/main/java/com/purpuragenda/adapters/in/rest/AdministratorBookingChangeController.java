@@ -15,7 +15,7 @@ import java.util.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-/** Versioned administrator rejection, cancellation, rescheduling and outcomes; each needs the reviewed version and a reason. */
+/** Versioned administrator rejection, cancellation, rescheduling, meeting changes and outcomes; each needs the reviewed version and a reason. */
 @RestController
 @RequestMapping("/api/v1/admin/bookings/{bookingId}")
 public final class AdministratorBookingChangeController {
@@ -57,6 +57,13 @@ public final class AdministratorBookingChangeController {
                     reason.isNull()?null:BookingHttp.text(body,"reason")));
         });
     }
+    @PostMapping("/meeting")
+    public ResponseEntity<String> meeting(@PathVariable String bookingId,HttpServletRequest request,HttpServletResponse response) throws IOException {
+        return command(bookingId,request,response,(session,id,key,version)->{
+            var body=BookingHttp.body(request,"meetingUrl","reason");
+            return changes.changeMeeting(session,id,key,new AdministratorBookingChanges.MeetingChange(version,BookingHttp.text(body,"meetingUrl"),BookingHttp.text(body,"reason")));
+        });
+    }
     private interface Work { Receipt run(SessionBinding session,UUID id,String key,long version) throws BookingHttp.Invalid; }
     private ResponseEntity<String> command(String bookingId,HttpServletRequest request,HttpServletResponse response,Work work) throws IOException {
         if(!(request.getAttribute(ApiGuardFilter.SESSION_ATTRIBUTE) instanceof Snapshot session)) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
@@ -69,7 +76,10 @@ public final class AdministratorBookingChangeController {
             if(!receipt.success()) { BookingHttp.business(response,receipt.code());return null; }
             return ResponseEntity.ok().header(HttpHeaders.CACHE_CONTROL,"no-store").eTag('"'+Long.toString(receipt.version())+'"')
                     .contentType(MediaType.APPLICATION_JSON).body(BookingHttp.receipt(receipt));
-        } catch(BookingHttp.Invalid | DomainFailure | IllegalArgumentException | DateTimeException | ArithmeticException invalid) { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false); }
+        } catch(DomainFailure failure) {
+            // A malformed participant URL is reported by its own code, as for creation and confirmation.
+            BookingHttp.problem(response,400,"INVALID_MEETING".equals(failure.code())?"INVALID_MEETING":"INVALID_REQUEST",false,false);
+        } catch(BookingHttp.Invalid | IllegalArgumentException | DateTimeException | ArithmeticException invalid) { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false); }
         catch(Failure failure) {
             switch(failure.kind()) {
                 case AUTHENTICATION_REQUIRED -> BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);
