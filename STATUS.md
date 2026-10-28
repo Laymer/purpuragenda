@@ -32,8 +32,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Merged; outcomes PR112 b211d2f; manual creation PR113 3509eb0; rescheduling https://github.com/Laymer/purpuragenda/pull/114 confirmed merged d9ed47b after15 hosted checks and independent review; explicit violated-rule/blackout choices and reasons covered |
-| P29 — Complete receipt, refund and refund-follow-up UI | In progress; task/p29-finance-ui builds on merged finance APIs and private projection |
-| P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
+| P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
+| P30 — Complete service creation, editing and archiving UI | In progress; task/p30-services-ui builds on P22 service APIs |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 confirmed merged 525e4a6 after 14 hosted checks and independent shell review; HTTP/UI remain |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P29/finance-ui: agent=Codex-coordinator; branch=task/p29-finance-ui; base=main; handoff=docs/handoffs/codex-p29-finance-ui.md
+- P30/services-ui: agent=Codex-coordinator; branch=task/p30-services-ui; base=main; handoff=docs/handoffs/codex-p30-services-ui.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T10:02:33Z.
-- Current task: P29/finance-ui; branch: task/p29-finance-ui; base: main d9ed47b; PR URL: pending draft creation.
-- Last pushed implementation commit: 23b83ff (PR114, merged d9ed47b); uncommitted changes: tested finance UI awaiting first commit.
-- What works: P28 complete; PR114 confirmed merged d9ed47b after15 hosted checks and independent review. Finance command APIs and private projection already merged.
-- What remains: finance entry/refund follow-up UI, local tests, review and hosted gates.
-- Decisions: actual money stays independent of booking state/approval; no booking-version precondition on money entries; no currency conversion.
-- Verification: PR114 run40667201562 all15 checks passed, no scanning alerts, clean independent exact-head review of23b83ff. Local303 Angular tests/build/CSP passed. Main3509eb0 Verify40666756645 fully green. Local322 Angular tests/build/CSP passed with1387/1391 lines1431/1516 branches; documentation/diff checks passed. Independent review found a large-amount display rounding defect, fixed using BigInt formatting with EUR/KWD boundary tests; latest source review clean, exact-head confirmation pending.
-- Next concrete action: push task/p29-finance-ui, open draft PR, confirm exact-head review and observe hosted gates.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T10:20:27Z.
+- Current task: P30/services-ui; branch: task/p30-services-ui; base: main bff4b0e; PR URL: pending draft creation.
+- Last pushed implementation commit: abb1e93 (PR115, merged bff4b0e); uncommitted changes: tested service UI awaiting first commit.
+- What works: finance UI PR115 confirmed merged bff4b0e after15 hosted checks and independent review; P22 service APIs merged.
+- What remains: service creation/edit/archive/restore UI, local verification and hosted gates.
+- Decisions: immutable booking snapshots are unaffected by service edits; reason required for every service command; no customer notification.
+- Verification: PR115 run40669559347 all15 checks green, no scanning alerts and clean independent exact-head review ofabb1e93. Local322 Angular tests/build/CSP passed. Main d9ed47b Verify40668858075 fully green. Local343 Angular tests/build/CSP passed (1476/1480 lines1561/1649 branches); documentation/diff checks passed. Independent review pending.
+- Next concrete action: push task/p30-services-ui, open draft PR, confirm independent review and observe hosted gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; stacked PR dependencies: none.
