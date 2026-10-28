@@ -82,7 +82,7 @@ describe('Administrator manual booking creation', () => {
   it.each([['SLOT_UNAVAILABLE', 'overlap cannot'], ['MEETING_IN_USE', 'already in use'], ['SOMETHING', 'could not be created']])('safely reports %s without an override', async (code, message) => {
     await reviewed(); await reject(code); expect(view.violations()).toEqual([]); expect(view.message()).toContain(message); expect(view.message()).not.toContain('provider');
   });
-  it.each([['STALE_VERSION', 412], ['MISSING_VERSION', 428], ['CALENDAR_CHANGED', 409], ['SERVICE_CHANGED', 409], ['POLICY_CHANGED', 409], ['NOTICE_CHANGED', 409]])('reloads reviewed configuration after %s', async (code, status) => {
+  it.each([['SERVICE_UNAVAILABLE', 409], ['STALE_VERSION', 412], ['MISSING_VERSION', 428], ['CALENDAR_CHANGED', 409], ['SERVICE_CHANGED', 409], ['POLICY_CHANGED', 409], ['NOTICE_CHANGED', 409]])('reloads reviewed configuration after %s', async (code, status) => {
     await reviewed(); await reject(code as string, status as number); expect(view.context()).toBeNull(); expect(view.configuration()).toBeNull(); expect(view.message()).toContain('Reload');
   });
   it('retries an uncertain response with the exact body and key, suppressing competing submissions', async () => {
@@ -92,6 +92,16 @@ describe('Administrator manual booking creation', () => {
     await view.submit(); await view.review(); await view.load(); fixture.detectChanges(); expect(fixture.nativeElement.querySelector('fieldset').disabled).toBe(true);
     const retry = view.retry(); const second = await post(); expect(second.request.body).toBe(body); expect(second.request.headers.get('Idempotency-Key')).toBe(key); second.flush({ bookingId: id, version: 1 }); await retry;
     await view.retry(); expect(view.message()).toBe('Booking created.');
+  });
+  it('keeps the original uncertain command through a throttled retry and its cooldown', async () => {
+    await reviewed(); const first = view.submit(); const r = await post(); const body = r.request.body, key = r.request.headers.get('Idempotency-Key');
+    r.flush({}, { status: 503, statusText: 'x' }); await first;
+    const retry = view.retry(); const throttled = await post(); throttled.flush({}, { status: 429, statusText: 'x', headers: { 'Retry-After': '2' } }); await retry;
+    expect(view.uncertain()).toBe(true); expect(view.message()).toContain('original result is still unknown');
+    await view.retry(); await view.submit(); http.expectNone('/api/v1/admin/bookings'); expect(view.uncertain()).toBe(true);
+    await vi.advanceTimersByTimeAsync(2001); const last = view.retry(); const success = await post();
+    expect(success.request.body).toBe(body); expect(success.request.headers.get('Idempotency-Key')).toBe(key);
+    success.flush({ bookingId: id, version: 1 }); await last; expect(view.message()).toBe('Booking created.');
   });
   it('clears private data on fresh-factor expiry and returns to creation after sign-in', async () => {
     const nav = vi.spyOn(router, 'navigate'); await reviewed(); await reject('AUTHENTICATION_REQUIRED', 403);
@@ -112,7 +122,8 @@ describe('Administrator manual booking creation', () => {
     await reviewed(); const p = view.submit(); const r = await post(); fixture.destroy(); r.flush({ bookingId: id, version: 1 }); await p; expect(view.context()).toBeNull();
   });
   it('handles review failures, throttling and inability to prepare safely', async () => {
-    await loaded(); fill(); const p = view.review(); http.expectOne(r => r.url === '/api/v1/booking-context').flush({}, { status: 404, statusText: 'x' }); await p; expect(view.message()).toContain('could not be loaded');
+    await loaded(); fill(); const p = view.review(); http.expectOne(r => r.url === '/api/v1/booking-context').flush({}, { status: 404, statusText: 'x' }); await p; expect(view.message()).toContain('Reload');
+    const reload = view.load(); http.expectOne('/api/v1/admin/configuration').flush(config); await reload;
     const next = view.review(); http.expectOne(r => r.url === '/api/v1/booking-context').flush(context); await next;
     await reject('THROTTLED', 429); expect(view.message()).toContain('wait');
     vi.spyOn(TestBed.inject(CommandAccess), 'prepare').mockImplementation(() => { throw new Error(); }); await view.submit(); expect(view.message()).toContain('could not be submitted');

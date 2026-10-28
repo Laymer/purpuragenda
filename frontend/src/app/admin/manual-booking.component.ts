@@ -167,6 +167,8 @@ export class ManualBookingComponent {
     const failure = safeFailure(error, mutation);
     if (failure.kind === 'SESSION_EXPIRED') { this.clear(); await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
     if (failure.status === 403) { await reauthenticate(this.sessions, this.router, '/admin/bookings/new'); return; }
+    // A rejected retry does not establish whether an earlier uncertain attempt committed.
+    if (this.uncertain() && failure.kind === 'THROTTLED') { this.message.set('Please wait, then retry the same booking. Its original result is still unknown.'); return; }
     this.uncertain.set(failure.kind === 'UNCERTAIN');
     if (this.uncertain()) { this.message.set('The response did not arrive. The booking may exist. Retry the same booking before starting another.'); return; }
     this.command?.discard(); this.command = null;
@@ -174,7 +176,7 @@ export class ManualBookingComponent {
     if (violation) {
       if (!this.violations().some(v => v.rule === violation.rule)) this.violations.update(values => [...values, violation]);
       this.message.set('The booking violates a rule. Review the explicit exception choices.');
-    } else if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428 || ['SERVICE_CHANGED', 'POLICY_CHANGED', 'CALENDAR_CHANGED', 'NOTICE_CHANGED'].includes(failure.code ?? '')) {
+    } else if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428 || (!mutation && failure.status === 404) || ['SERVICE_UNAVAILABLE', 'SERVICE_CHANGED', 'POLICY_CHANGED', 'CALENDAR_CHANGED', 'NOTICE_CHANGED'].includes(failure.code ?? '')) {
       this.context.set(null); this.configuration.set(null); this.resetOverrides(); this.message.set('The configuration changed. Reload services and review again.');
     } else if (failure.code === 'OVERRIDE_UNUSED') {
       this.resetOverrides(); this.message.set('An exception is no longer needed. Review and submit again without unused exceptions.');
