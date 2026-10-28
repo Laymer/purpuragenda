@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { provideApi } from '../shared/generated';
+import { AdministratorBookingDetailStateEnum, provideApi } from '../shared/generated';
+import { CommandAccess } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { BookingDetailComponent } from './booking-detail.component';
 
@@ -152,4 +153,77 @@ describe('Administrator booking detail and approval', () => {
   it('ignores a late detail response after destruction', async () => {
     create(); const request = get(); fixture.destroy(); request.flush(detail()); await settle(); expect(view.booking()).toBeNull();
   });
+  async function actionPost(action: string): Promise<TestRequest> {
+    await settle(); http.match('/api/v1/session/bootstrap').forEach(request => request.flush(session)); await settle();
+    return http.expectOne('/api/v1/admin/bookings/' + id + '/' + action);
+  }
+  const reason = 'Synthetic administrative reason';
+  it.each(['confirm-external-payment', 'reject', 'cancel', 'meeting'] as const)('submits %s with the reviewed version, reason and immutable command', async action => {
+    await loaded(action === 'meeting' ? detail({ state: 'CONFIRMED', meetingUrl: link }) : detail());
+    view.reason.setValue(' ' + reason + ' '); view.classification.setValue('CUSTOMER'); view.replacementMeeting.setValue(' https://zoom.us/j/987654321 '); view.meeting.setValue(link);
+    const pending = action === 'confirm-external-payment' ? view.approve(action) : view.change(action);
+    const request = await actionPost(action); expect(request.request.headers.get('If-Match')).toBe('"7"'); expect(request.request.headers.get('X-CSRF-Token')).toBe(session.csrfToken);
+    expect(request.request.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);
+    expect(JSON.parse(request.request.body)).toEqual(action === 'confirm-external-payment' ? { meetingUrl: link } : action === 'cancel' ? { reason, classification: 'CUSTOMER' } : action === 'meeting' ? { reason, meetingUrl: 'https://zoom.us/j/987654321' } : { reason });
+    request.flush({ bookingId: id, version: 8 }); await settle(); get().flush(detail({ version: 8, state: action === 'cancel' ? 'CANCELLED' : action === 'reject' ? 'REJECTED' : 'CONFIRMED' }));
+    await pending; fixture.detectChanges(); expect(view.message()).toMatch(/confirmed|rejected|cancelled|changed/); expect(view.reason.value).toBe(''); expect(view.classification.value).toBe(''); expect(view.replacementMeeting.value).toBe('');
+    if (action === 'cancel' || action === 'reject') expect(fixture.nativeElement.textContent).not.toContain('Manage booking');
+  });
+  it('validates reasons, explicit cancellation classification and replacement links before sending', async () => {
+    await loaded(detail({ state: 'CONFIRMED', meetingUrl: link }));
+    for (const invalid of ['', 'short', 'a'.repeat(501), 'Synthetic\u0001reason']) {
+      view.reason.setValue(invalid); await view.change('cancel'); expect(view.changeHint()).toContain('10–500');
+    }
+    view.reason.setValue(reason); await view.change('cancel'); expect(view.changeHint()).toContain('Choose');
+    view.replacementMeeting.setValue('http://example.test/j/1'); await view.change('meeting'); expect(view.changeHint()).toContain('zoom.us');
+    await view.change('reject'); http.expectNone('/api/v1/session/bootstrap');
+  });
+  it('shows action controls only for applicable booking states and requires an explicit cancellation choice', async () => {
+    await loaded(); expect(fixture.nativeElement.textContent).toContain('Confirm external payment'); expect(fixture.nativeElement.textContent).toContain('Reject booking');
+    expect(fixture.nativeElement.querySelector('#cancellation-classification').value).toBe(''); expect(fixture.nativeElement.querySelector('#replacement-meeting')).toBeNull();
+    view.reason.setValue(reason); await view.change('meeting'); http.expectNone('/api/v1/session/bootstrap');
+    view.booking.set({ ...view.booking()!, state: AdministratorBookingDetailStateEnum.Cancelled }); fixture.detectChanges();
+    await view.change('cancel'); expect(view.canManage()).toBe(false); expect(view.canChangeMeeting()).toBe(false); http.expectNone('/api/v1/session/bootstrap');
+  });
+  it.each([412, 428])('reloads after a %s change response', async status => {
+    await loaded(); view.reason.setValue(reason); const pending = view.change('reject'); (await actionPost('reject')).flush({}, { status, statusText: 'Version' }); await settle();
+    get().flush(detail({ version: 9 })); await pending; expect(view.message()).toContain('latest details');
+  });
+  it.each(['PAYMENT_INSUFFICIENT', 'MEETING_IN_USE', 'INVALID_TRANSITION'])('handles %s without displaying provider details', async code => {
+    await loaded(); view.meeting.setValue(link); const pending = view.approve('confirm-external-payment');
+    (await actionPost('confirm-external-payment')).flush({ code, detail: 'synthetic-provider-detail' }, { status: 409, statusText: 'Conflict' }); await settle(); get().flush(detail()); await pending;
+    expect(view.message()).not.toContain('provider-detail'); expect(view.message()).toMatch(/receipts|already used|conflicts/);
+  });
+  it.each([409, 412])('does not claim a successful reload after a failed change and %s', async status => {
+    await loaded(); view.reason.setValue(reason); const pending = view.change('reject');
+    (await actionPost('reject')).flush({}, { status, statusText: 'Conflict' }); await settle(); get().flush({}, { status: 503, statusText: 'Unavailable' }); await pending;
+    expect(view.message()).toContain('could not be loaded'); expect(view.message()).not.toContain('Review the latest');
+  });
+  it('keeps the exact cancellation on uncertain retry and blocks other changes', async () => {
+    await loaded(); view.reason.setValue(reason); view.classification.setValue('PROVIDER');
+    const pending = view.change('cancel'); const request = await actionPost('cancel'); const key = request.request.headers.get('Idempotency-Key');
+    view.classification.setValue('CUSTOMER'); view.reason.setValue('Changed synthetic reason'); request.error(new ProgressEvent('error')); await pending;
+    expect(view.uncertain()).toBe(true); expect(view.retryLabel()).toContain('same change'); await view.change('reject'); http.expectNone('/api/v1/admin/bookings/' + id + '/reject');
+    const retry = view.retry(); const second = await actionPost('cancel'); expect(second.request.headers.get('Idempotency-Key')).toBe(key); expect(JSON.parse(second.request.body)).toEqual({ reason, classification: 'PROVIDER' });
+    second.flush({}); await settle(); get().flush(detail({ state: 'CANCELLED' })); await retry;
+  });
+  it('re-authenticates after a stale-MFA change response and clears private forms', async () => {
+    await loaded(); const nav = vi.spyOn(router, 'navigate'); view.reason.setValue(reason); view.classification.setValue('PROVIDER'); view.replacementMeeting.setValue(link);
+    const pending = view.change('cancel'); (await actionPost('cancel')).flush({ code: 'AUTHENTICATION_REQUIRED' }, { status: 403, statusText: 'MFA' }); await pending;
+    expect(nav).toHaveBeenCalledWith(['/admin/login'], { queryParams: { reason: 'reauth', return: '/admin/bookings/' + id } }); expect(view.reason.value).toBe(''); expect(view.replacementMeeting.value).toBe(''); expect(view.booking()).toBeNull();
+  });
+  it.each([400, 429])('handles a %s change failure safely', async status => {
+    await loaded(); view.reason.setValue(reason); const pending = view.change('reject');
+    (await actionPost('reject')).flush({ detail: 'synthetic-provider-detail' }, { status, statusText: 'Rejected' }); await pending;
+    expect(view.message()).toMatch(/wait|Check the fields/); expect(view.message()).not.toContain('provider');
+  });
+  it('retains an honest success message when change reload fails', async () => {
+    await loaded(); view.reason.setValue(reason); const pending = view.change('reject'); (await actionPost('reject')).flush({}); await settle();
+    get().flush({}, { status: 503, statusText: 'Unavailable' }); await pending; expect(view.message()).toContain('Booking rejected, but');
+  });
+  it('fails safely if the command cannot be prepared and clears reason on invalidation', async () => {
+    await loaded(); view.reason.setValue(reason); vi.spyOn(TestBed.inject(CommandAccess), 'prepare').mockImplementation(() => { throw new Error('synthetic'); });
+    await view.change('reject'); expect(view.message()).toContain('could not be submitted'); TestBed.inject(SessionAccess).invalidate(); expect(view.reason.value).toBe('');
+  });
+
 });
