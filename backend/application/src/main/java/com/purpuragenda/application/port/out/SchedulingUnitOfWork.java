@@ -44,7 +44,7 @@ public interface SchedulingUnitOfWork {
         IMPOSSIBLE_PENDING_HOLD(true), BLACKOUT_OVERRIDE_REQUIRED(true), OVERRIDE_UNUSED(true), CONFLICT_REVIEW_REQUIRED(true), INVALID_CONFIGURATION(true),
         INVALID_TRANSITION(true), HOLD_EXPIRED(true), CUTOFF_PASSED(true), SESSION_NOT_STARTED(true), MEETING_REQUIRED(true),
         INVALID_PAYMENT(true), DUPLICATE_PAYMENT(true), INVALID_REFUND(true), REFUND_EXCEEDS_RECEIPT(true),
-        INVALID_MEETING(true), MEETING_IN_USE(true), PAYMENT_INSUFFICIENT(true);
+        INVALID_MEETING(true), MEETING_IN_USE(true), PAYMENT_INSUFFICIENT(true), DELIVERY_SUPPRESSED(true), NOTIFICATION_NOT_RETRYABLE(true);
         private final boolean businessFailure;
         Code(boolean businessFailure) { this.businessFailure=businessFailure; }
         public boolean businessFailure() { return businessFailure; }

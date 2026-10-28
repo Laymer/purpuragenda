@@ -33,7 +33,7 @@ class SchedulingCommandsTest {
                 Code.IMPOSSIBLE_PENDING_HOLD,Code.BLACKOUT_OVERRIDE_REQUIRED,Code.OVERRIDE_UNUSED,Code.CONFLICT_REVIEW_REQUIRED,Code.INVALID_CONFIGURATION,Code.INVALID_TRANSITION,Code.HOLD_EXPIRED,
                 Code.CUTOFF_PASSED,Code.SESSION_NOT_STARTED,Code.MEETING_REQUIRED,
                 Code.INVALID_PAYMENT,Code.DUPLICATE_PAYMENT,Code.INVALID_REFUND,Code.REFUND_EXCEEDS_RECEIPT,
-                Code.INVALID_MEETING,Code.MEETING_IN_USE,Code.PAYMENT_INSUFFICIENT);
+                Code.INVALID_MEETING,Code.MEETING_IN_USE,Code.PAYMENT_INSUFFICIENT,Code.DELIVERY_SUPPRESSED,Code.NOTIFICATION_NOT_RETRYABLE);
         for(Code code:expected) {
             assertTrue(code.businessFailure());
             assertEquals(Receipt.failure(code),commands.execute(key,tx->{throw new DomainFailure(code.name());}));
