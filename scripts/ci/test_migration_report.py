@@ -517,6 +517,18 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.ContactHttpPostgresTest" tests="7">' + '<testcase/>' * 7 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_administrator_customers_require_search_ownership_and_authority_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorCustomers.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorCustomersPostgresTest.xml')
+        for count, cases, nested in ((12, 12, ''), (13, 12, ''), (14, 13, ''), (13, 13, '<failure/>'), (13, 13, '<error/>'), (13, 13, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorCustomersPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorCustomersPostgresTest" tests="13">' + '<testcase/>' * 13 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_history_http_requires_real_mfa_and_guard_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorHistoryController.java'
