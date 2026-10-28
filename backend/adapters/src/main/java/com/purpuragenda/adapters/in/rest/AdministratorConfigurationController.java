@@ -37,11 +37,11 @@ public final class AdministratorConfigurationController {
     @GetMapping
     public ResponseEntity<String> current(HttpServletRequest request,HttpServletResponse response) throws IOException {
         if(!request.getParameterMap().isEmpty()) { BookingHttp.problem(response,400,"INVALID_REQUEST",false,false);return null; }
-        var session=access.inspect(cookies.read(request));
-        if(session.isEmpty()) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
-        if(session.get().kind()!=Kind.ADMIN) { BookingHttp.problem(response,403,"ADMIN_ACCESS_REQUIRED",false,false);return null; }
         // Its own try: sharing a callback with the command path would make this read look state-changing to analysis.
         try {
+            var session=access.inspect(cookies.read(request));
+            if(session.isEmpty()) { BookingHttp.problem(response,401,"SESSION_REQUIRED",false,false);return null; }
+            if(session.get().kind()!=Kind.ADMIN) { BookingHttp.problem(response,403,"ADMIN_ACCESS_REQUIRED",false,false);return null; }
             var current=view.current(binding(session.get()));
             ObjectNode body=JSON.createObjectNode().put("observedAt",current.observedAt().toString())
                     .put("calendarVersion",current.calendar().version()).put("policyVersion",current.policy().version());

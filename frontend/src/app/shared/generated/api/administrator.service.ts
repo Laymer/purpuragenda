@@ -21,6 +21,8 @@ import { AdministratorAgendaPage } from '../model/administratorAgendaPage';
 // @ts-ignore
 import { AdministratorBlackoutRequest } from '../model/administratorBlackoutRequest';
 // @ts-ignore
+import { AdministratorBookingCreateRequest } from '../model/administratorBookingCreateRequest';
+// @ts-ignore
 import { AdministratorBookingDetail } from '../model/administratorBookingDetail';
 // @ts-ignore
 import { AdministratorCalendarReceipt } from '../model/administratorCalendarReceipt';
@@ -429,6 +431,89 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorConfirmationRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Manual administrator creation. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Replies are no-store. If-Match is rejected.
+     * @endpoint post /admin/bookings
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorBookingCreateRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public createAdministratorBooking(xCSRFToken: string, idempotencyKey: string, administratorBookingCreateRequest: AdministratorBookingCreateRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<BookingReceipt>;
+    public createAdministratorBooking(xCSRFToken: string, idempotencyKey: string, administratorBookingCreateRequest: AdministratorBookingCreateRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<BookingReceipt>>;
+    public createAdministratorBooking(xCSRFToken: string, idempotencyKey: string, administratorBookingCreateRequest: AdministratorBookingCreateRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<BookingReceipt>>;
+    public createAdministratorBooking(xCSRFToken: string, idempotencyKey: string, administratorBookingCreateRequest: AdministratorBookingCreateRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling createAdministratorBooking.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling createAdministratorBooking.');
+        }
+        if (administratorBookingCreateRequest === null || administratorBookingCreateRequest === undefined) {
+            throw new Error('Required parameter administratorBookingCreateRequest was null or undefined when calling createAdministratorBooking.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/bookings`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<BookingReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorBookingCreateRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
