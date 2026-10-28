@@ -247,7 +247,7 @@ class AdminBookingPostgresTest {
         var reads=new AtomicInteger();var fixed=new AdminBooking(new PostgresAdminBooking(c.clock(authenticated.plusSeconds(600).plusNanos(micros*1000),reads)),"local-v1",Set.of("zoom.us"));
         var good=request(3,9);
         if(micros<0)assertTrue(fixed.create(session,"edge",good).success());
-        else assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->fixed.create(session,"edge",good)).kind());
+        else assertEquals(Failure.Kind.FRESH_AUTHENTICATION_REQUIRED,fail(()->fixed.create(session,"edge",good)).kind());
         assertEquals(1,reads.get());assertEquals(micros<0?1:0,count("booking"));
     }
 

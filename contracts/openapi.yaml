@@ -2089,6 +2089,138 @@
             "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
           }
         }
+      },
+      "post": {
+        "operationId": "createAdministratorBooking",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Manual administrator creation. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay; a stale factor returns 403 AUTHENTICATION_REQUIRED. Replies are no-store. If-Match is rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed receipt; GET current state after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted booking version."
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Private administrator booking detail."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorBookingCreateRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/admin/bookings/{bookingId}": {
@@ -6504,6 +6636,123 @@
             "readOnly": true
           }
         }
+      },
+      "AdministratorBookingCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serviceId",
+          "serviceVersion",
+          "policyVersion",
+          "calendarVersion",
+          "startInstant",
+          "displayZone",
+          "noticeVersion",
+          "intake",
+          "customerEmail",
+          "meetingUrl",
+          "override"
+        ],
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serviceVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "policyVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "displayZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "noticeVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "intake": {
+            "$ref": "#/components/schemas/BookingIntake"
+          },
+          "calendarVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "customerEmail": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Delivery and stable customer identity; an existing identity is reused."
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "An allowed Zoom participant URL confirms immediately on a manual basis; null creates a pending booking with a normal hold. Invalid URLs return 400 INVALID_MEETING."
+          },
+          "override": {
+            "$ref": "#/components/schemas/AdministratorOverride"
+          }
+        },
+        "description": "Exact reviewed service, policy and calendar versions. No submission quota is charged. Exact reviewed versions and terms. Start uses an explicit offset at microsecond precision. Body is bounded to16KiB; unknown/duplicate fields and trailing JSON are rejected."
+      },
+      "AdministratorOverride": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rules",
+          "reason",
+          "blackoutIds"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "START_RULES",
+                "NOTICE",
+                "HORIZON",
+                "DAILY_CAPACITY",
+                "ACTIVE_LIMIT",
+                "REQUEST_LIMIT",
+                "HARD_BLACKOUT"
+              ]
+            }
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "blackoutIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "Empty rules with a null reason and no blackout ids means no override. Otherwise name only violated rules with a reason; blackout ids require HARD_BLACKOUT and must intersect the reservation. Unused overrides return 409 OVERRIDE_UNUSED; reservation overlap is never overridable (409 SLOT_UNAVAILABLE)."
       }
     },
     "securitySchemes": {

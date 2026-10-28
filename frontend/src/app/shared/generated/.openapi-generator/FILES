@@ -20,6 +20,7 @@ model/administratorAgendaEntry.ts
 model/administratorAgendaPage.ts
 model/administratorBlackout.ts
 model/administratorBlackoutRequest.ts
+model/administratorBookingCreateRequest.ts
 model/administratorBookingDetail.ts
 model/administratorBookingPayment.ts
 model/administratorBookingSnapshot.ts
@@ -37,6 +38,7 @@ model/administratorDateExceptionRequest.ts
 model/administratorIntakeSnapshot.ts
 model/administratorLoginRequest.ts
 model/administratorMoneyReceipt.ts
+model/administratorOverride.ts
 model/administratorPaymentEntry.ts
 model/administratorPolicy.ts
 model/administratorPolicyChangeRequest.ts

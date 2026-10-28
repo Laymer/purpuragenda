@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 class AdministratorConfigurationHttpTest {
     static final String BASE="/api/v1/admin/configuration",REVIEW="\"reason\":\"Synthetic configuration reason\",\"acknowledgedBookingIds\":[]";
     static final JsonMapper JSON=JsonMapper.builder().build();
-    final List<ConfigurationUnitOfWork.Command> commands=new ArrayList<>();Code code=Code.OK;RuntimeException failure;
+    final List<ConfigurationUnitOfWork.Command> commands=new ArrayList<>();Code code=Code.OK;RuntimeException failure;boolean storeFailure;
     final ConfigurationUnitOfWork unit=(command,work)->{
         commands.add(command);if(failure!=null)throw failure;
         return code==Code.OK?new Receipt(code,command.operation()==ConfigurationUnitOfWork.Operation.UPDATE_POLICY?AdministratorConfiguration.POLICY_ID:AdministratorConfiguration.CALENDAR_ID,4):Receipt.failure(code);
@@ -35,7 +35,8 @@ class AdministratorConfigurationHttpTest {
     MockMvc mvc;
     @BeforeEach void setup() {
         var sessions=(SessionStore)Proxy.newProxyInstance(SessionStore.class.getClassLoader(),new Class<?>[]{SessionStore.class},(p,m,a)->{
-            if(m.getName().equals("inspect"))return Optional.of(session(Kind.ADMIN));throw new AssertionError("only inspection is expected");
+            if(!m.getName().equals("inspect"))throw new AssertionError("only inspection is expected");
+            if(storeFailure)throw new IllegalStateException("SYNTHETIC_PRIVATE_PROVIDER");return Optional.of(session(Kind.ADMIN));
         });
         mvc=MockMvcBuilders.standaloneSetup(new AdministratorConfigurationController(new AdministratorConfiguration(unit),new AdministratorConfigurationView(query),
                 new SessionAccess(sessions),SessionCookies.operational())).build();
@@ -79,6 +80,7 @@ class AdministratorConfigurationHttpTest {
         }
         failure=new com.purpuragenda.domain.DomainFailure("INVALID_CALENDAR");problem(send(get(BASE).cookie(cookie)),400,"INVALID_REQUEST");
         failure=new IllegalStateException("SYNTHETIC_PRIVATE_PROVIDER");problem(send(get(BASE).cookie(cookie)),503,"TEMPORARILY_UNAVAILABLE");
+        failure=null;storeFailure=true;problem(send(get(BASE).cookie(cookie)),503,"TEMPORARILY_UNAVAILABLE");
         assertTrue(commands.isEmpty());
     }
     @Test void strictBodiesRejectAmbiguousOrOutOfRangeValuesBeforeAnyCommand() throws Exception {

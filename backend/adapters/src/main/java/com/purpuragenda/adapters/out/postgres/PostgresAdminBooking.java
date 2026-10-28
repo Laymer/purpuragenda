@@ -51,6 +51,8 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
                 .stream().findFirst().orElseThrow(PersistedSession::unauthenticated);
         PersistedAdmin current=find(binding,true);
         if(current==null || !current.valid(initial,row,now))throw PersistedSession.unauthenticated();
+        // A live session whose factor is older than ten minutes needs a new MFA login, not a new session.
+        if(!current.fresh(now))throw new Failure(Failure.Kind.FRESH_AUTHENTICATION_REQUIRED);
         // An independent HTTP touch can occur after the command's captured time. Never move it backwards.
         jdbc.update("UPDATE app_session SET last_seen_at=GREATEST(last_seen_at,?) WHERE id=?",stamp(now),current.id());
         return current.admin();
@@ -61,8 +63,9 @@ public final class PostgresAdminBooking implements AdminBookingUnitOfWork {
         boolean valid(PersistedAdmin initial,AdminRow row,Instant now) {
             return revoked==null && admin.equals(initial.admin()) && row.enabled() && row.enrolled() && epoch==row.epoch()
                     && !issued.isAfter(now) && now.isBefore(expires) && now.isBefore(lastSeen.plusSeconds(IDLE_SECONDS))
-                    && !authenticated.isAfter(now) && now.isBefore(authenticated.plusSeconds(FRESH_SECONDS));
+                    && !authenticated.isAfter(now);
         }
+        boolean fresh(Instant now) { return now.isBefore(authenticated.plusSeconds(FRESH_SECONDS)); }
     }
     private PersistedAdmin find(SessionBinding binding,boolean lock) {
         return jdbc.query("SELECT * FROM app_session WHERE id=? AND browser_hash=?"+(lock?" FOR UPDATE":""),(r,n)->new PersistedAdmin(
