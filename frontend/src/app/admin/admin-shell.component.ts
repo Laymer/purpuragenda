@@ -11,6 +11,7 @@ import { SessionAccess } from '../shared/access/session-access';
       <a routerLink="/admin/bookings/new">Create booking</a>
       <a routerLink="/admin/services">Services</a>
       <a routerLink="/admin/policy">Policy</a>
+      <a routerLink="/admin/calendar">Schedule</a>
       <button mat-stroked-button type="button" (click)="signOut()" [disabled]="busy()">Sign out</button>
     </nav>
     <router-outlet />`,
