@@ -5931,6 +5931,303 @@
           }
         }
       }
+    },
+    "/account/profile": {
+      "get": {
+        "operationId": "getAccountProfile",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current representation. Conditional headers do not yield304.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted profile version for If-Match."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ACCOUNT_ACCESS_REQUIRED; guest and administrator sessions never grant account profile/history access.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "$ref": "#/components/responses/AccountProblem"
+          }
+        },
+        "description": "Read optional profile and immutable login email using persisted account authority in a read-only snapshot. No query parameters. Absent profile is empty at version1; no automatic population from intake. Replies never extend session idle lifetime."
+      },
+      "post": {
+        "operationId": "updateAccountProfile",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current representation. Conditional headers do not yield304.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted profile version for If-Match."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountProfileReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ACCOUNT_ACCESS_REQUIRED; guest and administrator sessions never grant account profile/history access.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "$ref": "#/components/responses/AccountProblem"
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "description": "Explicitly save optional profile fields, independently of immutable login identity, quotas and booking snapshots. Exact Origin/CSRF, Idempotency-Key and strong quoted If-Match required. Account authority is checked before receipt replay. Preserve the same key/body/version on an uncertain response. Empty values clear optional fields; the first save advances virtual version1 to2.",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key, normalized body and If-Match after an uncertain response. Changed content with the same key returns409; successful retries do not repeat the profile update or audit event."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountProfileRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/history": {
+      "get": {
+        "operationId": "getAccountHistory",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current representation. Conditional headers do not yield304.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ACCOUNT_ACCESS_REQUIRED; guest and administrator sessions never grant account profile/history access.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "$ref": "#/components/responses/AccountProblem"
+          }
+        },
+        "description": "Read only bookings owned by the account stable customer identity, including terminal history. Sorted by startInstant DESC then id DESC. Cursor parts must both be supplied, with microsecond precision. Unknown or repeated query parameters are rejected. Reads do not touch session idle lifetime or reclaim expired pending bookings; pendingExpired reflects observedAt. No intake, contact, meeting or private notes are returned.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "beforeStart",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "beforeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -8423,6 +8720,192 @@
           },
           "active": {
             "type": "boolean"
+          }
+        }
+      },
+      "AccountProfileRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "firstName",
+          "lastName",
+          "telephone"
+        ],
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "telephone": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Empty or an international telephone number; normalized on save."
+          }
+        }
+      },
+      "AccountProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "loginEmail",
+          "version",
+          "firstName",
+          "lastName",
+          "telephone",
+          "observedAt"
+        ],
+        "properties": {
+          "loginEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "telephone": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Empty or an international telephone number; normalized on save."
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountProfileReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      },
+      "AccountHistoryCursor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "beforeStart",
+          "beforeId"
+        ],
+        "properties": {
+          "beforeStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "beforeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AccountHistoryBooking": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reference",
+          "state",
+          "startInstant",
+          "sessionEndInstant",
+          "pendingExpired",
+          "serviceName",
+          "priceMinor",
+          "currency"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRMATION",
+              "CONFIRMED",
+              "REJECTED",
+              "CANCELLED",
+              "EXPIRED",
+              "COMPLETED",
+              "NO_SHOW"
+            ]
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionEndInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingExpired": {
+            "type": "boolean"
+          },
+          "serviceName": {
+            "type": "string"
+          },
+          "priceMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observedAt",
+          "bookings",
+          "next"
+        ],
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookings": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/AccountHistoryBooking"
+            }
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountHistoryCursor"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }

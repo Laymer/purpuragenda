@@ -12,6 +12,24 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_account_profile_and_history_are_private_versioned_and_exclude_intake(self):
+        profile = self.document['paths']['/account/profile']
+        history = self.document['paths']['/account/history']['get']
+        for operation in (profile['get'], profile['post'], history):
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+            self.assertTrue({'401', '403', '503'} <= operation['responses'].keys())
+        self.assertNotIn('parameters', profile['get'])
+        self.assertEqual({'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, {p['name'] for p in profile['post']['parameters']})
+        self.assertTrue({'409', '412', '428'} <= profile['post']['responses'].keys())
+        schemas = self.document['components']['schemas']
+        self.assertEqual({'firstName', 'lastName', 'telephone'}, set(schemas['AccountProfileRequest']['properties']))
+        self.assertFalse(schemas['AccountProfileRequest']['additionalProperties'])
+        self.assertEqual({'limit', 'beforeStart', 'beforeId'}, {p['name'] for p in history['parameters']})
+        self.assertEqual(100, schemas['AccountHistory']['properties']['bookings']['maxItems'])
+        self.assertIn({'type': 'null'}, schemas['AccountHistory']['properties']['next']['anyOf'])
+        self.assertFalse({'birthDate', 'telephone', 'deliveryEmail', 'meetingUrl', 'message', 'accountId'} & schemas['AccountHistoryBooking']['properties'].keys())
+
     def test_rescheduling_advice_is_private_and_has_no_service_or_mutation_parameters(self):
         operation = self.document['paths']['/bookings/{bookingId}/availability']['get']
         self.assertEqual([{'sessionCookie': []}], operation['security'])
@@ -141,7 +159,8 @@ class ContractTest(unittest.TestCase):
                           'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
-                          'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService'},
+                          'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

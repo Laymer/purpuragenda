@@ -14,8 +14,14 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/accountHistory.ts
+model/accountHistoryBooking.ts
+model/accountHistoryCursor.ts
 model/accountLoginRequest.ts
 model/accountPasswordChangeRequest.ts
+model/accountProfile.ts
+model/accountProfileReceipt.ts
+model/accountProfileRequest.ts
 model/administratorAgendaEntry.ts
 model/administratorAgendaPage.ts
 model/administratorBlackout.ts
