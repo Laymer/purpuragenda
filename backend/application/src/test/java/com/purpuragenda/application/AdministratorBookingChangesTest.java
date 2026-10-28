@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AdministratorBookingChangesTest {
     static final String REASON="Synthetic administrative reason";
     final Fixture f=new Fixture();
-    final AdministratorBookingChanges changes=new AdministratorBookingChanges(f);
+    final AdministratorBookingChanges changes=new AdministratorBookingChanges(f,Set.of("zoom.us"));
     final SessionBinding session=new SessionBinding(UUID.randomUUID(),"e".repeat(64));
     Booking pending(Instant start) { f.target=f.pending(start);return f.target; }
     Booking confirmed(Instant start) {
@@ -85,6 +85,22 @@ class AdministratorBookingChangesTest {
         assertTrue(changes.reschedule(session,live.id(),"live",move(2,Instant.parse("2026-01-08T09:00:00Z"))).success());
     }
 
+    @Test void meetingChangesReplaceAUniqueValidLinkOnConfirmedBookingsOnly() {
+        Booking original=confirmed(Instant.parse("2026-01-05T09:00:00Z"));UUID id=original.id();String next="https://zoom.us/j/987654321";
+        var receipt=changes.changeMeeting(session,id,"meeting",new MeetingChange(2,next,REASON));
+        assertEquals(new Receipt(Code.OK,id,3),receipt);assertEquals(next,f.saved.meeting().participantUrl());assertEquals(original.calendarRevision()+1,f.saved.calendarRevision());
+        assertEquals(List.of("expiry","attempt","target","meeting","save","meeting-changed"),f.steps);assertEquals(Operation.MEETING,f.command.operation());
+        f.usedMeetings.add("987654321");assertEquals(Receipt.failure(Code.MEETING_IN_USE),changes.changeMeeting(session,id,"used",new MeetingChange(2,next,REASON)));
+        assertThrows(DomainFailure.class,()->changes.changeMeeting(session,id,"same",new MeetingChange(2,original.meeting().participantUrl(),REASON)));
+        assertEquals("INVALID_MEETING",assertThrows(DomainFailure.class,()->changes.changeMeeting(session,id,"bad",new MeetingChange(2,"https://example.test/j/123456789",REASON))).code());
+        // A pending request has no link to change; it gets one only through approval.
+        Booking pending=pending(Instant.parse("2026-01-05T12:00:00Z"));f.usedMeetings.clear();
+        assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.changeMeeting(session,pending.id(),"pending",new MeetingChange(1,next,REASON)));
+        f.target=original.cancel(f.now,false);assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.changeMeeting(session,id,"terminal",new MeetingChange(3,next,REASON)));
+        assertThrows(DomainFailure.class,()->new MeetingChange(1,null,REASON));assertEquals("AdminMeetingChange[REDACTED]",new MeetingChange(1,next,REASON).toString());
+        assertThrows(DomainFailure.class,()->new AdministratorBookingChanges(f,Set.of()));
+    }
+
     @Test void outcomesNeedAStartedConfirmedSessionAndAReasonOnlyWhenEarly() {
         Booking original=confirmed(Instant.parse("2026-01-02T09:00:00Z"));UUID id=original.id();
         assertEquals(Receipt.failure(Code.SESSION_NOT_STARTED),changes.outcome(session,id,"before",new Outcome(2,Booking.State.COMPLETED,null)));
@@ -114,6 +130,9 @@ class AdministratorBookingChangesTest {
         public void rejectedEffects(Booking original,Booking rejected,String supplied){steps.add("rejected");assertSame(saved,rejected);reason=supplied;}
         public void cancelledEffects(Booking original,Booking cancelled,Classification supplied,String text){steps.add("cancelled");assertSame(saved,cancelled);classification=supplied;reason=text;}
         public void rescheduledEffects(Booking original,Booking moved,String text,SchedulingRules.Override supplied){steps.add("rescheduled");assertSame(saved,moved);reason=text;override=supplied;}
+        final Set<String> usedMeetings=new HashSet<>();
+        public boolean meetingInUse(String id){steps.add("meeting");return usedMeetings.contains(id);}
+        public void meetingEffects(Booking original,Booking updated,String text){steps.add("meeting-changed");assertSame(saved,updated);reason=text;}
         public void outcomeEffects(Booking original,Booking recorded,String text){steps.add("outcome");assertSame(saved,recorded);reason=text;}
     }
 }

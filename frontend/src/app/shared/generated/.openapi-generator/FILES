@@ -38,6 +38,7 @@ model/administratorDateException.ts
 model/administratorDateExceptionRequest.ts
 model/administratorIntakeSnapshot.ts
 model/administratorLoginRequest.ts
+model/administratorMeetingChangeRequest.ts
 model/administratorMoneyReceipt.ts
 model/administratorOutcomeRequest.ts
 model/administratorOverride.ts

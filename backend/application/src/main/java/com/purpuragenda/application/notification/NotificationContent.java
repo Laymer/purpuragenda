@@ -25,7 +25,7 @@ public final class NotificationContent {
         Objects.requireNonNull(f);
         String bare=f.template().startsWith("OWNER_")?f.template().substring(6):f.template();
         boolean known=ALWAYS.contains(f.template()) || Set.of("BOOKING_REQUESTED","REQUEST_RECEIVED","BOOKING_CREATED","BOOKING_CONFIRMED","BOOKING_REJECTED",
-                "BOOKING_EXPIRED","BOOKING_CANCELLED","BOOKING_RESCHEDULED","REMINDER_48H","REMINDER_2H").contains(bare);
+                "BOOKING_EXPIRED","BOOKING_CANCELLED","BOOKING_RESCHEDULED","BOOKING_MEETING_CHANGED","REMINDER_48H","REMINDER_2H").contains(bare);
         if(!known)return new Suppress("UNKNOWN_TEMPLATE");
         if(f.recipient()==null)return new Suppress("RECIPIENT_UNAVAILABLE");
         boolean pendingLive=f.state().equals("PENDING_CONFIRMATION") && f.expiresAt()!=null && f.expiresAt().isAfter(f.now());
@@ -37,6 +37,7 @@ public final class NotificationContent {
             case "BOOKING_CREATED" -> disjoint(later,"CANCELLED","EXPIRED","REJECTED","RESCHEDULED")?(pendingLive||confirmed?null:"BOOKING_NOT_ACTIVE"):"SUPERSEDED";
             case "BOOKING_CONFIRMED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":confirmed?null:"BOOKING_NOT_CONFIRMED";
             case "BOOKING_RESCHEDULED" -> !disjoint(later,"CANCELLED","RESCHEDULED")?"SUPERSEDED":(pendingLive||confirmed)?null:"BOOKING_NOT_ACTIVE";
+            case "BOOKING_MEETING_CHANGED" -> !disjoint(later,"CANCELLED","RESCHEDULED","MEETING_CHANGED")?"SUPERSEDED":(pendingLive||confirmed)?null:"BOOKING_NOT_ACTIVE";
             case "BOOKING_CANCELLED" -> f.state().equals("CANCELLED")?null:"BOOKING_NOT_CANCELLED";
             case "BOOKING_EXPIRED" -> f.state().equals("EXPIRED")?null:"BOOKING_NOT_EXPIRED";
             case "BOOKING_REJECTED" -> f.state().equals("REJECTED")?null:"BOOKING_NOT_REJECTED";
@@ -50,6 +51,7 @@ public final class NotificationContent {
             case "BOOKING_CREATED" -> f.audience().equals("OWNER")?"Booking created":confirmed?"Your booking is confirmed":"A booking request was created for you";
             case "BOOKING_CONFIRMED" -> "Booking confirmed";
             case "BOOKING_RESCHEDULED" -> "Booking time changed";
+            case "BOOKING_MEETING_CHANGED" -> "Meeting link changed";
             case "BOOKING_CANCELLED" -> "Booking cancelled";
             case "BOOKING_EXPIRED" -> "Booking request expired";
             case "BOOKING_REJECTED" -> "Booking request declined";
@@ -66,6 +68,7 @@ public final class NotificationContent {
                 case "BOOKING_CREATED" -> confirmed?"\nThe practitioner created and confirmed this booking.\n":"\nThe practitioner created this request. It is pending until confirmed.\n";
                 case "BOOKING_CONFIRMED" -> "\nYour booking is confirmed.\n";
                 case "BOOKING_RESCHEDULED" -> "\nThe session time changed to the time above.\n";
+                case "BOOKING_MEETING_CHANGED" -> "\nThe meeting link for this booking changed. Use only the link below.\n";
                 case "BOOKING_CANCELLED" -> "\nThis booking is cancelled.\n";
                 case "BOOKING_EXPIRED" -> "\nThe hold expired and the time is released.\n";
                 case "BOOKING_REJECTED" -> "\nThis request was declined.\n";
@@ -73,7 +76,7 @@ public final class NotificationContent {
                 case "REMINDER_48H","REMINDER_2H" -> "\nYour confirmed consultation is approaching. Please check the session time and use the meeting link below.\n";
                 default -> "\nA refund was recorded for this booking.\n";
             });
-            if(confirmed && f.meetingUrl()!=null && Set.of("BOOKING_CONFIRMED","BOOKING_CREATED","BOOKING_RESCHEDULED","REMINDER_48H","REMINDER_2H").contains(bare))
+            if(confirmed && f.meetingUrl()!=null && Set.of("BOOKING_CONFIRMED","BOOKING_CREATED","BOOKING_RESCHEDULED","BOOKING_MEETING_CHANGED","REMINDER_48H","REMINDER_2H").contains(bare))
                 text.append("Meeting link: ").append(f.meetingUrl()).append("\n");
         } else {
             text.append("\nStatus: ").append(f.state()).append("\nOpen the administrator area for details and any action.\n");

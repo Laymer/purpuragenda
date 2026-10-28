@@ -28,7 +28,7 @@ class AdministratorBookingChangeHttpTest {
         commands.add(command);if(failure!=null)throw failure;return code==Code.OK?new Receipt(code,BOOKING,5):Receipt.failure(code);
     };
     MockMvc mvc;
-    @BeforeEach void setup() { mvc=MockMvcBuilders.standaloneSetup(new AdministratorBookingChangeController(new AdministratorBookingChanges(unit))).build(); }
+    @BeforeEach void setup() { mvc=MockMvcBuilders.standaloneSetup(new AdministratorBookingChangeController(new AdministratorBookingChanges(unit,Set.of("zoom.us")))).build(); }
     Snapshot session(Kind kind) { return new Snapshot(new SessionReference(UUID.randomUUID(),"a".repeat(64)),kind,null,null,null,UUID.randomUUID(),0L,Instant.EPOCH,Instant.EPOCH,Instant.EPOCH.plusSeconds(28800),Instant.EPOCH); }
     MockHttpServletRequestBuilder request(String action,String body) {
         return post(BASE+action).requestAttr(ApiGuardFilter.SESSION_ATTRIBUTE,session(Kind.ADMIN)).header("Idempotency-Key","synthetic-key").header("If-Match","\"4\"").contentType("application/json").content(body);
@@ -42,13 +42,13 @@ class AdministratorBookingChangeHttpTest {
 
     @Test void eachCommandNamesItsOperationAndReturnsTheNewVersion() throws Exception {
         var bodies=Map.of("/reject","{"+REASON+"}","/cancel","{\"classification\":\"PROVIDER\","+REASON+"}","/reschedule",reschedule(),
-                "/outcome","{\"outcome\":\"NO_SHOW\",\"reason\":null}");
+                "/outcome","{\"outcome\":\"NO_SHOW\",\"reason\":null}","/meeting","{\"meetingUrl\":\"https://zoom.us/j/987654321\","+REASON+"}");
         for(var entry:bodies.entrySet()) {
             var response=send(request(entry.getKey(),entry.getValue()));assertEquals(200,response.getStatus(),entry.getKey());
             assertEquals("\"5\"",response.getHeader("ETag"));assertEquals("no-store",response.getHeader("Cache-Control"));
             assertEquals(5,JSON.readTree(response.getContentAsString()).get("version").asLong());
         }
-        assertEquals(Set.of(Operation.REJECT,Operation.CANCEL,Operation.RESCHEDULE,Operation.OUTCOME),commands.stream().map(AdminChangesUnitOfWork.Command::operation).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(Set.of(Operation.REJECT,Operation.CANCEL,Operation.RESCHEDULE,Operation.OUTCOME,Operation.MEETING),commands.stream().map(AdminChangesUnitOfWork.Command::operation).collect(java.util.stream.Collectors.toSet()));
         assertTrue(commands.stream().allMatch(c -> c.bookingId().equals(BOOKING)));
         assertEquals(200,send(request("/outcome","{\"outcome\":\"COMPLETED\","+REASON+"}")).getStatus());
     }
@@ -76,6 +76,8 @@ class AdministratorBookingChangeHttpTest {
             new String[]{"/reschedule",reschedule().replace("2026-11-10T09:00:00Z","2026-11-10T09:00:00")},
             new String[]{"/reschedule",reschedule().replace("\"calendarVersion\":1","\"calendarVersion\":0")});
         for(String[] item:invalid)problem(send(request(item[0],item[1])),400,"INVALID_REQUEST");
+        problem(send(request("/meeting","{\"meetingUrl\":\"https://example.test/j/123456789\","+REASON+"}")),400,"INVALID_MEETING");
+        problem(send(request("/meeting","{\"meetingUrl\":null,"+REASON+"}")),400,"INVALID_REQUEST");
         problem(send(request("/reject","{"+REASON+"}").header("If-Match","W/\"4\"")),400,"INVALID_REQUEST");
         problem(send(post("/api/v1/admin/bookings/not-a-uuid/reject").requestAttr(ApiGuardFilter.SESSION_ATTRIBUTE,session(Kind.ADMIN)).header("Idempotency-Key","k").header("If-Match","\"4\"").contentType("application/json").content("{"+REASON+"}")),400,"INVALID_REQUEST");
         assertTrue(commands.isEmpty());

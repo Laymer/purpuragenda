@@ -14,7 +14,7 @@ import javax.sql.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Administrator rejection, cancellation, rescheduling and outcomes. Authority is the locked persisted ADMIN session with
+ * Administrator rejection, cancellation, rescheduling, meeting changes and outcomes. Authority is the locked persisted ADMIN session with
  * fresh MFA (shared with administrator creation); the target booking is locked before any receipt replay. Money facts are
  * never altered: rejection and refundable cancellations add refund follow-up for unrefunded receipts only.
  */
@@ -83,6 +83,14 @@ public final class PostgresAdminChanges implements AdminChangesUnitOfWork {
                 INSERT INTO booking_override(id,booking_id,booking_version,policy_version,rules,blackout_ids,reason,created_at)
                 VALUES(?,?,?,?,?::jsonb,?::jsonb,?,?)
                 """,id("booking-override/"+moved.id()+"/"+moved.version()),moved.id(),moved.version(),tx.policy().version(),rules,blackouts,override.reason(),stamp(now()));
+        }
+        public boolean meetingInUse(String meetingId) {
+            return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM booking WHERE meeting_id=? AND id<>?)",Boolean.class,meetingId,bookingId));
+        }
+        public void meetingEffects(Booking original,Booking updated,String reason) {
+            transition(original,updated,original.state());
+            if(updated.meeting()==null || updated.meeting().equals(original.meeting()))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            event("booking-admin-meeting","MEETING_CHANGED",updated,reason,"{}",true);
         }
         public void outcomeEffects(Booking original,Booking recorded,String reason) {
             if(recorded.state()!=Booking.State.COMPLETED && recorded.state()!=Booking.State.NO_SHOW)throw new Failure(Failure.Kind.STORAGE_FAILURE);

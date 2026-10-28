@@ -22,6 +22,7 @@ export * from './administratorDateException';
 export * from './administratorDateExceptionRequest';
 export * from './administratorIntakeSnapshot';
 export * from './administratorLoginRequest';
+export * from './administratorMeetingChangeRequest';
 export * from './administratorMoneyReceipt';
 export * from './administratorOutcomeRequest';
 export * from './administratorOverride';

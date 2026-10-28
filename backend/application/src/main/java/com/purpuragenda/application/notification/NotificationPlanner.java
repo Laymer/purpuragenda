@@ -36,6 +36,8 @@ public final class NotificationPlanner {
             case "EXPIRED" -> new Jobs(List.of(customer("BOOKING_EXPIRED"),owner("OWNER_BOOKING_EXPIRED")));
             case "CANCELLED" -> new Jobs(List.of(customer("BOOKING_CANCELLED"),owner("OWNER_BOOKING_CANCELLED")));
             case "RESCHEDULED" -> withReminders(customer("BOOKING_RESCHEDULED"),owner("OWNER_BOOKING_RESCHEDULED"));
+            // Reminders already render the current link; a meeting change only needs its own notice.
+            case "MEETING_CHANGED" -> new Jobs(List.of(customer("BOOKING_MEETING_CHANGED"),owner("OWNER_BOOKING_MEETING_CHANGED")));
             case "PAYMENT_RECORDED" -> new Jobs(List.of(customer("PAYMENT_RECORDED"),owner("OWNER_PAYMENT_RECORDED")));
             case "REFUND_RECORDED" -> new Jobs(List.of(customer("REFUND_RECORDED"),owner("OWNER_REFUND_RECORDED")));
             case "PAYMENT_RECONCILIATION_REQUIRED" -> new Jobs(List.of(owner("OWNER_ACTION_RECONCILIATION")));
