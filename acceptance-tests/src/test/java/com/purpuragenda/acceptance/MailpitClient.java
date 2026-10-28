@@ -22,9 +22,9 @@ import java.util.regex.Pattern;
 
 /** Reads captured mail through the Mailpit HTTP API only; nothing is injected and nothing is deleted. */
 final class MailpitClient {
-    /** The guest proof mail link: {origin}/verify#token=&lt;43 characters&gt;&amp;purpose=CREATE|MANAGE|ACCOUNT. */
+    /** The guest proof mail link: {origin}/verify#token=&lt;43 characters&gt;&amp;purpose=CREATE|MANAGE|ACCOUNT or CONTACT with exact booking id. */
     private static final Pattern PROOF_LINK = Pattern.compile(
-            "(http://(?:localhost|127\\.0\\.0\\.1):\\d{1,5}/verify#token=[A-Za-z0-9_-]{43}&purpose=(?:CREATE|MANAGE|ACCOUNT))(?![A-Za-z0-9_-])");
+            "(http://(?:localhost|127\\.0\\.0\\.1):\\d{1,5}/verify#token=[A-Za-z0-9_-]{43}&purpose=(?:CREATE|MANAGE|ACCOUNT|CONTACT&bookingId=[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}))(?![A-Za-z0-9_-])");
 
     /** A captured message. The body text is held in memory for assertions and is never logged. */
     record Mail(String id, String subject, List<String> recipients, String text) {

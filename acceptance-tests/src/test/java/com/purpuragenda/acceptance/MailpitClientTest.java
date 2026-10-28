@@ -70,6 +70,10 @@ class MailpitClientTest {
         assertEquals("http://127.0.0.1:1/verify#token=" + TOKEN + "&purpose=MANAGE",
                 MailpitClient.proofLink("x http://127.0.0.1:1/verify#token=" + TOKEN + "&purpose=MANAGE.").orElseThrow());
         assertEquals("http://localhost:18080/verify#token=" + TOKEN + "&purpose=ACCOUNT", MailpitClient.proofLink("http://localhost:18080/verify#token=" + TOKEN + "&purpose=ACCOUNT").orElseThrow());
+        String contact="http://localhost:18080/verify#token="+TOKEN+"&purpose=CONTACT&bookingId=20000000-0000-4000-8000-000000000001";
+        assertEquals(contact,MailpitClient.proofLink(contact).orElseThrow());
+        assertTrue(MailpitClient.proofLink("http://localhost:18080/verify#token="+TOKEN+"&purpose=CONTACT").isEmpty());
+        assertTrue(MailpitClient.proofLink(contact.replace("20000000-0000-4000-8000-000000000001","bad")).isEmpty());
         assertTrue(MailpitClient.proofLink("http://localhost:18080/verify#token=short&purpose=CREATE").isEmpty());
         assertTrue(MailpitClient.proofLink("http://localhost:18080/verify#token=" + TOKEN + "X&purpose=CREATE").isEmpty());
         assertTrue(MailpitClient.proofLink("https://evil.example/verify#token=" + TOKEN + "&purpose=CREATE").isEmpty());

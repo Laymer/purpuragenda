@@ -108,7 +108,7 @@ public final class PostgresAuthDeliveryStore implements AuthDeliveryStore {
                         || !same(e.email,email) || !same(e.purpose.name(),purpose) || !Objects.equals(e.browser,browser)
                         || !e.token.matches("[A-Za-z0-9_-]{43}") || !same(Secrets.hash(e.token),hash)) throw new IllegalArgumentException();
                 return Optional.of(new MailDelivery.Message(lease.id(),e.email,"Verify your Purpuragenda email",
-                    "Open this link and choose Verify email:\n"+origin+"/verify#token="+e.token+"&purpose="+e.purpose.name()+(e.purpose==Purpose.CONTACT?"&bookingId="+e.booking:"")
+                    (e.purpose==Purpose.CONTACT?"Open this link in a browser with access to the booking, review it and choose Confirm delivery email change:\n":"Open this link and choose Verify email:\n")+origin+"/verify#token="+e.token+"&purpose="+e.purpose.name()+(e.purpose==Purpose.CONTACT?"&bookingId="+e.booking:"")
                     +"\n\nThis single-use link expires after 15 minutes."
                     +(e.browser==null?"":" Open it in the browser that requested it.")
                     +" If you did not request this email, ignore it."));

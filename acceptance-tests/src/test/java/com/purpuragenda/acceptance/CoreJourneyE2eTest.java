@@ -260,7 +260,33 @@ class CoreJourneyE2eTest {
         page.navigate(origin + "/account/settings");
         assertThat(page.locator("#profile-first")).hasValue("Synthetic profile");
         assertThat(page.locator("#profile-phone")).hasValue("+32470000002");
+        changeDeliveryContact(page,origin,email,reference,mail);
         page.close();
+    }
+
+    private void changeDeliveryContact(Page page,String origin,String email,String reference,MailpitClient mail) throws Exception {
+        String replacement="delivery+"+email;
+        at("account requests a verified replacement delivery email",page);
+        page.navigate(origin+"/account");
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName(reference).setExact(true)).click();
+        field(page,"New delivery email").fill(replacement);
+        button(page,"Send contact verification link").click();
+        assertThat(page.getByText("Check the new inbox.",new Page.GetByTextOptions().setExact(false))).isVisible();
+        var proof=mail.await(replacement,candidate->MailpitClient.proofLink(candidate.text()).filter(link->link.contains("&purpose=CONTACT&bookingId=")).isPresent(),MAIL_TIMEOUT,"replacement contact proof");
+        at("account explicitly confirms the scoped delivery contact proof",page);
+        page.navigate(MailpitClient.proofLink(proof.text()).orElseThrow());
+        assertThat(heading(page,"Change booking delivery email")).isVisible();
+        assertFalse(page.url().contains("#"),"contact fragment is removed before review");
+        button(page,"Confirm delivery email change").click();
+        assertThat(page.getByText("Delivery email changed.",new Page.GetByTextOptions().setExact(false))).isVisible();
+        at("both delivery addresses receive a safe security notice",page);
+        for(String recipient:List.of(email,replacement)) {
+            var notice=mail.await(recipient,candidate->candidate.subject().equals("Booking delivery contact changed"),MAIL_TIMEOUT,"delivery contact security notice");
+            assertEquals(List.of(recipient),notice.recipients());assertTrue(notice.text().contains(reference));assertFalse(notice.text().contains(ZOOM));assertFalse(notice.text().contains(replacement));
+        }
+        at("account history and login identity remain unchanged after contact change",page);
+        page.navigate(origin+"/account");assertThat(page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName(reference).setExact(true))).isVisible();
+        page.navigate(origin+"/account/settings");assertThat(page.getByText("Login email: "+email+".",new Page.GetByTextOptions().setExact(false))).isVisible();
     }
 
     private void accountSignIn(Page page, String origin, String email, String password) {
