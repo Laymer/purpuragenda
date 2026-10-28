@@ -38,7 +38,7 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
         <h2>Payment</h2>
         <p>Status {{ b.payment.status }}. Received {{ money(b.payment.receivedMinor) }}, refunded {{ money(b.payment.refundedMinor) }}, remaining {{ money(b.payment.remainingMinor) }} ({{ b.snapshot.service.currency }}). Approval does not imply payment.</p>
         <app-finance-summary [payment]="b.payment" />
-        @if (!busy() && !uncertain()) { <p><a [routerLink]="'/admin/bookings/' + b.id + '/finance'">Record receipt or refund</a></p> }
+        @if (!busy() && !uncertain()) { <p><a [routerLink]="'/admin/bookings/' + b.id + '/finance'">Record receipt or refund</a></p><p><a [routerLink]="'/admin/bookings/' + b.id + '/history'">Private notes and audit</a></p> }
         <h2>Customer details</h2>
         <dl>
           <dt>Name</dt><dd>{{ b.snapshot.intake.firstName }} {{ b.snapshot.intake.lastName }}</dd>

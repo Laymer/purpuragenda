@@ -35,7 +35,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
-| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note application https://github.com/Laymer/purpuragenda/pull/129 confirmed merged b59eb9f after 15 hosted checks and independent review; persistence https://github.com/Laymer/purpuragenda/pull/130 confirmed merged1756eed after15 hosted checks and independent review; history reads https://github.com/Laymer/purpuragenda/pull/131 confirmed merged f564cf2 after 15 hosted checks and independent review; HTTP on task/p32-history-http; UI, search/reconciliation/retry remain |
+| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note application https://github.com/Laymer/purpuragenda/pull/129 confirmed merged b59eb9f after 15 hosted checks and independent review; persistence https://github.com/Laymer/purpuragenda/pull/130 confirmed merged1756eed after15 hosted checks and independent review; history reads https://github.com/Laymer/purpuragenda/pull/131 confirmed merged f564cf2 after 15 hosted checks and independent review; HTTP https://github.com/Laymer/purpuragenda/pull/132 confirmed merged 1e337fb after 15 hosted checks and independent review; UI on task/p32-history-ui; search/reconciliation/retry remain |
 | P33 — Complete verified delivery-contact changes without ownership transfer | Merged; application PR125, persistence PR126, HTTP PR127 and UI/browser https://github.com/Laymer/purpuragenda/pull/128 confirmed merged 2db7eba after 15 hosted checks and independent review; both historical recipients notified, original account ownership preserved |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P32/history-http: agent=Codex-coordinator; branch=task/p32-history-http; base=main; handoff=docs/handoffs/codex-p32-history-http.md
+- P32/history-ui: agent=Codex-coordinator; branch=task/p32-history-ui; base=main; handoff=docs/handoffs/codex-p32-history-ui.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T16:14:59Z.
-- Current task: P32/history-http; branch: task/p32-history-http; base: main f564cf2; PR URL: pending draft creation.
-- Last pushed implementation commit: 4412611 (PR131, merged f564cf2); uncommitted changes: tested HTTP/runtime/contract/SDK slice ready for draft PR.
-- What works: bounded note/audit reads PR131 confirmed merged f564cf2 after 15 hosted checks and independent review; note commands/persistence already merged.
-- What remains: strict notes/audit HTTP endpoints, runtime wiring, contract/SDK and HTTP tests; Angular UI and other P32 operations follow.
-- Decisions: separate read and command controllers; private no-store responses, strict bounded query/body parsing, persisted authority. Note append is an independent fact and requires idempotency but no booking version.
-- Verification: local10 HTTP tests,18 runtime database tests,75 Python tests,525 Angular tests/build/CSP, SDK verification, docs and diff checks passed. Independent source review clean; exact-head confirmation pending. PR131 run40722189175 all15 green, zero alerts, exact-head review4412611 clean; local315 application tests/coverage,12 PostgreSQL tests and45 Python tests passed. Main40721501891 at1756eed passed.
-- Next concrete action: push task/p32-history-http and create draft PR; require exact-head review and all15 hosted checks before merge.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T16:35:55Z.
+- Current task: P32/history-ui; branch: task/p32-history-ui; base: main 1e337fb; PR URL: pending draft creation.
+- Last pushed implementation commit: 03f7099 (PR132, merged 1e337fb); uncommitted changes: tested private-history UI ready for draft PR.
+- What works: notes/audit HTTP and SDK PR132 confirmed merged 1e337fb after 15 hosted checks and independent review.
+- What remains: private-note entry/history and global/booking audit UI with pagination and recovery tests; customer search/reconciliation/retry remain P32 follow-ups.
+- Decisions: keep private text in memory and render as text; frozen explicit retries preserve note body/key, reauthentication clears private state, route/session changes invalidate late callbacks.
+- Verification: local552 Angular tests/build/CSP passed (2258/2263 lines2555/2691 branches), docs/diff passed. Independent source review clean; exact-head confirmation pending. PR132 run40725048686 all15 green, zero alerts, exact-head review03f7099 clean; local10 HTTP tests,18 runtime tests,75 Python tests and525 Angular tests/build/CSP passed. Main40724021432 atf564cf2 passed.
+- Next concrete action: push task/p32-history-ui and create draft PR; require exact-head review and all15 hosted checks before merge.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
