@@ -29,14 +29,14 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P23 — Complete public service selection and timezone-aware time selection | Merged; public service/time selection https://github.com/Laymer/purpuragenda/pull/70 confirmed6fc7e0a after1013Java/27Angular/243Python/all14hosted/Compose6/review; full browser/performance matrix remains separate |
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main d2d4dfe; 110Angular tests/build pass locally and heads9f26df2/07fd411 passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
-| P26 — Complete account enrollment, history, profile and session-recovery UI | In progress; account access/history PR122 confirmed merged b9a0ca7 after 15 hosted checks and independent review; enrollment PR123 confirmed merged 8173ea4 after 15 hosted checks and independent review; profile/password UI and account journey on task/p26-account-settings;  |
+| P26 — Complete account enrollment, history, profile and session-recovery UI | Merged; access/history PR122 b9a0ca7, enrollment PR123 8173ea4, settings and real account journey https://github.com/Laymer/purpuragenda/pull/124 confirmed merged 0f02a29 after 15 hosted checks and independent review; profile persistence and sign-in after password rotation verified in isolated browser journey |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
 | P28 — Complete administrator manual creation, outcomes and explicit override UI | Merged; outcomes PR112 b211d2f; manual creation PR113 3509eb0; rescheduling https://github.com/Laymer/purpuragenda/pull/114 confirmed merged d9ed47b after15 hosted checks and independent review; explicit violated-rule/blackout choices and reasons covered |
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
 | P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P33 — Complete verified delivery-contact changes without transferring ownership | Recovered WIP; dependencies in docs/delivery.md;  |
+| P33 — Complete verified delivery-contact changes without ownership transfer | In progress; application boundary on task/p33-contact-commands; persistence, notification, HTTP and UI follow |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
 | P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; notification foundation https://github.com/Laymer/purpuragenda/pull/64 merged 669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 under Claude lane A: independent exact-head review approved e98447a; main 525e4a6 and 56e9856 integrated by merge; DST rendered-time test and residual-risk documentation follow-up 3ebe5ef pending hosted checks and coordinator re-review |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P26/account-settings: agent=Codex-coordinator; branch=task/p26-account-settings; base=main; handoff=docs/handoffs/codex-p26-account-settings.md
+- P33/contact-commands: agent=Codex-coordinator; branch=task/p33-contact-commands; base=main; handoff=docs/handoffs/codex-p33-contact-commands.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T13:31:27Z.
-- Current task: P26/account-settings; branch: task/p26-account-settings; base: main 8173ea4; PR URL: pending draft creation.
-- Last pushed implementation commit: fec4216 (PR123, merged8173ea4); uncommitted changes: tested profile/password UI and extended account journey ready for draft PR.
-- What works: PR123 confirmed merged8173ea4 after15 hosted checks and independent review; P26 sign-in/history/booking access and explicit enrollment UI merged.
-- What remains: hosted real-stack account journey, all required checks and exact-head independent review before completing P26.
-- Decisions: immutable login email displayed read-only; profile retries preserve original command/version; password changes never automatically retry and clear private state on confirmed/uncertain outcomes.
-- Verification: PR123 run40693826429 all15 green, zero scanning alerts, exact-head reviewfec4216 clean after Unicode policy finding fixed. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches. Main8173ea4 run40695445863 green. Local487 Angular tests/build/CSP passed,2075/2080 lines2262/2388 branches;16 acceptance-support tests passed and extended real-browser suite compiled. Docker unavailable locally: actual journey only in hosted CI. Independent review requested.
-- Next concrete action: push task/p26-account-settings and create draft PR; wait for current-head hosted checks and independent review.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T13:48:52Z.
+- Current task: P33/contact-commands; branch: task/p33-contact-commands; base: main 0f02a29; PR URL: pending draft creation.
+- Last pushed implementation commit: 3e5fc0e (PR124, merged0f02a29); uncommitted changes: tested contact proof/command application boundary ready for draft PR.
+- What works: P26 complete; PR124 confirmed merged0f02a29 after15 hosted checks and independent review including real account journey.
+- What remains: application contact proof/command boundary and unit tests in this slice; PostgreSQL atomic proof consumption, old-contact notice, HTTP/SDK and UI follow in sequential P33 slices.
+- Decisions: contact proofs require existing exact-booking authority both when requested and consumed; current delivery contact never changes stable ownership, login identity, quota or immutable snapshots. No lost-mailbox transfer.
+- Verification: PR124 run40697289690 all15 green, zero scanning alerts, independent exact-head review3e5fc0e clean. Local487 Angular tests/build/CSP and16 acceptance-support tests passed; actual PostgreSQL/browser tests only in hosted CI. Current application slice passed303 application tests and domain tests with both coverage gates; documentation and whitespace checks passed. Independent review requested.
+- Next concrete action: push task/p33-contact-commands and create draft PR; require all hosted checks and independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.

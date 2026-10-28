@@ -9,3 +9,5 @@
 - Verification: PR123 run40693826429 all15 green, zero scanning alerts, exact-head reviewfec4216 clean after Unicode policy finding fixed. Local458 Angular tests/build/CSP passed with1970/1975 lines and2140/2258 branches. Main8173ea4 run40695445863 green. Local487 Angular tests/build/CSP passed,2075/2080 lines2262/2388 branches;16 acceptance-support tests passed and extended real-browser suite compiled. Docker unavailable locally: actual journey only in hosted CI. Independent review requested.
 - Next concrete action: push task/p26-account-settings and create draft PR; wait for current-head hosted checks and independent review.
 - Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+- Closed 2026-10-28T13:48:52Z: PR124 confirmed merged0f02a29 after15 hosted checks (run40697289690), zero scanning alerts and independent exact-head review3e5fc0e. Real account browser journey passed. Claim released; next P33/contact-commands.
