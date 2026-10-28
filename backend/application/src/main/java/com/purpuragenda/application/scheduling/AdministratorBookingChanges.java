@@ -108,8 +108,8 @@ public final class AdministratorBookingChanges {
         List<Booking> occupied=tx.bookings(new ReservationInterval(day.atStartOfDay(BUSINESS_ZONE).toInstant(),end))
                 .stream().filter(b -> !b.id().equals(original.id()) && b.occupies(now)).toList();
         int daily=(int)occupied.stream().filter(b -> b.businessDate().equals(day)).count();
-        // The active count includes this live booking, which is being moved.
-        int otherActive=Math.max(0,tx.quota(original.customerId()).active()-1);
+        // Unlike a customer, an administrator may move a confirmed booking whose session already ended; it is then not counted.
+        int otherActive=Math.max(0,tx.quota(original.customerId()).active()-(original.active(now)?1:0));
         SchedulingRules.validate(request.start(),now,policy,calendar,daily,otherActive,0,occupied.stream().map(Booking::interval).toList(),request.override());
         // Only violated rules and intersecting blackouts may be named, exactly as for administrator creation.
         Set<SchedulingRules.Rule> violated=SchedulingRules.violations(request.start(),now,policy,calendar,daily,otherActive,0);

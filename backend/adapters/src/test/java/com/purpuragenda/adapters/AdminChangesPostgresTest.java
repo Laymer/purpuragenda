@@ -50,7 +50,7 @@ class AdminChangesPostgresTest {
             INSERT INTO app_session(id,token_hash,browser_hash,csrf_hash,kind,admin_id,admin_security_version,issued_at,last_seen_at,absolute_expires_at,authenticated_at)
             VALUES(?,?,?,?,'ADMIN',?,0,?,?,?,?)
             """,sid,Secrets.hash("synthetic-admin-token"+sid),browser,Secrets.hash("synthetic-admin-csrf"),b.adminId,
-                Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.plus(Duration.ofHours(7))),Timestamp.from(at.minusSeconds(60)));
+                Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.minusSeconds(60)),Timestamp.from(at.minusSeconds(60).plus(Duration.ofHours(8))),Timestamp.from(at.minusSeconds(60)));
         return new SessionBinding(sid,browser);
     }
     AdministratorBookingChanges at(Instant time) { return new AdministratorBookingChanges(new PostgresAdminChanges(c.clock(time,new AtomicInteger()))); }

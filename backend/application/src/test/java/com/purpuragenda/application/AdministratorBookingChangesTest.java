@@ -74,6 +74,17 @@ class AdministratorBookingChangesTest {
         assertEquals(Receipt.failure(Code.INVALID_TRANSITION),changes.reschedule(session,id,"terminal",move(3,Instant.parse("2026-01-09T09:00:00Z"))));
     }
 
+    @Test void anEndedConfirmedBookingIsNotSubtractedFromTheCustomersActiveCount() {
+        Booking ended=confirmed(Instant.parse("2026-01-02T09:00:00Z"));f.now=Instant.parse("2026-01-02T12:00:00Z");
+        // Three other active bookings reach the limit; the ended booking itself is not active.
+        f.active=SchedulingPolicy.CUSTOMER_LIMIT;
+        assertEquals(Receipt.failure(Code.ACTIVE_LIMIT_REACHED),changes.reschedule(session,ended.id(),"limit",move(2,Instant.parse("2026-01-06T09:00:00Z"))));
+        assertTrue(changes.reschedule(session,ended.id(),"override",move(2,Instant.parse("2026-01-06T09:00:00Z"),SchedulingRules.Rule.ACTIVE_LIMIT)).success());
+        // A live booking is itself counted, so moving it with the customer at the limit is allowed.
+        Booking live=confirmed(Instant.parse("2026-01-07T09:00:00Z"));
+        assertTrue(changes.reschedule(session,live.id(),"live",move(2,Instant.parse("2026-01-08T09:00:00Z"))).success());
+    }
+
     @Test void outcomesNeedAStartedConfirmedSessionAndAReasonOnlyWhenEarly() {
         Booking original=confirmed(Instant.parse("2026-01-02T09:00:00Z"));UUID id=original.id();
         assertEquals(Receipt.failure(Code.SESSION_NOT_STARTED),changes.outcome(session,id,"before",new Outcome(2,Booking.State.COMPLETED,null)));
@@ -90,13 +101,13 @@ class AdministratorBookingChangesTest {
 
     static class Fixture extends PublicSchedulingTest.Fixture implements AdminChangesUnitOfWork,Change {
         Booking target,saved;Command command;String reason;Classification classification;SchedulingRules.Override override;
-        final List<String> steps=new ArrayList<>();
+        final List<String> steps=new ArrayList<>();int active=1;
         Fixture(){policy=new SchedulingPolicy(1,30,20,Duration.ZERO,Duration.ofDays(30),Duration.ZERO,Duration.ZERO);}
         public Receipt change(Command supplied,Function<Change,Receipt> work){command=supplied;steps.clear();reason=null;return work.apply(this);}
         public List<Booking> duePending(){steps.add("expiry");return List.of();}
         public void expiryEffects(UUID id,long version){throw new AssertionError("nothing is due");}
         public Receipt attempt(Supplier<Receipt> mutation){steps.add("attempt");return mutation.get();}
-        public CustomerQuota quota(UUID customer){return new CustomerQuota(1,0,CustomerQuota.dayAt(now));}
+        public CustomerQuota quota(UUID customer){return new CustomerQuota(active,0,CustomerQuota.dayAt(now));}
         public boolean chargeCreated(Booking value){throw new AssertionError("administrator changes never charge");}
         public Booking target(){steps.add("target");return target;}
         public void save(Booking value){steps.add("save");saved=value;}

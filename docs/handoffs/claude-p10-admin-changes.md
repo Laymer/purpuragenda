@@ -1,11 +1,11 @@
 # P10/admin-changes (post-1.0.0 single lane)
 
 - Agent and UTC checkpoint: Claude-coordinator, 2026-10-28T09:30:00Z.
-- Current task: P10/admin-changes; branch: task/p10-admin-changes; base: main; PR URL: opened from task/p10-admin-changes after the first push.
-- Last pushed implementation commit: 5ac7b6f (main base); uncommitted changes: administrator change use cases and adapter.
+- Current task: P10/admin-changes; branch: task/p10-admin-changes; base: main; PR URL: https://github.com/Laymer/purpuragenda/pull/107.
+- Last pushed implementation commit: a24f794; uncommitted changes: review fixes.
 - What works: domain reject/cancel/reschedule/outcome transitions; administrator authority shared from PostgresAdminBooking.
 - What remains: hosted PostgreSQL verification, independent review, then the HTTP slice under P22.
 - Decisions: cancellation classification follows the plan: PROVIDER and eligible CUSTOMER cancellations create refund follow-up for receipts, a CUSTOMER request after the cutoff is recorded LATE_CUSTOMER without policy refund; rejection creates REJECTED follow-up; outcomes are audit-only with no customer notification; reschedule overrides follow administrator creation (only violated rules, never overlap).
-- Verification: pending.
-- Next concrete action: push and open the draft PR.
+- Verification: independent review of a24f794 found two defects, both fixed: the test session fixture violated the ADMIN absolute-expiry CHECK (issued+8h exactly), and rescheduling subtracted the moved booking from the active count even when it was no longer active (a confirmed booking whose session ended), which could exceed the customer limit without an override; covered by a new application test.
+- Next concrete action: gh pr checks 107 --watch --interval 60.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b and every existing branch preserved; stacked PR dependencies: none.
