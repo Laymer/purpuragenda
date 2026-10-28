@@ -26,6 +26,8 @@ model/accountProfileReceipt.ts
 model/accountProfileRequest.ts
 model/administratorAgendaEntry.ts
 model/administratorAgendaPage.ts
+model/administratorAuditEntry.ts
+model/administratorAuditPage.ts
 model/administratorBlackout.ts
 model/administratorBlackoutRequest.ts
 model/administratorBookingCreateRequest.ts
@@ -48,12 +50,16 @@ model/administratorIntakeSnapshot.ts
 model/administratorLoginRequest.ts
 model/administratorMeetingChangeRequest.ts
 model/administratorMoneyReceipt.ts
+model/administratorNotePage.ts
+model/administratorNoteReceipt.ts
+model/administratorNoteRequest.ts
 model/administratorOutcomeRequest.ts
 model/administratorOverride.ts
 model/administratorPaymentEntry.ts
 model/administratorPolicy.ts
 model/administratorPolicyChangeRequest.ts
 model/administratorPolicyReceipt.ts
+model/administratorPrivateNote.ts
 model/administratorReceiptRequest.ts
 model/administratorRecoveryRequest.ts
 model/administratorRecoverySetup.ts

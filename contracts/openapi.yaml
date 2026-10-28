@@ -6785,6 +6785,347 @@
           }
         }
       }
+    },
+    "/admin/bookings/{bookingId}/notes": {
+      "get": {
+        "operationId": "getAdministratorNotes",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private persisted administrator history in a consistent read-only snapshot; no session touch or fresh-MFA step-up. No-store; conditional cache headers never suppress the response. Newest-first time/id cursor pages, limit1-100 default50. Copy nextCursor unchanged. Reject unknown, duplicate or malformed query fields. Unknown booking returns404 only after authority checks.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorNotePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "appendAdministratorNote",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Append one private note and text-free audit without changing booking version, ownership, payments or notifications. Exact Origin/CSRF, Idempotency-Key and persisted administrator fresh MFA are required, checked before replay. If-Match and query parameters are unsupported and rejected400. No-store. Retry unchanged body/key after uncertainty.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorNoteReceipt"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorNoteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/audit": {
+      "get": {
+        "operationId": "getAdministratorAudit",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private persisted administrator history in a consistent read-only snapshot; no session touch or fresh-MFA step-up. No-store; conditional cache headers never suppress the response. Newest-first time/id cursor pages, limit1-100 default50. Copy nextCursor unchanged. Reject unknown, duplicate or malformed query fields. Unknown booking returns404 only after authority checks.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Omit for global audit including non-booking events."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorAuditPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9516,6 +9857,167 @@
             "minLength": 43,
             "maxLength": 43,
             "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
+        }
+      },
+      "AdministratorNoteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Nonempty NFC-normalized multiline private text; no control characters except newline, carriage return and tab."
+          }
+        }
+      },
+      "AdministratorNoteReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bookingId",
+          "noteId",
+          "version"
+        ],
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "noteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "enum": [
+              1
+            ],
+            "description": "Version of the independent note, not the booking."
+          }
+        }
+      },
+      "AdministratorPrivateNote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdministratorAuditEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "bookingId",
+          "actorKind",
+          "type",
+          "reason",
+          "occurredAt",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bookingId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "actorKind": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "AdministratorNotePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entries",
+          "nextCursor",
+          "serverNow"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorPrivateNote"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdministratorAuditPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entries",
+          "nextCursor",
+          "serverNow"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorAuditEntry"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "serverNow": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

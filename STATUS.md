@@ -35,7 +35,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
-| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note application https://github.com/Laymer/purpuragenda/pull/129 confirmed merged b59eb9f after 15 hosted checks and independent review; persistence https://github.com/Laymer/purpuragenda/pull/130 confirmed merged1756eed after15 hosted checks and independent review; history reads on task/p32-history-reads; HTTP/UI, search/reconciliation/retry remain |
+| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note application https://github.com/Laymer/purpuragenda/pull/129 confirmed merged b59eb9f after 15 hosted checks and independent review; persistence https://github.com/Laymer/purpuragenda/pull/130 confirmed merged1756eed after15 hosted checks and independent review; history reads https://github.com/Laymer/purpuragenda/pull/131 confirmed merged f564cf2 after 15 hosted checks and independent review; HTTP on task/p32-history-http; UI, search/reconciliation/retry remain |
 | P33 — Complete verified delivery-contact changes without ownership transfer | Merged; application PR125, persistence PR126, HTTP PR127 and UI/browser https://github.com/Laymer/purpuragenda/pull/128 confirmed merged 2db7eba after 15 hosted checks and independent review; both historical recipients notified, original account ownership preserved |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P32/history-reads: agent=Codex-coordinator; branch=task/p32-history-reads; base=main; handoff=docs/handoffs/codex-p32-history-reads.md
+- P32/history-http: agent=Codex-coordinator; branch=task/p32-history-http; base=main; handoff=docs/handoffs/codex-p32-history-http.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T16:00:44Z.
-- Current task: P32/history-reads; branch: task/p32-history-reads; base: main 1756eed; PR URL: pending draft creation.
-- Last pushed implementation commit: 1bbea71 (PR130, merged1756eed); uncommitted changes: tested bounded history reader ready for draft PR.
-- What works: private-note persistence PR130 confirmed merged1756eed after15 hosted checks and independent review; replay fingerprint finding fixed before merge.
-- What remains: bounded administrator note and audit reads, real authority/snapshot tests and independent review; HTTP/UI and other P32 operations follow.
-- Decisions: consistent read-only snapshots, no session touch or fresh-MFA step-up for reads; notes require a booking, audit permits global or booking-filtered pages. Keyset pagination bounds every page.
-- Verification: local315 application tests/coverage,12 real PostgreSQL tests and45 Python tests passed; documentation/diff passed. Reader32/32 lines24/24 branches. Independent review pending. PR130 run40719087768 all15 green, zero alerts, exact-head review1bbea71 clean; local11 PostgreSQL tests and44 Python report tests passed. Main40718053803 atb59eb9f passed.
-- Next concrete action: push task/p32-history-reads and create draft PR; require exact-head independent review and all15 hosted checks.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T16:14:59Z.
+- Current task: P32/history-http; branch: task/p32-history-http; base: main f564cf2; PR URL: pending draft creation.
+- Last pushed implementation commit: 4412611 (PR131, merged f564cf2); uncommitted changes: tested HTTP/runtime/contract/SDK slice ready for draft PR.
+- What works: bounded note/audit reads PR131 confirmed merged f564cf2 after 15 hosted checks and independent review; note commands/persistence already merged.
+- What remains: strict notes/audit HTTP endpoints, runtime wiring, contract/SDK and HTTP tests; Angular UI and other P32 operations follow.
+- Decisions: separate read and command controllers; private no-store responses, strict bounded query/body parsing, persisted authority. Note append is an independent fact and requires idempotency but no booking version.
+- Verification: local10 HTTP tests,18 runtime database tests,75 Python tests,525 Angular tests/build/CSP, SDK verification, docs and diff checks passed. Independent source review clean; exact-head confirmation pending. PR131 run40722189175 all15 green, zero alerts, exact-head review4412611 clean; local315 application tests/coverage,12 PostgreSQL tests and45 Python tests passed. Main40721501891 at1756eed passed.
+- Next concrete action: push task/p32-history-http and create draft PR; require exact-head review and all15 hosted checks before merge.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
