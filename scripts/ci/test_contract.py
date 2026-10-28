@@ -52,6 +52,23 @@ class ContractTest(unittest.TestCase):
         self.assertEqual({'bookingId', 'paymentEntryId', 'bookingVersion'}, set(money))
         self.assertTrue(all(value['readOnly'] for value in money.values()))
 
+    def test_services_are_private_versioned_reasoned_and_separate_from_booking_snapshots(self):
+        schemas = self.document['components']['schemas']
+        self.assertIn('services', schemas['AdministratorConfiguration']['required'])
+        for suffix in ('', '/{serviceId}', '/{serviceId}/archive', '/{serviceId}/restore'):
+            command = self.document['paths']['/admin/configuration/services' + suffix]['post']
+            self.assertEqual([{'sessionCookie': []}], command['security'])
+            parameters = {p['name'] for p in command['parameters']}
+            self.assertTrue({'X-CSRF-Token', 'Idempotency-Key'} <= parameters)
+            self.assertEqual(bool(suffix), 'If-Match' in parameters)
+            self.assertEqual(bool(suffix), '428' in command['responses'])
+            model = schemas[command['requestBody']['content']['application/json']['schema']['$ref'].split('/')[-1]]
+            self.assertIn('reason', model['required'])
+            self.assertFalse(model['additionalProperties'])
+            self.assertNotIn('id', model['properties'])
+            self.assertNotIn('active', model['properties'])
+            self.assertEqual(['no-store'], command['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+
     def setUp(self):
         self.document = json.loads((ROOT / 'contracts/openapi.yaml').read_text())
 
@@ -123,7 +140,8 @@ class ContractTest(unittest.TestCase):
                           'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
                           'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
-                          'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting'},
+                          'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
+                          'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

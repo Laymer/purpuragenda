@@ -99,6 +99,9 @@ public class RuntimeApplication {
     @Bean AdministratorBookingView administratorBookingView(DataSource source,RuntimeSettings settings) {
         return new AdministratorBookingView(new PostgresAdministratorBookingQuery(source,settings.meetingHosts()));
     }
+    @Bean AdministratorServiceController administratorServiceController(DataSource source,RuntimeSettings settings) {
+        return new AdministratorServiceController(new AdministratorConfiguration(new PostgresConfiguration(source,settings.meetingHosts())));
+    }
     @Bean AdministratorConfigurationController administratorConfigurationController(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
         var store=new PostgresConfiguration(source,settings.meetingHosts());
         return new AdministratorConfigurationController(new AdministratorConfiguration(store),new AdministratorConfigurationView(store),access,cookies);

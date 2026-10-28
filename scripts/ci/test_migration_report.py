@@ -493,12 +493,24 @@ class MigrationReportTest(unittest.TestCase):
                     GATE.validate(self.root)
             complete(name, count)
 
+    def test_service_http_requires_complete_real_authority_and_lifecycle_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorServiceController.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic controller')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.AdministratorConfigurationHttpPostgresTest.xml')
+        for count, cases, nested in ((4, 4, ''), (5, 4, ''), (6, 5, ''), (5, 5, '<failure/>'), (5, 5, '<error/>'), (5, 5, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.AdministratorConfigurationHttpPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.AdministratorConfigurationHttpPostgresTest" tests="5">' + '<testcase/>' * 5 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_configuration_authority_requires_both_complete_real_postgres_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresConfiguration.java'
         source.parent.mkdir(parents=True); source.write_text('synthetic configuration adapter')
         with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
-        reports = [('AdministratorConfigurationPostgresTest', 15), ('ConfigurationAuthorityPostgresTest', 9)]
+        reports = [('AdministratorConfigurationPostgresTest', 19), ('ConfigurationAuthorityPostgresTest', 9)]
         for name, minimum in reports:
             report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
             report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
@@ -518,7 +530,7 @@ class MigrationReportTest(unittest.TestCase):
         for path in sources:
             source = self.root / path
             source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic adapter')
-        reports = [('AdministratorConfigurationPostgresTest', 15), ('ConfigurationAuthorityPostgresTest', 9), ('AccountPasswordDatabaseTest', 28)]
+        reports = [('AdministratorConfigurationPostgresTest', 19), ('ConfigurationAuthorityPostgresTest', 9), ('AccountPasswordDatabaseTest', 28)]
         def publish(name, count, cases):
             self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml').write_text(
                 f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + '<testcase/>' * cases + '</testsuite>')

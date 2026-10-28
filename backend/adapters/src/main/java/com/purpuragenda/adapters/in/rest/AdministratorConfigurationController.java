@@ -46,6 +46,10 @@ public final class AdministratorConfigurationController {
             ObjectNode body=JSON.createObjectNode().put("observedAt",current.observedAt().toString())
                     .put("calendarVersion",current.calendar().version()).put("policyVersion",current.policy().version());
             calendar(body,current.calendar());policy(body.putObject("policy"),current.policy());
+            var services=body.putArray("services");
+            current.services().stream().sorted(Comparator.comparing(s->s.id().toString())).forEach(s->services.addObject()
+                    .put("id",s.id().toString()).put("version",s.version()).put("name",s.name()).put("durationMinutes",s.durationMinutes())
+                    .put("priceMinor",s.price().minor()).put("currency",s.price().currency()).put("active",s.active()));
             return ok(body,null);
         } catch(RuntimeException failure) { failed(response,failure);return null; }
     }

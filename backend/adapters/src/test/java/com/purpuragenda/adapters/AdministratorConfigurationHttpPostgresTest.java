@@ -36,6 +36,7 @@ class AdministratorConfigurationHttpPostgresTest {
         var store=new PostgresConfiguration(f.source,Set.of("zoom.us"));
         mvc=MockMvcBuilders.standaloneSetup(new SessionController(login.access,login.cookies),new AdministratorLoginController(
                 new AdministratorLogin(new RequestThrottle(login.limits),f.mfa,login.sessions,new AdminCrypto()),login.cookies,Duration.ZERO),
+                new AdministratorServiceController(new AdministratorConfiguration(store)),
                 new AdministratorConfigurationController(new AdministratorConfiguration(store),new AdministratorConfigurationView(store),login.access,login.cookies))
                 .addFilters(new ApiGuardFilter(AdministratorLoginPostgresTest.ORIGIN,login.access,login.cookies,new ClientAddress(List.of()))).build();
         login.mvc=mvc;reads.mvc=mvc;
@@ -147,4 +148,34 @@ class AdministratorConfigurationHttpPostgresTest {
         assertEquals(1,f.jdbc.queryForObject("SELECT calendar->>'version' FROM business_settings WHERE id=1",Long.class));
         assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM audit_event WHERE type IN ('CALENDAR_CHANGED','POLICY_CHANGED')",Integer.class));
     }
+    @Test void serviceLifecycleUsesRealMfaAndReturnsAllServicesIncludingArchivedOnes() throws Exception {
+        var admin=reads.administrator();assertEquals(2,current(admin).get("services").size());
+        var body=JSON.createObjectNode().put("name","Synthetic service").put("durationMinutes",45).put("priceMinor",2500).put("reason",REASON);
+        var created=send(admin,"/services","create-service",body,null);assertEquals(200,created.getStatus());
+        var result=JSON.readTree(created.getContentAsString());String id=result.get("id").asText();assertEquals(1,result.get("version").asInt());
+        assertEquals(created.getContentAsString(),send(admin,"/services","create-service",body,null).getContentAsString());
+        body.put("priceMinor",3000);login.problem(send(admin,"/services","create-service",body,null),409,"IDEMPOTENCY_KEY_REUSED");
+        assertEquals(200,send(admin,"/services/"+id,"edit-service",body,"\"1\"").getStatus());
+        var reason=JSON.createObjectNode().put("reason",REASON);
+        assertEquals(200,send(admin,"/services/"+id+"/archive","archive-service",reason,"\"2\"").getStatus());
+        var services=current(admin).get("services");assertEquals(3,services.size());
+        for(var service:services)if(service.get("id").asText().equals(id)) { assertFalse(service.get("active").asBoolean());assertEquals(3,service.get("version").asInt());assertEquals(3000,service.get("priceMinor").asInt()); }
+        login.problem(send(admin,"/services/"+id+"/restore","stale-service",reason,"\"2\""),412,"STALE_VERSION");
+        assertEquals(200,send(admin,"/services/"+id+"/restore","restore-service",reason,"\"3\"").getStatus());
+        assertEquals(4,f.jdbc.queryForObject("SELECT count(*) FROM audit_event WHERE type LIKE 'SERVICE_%'",Integer.class));
+        assertEquals(0,f.jdbc.queryForObject("SELECT count(*) FROM outbox_event WHERE type LIKE 'SERVICE_%'",Integer.class));
+    }
+    @Test void serviceCommandsRequireFreshAuthorityAndTheRealOriginAndCsrfGuard() throws Exception {
+        var admin=reads.administrator();var body=JSON.createObjectNode().put("name","Synthetic service").put("durationMinutes",30).put("priceMinor",1500).put("reason",REASON);
+        login.problem(send(login.boot(),"/services","anonymous",body,null),403,"ADMIN_ACCESS_REQUIRED");
+        var unguarded=org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(PATH+"/services").cookie(new Cookie("__Host-purpuragenda",admin.cookie()))
+                .contentType("application/json").content(body.toString()).header("Idempotency-Key","unguarded");
+        assertEquals(403,mvc.perform(unguarded).andReturn().getResponse().getStatus());
+        login.problem(send(admin,"/services/"+UUID.randomUUID(),"unknown",body,"\"1\""),404,"SERVICE_NOT_FOUND");
+        f.jdbc.update("UPDATE app_session SET issued_at=issued_at-interval '602 seconds',absolute_expires_at=absolute_expires_at-interval '602 seconds',authenticated_at=issued_at-interval '601 seconds' WHERE id=?",admin.reference().id());
+        assertEquals(2,current(admin).get("services").size());login.problem(send(admin,"/services","stale-mfa",body,null),403,"AUTHENTICATION_REQUIRED");
+        f.jdbc.update("UPDATE admin_user SET security_version=security_version+1");login.problem(send(admin,"/services","revoked",body,null),401,"SESSION_REQUIRED");
+        assertEquals(2,f.jdbc.queryForObject("SELECT count(*) FROM service",Integer.class));
+    }
+
 }
