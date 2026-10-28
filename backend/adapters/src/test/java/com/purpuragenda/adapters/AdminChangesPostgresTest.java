@@ -2,7 +2,7 @@ package com.purpuragenda.adapters;
 
 import com.purpuragenda.adapters.out.postgres.*;
 import com.purpuragenda.adapters.out.security.Secrets;
-import com.purpuragenda.application.port.out.AdminChangesUnitOfWork.Classification;
+import com.purpuragenda.application.port.out.AdminChangesUnitOfWork.*;
 import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBinding;
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
 import com.purpuragenda.application.scheduling.AdministratorBookingChanges;
@@ -14,6 +14,7 @@ import java.sql.Timestamp;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -77,6 +78,27 @@ class AdminChangesPostgresTest {
         assertTrue(at(near).cancel(sessionAt(near),late,"late",new Cancellation(1,Classification.CUSTOMER,REASON)).success());
         assertEquals("CANCELLED",state(late));assertEquals(1,count("refund_obligation"));
         assertEquals(1,count("audit_event WHERE type='CANCELLED' AND metadata->>'classification'='LATE_CUSTOMER'"));assertEquals(2,count("outbox_event WHERE type='CANCELLED'"));
+        UUID eligible=create(5,10,null);UUID eligibleReceipt=paid(eligible,700);
+        assertTrue(changes.cancel(b.session,eligible,"customer",new Cancellation(1,Classification.CUSTOMER,REASON)).success());
+        assertEquals("CUSTOMER_CANCELLED",c.jdbc.queryForObject("SELECT reason FROM refund_obligation WHERE receipt_id=?",String.class,eligibleReceipt));
+    }
+
+    @Test void theUnitRefusesChangesWhoseEffectsDoNotMatchTheCommittedTransition() {
+        UUID id=create(3,10,null);var unit=new PostgresAdminChanges(c.f.source);
+        Function<String,Command> command=key -> new Command(b.session,id,Operation.REJECT,key,CommandKey.fingerprint(List.of(key)));
+        List<Function<Change,Receipt>> invalid=List.of(
+            tx -> { Booking o=tx.target();tx.rejectedEffects(o,o.reject(),REASON);return new Receipt(Code.OK,id,2); },
+            tx -> { tx.target();return new Receipt(Code.OK,id,1); },
+            tx -> { Booking o=tx.target(),r=o.reject();tx.save(r);tx.rejectedEffects(o,r,REASON);return Receipt.failure(Code.INVALID_TRANSITION); },
+            tx -> { Booking o=tx.target(),r=o.reject();tx.save(r);tx.rejectedEffects(o,r,REASON);return new Receipt(Code.OK,id,3); },
+            tx -> { Booking o=tx.booking(id).orElseThrow(),r=o.reject();tx.save(r);tx.rejectedEffects(o,r,REASON);return new Receipt(Code.OK,id,2); },
+            tx -> { Booking o=tx.target(),r=o.reject();tx.save(r);tx.rejectedEffects(o,r,REASON);tx.rejectedEffects(o,r,REASON);return new Receipt(Code.OK,id,2); },
+            tx -> { Booking o=tx.target(),r=o.reject();tx.save(r);tx.outcomeEffects(o,r,null);return new Receipt(Code.OK,id,2); },
+            tx -> { Booking o=tx.target(),m=o.reschedule(tx.now(),o.start(),false);tx.save(m);tx.rescheduledEffects(o,m,REASON,SchedulingRules.Override.none());return new Receipt(Code.OK,id,2); },
+            tx -> { tx.chargeCreated(tx.target());return new Receipt(Code.OK,id,1); });
+        for(int i=0;i<invalid.size();i++) { var work=invalid.get(i);assertEquals(Failure.Kind.STORAGE_FAILURE,c.failure(()->unit.change(command.apply("invalid-"+work.hashCode()),work)).kind()); }
+        assertEquals("PENDING_CONFIRMATION",state(id));assertEquals(0,count("audit_event WHERE type='REJECTED'"));assertEquals(0,count("outbox_event WHERE type='REJECTED'"));
+        assertEquals(0,count("idempotency_record WHERE key LIKE 'invalid-%'"));
     }
 
     @Test void rescheduleKeepsMoneyRecordsUsedOverridesAndNeverOverlaps() {
