@@ -9,3 +9,5 @@
 - Verification: local108 domain and313 application tests and coverage gates passed; documentation/diff checks passed. Serial broader reactor verification running after overlapping-build class-loading failure; Docker now available. PR128 run40711764094 all15 green, zero scanning alerts, exact-head independent review524a209 clean; 525 local Angular tests/build/CSP and16 acceptance-support tests passed. PostgreSQL/browser hosted-only. Main40706258055 failed-job rerun and main40710028838 passed.
 - Next concrete action: push task/p32-private-notes and create draft PR; inspect serial local reactor verification and obtain exact-head independent review.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+- Closure: PR129 confirmed merged b59eb9f after15 hosted checks and independent exact-head reviewc6f32d4; zero scanning alerts. Image-build/browser rerun passed unchanged. Claim released.

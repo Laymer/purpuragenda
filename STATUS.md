@@ -35,7 +35,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
-| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note command boundary on task/p32-private-notes; persistence, HTTP/UI, audit/search/reconciliation/retry remain |
+| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note application https://github.com/Laymer/purpuragenda/pull/129 confirmed merged b59eb9f after 15 hosted checks and independent review; persistence on task/p32-note-persistence; HTTP/UI, audit/search/reconciliation/retry remain |
 | P33 — Complete verified delivery-contact changes without ownership transfer | Merged; application PR125, persistence PR126, HTTP PR127 and UI/browser https://github.com/Laymer/purpuragenda/pull/128 confirmed merged 2db7eba after 15 hosted checks and independent review; both historical recipients notified, original account ownership preserved |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P32/private-notes: agent=Codex-coordinator; branch=task/p32-private-notes; base=main; handoff=docs/handoffs/codex-p32-private-notes.md
+- P32/note-persistence: agent=Codex-coordinator; branch=task/p32-note-persistence; base=main; handoff=docs/handoffs/codex-p32-note-persistence.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T15:17:56Z.
-- Current task: P32/private-notes; branch: task/p32-private-notes; base: main 2db7eba; PR URL: pending draft creation.
-- Last pushed implementation commit: 524a209 (PR128, merged 2db7eba); uncommitted changes: tested private-note application boundary ready for draft PR.
-- What works: P33 confirmed merged 2db7eba after 15 hosted checks and independent review, including real browser contact-change and notices.
-- What remains: private-note application command, automated verification and independent review; persistence, reads, HTTP/UI and remaining P32 operations follow.
-- Decisions: append private notes without changing booking versions, ownership, payments or notifications; persisted fresh-MFA authority must precede idempotency replay. Audit records exclude note text.
-- Verification: local108 domain and313 application tests and coverage gates passed; documentation/diff checks passed. Serial broader reactor verification running after overlapping-build class-loading failure; Docker now available. PR128 run40711764094 all15 green, zero scanning alerts, exact-head independent review524a209 clean; 525 local Angular tests/build/CSP and16 acceptance-support tests passed. PostgreSQL/browser hosted-only. Main40706258055 failed-job rerun and main40710028838 passed.
-- Next concrete action: push task/p32-private-notes and create draft PR; inspect serial local reactor verification and obtain exact-head independent review.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T15:39:17Z.
+- Current task: P32/note-persistence; branch: task/p32-note-persistence; base: main b59eb9f; PR URL: pending draft creation.
+- Last pushed implementation commit: c6f32d4 (PR129, merged b59eb9f); uncommitted changes: tested PostgreSQL note persistence and mandatory report gate ready for draft PR.
+- What works: private-note application boundary PR129 confirmed merged b59eb9f after 15 hosted checks and independent review.
+- What remains: transactional note persistence, authority/replay/effect guards and real PostgreSQL tests; reads, HTTP/UI and other P32 operations follow.
+- Decisions: reuse booking_note and audit_event; never put note text in audit, receipt or notifications. Persisted administrator authority precedes replay; one captured resource-locked time.
+- Verification: local11 real PostgreSQL note tests and44 Python report tests passed; documentation/diff checks passed. Independent review P2 replay-fingerprint finding fixed with same-actor/booking wrong-note regression;11 PostgreSQL tests and44 report tests passed again; exact-head follow-up review pending. PR129 run40715078190 all15 green after unchanged-head image-build/browser rerun, zero alerts, independent reviewc6f32d4 clean. Local108 domain and313 application tests/coverage passed. Local broad adapter run had78 connection failures; all78 passed in serial reruns. Docker now available.
+- Next concrete action: push task/p32-note-persistence, create draft PR and require exact-head independent review plus all15 hosted checks.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
