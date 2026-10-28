@@ -29,6 +29,8 @@ export const routes: Routes = [
       { path: 'bookings/new', loadComponent: () => import('./admin/manual-booking.component').then(module => module.ManualBookingComponent), title: 'Create booking · Purpuragenda' },
       { path: 'bookings/:id/reschedule', loadComponent: () => import('./admin/reschedule-booking.component').then(module => module.RescheduleBookingComponent), title: 'Reschedule booking · Purpuragenda' },
       { path: 'bookings/:id/finance', loadComponent: () => import('./admin/booking-finance.component').then(module => module.BookingFinanceComponent), title: 'Receipts and refunds · Purpuragenda' },
+      { path: 'bookings/:id/history', loadComponent: () => import('./admin/history.component').then(module => module.HistoryComponent), title: 'Private booking history · Purpuragenda' },
+      { path: 'audit', loadComponent: () => import('./admin/history.component').then(module => module.HistoryComponent), title: 'Administrator audit · Purpuragenda' },
       { path: 'bookings/:id', loadComponent: () => import('./admin/booking-detail.component').then(module => module.BookingDetailComponent), title: 'Booking · Purpuragenda' },
     ],
   },
