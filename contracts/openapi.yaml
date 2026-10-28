@@ -3297,6 +3297,1081 @@
         "description": "Advisory slots for an inclusive display-date range of at most 31 dates. Omit DST gaps and return both overlap instants with explicit offsets. Never cacheable (Cache-Control: no-store): revalidate all availability during booking mutations. Throttled (by a servlet filter, before the handler) to 120 requests per minute per client address; malformed requests are charged too.",
         "summary": "Read authorized rescheduling choices using the immutable booked service and own-reservation exclusion"
       }
+    },
+    "/admin/configuration": {
+      "get": {
+        "operationId": "getAdministratorConfiguration",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Current weekly schedule, date exceptions, blackouts and scheduling policy with their versions. Requires a live persisted MFA administrator session rechecked in the same read snapshot; fresh MFA is not required for reads. No session touch or mutation. Replies are no-store.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Private current configuration.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/conflicts": {
+      "post": {
+        "operationId": "previewAdministratorConfigurationConflicts",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Advisory read-only list of future occupying bookings that a complete proposed calendar or policy would newly conflict with, and the current versions it was based on. Requires exact Origin/CSRF and a live persisted MFA administrator session; nothing is written and If-Match is rejected. Commands re-evaluate under the resource lock.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorConflictPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Advisory conflict preview.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorConflictPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/weekly": {
+      "post": {
+        "operationId": "replaceAdministratorWeeklySchedule",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Replaces all weekly windows. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorWeeklyChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted calendar version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCalendarReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/date-exceptions": {
+      "post": {
+        "operationId": "setAdministratorDateException",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Adds or replaces one date exception for today or a later Brussels date. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorDateExceptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted calendar version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCalendarReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/date-exceptions/{date}/removal": {
+      "post": {
+        "operationId": "removeAdministratorDateException",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Removes an existing date exception for today or a later Brussels date. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorConfigurationReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted calendar version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCalendarReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/blackouts": {
+      "post": {
+        "operationId": "addAdministratorBlackout",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Adds a hard blackout that ends in the future. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorBlackoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted calendar version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCalendarReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/blackouts/{blackoutId}/removal": {
+      "post": {
+        "operationId": "removeAdministratorBlackout",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Removes an existing blackout. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blackoutId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current calendar version from GET /admin/configuration or a receipt. Missing 428, stale 412 CALENDAR_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorConfigurationReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted calendar version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCalendarReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/configuration/policy": {
+      "post": {
+        "operationId": "updateAdministratorPolicy",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Appends the next immutable scheduling policy version; lowered limits only block new bookings. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]{0,18}\"$"
+            },
+            "description": "One strong quoted current policy version from GET /admin/configuration or a receipt. Missing 428, stale 412 POLICY_CHANGED."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorPolicyChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          },
+          "200": {
+            "description": "Committed idempotent configuration version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong quoted policy version."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorPolicyReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4882,6 +5957,547 @@
             "readOnly": true
           },
           "bookingVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          }
+        }
+      },
+      "AdministratorTimeWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "end"
+        ],
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^(([01][0-9]|2[0-3]):[0-5][0-9]|24:00)$"
+          }
+        }
+      },
+      "AdministratorWeeklySchedule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "MONDAY",
+          "TUESDAY",
+          "WEDNESDAY",
+          "THURSDAY",
+          "FRIDAY",
+          "SATURDAY",
+          "SUNDAY"
+        ],
+        "properties": {
+          "MONDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "TUESDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "WEDNESDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "THURSDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "FRIDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "SATURDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          },
+          "SUNDAY": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            }
+          }
+        },
+        "description": "Europe/Brussels civil windows; an empty list closes the day. Overlapping windows merge."
+      },
+      "AdministratorDateException": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "mode",
+          "windows"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "REPLACE",
+              "ADD",
+              "CLOSED"
+            ]
+          },
+          "windows": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorTimeWindow"
+            },
+            "description": "Empty when CLOSED."
+          }
+        }
+      },
+      "AdministratorBlackout": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "startInstant",
+          "endInstant",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Chosen by the administrator so retries and later removal can name it."
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdministratorPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gridMinutes",
+          "dailyCapacity",
+          "minimumNotice",
+          "pendingLifetime",
+          "expiryBuffer",
+          "customerCutoff"
+        ],
+        "properties": {
+          "gridMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "dailyCapacity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "minimumNotice": {
+            "type": "string",
+            "pattern": "^PT([0-9]{1,4}H)?([0-9]{1,6}M)?([0-9]{1,8}S)?$",
+            "minLength": 3,
+            "description": "ISO-8601 hours/minutes/seconds, for example PT24H, PT1H30M or PT0S."
+          },
+          "pendingLifetime": {
+            "type": "string",
+            "pattern": "^PT([0-9]{1,4}H)?([0-9]{1,6}M)?([0-9]{1,8}S)?$",
+            "minLength": 3,
+            "description": "ISO-8601 hours/minutes/seconds, for example PT24H, PT1H30M or PT0S."
+          },
+          "expiryBuffer": {
+            "type": "string",
+            "pattern": "^PT([0-9]{1,4}H)?([0-9]{1,6}M)?([0-9]{1,8}S)?$",
+            "minLength": 3,
+            "description": "ISO-8601 hours/minutes/seconds, for example PT24H, PT1H30M or PT0S."
+          },
+          "customerCutoff": {
+            "type": "string",
+            "pattern": "^PT([0-9]{1,4}H)?([0-9]{1,6}M)?([0-9]{1,8}S)?$",
+            "minLength": 3,
+            "description": "ISO-8601 hours/minutes/seconds, for example PT24H, PT1H30M or PT0S."
+          }
+        }
+      },
+      "AdministratorConfiguration": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observedAt",
+          "calendarVersion",
+          "policyVersion",
+          "weekly",
+          "dateExceptions",
+          "blackouts",
+          "policy"
+        ],
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "calendarVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "policyVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "weekly": {
+            "$ref": "#/components/schemas/AdministratorWeeklySchedule"
+          },
+          "dateExceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorDateException"
+            }
+          },
+          "blackouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorBlackout"
+            }
+          },
+          "policy": {
+            "$ref": "#/components/schemas/AdministratorPolicy"
+          }
+        }
+      },
+      "AdministratorCalendarProposal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "weekly",
+          "dateExceptions",
+          "blackouts"
+        ],
+        "properties": {
+          "weekly": {
+            "$ref": "#/components/schemas/AdministratorWeeklySchedule"
+          },
+          "dateExceptions": {
+            "type": "array",
+            "maxItems": 400,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorDateException"
+            }
+          },
+          "blackouts": {
+            "type": "array",
+            "maxItems": 400,
+            "items": {
+              "$ref": "#/components/schemas/AdministratorBlackout"
+            }
+          }
+        }
+      },
+      "AdministratorConflictPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposal"
+        ],
+        "properties": {
+          "proposal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdministratorCalendarProposal"
+              },
+              {
+                "$ref": "#/components/schemas/AdministratorPolicy"
+              }
+            ],
+            "description": "A complete proposed calendar or a complete proposed policy."
+          }
+        }
+      },
+      "AdministratorConfigurationConflict": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bookingId",
+          "reference",
+          "startInstant",
+          "state",
+          "reasons",
+          "blackoutIds"
+        ],
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "startInstant": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRMATION",
+              "CONFIRMED"
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "START_RULES",
+                "HARD_BLACKOUT",
+                "DAILY_CAPACITY"
+              ]
+            }
+          },
+          "blackoutIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "AdministratorConflictPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assessedAt",
+          "calendarVersion",
+          "policyVersion",
+          "conflicts"
+        ],
+        "properties": {
+          "assessedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "calendarVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "policyVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorConfigurationConflict"
+            }
+          }
+        }
+      },
+      "AdministratorConfigurationReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason",
+          "acknowledgedBookingIds"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "acknowledgedBookingIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exactly the future bookings the change newly conflicts with, from a current preview; a stale or surplus set returns 409 CONFLICT_REVIEW_REQUIRED."
+          }
+        }
+      },
+      "AdministratorWeeklyChangeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "weekly",
+          "reason",
+          "acknowledgedBookingIds"
+        ],
+        "properties": {
+          "weekly": {
+            "$ref": "#/components/schemas/AdministratorWeeklySchedule"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "acknowledgedBookingIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exactly the future bookings the change newly conflicts with, from a current preview; a stale or surplus set returns 409 CONFLICT_REVIEW_REQUIRED."
+          }
+        }
+      },
+      "AdministratorDateExceptionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dateException",
+          "reason",
+          "acknowledgedBookingIds"
+        ],
+        "properties": {
+          "dateException": {
+            "$ref": "#/components/schemas/AdministratorDateException"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "acknowledgedBookingIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exactly the future bookings the change newly conflicts with, from a current preview; a stale or surplus set returns 409 CONFLICT_REVIEW_REQUIRED."
+          }
+        }
+      },
+      "AdministratorBlackoutRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "blackout",
+          "reason",
+          "acknowledgedBookingIds"
+        ],
+        "properties": {
+          "blackout": {
+            "$ref": "#/components/schemas/AdministratorBlackout"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "acknowledgedBookingIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exactly the future bookings the change newly conflicts with, from a current preview; a stale or surplus set returns 409 CONFLICT_REVIEW_REQUIRED."
+          }
+        }
+      },
+      "AdministratorPolicyChangeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy",
+          "reason",
+          "acknowledgedBookingIds"
+        ],
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/AdministratorPolicy"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "acknowledgedBookingIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exactly the future bookings the change newly conflicts with, from a current preview; a stale or surplus set returns 409 CONFLICT_REVIEW_REQUIRED."
+          }
+        }
+      },
+      "AdministratorCalendarReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "calendarVersion"
+        ],
+        "properties": {
+          "calendarVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "readOnly": true
+          }
+        }
+      },
+      "AdministratorPolicyReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policyVersion"
+        ],
+        "properties": {
+          "policyVersion": {
             "type": "integer",
             "format": "int64",
             "minimum": 1,

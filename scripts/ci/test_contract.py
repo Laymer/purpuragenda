@@ -55,6 +55,35 @@ class ContractTest(unittest.TestCase):
     def setUp(self):
         self.document = json.loads((ROOT / 'contracts/openapi.yaml').read_text())
 
+    def test_configuration_commands_require_reviewed_versions_and_previews_never_mutate(self):
+        paths, schemas = self.document['paths'], self.document['components']['schemas']
+        commands = {'/admin/configuration/weekly': ('AdministratorWeeklyChangeRequest', 'AdministratorCalendarReceipt'),
+                    '/admin/configuration/date-exceptions': ('AdministratorDateExceptionRequest', 'AdministratorCalendarReceipt'),
+                    '/admin/configuration/date-exceptions/{date}/removal': ('AdministratorConfigurationReview', 'AdministratorCalendarReceipt'),
+                    '/admin/configuration/blackouts': ('AdministratorBlackoutRequest', 'AdministratorCalendarReceipt'),
+                    '/admin/configuration/blackouts/{blackoutId}/removal': ('AdministratorConfigurationReview', 'AdministratorCalendarReceipt'),
+                    '/admin/configuration/policy': ('AdministratorPolicyChangeRequest', 'AdministratorPolicyReceipt')}
+        for path, (request, receipt) in commands.items():
+            operation = paths[path]['post']
+            headers = {value['name']: value for value in operation['parameters'] if value['in'] == 'header'}
+            self.assertEqual({'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, headers.keys())
+            self.assertTrue(all(value['required'] for value in headers.values()))
+            self.assertEqual('#/components/schemas/' + request, operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertEqual('#/components/schemas/' + receipt, operation['responses']['200']['content']['application/json']['schema']['$ref'])
+            self.assertTrue({'409', '412', '428'} <= operation['responses'].keys())
+            self.assertTrue({'reason', 'acknowledgedBookingIds'} <= set(schemas[request]['required']))
+            self.assertTrue(schemas[request]['properties']['acknowledgedBookingIds']['uniqueItems'])
+        preview = paths['/admin/configuration/conflicts']['post']
+        self.assertEqual(['X-CSRF-Token'], [value['name'] for value in preview['parameters']])
+        self.assertFalse({'409', '412', '428'} & preview['responses'].keys())
+        self.assertNotIn('parameters', paths['/admin/configuration']['get'])
+        self.assertEqual(set(schemas['AdministratorWeeklySchedule']['required']), set(schemas['AdministratorWeeklySchedule']['properties']))
+        self.assertEqual(7, len(schemas['AdministratorWeeklySchedule']['required']))
+        self.assertFalse({'intake', 'deliveryEmail', 'customerId'} & schemas['AdministratorConfigurationConflict']['properties'].keys())
+        for schema in schemas.values():
+            if schema.get('properties', {}).keys() & {'calendarVersion', 'policyVersion', 'weekly', 'proposal'}:
+                self.assertFalse(schema['additionalProperties'])
+
     def test_public_operations_and_same_origin_base(self):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
@@ -62,7 +91,9 @@ class ContractTest(unittest.TestCase):
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
                           'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
                           'recordAdministratorReceipt', 'approveAdministratorBooking', 'confirmAdministratorExternalPayment', 'recordAdministratorRefund', 'requireAdministratorRefund',
-                          'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext'},
+                          'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
+                          'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
+                          'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

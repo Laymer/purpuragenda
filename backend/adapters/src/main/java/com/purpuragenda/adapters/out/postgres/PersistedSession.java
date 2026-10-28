@@ -24,6 +24,20 @@ record PersistedSession(UUID id,String browser,String kind,UUID grant,UUID custo
     private List<Object> identity() { return Arrays.asList(kind,grant,account,customer,accountVersion); }
     static Instant time(ResultSet row,String column) throws SQLException { Timestamp value=row.getTimestamp(column);return value==null?null:value.toInstant(); }
     static Timestamp stamp(Instant value) { return Timestamp.from(value); }
+    /** Read-only ADMIN authority at the snapshot time: enabled, enrolled, current epoch, unrevoked, unexpired, MFA completed. */
+    static void administrator(JdbcTemplate jdbc,SessionBinding session,Instant now) {
+        record Authority(String kind,boolean permitted) { }
+        var authority=jdbc.query("""
+            SELECT s.kind,COALESCE(a.enabled AND a.enrolled AND a.security_version=s.admin_security_version
+              AND s.revoked_at IS NULL AND s.issued_at<=? AND s.absolute_expires_at>?
+              AND s.last_seen_at<=? AND s.last_seen_at+interval '15 minutes'>? AND s.authenticated_at<=?,false)
+            FROM app_session s LEFT JOIN admin_user a ON a.id=s.admin_id
+            WHERE s.id=? AND s.browser_hash=?
+            """,(row,n)->new Authority(row.getString(1),row.getBoolean(2)),stamp(now),stamp(now),stamp(now),stamp(now),stamp(now),session.sessionId(),session.browserHash());
+        if(authority.isEmpty())throw unauthenticated();
+        if(!authority.getFirst().kind().equals("ADMIN"))throw denied();
+        if(!authority.getFirst().permitted())throw unauthenticated();
+    }
     static Failure denied() { return new Failure(Failure.Kind.FORBIDDEN); }
     static Failure unauthenticated() { return new Failure(Failure.Kind.AUTHENTICATION_REQUIRED); }
 }

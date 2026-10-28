@@ -27,23 +27,13 @@ public final class PostgresAdministratorBookingQuery implements AdministratorBoo
         reader.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         reader.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
     }
-    private record Authority(String kind,boolean permitted) { }
     private <T>T read(SessionBinding session,Function<Instant,T> work) {
         Objects.requireNonNull(session);
         try {
             return reader.execute(status->{
                 jdbc.execute("SET LOCAL lock_timeout='2s'");jdbc.execute("SET LOCAL statement_timeout='5s'");
                 Instant now=jdbc.queryForObject("SELECT clock_timestamp()",(row,n)->row.getTimestamp(1).toInstant());
-                var authority=jdbc.query("""
-                    SELECT s.kind,COALESCE(a.enabled AND a.enrolled AND a.security_version=s.admin_security_version
-                      AND s.revoked_at IS NULL AND s.issued_at<=? AND s.absolute_expires_at>?
-                      AND s.last_seen_at<=? AND s.last_seen_at+interval '15 minutes'>? AND s.authenticated_at<=?,false)
-                    FROM app_session s LEFT JOIN admin_user a ON a.id=s.admin_id
-                    WHERE s.id=? AND s.browser_hash=?
-                    """,(row,n)->new Authority(row.getString(1),row.getBoolean(2)),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),Timestamp.from(now),session.sessionId(),session.browserHash());
-                if(authority.isEmpty())throw PersistedSession.unauthenticated();
-                var value=authority.getFirst();if(!value.kind().equals("ADMIN"))throw PersistedSession.denied();
-                if(!value.permitted())throw PersistedSession.unauthenticated();
+                PersistedSession.administrator(jdbc,session,now);
                 return work.apply(now);
             });
         } catch(Failure denial) { throw denial; }
