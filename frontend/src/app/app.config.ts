@@ -18,6 +18,7 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./admin/agenda.component').then(module => module.AgendaComponent), title: 'Agenda · Purpuragenda' },
       { path: 'bookings/new', loadComponent: () => import('./admin/manual-booking.component').then(module => module.ManualBookingComponent), title: 'Create booking · Purpuragenda' },
+      { path: 'bookings/:id/reschedule', loadComponent: () => import('./admin/reschedule-booking.component').then(module => module.RescheduleBookingComponent), title: 'Reschedule booking · Purpuragenda' },
       { path: 'bookings/:id', loadComponent: () => import('./admin/booking-detail.component').then(module => module.BookingDetailComponent), title: 'Booking · Purpuragenda' },
     ],
   },

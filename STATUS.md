@@ -31,7 +31,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
-| P28 — Complete administrator manual creation, outcomes and explicit override UI | In progress; outcomes PR112 confirmed merged b211d2f after 15 hosted checks (Angular-only review waiver); manual creation on task/p28-manual-creation; rescheduling remains |
+| P28 — Complete administrator manual creation, outcomes and explicit override UI | In progress; outcomes PR112 merged b211d2f; manual creation PR113 confirmed merged3509eb0 after15 hosted checks and independent review; rescheduling on task/p28-rescheduling |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 confirmed merged 525e4a6 after 14 hosted checks and independent shell review; HTTP/UI remain |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P28/manual-creation: agent=Codex-coordinator; branch=task/p28-manual-creation; base=main; handoff=docs/handoffs/codex-p28-manual-creation.md
+- P28/rescheduling: agent=Codex-coordinator; branch=task/p28-rescheduling; base=main; handoff=docs/handoffs/codex-p28-rescheduling.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T09:31:13Z.
-- Current task: P28/manual-creation; branch: task/p28-manual-creation; base: main b211d2f; PR URL: https://github.com/Laymer/purpuragenda/pull/113.
-- Last pushed implementation commit: 879c8c3; uncommitted changes: reviewed retry/archived-service recovery fixes awaiting commit.
-- What works: outcome controls merged after all 15 hosted checks; manual creation HTTP and override enforcement already merged.
-- What remains: independent review and hosted gates; rescheduling follows separately.
-- Decisions: single sequential lane; explicit override choices; Brussels civil time with DST ambiguity made visible.
-- Verification: PR112 head4e14a38 passed all15 hosted checks in40661953101; zero code-scanning alerts; small Angular-only review waiver. Local250 Angular tests/build/CSP passed; Local278 Angular tests/build/CSP passed (1153/1157 lines,1113/1187 branches); documentation and diff checks passed. Independent review of879c8c3 found two recovery defects (throttled uncertain retry and archived services); both fixed with regression tests. Local280 tests/build/CSP pass1154/1158 lines1119/1193 branches; fix review pending.
-- Next concrete action: push the recovery fixes, obtain independent fix review, then inspect gh pr checks 113 and scanning alerts before merge.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T09:46:17Z.
+- Current task: P28/rescheduling; branch: task/p28-rescheduling; base: main 3509eb0; PR URL: pending draft creation.
+- Last pushed implementation commit: 9afd066 (PR113, merged3509eb0); uncommitted changes: tested rescheduling UI awaiting first commit.
+- What works: manual creation PR113 confirmed merged3509eb0 after15 hosted checks and independent review of879c8c3 and9afd066; outcome controls also merged.
+- What remains: rescheduling UI with explicit overrides, local verification, independent review and hosted gates.
+- Decisions: single sequential lane; preserve immutable booking snapshots and payment facts; overlaps never overridable.
+- Verification: PR113 run40664879889 all15 checks passed, zero scanning alerts; both review findings fixed and independently cleared. Local280 Angular tests/build/CSP passed. Main b211d2f Verify40664133363 fully green. Local303 Angular tests/build/CSP passed (1270/1274 lines1272/1352 branches); documentation and diff checks passed. Independent review pending.
+- Next concrete action: push task/p28-rescheduling, open a draft PR, resolve review findings and observe hosted gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; stacked PR dependencies: none.
