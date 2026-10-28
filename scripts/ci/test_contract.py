@@ -97,6 +97,21 @@ class ContractTest(unittest.TestCase):
         self.assertNotIn('OVERLAP', override['properties']['rules']['items']['enum'])
         self.assertTrue(override['properties']['rules']['uniqueItems'])
 
+    def test_administrator_changes_are_versioned_reasoned_and_never_take_late_classification_from_clients(self):
+        paths, schemas = self.document['paths'], self.document['components']['schemas']
+        for suffix, request in (('reject', 'AdministratorRejectionRequest'), ('cancel', 'AdministratorCancellationRequest'),
+                                ('reschedule', 'AdministratorRescheduleRequest'), ('outcome', 'AdministratorOutcomeRequest')):
+            operation = paths['/admin/bookings/{bookingId}/' + suffix]['post']
+            headers = {value['name'] for value in operation['parameters'] if value['in'] == 'header'}
+            self.assertEqual({'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, headers)
+            self.assertTrue({'404', '409', '412', '428'} <= operation['responses'].keys())
+            self.assertEqual('#/components/schemas/' + request, operation['requestBody']['content']['application/json']['schema']['$ref'])
+            self.assertIn('reason', schemas[request]['required'])
+            self.assertFalse(schemas[request]['additionalProperties'])
+        self.assertEqual(['PROVIDER', 'CUSTOMER'], schemas['AdministratorCancellationRequest']['properties']['classification']['enum'])
+        self.assertEqual(['COMPLETED', 'NO_SHOW'], schemas['AdministratorOutcomeRequest']['properties']['outcome']['enum'])
+        self.assertEqual('#/components/schemas/AdministratorOverride', schemas['AdministratorRescheduleRequest']['properties']['override']['$ref'])
+
     def test_public_operations_and_same_origin_base(self):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
@@ -106,7 +121,8 @@ class ContractTest(unittest.TestCase):
                           'recordAdministratorReceipt', 'approveAdministratorBooking', 'confirmAdministratorExternalPayment', 'recordAdministratorRefund', 'requireAdministratorRefund',
                           'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
                           'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
-                          'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking'},
+                          'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
+                          'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

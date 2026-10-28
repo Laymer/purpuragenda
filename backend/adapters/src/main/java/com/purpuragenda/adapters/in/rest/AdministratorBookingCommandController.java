@@ -62,7 +62,7 @@ public final class AdministratorBookingCommandController {
     }
     private static String optional(JsonNode node,String field) throws BookingHttp.Invalid { return node.get(field).isNull()?null:BookingHttp.text(node,field); }
     /** No rules means no override and a null reason; otherwise a reason and only blackout ids the HARD_BLACKOUT rule covers. */
-    private static SchedulingRules.Override override(JsonNode node) throws BookingHttp.Invalid {
+    static SchedulingRules.Override override(JsonNode node) throws BookingHttp.Invalid {
         BookingHttp.object(node,"rules","reason","blackoutIds");
         JsonNode rules=node.get("rules"),blackouts=node.get("blackoutIds");
         if(!rules.isArray() || !blackouts.isArray())throw new BookingHttp.Invalid();

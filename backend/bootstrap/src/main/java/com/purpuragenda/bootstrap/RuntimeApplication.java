@@ -1,6 +1,7 @@
 package com.purpuragenda.bootstrap;
 
 import com.purpuragenda.application.scheduling.AdminBooking;
+import com.purpuragenda.application.scheduling.AdministratorBookingChanges;
 import com.purpuragenda.application.scheduling.AdministratorBookingView;
 import com.purpuragenda.application.scheduling.AdministratorConfiguration;
 import com.purpuragenda.application.scheduling.AdministratorConfigurationView;
@@ -8,6 +9,7 @@ import com.purpuragenda.application.scheduling.AdministratorFinance;
 import com.purpuragenda.adapters.out.postgres.PostgresFinance;
 import com.purpuragenda.adapters.out.postgres.PostgresConfiguration;
 import com.purpuragenda.adapters.out.postgres.PostgresAdminBooking;
+import com.purpuragenda.adapters.out.postgres.PostgresAdminChanges;
 import com.purpuragenda.adapters.out.postgres.PostgresAdministratorBookingQuery;
 
 import com.purpuragenda.adapters.in.rest.*;
@@ -148,6 +150,9 @@ public class RuntimeApplication {
     }
     @Bean AdministratorBookingCommandController administratorBookingCommands(DataSource source,RuntimeSettings settings,BookingNotice notice) {
         return new AdministratorBookingCommandController(new AdminBooking(new PostgresAdminBooking(source,settings.meetingHosts()),notice.version(),settings.meetingHosts()));
+    }
+    @Bean AdministratorBookingChangeController administratorBookingChanges(DataSource source,RuntimeSettings settings) {
+        return new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(source,settings.meetingHosts())));
     }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));
