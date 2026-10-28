@@ -8,6 +8,7 @@ import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { AccessFailure, safeFailure } from '../shared/access/access-failure';
 import { reauthenticate } from './admin-reauth';
+import { FinanceSummaryComponent } from './finance-summary.component';
 import { brusselsDisplay, zoomHint } from './admin-time';
 
 type BookingAction = 'approve' | 'confirm-external-payment' | 'reject' | 'cancel' | 'meeting' | 'outcome';
@@ -17,7 +18,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, FinanceSummaryComponent],
   template: `
     <section aria-labelledby="detail-title" [attr.aria-busy]="busy()">
       <p><a routerLink="/admin">Back to agenda</a></p>
@@ -36,6 +37,8 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
         </dl>
         <h2>Payment</h2>
         <p>Status {{ b.payment.status }}. Received {{ money(b.payment.receivedMinor) }}, refunded {{ money(b.payment.refundedMinor) }}, remaining {{ money(b.payment.remainingMinor) }} ({{ b.snapshot.service.currency }}). Approval does not imply payment.</p>
+        <app-finance-summary [payment]="b.payment" />
+        @if (!busy() && !uncertain()) { <p><a [routerLink]="'/admin/bookings/' + b.id + '/finance'">Record receipt or refund</a></p> }
         <h2>Customer details</h2>
         <dl>
           <dt>Name</dt><dd>{{ b.snapshot.intake.firstName }} {{ b.snapshot.intake.lastName }}</dd>
