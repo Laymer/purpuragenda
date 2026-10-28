@@ -10,6 +10,9 @@ import { AccessFailure, safeFailure } from '../shared/access/access-failure';
 import { reauthenticate } from './admin-reauth';
 import { brusselsDisplay, zoomHint } from './admin-time';
 
+type BookingAction = 'approve' | 'confirm-external-payment' | 'reject' | 'cancel' | 'meeting';
+const SUCCESS: Record<BookingAction, string> = { approve: 'Booking approved.', 'confirm-external-payment': 'External payment confirmed.', reject: 'Booking rejected.', cancel: 'Booking cancelled.', meeting: 'Meeting link changed.' };
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
 
@@ -48,12 +51,34 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
             <input id="meeting-url" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" [formControl]="meeting" [attr.aria-invalid]="hint() !== null" [attr.aria-describedby]="hint() !== null ? 'meeting-hint' : null">
             @if (hint(); as text) { <p id="meeting-hint">{{ text }}</p> }
             <button mat-flat-button type="submit" [disabled]="busy() || uncertain()">Approve booking</button>
-            @if (uncertain()) { <button mat-stroked-button type="button" (click)="retry()" [disabled]="busy()">Retry the same approval</button> }
+            <button mat-stroked-button type="button" (click)="approve('confirm-external-payment')" [disabled]="busy() || uncertain()">Confirm external payment</button>
+            <p>External payment confirmation requires sufficient recorded EUR receipts. This button does not record money.</p>
           </form>
         }
+        @if (canManage()) {
+          <h2>Manage booking</h2>
+          <form (submit)="$event.preventDefault()">
+            <label for="action-reason">Reason (10–500 characters)</label>
+            <textarea id="action-reason" maxlength="500" [formControl]="reason" [attr.aria-describedby]="changeHint() ? 'action-hint' : null"></textarea>
+            @if (changeHint(); as text) { <p id="action-hint" role="alert">{{ text }}</p> }
+            @if (canApprove()) { <button mat-stroked-button type="button" (click)="change('reject')" [disabled]="busy() || uncertain()">Reject booking</button> }
+            <label for="cancellation-classification">Who cancelled?</label>
+            <select id="cancellation-classification" [formControl]="classification">
+              <option value="">Choose who cancelled</option><option value="PROVIDER">Practitioner</option><option value="CUSTOMER">Customer</option>
+            </select>
+            <p>Practitioner cancellation requires refund follow-up. Customer cancellation follows the booking's cutoff policy.</p>
+            <button mat-stroked-button type="button" (click)="change('cancel')" [disabled]="busy() || uncertain()">Cancel booking</button>
+            @if (canChangeMeeting()) {
+              <label for="replacement-meeting">Replacement Zoom meeting link</label>
+              <input id="replacement-meeting" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" [formControl]="replacementMeeting">
+              <button mat-stroked-button type="button" (click)="change('meeting')" [disabled]="busy() || uncertain()">Change meeting link</button>
+            }
+          </form>
+        }
+        @if (uncertain()) { <button mat-stroked-button type="button" (click)="retry()" [disabled]="busy()">{{ retryLabel() }}</button> }
       }
     </section>`,
-  styles: [`section { max-width: 60rem; margin: 1rem auto; padding: 1rem; } dl { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; } dd { margin: 0; overflow-wrap: anywhere; } .text { white-space: pre-wrap; } form { display: grid; gap: .5rem; max-width: 34rem; } input { font: inherit; min-height: 2.6rem; padding: .4rem; }`],
+  styles: [`section { max-width: 60rem; margin: 1rem auto; padding: 1rem; } dl { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; } dd { margin: 0; overflow-wrap: anywhere; } .text { white-space: pre-wrap; } form { display: grid; gap: .5rem; max-width: 34rem; } input, textarea, select { font: inherit; min-height: 2.6rem; padding: .4rem; }`],
 })
 export class BookingDetailComponent {
   private readonly api = inject(AdministratorService);
@@ -65,6 +90,11 @@ export class BookingDetailComponent {
   private generation = 0;
   private etag: string | null = null;
   private command: FrozenCommand<unknown> | null = null;
+  private action: BookingAction = 'approve';
+  readonly reason = new FormControl('', { nonNullable: true });
+  readonly classification = new FormControl<'' | 'PROVIDER' | 'CUSTOMER'>('', { nonNullable: true });
+  readonly replacementMeeting = new FormControl('', { nonNullable: true });
+  readonly changeHint = signal<string | null>(null);
   readonly meeting = new FormControl('', { nonNullable: true });
   readonly booking = signal<AdministratorBookingDetail | null>(null);
   readonly busy = signal(false);
@@ -87,6 +117,27 @@ export class BookingDetailComponent {
     return b !== null && b.state === AdministratorBookingDetailStateEnum.PendingConfirmation && !b.pendingExpired;
   }
 
+  canManage(): boolean { return this.canApprove() || this.booking()?.state === AdministratorBookingDetailStateEnum.Confirmed; }
+  canChangeMeeting(): boolean { return this.booking()?.state === AdministratorBookingDetailStateEnum.Confirmed && this.booking()?.meetingUrl != null; }
+  retryLabel(): string { return this.action === 'approve' ? 'Retry the same approval' : 'Retry the same change'; }
+
+  async change(action: 'reject' | 'cancel' | 'meeting'): Promise<void> {
+    if (this.busy() || this.uncertain() || !this.canManage() || (action === 'reject' && !this.canApprove()) || (action === 'meeting' && !this.canChangeMeeting())) return;
+    const reason = this.reason.value.trim().normalize('NFC');
+    if ([...reason].length < 10 || [...reason].length > 500 || /[\u0000-\u001f\u007f]/.test(reason)) { this.changeHint.set('Enter a reason of 10–500 characters.'); this.focus('#action-reason'); return; }
+    if (action === 'cancel' && !['PROVIDER', 'CUSTOMER'].includes(this.classification.value)) { this.changeHint.set('Choose whether the practitioner or customer cancelled.'); this.focus('#cancellation-classification'); return; }
+    if (action === 'meeting') {
+      const hint = zoomHint(this.replacementMeeting.value);
+      if (hint !== null) { this.changeHint.set(hint); this.focus('#replacement-meeting'); return; }
+    }
+    if (this.etag === null) { await this.load(); return; }
+    const body = action === 'cancel' ? { reason, classification: this.classification.value } : action === 'meeting' ? { reason, meetingUrl: this.replacementMeeting.value.trim() } : { reason };
+    this.changeHint.set(null); this.action = action;
+    try { this.command?.discard(); this.command = this.commands.prepare<unknown>('POST', '/api/v1/admin/bookings/' + this.id + '/' + action, body, this.etag); }
+    catch { this.message.set('That change could not be submitted from this page.'); return; }
+    await this.send();
+  }
+
   async load(): Promise<boolean> {
     if (!UUID.test(this.id)) { this.message.set('That booking could not be found.'); return false; }
     const generation = ++this.generation;
@@ -104,15 +155,15 @@ export class BookingDetailComponent {
     } finally { if (this.active) this.busy.set(false); }
   }
 
-  async approve(): Promise<void> {
+  async approve(action: 'approve' | 'confirm-external-payment' = 'approve'): Promise<void> {
     if (this.busy() || this.uncertain() || !this.canApprove()) return;
     const problem = zoomHint(this.meeting.value);
     this.hint.set(problem);
     if (problem !== null) { this.focus('#meeting-url'); return; }
     if (this.etag === null) { await this.load(); return; }
     try {
-      this.command?.discard();
-      this.command = this.commands.prepare<unknown>('POST', '/api/v1/admin/bookings/' + this.id + '/approve', { meetingUrl: this.meeting.value.trim() }, this.etag);
+      this.action = action; this.command?.discard();
+      this.command = this.commands.prepare<unknown>('POST', '/api/v1/admin/bookings/' + this.id + '/' + action, { meetingUrl: this.meeting.value.trim() }, this.etag);
     } catch { this.message.set('That booking could not be approved from this page.'); return; }
     await this.send();
   }
@@ -125,9 +176,9 @@ export class BookingDetailComponent {
     try {
       await command.attempt();
       if (!this.active || generation !== this.generation) return;
-      this.uncertain.set(false); this.command = null; this.meeting.reset();
-      this.message.set('Booking approved.');
-      if (!await this.load() && this.active) this.message.set('Booking approved, but its latest details could not be loaded. Refresh the page.');
+      this.uncertain.set(false); this.command = null; this.resetFields();
+      const success = SUCCESS[this.action]; this.message.set(success);
+      if (!await this.load() && this.active) this.message.set(success.slice(0, -1) + ', but its latest details could not be loaded. Refresh the page.');
     } catch (error) {
       if (this.active && generation === this.generation) await this.commandFailure(error);
     } finally { if (this.active) this.busy.set(false); }
@@ -135,6 +186,7 @@ export class BookingDetailComponent {
 
   private async commandFailure(error: unknown): Promise<void> {
     const failure = error instanceof AccessFailure ? error : safeFailure(error, true);
+    if (this.action !== 'approve') { await this.changeFailure(failure); return; }
     this.uncertain.set(failure.kind === 'UNCERTAIN');
     if (failure.kind === 'SESSION_EXPIRED') { await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
     if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428) { this.command = null; this.message.set(await this.load() ? 'This booking changed. The latest details are shown; review them and approve again.' : 'This booking changed, but its latest details could not be loaded. Refresh the page before approving.'); }
@@ -148,6 +200,22 @@ export class BookingDetailComponent {
     this.focus('#detail-error');
   }
 
+  private async changeFailure(failure: AccessFailure): Promise<void> {
+    this.uncertain.set(failure.kind === 'UNCERTAIN');
+    if (failure.kind === 'SESSION_EXPIRED') { await this.router.navigateByUrl('/admin/login').catch(() => false); return; }
+    if (failure.status === 403) { this.command = null; await reauthenticate(this.sessions, this.router, '/admin/bookings/' + this.id); return; }
+    if (failure.kind === 'VERSION_CONFLICT' || failure.status === 428) {
+      this.command = null; this.message.set(await this.load() ? 'This booking changed. Review the latest details before submitting again.' : 'This booking changed, but its latest details could not be loaded. Refresh the page.');
+    } else if (failure.kind === 'CONFLICT') {
+      this.command = null;
+      const loaded = await this.load();
+      this.message.set(!loaded ? 'The change conflicts with this booking, and its latest details could not be loaded. Refresh the page.' : failure.code === 'PAYMENT_INSUFFICIENT' ? 'There are not enough recorded EUR receipts to confirm external payment.' : failure.code === 'MEETING_IN_USE' ? 'That meeting link is already used by another booking. Use a different link.' : 'The change conflicts with the current booking. Review the latest details.');
+    } else if (failure.kind === 'UNCERTAIN') this.message.set('The response did not arrive. The change may have succeeded. Retry the same change before starting another.');
+    else if (failure.kind === 'THROTTLED') this.message.set('Please wait before trying again.');
+    else this.message.set('The change could not be saved. Check the fields and try again.');
+    this.focus('#detail-error');
+  }
+
   private async readFailure(error: unknown): Promise<void> {
     const failure = safeFailure(error, false);
     if (failure.status === 403) { await reauthenticate(this.sessions, this.router, '/admin/bookings/' + this.id); return; }
@@ -157,6 +225,7 @@ export class BookingDetailComponent {
     this.focus('#detail-error');
   }
 
-  private clear(): void { this.booking.set(null); this.etag = null; this.command?.discard(); this.command = null; this.meeting.reset(); this.uncertain.set(false); }
+  private clear(): void { this.booking.set(null); this.etag = null; this.command?.discard(); this.command = null; this.resetFields(); this.uncertain.set(false); }
+  private resetFields(): void { this.meeting.reset(); this.reason.reset(); this.classification.reset(); this.replacementMeeting.reset(); this.changeHint.set(null); }
   private focus(selector: string): void { this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(); }
 }
