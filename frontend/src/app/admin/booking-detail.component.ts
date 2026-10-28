@@ -10,8 +10,8 @@ import { AccessFailure, safeFailure } from '../shared/access/access-failure';
 import { reauthenticate } from './admin-reauth';
 import { brusselsDisplay, zoomHint } from './admin-time';
 
-type BookingAction = 'approve' | 'confirm-external-payment' | 'reject' | 'cancel' | 'meeting';
-const SUCCESS: Record<BookingAction, string> = { approve: 'Booking approved.', 'confirm-external-payment': 'External payment confirmed.', reject: 'Booking rejected.', cancel: 'Booking cancelled.', meeting: 'Meeting link changed.' };
+type BookingAction = 'approve' | 'confirm-external-payment' | 'reject' | 'cancel' | 'meeting' | 'outcome';
+const SUCCESS: Record<BookingAction, string> = { approve: 'Booking approved.', 'confirm-external-payment': 'External payment confirmed.', reject: 'Booking rejected.', cancel: 'Booking cancelled.', meeting: 'Meeting link changed.', outcome: 'Outcome recorded.' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
@@ -22,6 +22,7 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
     <section aria-labelledby="detail-title" [attr.aria-busy]="busy()">
       <p><a routerLink="/admin">Back to agenda</a></p>
       <h1 id="detail-title" tabindex="-1">Booking {{ booking()?.reference ?? '' }}</h1>
+      <button mat-stroked-button type="button" (click)="load()" [disabled]="busy() || uncertain()">Refresh details</button>
       <p id="detail-error" role="alert" tabindex="-1">{{ message() }}</p>
       @if (booking(); as b) {
         <dl>
@@ -68,6 +69,12 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
             </select>
             <p>Practitioner cancellation requires refund follow-up. Customer cancellation follows the booking's cutoff policy.</p>
             <button mat-stroked-button type="button" (click)="change('cancel')" [disabled]="busy() || uncertain()">Cancel booking</button>
+            @if (canRecordOutcome()) {
+              <h3>Session outcome</h3>
+              <p>{{ outcomeReasonRequired() ? 'A reason is required because the session has not ended.' : 'A reason is optional for an outcome after the session ends.' }} Outcomes do not send a customer email.</p>
+              <button mat-stroked-button type="button" (click)="recordOutcome('COMPLETED')" [disabled]="busy() || uncertain()">Mark completed</button>
+              <button mat-stroked-button type="button" (click)="recordOutcome('NO_SHOW')" [disabled]="busy() || uncertain()">Mark no-show</button>
+            }
             @if (canChangeMeeting()) {
               <label for="replacement-meeting">Replacement Zoom meeting link</label>
               <input id="replacement-meeting" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" [formControl]="replacementMeeting">
@@ -120,6 +127,26 @@ export class BookingDetailComponent {
   canManage(): boolean { return this.canApprove() || this.booking()?.state === AdministratorBookingDetailStateEnum.Confirmed; }
   canChangeMeeting(): boolean { return this.booking()?.state === AdministratorBookingDetailStateEnum.Confirmed && this.booking()?.meetingUrl != null; }
   retryLabel(): string { return this.action === 'approve' ? 'Retry the same approval' : 'Retry the same change'; }
+
+  canRecordOutcome(): boolean {
+    const b = this.booking();
+    return b !== null && b.state === AdministratorBookingDetailStateEnum.Confirmed && Date.parse(b.startInstant) <= Date.parse(b.serverNow);
+  }
+  outcomeReasonRequired(): boolean {
+    const b = this.booking(); return b !== null && Date.parse(b.serverNow) < Date.parse(b.sessionEndInstant);
+  }
+  async recordOutcome(outcome: 'COMPLETED' | 'NO_SHOW'): Promise<void> {
+    if (this.busy() || this.uncertain() || !this.canRecordOutcome()) return;
+    const reason = this.reason.value.trim().normalize('NFC');
+    if ((!reason && this.outcomeReasonRequired()) || (reason !== '' && ([...reason].length < 10 || [...reason].length > 500 || /[\u0000-\u001f\u007f]/.test(reason)))) {
+      this.changeHint.set('Enter a reason of 10–500 characters.'); this.focus('#action-reason'); return;
+    }
+    if (this.etag === null) { await this.load(); return; }
+    this.changeHint.set(null); this.action = 'outcome';
+    try { this.command?.discard(); this.command = this.commands.prepare<unknown>('POST', '/api/v1/admin/bookings/' + this.id + '/outcome', { outcome, reason: reason || null }, this.etag); }
+    catch { this.message.set('That outcome could not be submitted from this page.'); return; }
+    await this.send();
+  }
 
   async change(action: 'reject' | 'cancel' | 'meeting'): Promise<void> {
     if (this.busy() || this.uncertain() || !this.canManage() || (action === 'reject' && !this.canApprove()) || (action === 'meeting' && !this.canChangeMeeting())) return;

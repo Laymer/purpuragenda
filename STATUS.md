@@ -30,8 +30,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P24 — Complete verification, intake, review, submission and conflict recovery UI | In progress; verified booking-flow draft https://github.com/Laymer/purpuragenda/pull/83 subsumes shared memory-only session/CSRF/intent layerPR78; current with main d2d4dfe; 110Angular tests/build pass locally and heads9f26df2/07fd411 passed all14hosted checks; independent exact-head review and real browser acceptance pending |
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
-| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | In progress; administrator MFA sign-in UI https://github.com/Laymer/purpuragenda/pull/87 merged e2429f1; agenda, pending queue, detail and approval UI https://github.com/Laymer/purpuragenda/pull/95 merged 621e83d; stale-MFA re-authentication hand-off, honest reload messages and comma display fix https://github.com/Laymer/purpuragenda/pull/99 confirmed merged 2b14e0e after 14 hosted checks (owner review waiver 2026-10-27); confirm-external-payment, rejection, cancellation and meeting changes are claimed on task/p27-booking-actions |
-| P28 — Complete administrator manual creation, outcomes and explicit override UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
+| P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
+| P28 — Complete administrator manual creation, outcomes and explicit override UI | In progress; outcome recording on task/p28-outcomes; manual creation and rescheduling with explicit overrides remain |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 confirmed merged 525e4a6 after 14 hosted checks and independent shell review; HTTP/UI remain |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P27/booking-actions: agent=Codex-coordinator; branch=task/p27-booking-actions; base=main; handoff=docs/handoffs/codex-p27-booking-actions.md
+- P28/outcomes: agent=Codex-coordinator; branch=task/p28-outcomes; base=main; handoff=docs/handoffs/codex-p28-outcomes.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T08:47:00Z.
-- Current task: P27/booking-actions; branch: task/p27-booking-actions; base: main 3f23cac; PR URL: pending draft creation.
-- Last pushed implementation commit: 1d2d41c (PR110, merged 3f23cac); uncommitted changes: tested booking-action UI awaiting first commit.
-- What works: P22 APIs merged; existing agenda/detail/approval and MFA re-authentication UI.
-- What remains: hosted verification and green merge; then P28 manual creation/outcomes/override UI.
-- Decisions: single sequential lane; small Angular-only review waiver per owner 2026-10-28; server remains authoritative for state, payment, versions and policy.
-- Verification: PR110 current head passed all 15 hosted checks in run 40657201974 after persistence rerun; independent reviews of both commits had no findings. Local 244 Angular tests/build/CSP pass, coverage 1000/1004 lines and 934/999 branches; check-docs and diff checks pass. Local Docker unavailable; full backend verification runs in hosted CI.
-- Next concrete action: push task/p27-booking-actions and create a draft PR; observe all hosted checks.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T09:06:00Z.
+- Current task: P28/outcomes; branch: task/p28-outcomes; base: main 1f1d822; PR URL: pending draft creation.
+- Last pushed implementation commit: d2c25dd (PR111, merged 1f1d822); uncommitted changes: tested outcome UI awaiting first commit.
+- What works: P27 administrator actions merged after all 15 hosted checks; P10/P22 outcome API already merged.
+- What remains: hosted gates and green merge; then manual creation/rescheduling with explicit overrides.
+- Decisions: single sequential lane; small Angular-only review waiver per owner 2026-10-28; server enforces actual session boundaries.
+- Verification: PR111 head d2c25dd passed all 15 checks in 40659880038; no code-scanning alerts. Main 3f23cac passed Verify40659225484 after a macOS package-download retry. Local250 Angular tests/build/CSP pass with1018/1022 lines965/1031 branches; documentation/diff checks pass. No deployment or live communication.
+- Next concrete action: push task/p28-outcomes, open draft PR and observe all hosted gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; stacked PR dependencies: none.
