@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'verify', loadComponent: () => import('./booking/verify-email.component').then(module => module.VerifyEmailComponent), title: 'Verify your email · Purpuragenda' },
   { path: 'manage', loadComponent: () => import('./manage/manage-request.component').then(module => module.ManageRequestComponent), title: 'Manage your booking · Purpuragenda' },
   { path: 'manage/booking', loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },
+  { path: 'account/create', loadComponent: () => import('./account/enrollment-request.component').then(module => module.EnrollmentRequestComponent), title: 'Create an optional account · Purpuragenda' },
   { path: 'account/login', loadComponent: () => import('./account/account-login.component').then(module => module.AccountLoginComponent), title: 'Account sign in · Purpuragenda' },
   { path: 'account', canActivate: [accountGuard], loadComponent: () => import('./account/account-history.component').then(module => module.AccountHistoryComponent), title: 'Your account · Purpuragenda' },
   { path: 'account/bookings/:id', canActivate: [accountGuard], loadComponent: () => import('./manage/manage-booking.component').then(module => module.ManageBookingComponent), title: 'Your booking · Purpuragenda' },

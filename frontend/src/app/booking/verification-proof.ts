@@ -1,11 +1,15 @@
 import { InjectionToken } from '@angular/core';
 import { RedeemProofRequest, RedeemProofRequestPurposeEnum } from '../shared/generated/model/redeemProofRequest';
 
+type VerificationRequest = RedeemProofRequest | { token: string; purpose: 'ACCOUNT' };
+
 /** One explicit verification attempt. Neither serialization nor routing exposes the bearer. */
 export class VerificationProof {
-  constructor(private request: RedeemProofRequest | null) {}
+  constructor(private request: VerificationRequest | null) {}
   get available(): boolean { return this.request !== null; }
-  take(): RedeemProofRequest | null { const value = this.request; this.request = null; return value; }
+  get account(): boolean { return this.request?.purpose === 'ACCOUNT'; }
+  take(): RedeemProofRequest | null { if (this.request?.purpose === 'ACCOUNT') return null; const value = this.request; this.request = null; return value; }
+  takeAccount(): string | null { if (this.request?.purpose !== 'ACCOUNT') return null; const token = this.request.token; this.request = null; return token; }
   clear(): void { this.request = null; }
   toJSON(): string { return '[VerificationProof]'; }
 }
@@ -25,7 +29,8 @@ export function captureVerificationProof(path: string, fragment: string, scrub: 
     const fields = new URLSearchParams(fragment.replace(/^#/, ''));
     const token = fields.get('token'), purpose = fields.get('purpose');
     if ([...fields.keys()].length !== 2 || fields.getAll('token').length !== 1 || fields.getAll('purpose').length !== 1 ||
-      token === null || !/^[A-Za-z0-9_-]{43}$/.test(token) || (purpose !== 'CREATE' && purpose !== 'MANAGE')) return new VerificationProof(null);
+      token === null || !/^[A-Za-z0-9_-]{43}$/.test(token) || (purpose !== 'CREATE' && purpose !== 'MANAGE' && purpose !== 'ACCOUNT')) return new VerificationProof(null);
+    if (purpose === 'ACCOUNT') return new VerificationProof({ token, purpose });
     return new VerificationProof({ token, purpose: purpose === 'CREATE' ? RedeemProofRequestPurposeEnum.Create : RedeemProofRequestPurposeEnum.Manage });
   } catch { return new VerificationProof(null); }
 }
