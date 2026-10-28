@@ -517,6 +517,18 @@ class MigrationReportTest(unittest.TestCase):
         report.write_text('<testsuite name="com.purpuragenda.adapters.ContactHttpPostgresTest" tests="7">' + '<testcase/>' * 7 + '</testsuite>')
         GATE.validate(self.root)
 
+    def test_notification_retry_requires_authority_replay_and_worker_reports(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresNotificationRetry.java'
+        source.parent.mkdir(parents=True); source.write_text('synthetic adapter')
+        with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+        report = self.report.with_name('TEST-com.purpuragenda.adapters.NotificationRetryPostgresTest.xml')
+        for count, cases, nested in ((17, 17, ''), (18, 17, ''), (19, 18, ''), (18, 18, '<failure/>'), (18, 18, '<error/>'), (18, 18, '<skipped/>')):
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.NotificationRetryPostgresTest" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+            with self.assertRaises(ValueError): GATE.validate(self.root)
+        report.write_text('<testsuite name="com.purpuragenda.adapters.NotificationRetryPostgresTest" tests="18">' + '<testcase/>' * 18 + '</testsuite>')
+        GATE.validate(self.root)
+
     def test_administrator_operations_require_reconciliation_and_private_notification_reports(self):
         self.write()
         source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresAdministratorOperations.java'

@@ -9,3 +9,5 @@
 - Verification: local14 real PostgreSQL tests,319 application tests/coverage and49 Python mandatory-report tests passed; new adapter28/28 lines and20/20 branches. InitialPG test compile failed on long fixture count assigned to int; correctedlong and complete targeted rerun passed. Independent working-tree review clean; docs/diff checks before commit. Hosted full backend coverage/all categories pending.
 - Next concrete action: run docs/diff checks, commit/push task/p32-operations-reads, create draft PR and confirm exact-head independent review plus all15 hosted checks.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+Claim released: PR137 confirmed merged ea7de3556ff0792ffbcdab06b7ca3f4cdf491cfc after15 hosted checks, zero alerts and independent exact-head reviewc7aaeed; Codex-coordinator 2026-10-28T18:14:39Z. Next claim P32/notification-retry.
