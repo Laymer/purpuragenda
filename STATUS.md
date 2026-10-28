@@ -35,8 +35,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P29 — Complete receipt, refund and refund-follow-up UI | Merged; https://github.com/Laymer/purpuragenda/pull/115 confirmed merged bff4b0e after15 hosted checks and independent review; exact currency amounts, independent money facts, refund requirements and detailed projection covered |
 | P30 — Complete service creation, editing and archiving UI | Merged; https://github.com/Laymer/purpuragenda/pull/116 confirmed merged de63b5f after15 hosted checks and independent review; active/archived listing, versioned editing and restore covered |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | Merged; policy PR117 f5a4756 and calendar https://github.com/Laymer/purpuragenda/pull/118 confirmed merged6a4d7ff after15 hosted checks and independent review; full previews, exact acknowledgements, date exceptions and DST-aware blackouts covered |
-| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
-| P33 — Complete verified delivery-contact changes without ownership transfer | In progress; application boundary PR125 confirmed merged 285d124 after 15 hosted checks and independent review; persistence/notifications PR126 confirmed merged 929fc23 after 15 hosted checks and independent review; HTTP PR127 confirmed merged c9bec03 after 15 hosted checks and independent review; UI/browser journey on task/p33-contact-ui |
+| P32 — Complete notes, audit, customer search, reconciliation and notification follow-up | In progress; private-note command boundary on task/p32-private-notes; persistence, HTTP/UI, audit/search/reconciliation/retry remain |
+| P33 — Complete verified delivery-contact changes without ownership transfer | Merged; application PR125, persistence PR126, HTTP PR127 and UI/browser https://github.com/Laymer/purpuragenda/pull/128 confirmed merged 2db7eba after 15 hosted checks and independent review; both historical recipients notified, original account ownership preserved |
 | P34 — Complete controlled customer exports and audited corrections | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Recovered WIP; dependencies in docs/delivery.md; review requests exist; execution incomplete |
 | P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Draft PR; notification foundation https://github.com/Laymer/purpuragenda/pull/64 merged 669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 under Claude lane A: independent exact-head review approved e98447a; main 525e4a6 and 56e9856 integrated by merge; DST rendered-time test and residual-risk documentation follow-up 3ebe5ef pending hosted checks and coordinator re-review |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P33/contact-ui: agent=Codex-coordinator; branch=task/p33-contact-ui; base=main; handoff=docs/handoffs/codex-p33-contact-ui.md
+- P32/private-notes: agent=Codex-coordinator; branch=task/p32-private-notes; base=main; handoff=docs/handoffs/codex-p32-private-notes.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T14:51:34Z.
-- Current task: P33/contact-ui; branch: task/p33-contact-ui; base: main c9bec03; PR URL: pending draft creation.
-- Last pushed implementation commit: f553672 (PR127, mergedc9bec03); uncommitted changes: tested contact request/confirmation UI and browser journey ready for draft PR.
-- What works: PR127 confirmed mergedc9bec03 after15 hosted checks and independent review; contact proof/confirmation endpoints, atomic persistence and historical notices available.
-- What remains: explicit customer request/confirmation UI, strict CONTACT fragment handling, uncertainty/version recovery and full browser notice/ownership verification before P33 completion.
-- Decisions: opening a link never mutates; CONTACT proofs never enter guest redemption or account enrollment. Uncertain confirmation retries retain exact token/key/version, and proof data stays in memory.
-- Verification: PR127 run40707736273 all15 green, zero scanning alerts, independent exact-head reviewf553672 clean; local6 HTTP tests,71 Python tests, adapter/bootstrap compile, contract verification and487 Angular tests/build/CSP passed. PostgreSQL/browser hosted-only because Docker unavailable locally. Current525 Angular tests/build/CSP passed (2167/2172 lines2424/2554 branches),16 acceptance-support tests passed and browser/adapter tests compiled. Independent source review clean. Main929fc23 run40706258055 had docker-info timeout before e2e execution; failed-job rerun requested.
-- Next concrete action: push task/p33-contact-ui and create draft PR; verify current-head hosted checks/review and failed-job rerun40706258055.
-- Recovery: verified origin/recovery/2026-10-25-prototype at6f9405b (legacy reference origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T15:17:56Z.
+- Current task: P32/private-notes; branch: task/p32-private-notes; base: main 2db7eba; PR URL: pending draft creation.
+- Last pushed implementation commit: 524a209 (PR128, merged 2db7eba); uncommitted changes: tested private-note application boundary ready for draft PR.
+- What works: P33 confirmed merged 2db7eba after 15 hosted checks and independent review, including real browser contact-change and notices.
+- What remains: private-note application command, automated verification and independent review; persistence, reads, HTTP/UI and remaining P32 operations follow.
+- Decisions: append private notes without changing booking versions, ownership, payments or notifications; persisted fresh-MFA authority must precede idempotency replay. Audit records exclude note text.
+- Verification: local108 domain and313 application tests and coverage gates passed; documentation/diff checks passed. Serial broader reactor verification running after overlapping-build class-loading failure; Docker now available. PR128 run40711764094 all15 green, zero scanning alerts, exact-head independent review524a209 clean; 525 local Angular tests/build/CSP and16 acceptance-support tests passed. PostgreSQL/browser hosted-only. Main40706258055 failed-job rerun and main40710028838 passed.
+- Next concrete action: push task/p32-private-notes and create draft PR; inspect serial local reactor verification and obtain exact-head independent review.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
