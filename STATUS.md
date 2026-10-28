@@ -31,7 +31,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P25 — Complete customer booking status, cancellation and rescheduling UI | In progress; management link request, MANAGE proof landing, booking status, two-step cancel and reschedule slot picker/confirmation https://github.com/Laymer/purpuragenda/pull/98 confirmed merged b2998d8 after 14 hosted checks (owner review waiver 2026-10-27); #85 closed as superseded (its target endpoint is on main) |
 | P26 — Complete account enrollment, history, profile and session-recovery UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P27 — Complete administrator agenda, pending queue, meeting entry and approval UI | Merged; MFA PR87 e2429f1, agenda/detail/approval PR95 621e83d, re-authentication PR99 2b14e0e and booking actions https://github.com/Laymer/purpuragenda/pull/111 confirmed merged 1f1d822 after all 15 hosted checks; small Angular-only review waiver per owner 2026-10-28 |
-| P28 — Complete administrator manual creation, outcomes and explicit override UI | In progress; outcome recording on task/p28-outcomes; manual creation and rescheduling with explicit overrides remain |
+| P28 — Complete administrator manual creation, outcomes and explicit override UI | In progress; outcomes PR112 confirmed merged b211d2f after 15 hosted checks (Angular-only review waiver); manual creation on task/p28-manual-creation; rescheduling remains |
 | P29 — Complete administrator external receipt and refund UI | Recovered WIP; dependencies in docs/delivery.md;  |
 | P30 — Complete service creation, editing and archiving UI | Recovered WIP; dependencies in docs/delivery.md; incomplete prototype |
 | P31 — Complete weekly schedules, date exceptions, blackouts and policy controls | In progress; schedule/policy backend https://github.com/Laymer/purpuragenda/pull/60 merged56336ac; HTTP/UI remain; CONFIGURATION_CONFLICT notifications must stay internal; configuration authority https://github.com/Laymer/purpuragenda/pull/89 confirmed merged 525e4a6 after 14 hosted checks and independent shell review; HTTP/UI remain |
@@ -61,16 +61,16 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P28/outcomes: agent=Codex-coordinator; branch=task/p28-outcomes; base=main; handoff=docs/handoffs/codex-p28-outcomes.md
+- P28/manual-creation: agent=Codex-coordinator; branch=task/p28-manual-creation; base=main; handoff=docs/handoffs/codex-p28-manual-creation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T09:06:00Z.
-- Current task: P28/outcomes; branch: task/p28-outcomes; base: main 1f1d822; PR URL: pending draft creation.
-- Last pushed implementation commit: d2c25dd (PR111, merged 1f1d822); uncommitted changes: tested outcome UI awaiting first commit.
-- What works: P27 administrator actions merged after all 15 hosted checks; P10/P22 outcome API already merged.
-- What remains: hosted gates and green merge; then manual creation/rescheduling with explicit overrides.
-- Decisions: single sequential lane; small Angular-only review waiver per owner 2026-10-28; server enforces actual session boundaries.
-- Verification: PR111 head d2c25dd passed all 15 checks in 40659880038; no code-scanning alerts. Main 3f23cac passed Verify40659225484 after a macOS package-download retry. Local250 Angular tests/build/CSP pass with1018/1022 lines965/1031 branches; documentation/diff checks pass. No deployment or live communication.
-- Next concrete action: push task/p28-outcomes, open draft PR and observe all hosted gates.
+- Agent and UTC checkpoint: Codex-coordinator, 2026-10-28T09:31:00Z.
+- Current task: P28/manual-creation; branch: task/p28-manual-creation; base: main b211d2f; PR URL: pending draft creation.
+- Last pushed implementation commit: 4e14a38 (PR112, merged b211d2f); uncommitted changes: tested manual creation UI awaiting first commit.
+- What works: outcome controls merged after all 15 hosted checks; manual creation HTTP and override enforcement already merged.
+- What remains: independent review and hosted gates; rescheduling follows separately.
+- Decisions: single sequential lane; explicit override choices; Brussels civil time with DST ambiguity made visible.
+- Verification: PR112 head4e14a38 passed all15 hosted checks in40661953101; zero code-scanning alerts; small Angular-only review waiver. Local250 Angular tests/build/CSP passed; Local278 Angular tests/build/CSP passed (1153/1157 lines,1113/1187 branches); documentation and diff checks passed. Independent read-only review pending.
+- Next concrete action: push task/p28-manual-creation, open a draft PR, resolve review findings and observe hosted gates.
 - Recovery: origin/recovery/2026-10-25-prototype6f9405b preserved; stacked PR dependencies: none.

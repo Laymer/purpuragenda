@@ -41,6 +41,17 @@ export function brusselsDisplay(instant: string): string {
   return clock.format(new Date(time)).replace('GMT', 'UTC').replaceAll(',', '');
 }
 
+/** Return both occurrences of an autumn wall time, and none for a spring gap. */
+export function brusselsInstants(day: string, time: string): string[] {
+  const date = parseDay(day);
+  if (date === null || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return [];
+  const wall = date + (+time.slice(0, 2) * 60 + +time.slice(3)) * 60000;
+  const local = new Intl.DateTimeFormat('sv-SE', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  // Brussels uses UTC+1/+2 for supported modern booking dates. Verify each candidate instead of normalizing gaps.
+  return [2, 1].map(offset => new Date(wall - offset * 3600000))
+    .filter(instant => local.format(instant) === day + ' ' + time).map(instant => instant.toISOString());
+}
+
 /** Hint only. The server validates the meeting URL authoritatively. */
 export function zoomHint(value: string): string | null {
   let url: URL;

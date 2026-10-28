@@ -8,6 +8,7 @@ import { SessionAccess } from '../shared/access/session-access';
   template: `
     <nav aria-label="Administrator">
       <a routerLink="/admin">Agenda</a>
+      <a routerLink="/admin/bookings/new">Create booking</a>
       <button mat-stroked-button type="button" (click)="signOut()" [disabled]="busy()">Sign out</button>
     </nav>
     <router-outlet />`,
