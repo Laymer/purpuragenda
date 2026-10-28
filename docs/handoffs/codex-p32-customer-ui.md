@@ -9,3 +9,5 @@
 - Verification: local576 Angular tests/build/CSP passed (2338/2343 lines,2625/2762 branches), docs/diff passed; independent working-tree review clean. Initial2 new test assertions expected decoded SDK parameter internals; corrected to inspect decoded wire URL and full rerun passed. PR135 all15 green and zero alerts, exact-head43871ea reviewed; hosted checks for this slice pending.
 - Next concrete action: record frontend coverage totals, run docs/diff checks, commit/push task/p32-customer-ui and create draft PR; confirm exact-head review and all15 hosted checks.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b (legacy origin/recovery/2026-10-25-prototype6f9405b); stacked PR dependencies: none.
+
+Claim released: PR136 confirmed merged badd5eab4961f8e2d1420729ea8b10ab9844792b after15 hosted checks, zero alerts and independent exact-head review99ee0ed; Codex-coordinator 2026-10-28T17:54:37Z. Next claim P32/operations-reads.
