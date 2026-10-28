@@ -30,6 +30,7 @@ class AdministratorConfigurationViewTest {
     @Test void currentReturnsTheAuthorizedSnapshotVersionsAndTime() {
         var current=view.current(session);
         assertSame(f.calendar,current.calendar());assertSame(f.policy,current.policy());assertEquals(f.now,current.observedAt());assertEquals(List.of(session),reads);
+        assertEquals(f.services(),current.services());assertThrows(UnsupportedOperationException.class,()->current.services().clear());
         assertThrows(NullPointerException.class,()->view.current(null));
     }
 

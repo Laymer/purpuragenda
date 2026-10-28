@@ -73,6 +73,12 @@ import { AdministratorRejectionRequest } from '../model/administratorRejectionRe
 // @ts-ignore
 import { AdministratorRescheduleRequest } from '../model/administratorRescheduleRequest';
 // @ts-ignore
+import { AdministratorServiceReceipt } from '../model/administratorServiceReceipt';
+// @ts-ignore
+import { AdministratorServiceRequest } from '../model/administratorServiceRequest';
+// @ts-ignore
+import { AdministratorServiceStateRequest } from '../model/administratorServiceStateRequest';
+// @ts-ignore
 import { AdministratorWeeklyChangeRequest } from '../model/administratorWeeklyChangeRequest';
 // @ts-ignore
 import { BookingReceipt } from '../model/bookingReceipt';
@@ -271,6 +277,100 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorConfirmationRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Create, edit, archive or restore a service with a reason and audit event. Existing booking snapshots are immutable; no customer notification is sent. Exact Origin/CSRF and fresh persisted administrator MFA are required before idempotent replay. Creation generates an id at version one; edits advance the service version. Replies are no-store.
+     * @endpoint post /admin/configuration/services/{serviceId}/archive
+     * @param serviceId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted service version from GET /admin/configuration or a receipt. Missing 428, stale 412 STALE_VERSION; weak or multiple tags return 400.
+     * @param administratorServiceStateRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public archiveAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorServiceReceipt>;
+    public archiveAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorServiceReceipt>>;
+    public archiveAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorServiceReceipt>>;
+    public archiveAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (serviceId === null || serviceId === undefined) {
+            throw new Error('Required parameter serviceId was null or undefined when calling archiveAdministratorService.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling archiveAdministratorService.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling archiveAdministratorService.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling archiveAdministratorService.');
+        }
+        if (administratorServiceStateRequest === null || administratorServiceStateRequest === undefined) {
+            throw new Error('Required parameter administratorServiceStateRequest was null or undefined when calling archiveAdministratorService.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/services/${this.configuration.encodeParam({name: "serviceId", value: serviceId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/archive`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorServiceReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorServiceStateRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -712,6 +812,89 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorBookingCreateRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Create, edit, archive or restore a service with a reason and audit event. Existing booking snapshots are immutable; no customer notification is sent. Exact Origin/CSRF and fresh persisted administrator MFA are required before idempotent replay. Creation generates an id at version one; edits advance the service version. Replies are no-store.
+     * @endpoint post /admin/configuration/services
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorServiceRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public createAdministratorService(xCSRFToken: string, idempotencyKey: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorServiceReceipt>;
+    public createAdministratorService(xCSRFToken: string, idempotencyKey: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorServiceReceipt>>;
+    public createAdministratorService(xCSRFToken: string, idempotencyKey: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorServiceReceipt>>;
+    public createAdministratorService(xCSRFToken: string, idempotencyKey: string, administratorServiceRequest: AdministratorServiceRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling createAdministratorService.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling createAdministratorService.');
+        }
+        if (administratorServiceRequest === null || administratorServiceRequest === undefined) {
+            throw new Error('Required parameter administratorServiceRequest was null or undefined when calling createAdministratorService.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/services`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorServiceReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorServiceRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -1990,6 +2173,100 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Create, edit, archive or restore a service with a reason and audit event. Existing booking snapshots are immutable; no customer notification is sent. Exact Origin/CSRF and fresh persisted administrator MFA are required before idempotent replay. Creation generates an id at version one; edits advance the service version. Replies are no-store.
+     * @endpoint post /admin/configuration/services/{serviceId}/restore
+     * @param serviceId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted service version from GET /admin/configuration or a receipt. Missing 428, stale 412 STALE_VERSION; weak or multiple tags return 400.
+     * @param administratorServiceStateRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public restoreAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorServiceReceipt>;
+    public restoreAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorServiceReceipt>>;
+    public restoreAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorServiceReceipt>>;
+    public restoreAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceStateRequest: AdministratorServiceStateRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (serviceId === null || serviceId === undefined) {
+            throw new Error('Required parameter serviceId was null or undefined when calling restoreAdministratorService.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling restoreAdministratorService.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling restoreAdministratorService.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling restoreAdministratorService.');
+        }
+        if (administratorServiceStateRequest === null || administratorServiceStateRequest === undefined) {
+            throw new Error('Required parameter administratorServiceStateRequest was null or undefined when calling restoreAdministratorService.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/services/${this.configuration.encodeParam({name: "serviceId", value: serviceId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/restore`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorServiceReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorServiceStateRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Adds or replaces one date exception for today or a later Brussels date. Requires exact Origin/CSRF, idempotency and a persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Existing bookings keep their immutable snapshots and are never moved; a change that newly conflicts with future bookings needs a reason and the exact acknowledged set, and each acknowledged booking gets an internal CONFIGURATION_CONFLICT follow-up.
      * @endpoint post /admin/configuration/date-exceptions
      * @param xCSRFToken 
@@ -2159,6 +2436,100 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorPolicyChangeRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Create, edit, archive or restore a service with a reason and audit event. Existing booking snapshots are immutable; no customer notification is sent. Exact Origin/CSRF and fresh persisted administrator MFA are required before idempotent replay. Creation generates an id at version one; edits advance the service version. Replies are no-store.
+     * @endpoint post /admin/configuration/services/{serviceId}
+     * @param serviceId 
+     * @param xCSRFToken 
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch One strong quoted service version from GET /admin/configuration or a receipt. Missing 428, stale 412 STALE_VERSION; weak or multiple tags return 400.
+     * @param administratorServiceRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public updateAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorServiceReceipt>;
+    public updateAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorServiceReceipt>>;
+    public updateAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceRequest: AdministratorServiceRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorServiceReceipt>>;
+    public updateAdministratorService(serviceId: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorServiceRequest: AdministratorServiceRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (serviceId === null || serviceId === undefined) {
+            throw new Error('Required parameter serviceId was null or undefined when calling updateAdministratorService.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling updateAdministratorService.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling updateAdministratorService.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling updateAdministratorService.');
+        }
+        if (administratorServiceRequest === null || administratorServiceRequest === undefined) {
+            throw new Error('Required parameter administratorServiceRequest was null or undefined when calling updateAdministratorService.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/configuration/services/${this.configuration.encodeParam({name: "serviceId", value: serviceId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorServiceReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorServiceRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

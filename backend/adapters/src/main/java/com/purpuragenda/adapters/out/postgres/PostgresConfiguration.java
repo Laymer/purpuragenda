@@ -6,6 +6,7 @@ import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBi
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
 import com.purpuragenda.application.scheduling.ConfigurationConflicts;
 import com.purpuragenda.domain.booking.Booking;
+import com.purpuragenda.domain.booking.ServiceDefinition;
 import com.purpuragenda.domain.scheduling.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -33,9 +34,9 @@ public final class PostgresConfiguration implements ConfigurationUnitOfWork, Con
         Objects.requireNonNull(command);Objects.requireNonNull(work);
         return scheduling.resolved(now -> {
             UUID admin=authorize(command.session(),now);
-            var key=new CommandKey(new Scope(admin,command.operation().name(),null),command.key(),command.fingerprint());
+            var key=new CommandKey(new Scope(admin,command.operation().name(),command.targetId()),command.key(),command.fingerprint());
             return new PostgresScheduling.Resolved(key,stored -> stored,tx -> {
-                ConfigurationState state=new ConfigurationState(tx,admin);
+                ConfigurationState state=new ConfigurationState(tx,admin,command);
                 Receipt receipt=Objects.requireNonNull(work.apply(state));
                 state.verify(receipt);
                 return receipt;
@@ -73,22 +74,57 @@ public final class PostgresConfiguration implements ConfigurationUnitOfWork, Con
         return row.admin();
     }
     private final class ConfigurationState extends TransactionDelegate implements Configuration {
-        private final UUID admin;private int saves,effects;
-        ConfigurationState(Transaction tx,UUID admin) { super(tx);this.admin=admin; }
+        private final UUID admin;private final Command command;private int saves,effects;private ServiceDefinition savedService;
+        ConfigurationState(Transaction tx,UUID admin,Command command) { super(tx);this.admin=admin;this.command=command; }
+        public void saveService(ServiceDefinition next) {
+            if(saves++>0)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            var previous=tx.services().stream().filter(s->s.id().equals(next.id())).findFirst();
+            boolean create=command.operation()==Operation.CREATE_SERVICE;
+            if(create) {
+                if(previous.isPresent() || next.version()!=1 || !next.active() || command.targetId()!=null)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                jdbc.update("INSERT INTO service(id,version,name,duration_minutes,price_minor,currency,active) VALUES(?,?,?,?,?,?,?)",
+                        next.id(),next.version(),next.name(),next.durationMinutes(),next.price().minor(),next.price().currency(),next.active());
+            } else {
+                if(previous.isEmpty() || !next.id().equals(command.targetId()))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                var before=previous.get();
+                if(next.version()!=Math.addExact(before.version(),1))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                boolean valid=switch(command.operation()) {
+                    case UPDATE_SERVICE -> next.active()==before.active() && (!next.name().equals(before.name()) || next.durationMinutes()!=before.durationMinutes() || !next.price().equals(before.price()));
+                    case ARCHIVE_SERVICE,RESTORE_SERVICE -> next.active()==(command.operation()==Operation.RESTORE_SERVICE) && next.active()!=before.active()
+                            && next.name().equals(before.name()) && next.durationMinutes()==before.durationMinutes() && next.price().equals(before.price());
+                    default -> false;
+                };
+                if(!valid)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+                if(jdbc.update("UPDATE service SET version=?,name=?,duration_minutes=?,price_minor=?,active=? WHERE id=? AND version=?",
+                        next.version(),next.name(),next.durationMinutes(),next.price().minor(),next.active(),next.id(),before.version())!=1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            }
+            savedService=next;
+            if(!tx.services().contains(next))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+        }
+        public void serviceEffects(Operation operation,ServiceDefinition next,String reason) {
+            if(saves!=1 || effects++>0 || operation!=command.operation() || !next.equals(savedService))throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            String type=switch(operation) {
+                case CREATE_SERVICE -> "SERVICE_CREATED";case UPDATE_SERVICE -> "SERVICE_CHANGED";
+                case ARCHIVE_SERVICE -> "SERVICE_ARCHIVED";case RESTORE_SERVICE -> "SERVICE_RESTORED";
+                default -> throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            };
+            jdbc.update("INSERT INTO audit_event(id,actor_id,actor_kind,type,reason,occurred_at,version,metadata) VALUES(?,?,'ADMIN',?,?,?,?,?::jsonb)",
+                    id("service/"+next.id()+"/"+next.version()),admin,type,reason,Timestamp.from(now()),next.version(),"{\"serviceId\":\""+next.id()+"\"}");
+        }
         public void saveCalendar(AvailabilityCalendar next) {
-            if(saves++>0 || next.version()!=tx.calendar().version()+1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            if(command.operation()==Operation.CREATE_SERVICE || command.targetId()!=null || saves++>0 || next.version()!=tx.calendar().version()+1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
             jdbc.update("UPDATE business_settings SET calendar=?::jsonb WHERE id=1",PersistedJson.write(next));
             // The stored form must read back to exactly the reviewed calendar.
             if(!tx.calendar().equals(next))throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
         public void savePolicy(SchedulingPolicy next) {
-            if(saves++>0 || next.version()!=tx.policy().version()+1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            if(command.operation()!=Operation.UPDATE_POLICY || saves++>0 || next.version()!=tx.policy().version()+1)throw new Failure(Failure.Kind.STORAGE_FAILURE);
             jdbc.update("INSERT INTO policy_version(version,document) VALUES(?,?::jsonb)",next.version(),PersistedJson.write(next));
             jdbc.update("UPDATE business_settings SET policy_version=? WHERE id=1",next.version());
             if(!tx.policy().equals(next))throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
         public void changedEffects(Operation operation,long version,String reason,List<ConfigurationConflicts.Conflict> acknowledged) {
-            if(saves!=1 || effects++>0)throw new Failure(Failure.Kind.STORAGE_FAILURE);
+            if(savedService!=null || operation!=command.operation() || saves!=1 || effects++>0)throw new Failure(Failure.Kind.STORAGE_FAILURE);
             boolean policy=operation==Operation.UPDATE_POLICY;
             long current=policy?tx.policy().version():tx.calendar().version();
             if(current!=version)throw new Failure(Failure.Kind.STORAGE_FAILURE);
@@ -109,6 +145,7 @@ public final class PostgresConfiguration implements ConfigurationUnitOfWork, Con
         void verify(Receipt receipt) {
             // Expected failures roll the attempted mutation back to its savepoint, so they can never carry effects.
             boolean complete=saves==1 && effects==1;
+            if(savedService!=null && receipt.success() && (!savedService.id().equals(receipt.entityId()) || savedService.version()!=receipt.version()))throw new Failure(Failure.Kind.STORAGE_FAILURE);
             if(receipt.success()?!complete:(saves!=0 || effects!=0))throw new Failure(Failure.Kind.STORAGE_FAILURE);
         }
     }

@@ -5,6 +5,7 @@ import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBi
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.View;
 import com.purpuragenda.application.scheduling.ConfigurationConflicts.*;
 import com.purpuragenda.domain.scheduling.*;
+import com.purpuragenda.domain.booking.ServiceDefinition;
 import java.time.*;
 import java.util.*;
 
@@ -15,13 +16,15 @@ import java.util.*;
 public final class AdministratorConfigurationView {
     private final ConfigurationQuery query;
     public AdministratorConfigurationView(ConfigurationQuery query) { this.query=Objects.requireNonNull(query); }
-    public record Current(AvailabilityCalendar calendar,SchedulingPolicy policy,Instant observedAt) { }
+    public record Current(AvailabilityCalendar calendar,SchedulingPolicy policy,Instant observedAt,List<ServiceDefinition> services) {
+        public Current { services=List.copyOf(services); }
+    }
     public record Preview(Instant assessedAt,long calendarVersion,long policyVersion,List<Conflict> conflicts) {
         public Preview { conflicts=List.copyOf(conflicts); }
         @Override public String toString() { return "ConfigurationPreview[REDACTED]"; }
     }
     public Current current(SessionBinding session) {
-        return query.read(Objects.requireNonNull(session),view -> new Current(view.calendar(),view.policy(),view.now()));
+        return query.read(Objects.requireNonNull(session),view -> new Current(view.calendar(),view.policy(),view.now(),view.services()));
     }
     /** A day missing from the weekly map is closed, exactly as replaceWeekly would store it. */
     public Preview calendarConflicts(SessionBinding session,Map<DayOfWeek,List<AvailabilityCalendar.Window>> weekly,

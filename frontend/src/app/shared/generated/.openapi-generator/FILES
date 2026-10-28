@@ -57,6 +57,10 @@ model/administratorRefundRequirementReceipt.ts
 model/administratorRefundRequirementRequest.ts
 model/administratorRejectionRequest.ts
 model/administratorRescheduleRequest.ts
+model/administratorServiceDefinition.ts
+model/administratorServiceReceipt.ts
+model/administratorServiceRequest.ts
+model/administratorServiceStateRequest.ts
 model/administratorTimeWindow.ts
 model/administratorWeeklyChangeRequest.ts
 model/administratorWeeklySchedule.ts

@@ -257,6 +257,75 @@ class AdministratorConfigurationPostgresTest {
         return assessment.conflicts().stream().map(com.purpuragenda.application.scheduling.ConfigurationConflicts.Conflict::bookingId).toList();
     }
 
+    @Test void serviceLifecyclePreservesBookingSnapshotsAndWritesOnlyAuditsWithReplay() {
+        UUID booked=book("service@example.test",3,9);Booking before=c.load(booked);
+        var original=before.snapshot().service();
+        var created=config.createService(session,"service-create",new ServiceValues("Synthetic service",45,2000),REASON);
+        assertEquals(created,config.createService(session,"service-create",new ServiceValues("Synthetic service",45,2000),REASON));
+        assertEquals(Code.IDEMPOTENCY_KEY_REUSED,config.createService(session,"service-create",new ServiceValues("Other service",45,2000),REASON).code());
+        UUID id=created.entityId();assertEquals(1,created.version());assertEquals(3,c.scheduling.read(v->v.services().size()).intValue());
+        assertTrue(config.updateService(session,original.id(),"service-edit",original.version(),new ServiceValues("Changed service",120,100000000),REASON).success());
+        assertTrue(config.archiveService(session,original.id(),"service-archive",original.version()+1,REASON).success());
+        assertFalse(new com.purpuragenda.application.scheduling.PublicScheduling(c.scheduling).services().stream().anyMatch(v->v.id().equals(original.id())));
+        assertEquals(before,c.load(booked));assertTrue(config.restoreService(session,original.id(),"service-restore",original.version()+2,REASON).success());
+        assertTrue(config.updateService(session,id,"duration-only",1,new ServiceValues("Synthetic service",60,2000),REASON).success());
+        assertTrue(config.updateService(session,id,"price-only",2,new ServiceValues("Synthetic service",60,2001),REASON).success());
+        assertEquals(6,count("audit_event WHERE type IN ('SERVICE_CREATED','SERVICE_CHANGED','SERVICE_ARCHIVED','SERVICE_RESTORED')"));
+        assertEquals(0,count("outbox_event WHERE type LIKE 'SERVICE_%'"));
+        assertEquals(Code.STALE_VERSION,config.archiveService(session,id,"service-stale",1,REASON).code());
+        assertEquals(Failure.Kind.NOT_FOUND,fail(()->config.archiveService(session,UUID.randomUUID(),"service-unknown",1,REASON)).kind());
+        c.jdbc.update("UPDATE admin_user SET security_version=security_version+1");
+        assertEquals(Failure.Kind.AUTHENTICATION_REQUIRED,fail(()->config.createService(session,"service-create",new ServiceValues("Synthetic service",45,2000),REASON)).kind());
+    }
+
+    @Test void serviceCreationRetriesAndVersionRacesHaveExactlyOneWinner() throws Exception {
+        var values=new ServiceValues("Synthetic service",30,1500);
+        var created=race(i->new AdministratorConfiguration(new PostgresConfiguration(c.f.source)).createService(session,"service-race",values,REASON));
+        assertEquals(1,new HashSet<>(created).size());UUID id=created.getFirst().entityId();
+        var updated=race(i->config.updateService(session,id,"service-edit-"+i,1,new ServiceValues("Changed service "+i,60,3000),REASON));
+        assertEquals(1,updated.stream().filter(Receipt::success).count());assertEquals(19,updated.stream().filter(r->r.code()==Code.STALE_VERSION).count());
+        assertEquals(1,count("audit_event WHERE type='SERVICE_CREATED'"));assertEquals(1,count("audit_event WHERE type='SERVICE_CHANGED'"));
+    }
+
+    @Test void serviceEffectMismatchesRollBackAllWritesAndReceipts() {
+        var op=ConfigurationUnitOfWork.Operation.CREATE_SERVICE;var id=UUID.randomUUID();var value=new com.purpuragenda.domain.booking.ServiceDefinition(id,1,"Synthetic service",30,com.purpuragenda.domain.booking.Money.eur(1500),true);
+        var fingerprint=CommandKey.fingerprint(List.of("synthetic service"));
+        for(var misuse:List.<java.util.function.Function<ConfigurationUnitOfWork.Configuration,Receipt>>of(
+                tx->{tx.saveService(value);return new Receipt(Code.OK,id,1);},
+                tx->{tx.serviceEffects(op,value,REASON);return new Receipt(Code.OK,id,1);},
+                tx->{tx.saveService(value);tx.saveService(value);return new Receipt(Code.OK,id,1);},
+                tx->{tx.saveService(value);tx.serviceEffects(ConfigurationUnitOfWork.Operation.UPDATE_SERVICE,value,REASON);return new Receipt(Code.OK,id,1);},
+                tx->{tx.saveService(value);tx.serviceEffects(op,value,REASON);tx.serviceEffects(op,value,REASON);return new Receipt(Code.OK,id,1);},
+                tx->{tx.saveService(value);tx.serviceEffects(op,value,REASON);return new Receipt(Code.OK,id,2);},
+                tx->{tx.saveService(value);tx.serviceEffects(op,value,REASON);return new Receipt(Code.OK,UUID.randomUUID(),1);},
+                tx->{tx.saveService(value);tx.changedEffects(op,1,REASON,List.of());return new Receipt(Code.OK,id,1);},
+                tx->{tx.saveService(new com.purpuragenda.domain.booking.ServiceDefinition(id,2,value.name(),30,value.price(),true));return new Receipt(Code.OK,id,2);},
+                tx->{tx.saveService(new com.purpuragenda.domain.booking.ServiceDefinition(id,1,value.name(),30,value.price(),false));return new Receipt(Code.OK,id,1);})) {
+            assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,op,"service-misuse",fingerprint),misuse)).kind());
+            assertEquals(2,c.scheduling.read(v->v.services().size()).intValue());assertEquals(0,count("audit_event WHERE type LIKE 'SERVICE_%'"));assertEquals(0,count("idempotency_record WHERE key='service-misuse'"));
+        }
+    }
+
+    @Test void serviceTransitionGuardsRejectWrongTargetsVersionsAndFields() {
+        var before=c.scheduling.read(v->v.services().getFirst());var fingerprint=CommandKey.fingerprint(List.of("synthetic service"));
+        var next=new com.purpuragenda.domain.booking.ServiceDefinition(before.id(),before.version()+1,before.name(),before.durationMinutes(),before.price(),false);
+        for(var operation:List.of(ConfigurationUnitOfWork.Operation.UPDATE_SERVICE,ConfigurationUnitOfWork.Operation.RESTORE_SERVICE,ConfigurationUnitOfWork.Operation.REPLACE_WEEKLY))
+            assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,operation,before.id(),"wrong-transition",fingerprint),tx->{tx.saveService(next);return new Receipt(Code.OK,next.id(),next.version());})).kind());
+        for(var value:List.of(before,new com.purpuragenda.domain.booking.ServiceDefinition(UUID.randomUUID(),2,"Unknown service",30,before.price(),false),
+                new com.purpuragenda.domain.booking.ServiceDefinition(before.id(),before.version()+1,"Changed service",30,before.price(),false)))
+            assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.ARCHIVE_SERVICE,before.id(),"wrong-value",fingerprint),tx->{tx.saveService(value);return new Receipt(Code.OK,value.id(),value.version());})).kind());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.CREATE_SERVICE,"existing",fingerprint),tx->{tx.saveService(before);return new Receipt(Code.OK,before.id(),before.version());})).kind());
+        var same=new com.purpuragenda.domain.booking.ServiceDefinition(before.id(),before.version()+1,before.name(),before.durationMinutes(),before.price(),true);
+        var duration=new com.purpuragenda.domain.booking.ServiceDefinition(before.id(),before.version()+1,before.name(),before.durationMinutes()==120?119:120,before.price(),false);
+        var price=new com.purpuragenda.domain.booking.ServiceDefinition(before.id(),before.version()+1,before.name(),before.durationMinutes(),com.purpuragenda.domain.booking.Money.eur(before.price().minor()+1),false);
+        for(var invalid:List.of(same,duration,price))
+            assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.ARCHIVE_SERVICE,before.id(),"wrong-fields",fingerprint),tx->{tx.saveService(invalid);return new Receipt(Code.OK,before.id(),invalid.version());})).kind());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.UPDATE_SERVICE,before.id(),"no-op",fingerprint),tx->{tx.saveService(same);return new Receipt(Code.OK,before.id(),same.version());})).kind());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.ARCHIVE_SERVICE,UUID.randomUUID(),"wrong-target",fingerprint),tx->{tx.saveService(next);return new Receipt(Code.OK,next.id(),next.version());})).kind());
+        assertEquals(Failure.Kind.STORAGE_FAILURE,fail(()->adapter.execute(new ConfigurationUnitOfWork.Command(session,ConfigurationUnitOfWork.Operation.ARCHIVE_SERVICE,before.id(),"wrong-effect",fingerprint),tx->{tx.saveService(next);tx.serviceEffects(ConfigurationUnitOfWork.Operation.ARCHIVE_SERVICE,same,REASON);return new Receipt(Code.OK,next.id(),next.version());})).kind());
+        assertEquals(before,c.scheduling.read(v->v.services().stream().filter(s->s.id().equals(before.id())).findFirst().orElseThrow()));
+    }
+
     List<Receipt> race(IntFunctionWithReceipt work) throws Exception {
         var ready=new CountDownLatch(20);var release=new CountDownLatch(1);
         try(var pool=Executors.newVirtualThreadPerTaskExecutor()) {

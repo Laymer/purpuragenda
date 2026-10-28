@@ -8,6 +8,7 @@
  * Do not edit the class manually.
  */
 import { AdministratorDateException } from './administratorDateException';
+import { AdministratorServiceDefinition } from './administratorServiceDefinition';
 import { AdministratorPolicy } from './administratorPolicy';
 import { AdministratorBlackout } from './administratorBlackout';
 import { AdministratorWeeklySchedule } from './administratorWeeklySchedule';
@@ -21,5 +22,6 @@ export interface AdministratorConfiguration {
     dateExceptions: Array<AdministratorDateException>;
     blackouts: Array<AdministratorBlackout>;
     policy: AdministratorPolicy;
+    services: Array<AdministratorServiceDefinition>;
 }
 

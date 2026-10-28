@@ -6,6 +6,7 @@ import com.purpuragenda.application.port.out.CustomerBookingUnitOfWork.SessionBi
 import com.purpuragenda.application.port.out.SchedulingUnitOfWork.*;
 import com.purpuragenda.application.scheduling.ConfigurationConflicts.*;
 import com.purpuragenda.domain.customer.Input;
+import com.purpuragenda.domain.booking.*;
 import com.purpuragenda.domain.scheduling.*;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
@@ -59,6 +60,46 @@ public final class AdministratorConfiguration {
         }
     }
 
+    public record ServiceValues(String name,int durationMinutes,long priceMinor) {
+        public ServiceValues {
+            var value=new ServiceDefinition(CALENDAR_ID,1,name,durationMinutes,Money.eur(priceMinor),true);name=value.name();
+        }
+        ServiceDefinition definition(UUID id,long version,boolean active) { return new ServiceDefinition(id,version,name,durationMinutes,Money.eur(priceMinor),active); }
+        List<String> fields() { return List.of(name,Integer.toString(durationMinutes),Long.toString(priceMinor)); }
+        @Override public String toString() { return "ServiceValues[REDACTED]"; }
+    }
+    public Receipt createService(SessionBinding session,String key,ServiceValues values,String reason) {
+        Objects.requireNonNull(values);String normalized=Input.reason(reason);
+        List<String> fields=new ArrayList<>(values.fields());fields.add(normalized);
+        return unit.execute(new Command(session,Operation.CREATE_SERVICE,key,CommandKey.fingerprint(fields)),tx -> SchedulingCommands.within(tx,() -> {
+            var next=values.definition(UUID.randomUUID(),1,true);
+            tx.saveService(next);tx.serviceEffects(Operation.CREATE_SERVICE,next,normalized);return new Receipt(Code.OK,next.id(),next.version());
+        }));
+    }
+    public Receipt updateService(SessionBinding session,UUID id,String key,long expected,ServiceValues values,String reason) {
+        Objects.requireNonNull(values);
+        return service(session,id,key,expected,Operation.UPDATE_SERVICE,values,reason);
+    }
+    public Receipt archiveService(SessionBinding session,UUID id,String key,long expected,String reason) {
+        return service(session,id,key,expected,Operation.ARCHIVE_SERVICE,null,reason);
+    }
+    public Receipt restoreService(SessionBinding session,UUID id,String key,long expected,String reason) {
+        return service(session,id,key,expected,Operation.RESTORE_SERVICE,null,reason);
+    }
+    private Receipt service(SessionBinding session,UUID id,String key,long expected,Operation operation,ServiceValues values,String reason) {
+        require(id!=null && expected>0,"INVALID_CONFIGURATION_REQUEST");String normalized=Input.reason(reason);
+        List<String> fields=new ArrayList<>(List.of(id.toString(),Long.toString(expected),normalized));if(values!=null)fields.addAll(values.fields());
+        return unit.execute(new Command(session,operation,id,key,CommandKey.fingerprint(fields)),tx -> SchedulingCommands.within(tx,() -> {
+            var current=tx.services().stream().filter(s->s.id().equals(id)).findFirst().orElseThrow(()->new Failure(Failure.Kind.NOT_FOUND));
+            require(current.version()==expected,"STALE_VERSION");
+            boolean active=operation==Operation.UPDATE_SERVICE?current.active():operation==Operation.RESTORE_SERVICE;
+            var next=values==null?new ServiceDefinition(id,Math.addExact(expected,1),current.name(),current.durationMinutes(),current.price(),active)
+                    :values.definition(id,Math.addExact(expected,1),active);
+            require(!new ServiceDefinition(id,expected,next.name(),next.durationMinutes(),next.price(),next.active()).equals(current),"INVALID_CONFIGURATION");
+            tx.saveService(next);tx.serviceEffects(operation,next,normalized);return new Receipt(Code.OK,id,next.version());
+        }));
+    }
+
     /** Replaces all weekly windows; a day missing from the map becomes closed. */
     public Receipt replaceWeekly(SessionBinding session,String key,long expectedCalendarVersion,Map<DayOfWeek,List<AvailabilityCalendar.Window>> weekly,Review review) {
         Objects.requireNonNull(weekly);
@@ -109,7 +150,7 @@ public final class AdministratorConfiguration {
     /** Appends the next immutable policy version. Existing bookings keep their snapshots; lowered limits only block new bookings. */
     public Receipt updatePolicy(SessionBinding session,String key,long expectedPolicyVersion,PolicyValues values,Review review) {
         Objects.requireNonNull(values);Objects.requireNonNull(review);require(expectedPolicyVersion>0,"INVALID_CONFIGURATION_REQUEST");
-        values.next(expectedPolicyVersion+1);   // validates the values before any transaction
+        values.next(Math.addExact(expectedPolicyVersion,1));   // validates the values before any transaction
         List<String> fields=new ArrayList<>(List.of(Long.toString(expectedPolicyVersion)));fields.addAll(values.fields());fields.addAll(review.fields());
         return unit.execute(new Command(session,Operation.UPDATE_POLICY,key,CommandKey.fingerprint(fields)),
                 tx -> SchedulingCommands.within(tx,() -> {

@@ -10,6 +10,7 @@ import com.purpuragenda.application.scheduling.ConfigurationConflicts.Conflict;
 import com.purpuragenda.application.scheduling.ConfigurationConflicts.Reason;
 import com.purpuragenda.domain.DomainFailure;
 import com.purpuragenda.domain.booking.Booking;
+import com.purpuragenda.domain.booking.ServiceDefinition;
 import com.purpuragenda.domain.scheduling.*;
 import java.time.*;
 import java.util.*;
@@ -107,6 +108,12 @@ class AdministratorConfigurationTest {
         assertThrows(NullPointerException.class,()->new AdministratorConfiguration(null));
     }
 
+    @Test void anOverflowingPolicyVersionIsRejectedBeforeOpeningTheTransaction() {
+        assertThrows(ArithmeticException.class,()->config.updatePolicy(session,"overflow",Long.MAX_VALUE,values(60,3),review()));
+        assertNull(f.command);assertEquals(0,f.saves);
+        assertEquals(Code.POLICY_CHANGED,config.updatePolicy(session,"last-safe",Long.MAX_VALUE-1,values(60,3),review()).code());
+    }
+
     @Test void reviewsCopyTheirAcknowledgementsAndBoundTheReason() {
         var ids=new HashSet<>(Set.of(UUID.randomUUID()));var review=new Review(REASON,ids);ids.clear();
         assertEquals(1,review.acknowledgedBookingIds().size());assertThrows(UnsupportedOperationException.class,()->review.acknowledgedBookingIds().clear());
@@ -178,6 +185,8 @@ class AdministratorConfigurationTest {
         public CustomerQuota quota(UUID customer){throw new AssertionError("configuration never reads quotas");}
         public boolean chargeCreated(Booking value){throw new AssertionError("configuration never charges");}
         public void save(Booking value){throw new AssertionError("configuration never saves bookings");}
+        public void saveService(ServiceDefinition next){steps.add("save-service");saves++;var all=new ArrayList<>(services);all.removeIf(s->s.id().equals(next.id()));all.add(next);services=List.copyOf(all);}
+        public void serviceEffects(Operation op,ServiceDefinition next,String reason){steps.add("service-effects");operation=op;effectVersion=next.version();effectReason=reason;}
         public void saveCalendar(AvailabilityCalendar next){steps.add("save-calendar");saves++;assertEquals(calendar.version()+1,next.version());calendar=next;}
         public void savePolicy(SchedulingPolicy next){steps.add("save-policy");saves++;assertEquals(policy.version()+1,next.version());policy=next;}
         public void changedEffects(Operation op,long version,String reason,List<Conflict> conflicts){steps.add("effects");operation=op;effectVersion=version;effectReason=reason;acknowledged=conflicts;if(effectFailure!=null)throw effectFailure;}
