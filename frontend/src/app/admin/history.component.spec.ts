@@ -28,6 +28,14 @@ describe('Administrator private history', () => {
     http = TestBed.inject(HttpTestingController); router = TestBed.inject(Router);
   });
   afterEach(() => { try { http.verify(); } finally { TestBed.resetTestingModule(); vi.useRealTimers(); } });
+  it('associates the free-text field with non-medical privacy guidance before entry', async () => {
+    await loaded();
+    const field = fixture.nativeElement.querySelector('textarea#private-note');
+    expect(field).not.toBeNull(); expect(field.getAttribute('aria-describedby')).toBe('note-privacy-guidance');
+    const guidance = fixture.nativeElement.querySelector('#note-privacy-guidance');
+    expect(guidance.textContent).toContain('Do not enter medical information or other sensitive personal information');
+    expect(guidance.textContent).toContain('only details needed');
+  });
   it('renders private text safely and pages each bounded stream with its unchanged cursor', async () => {
     await loaded(); expect(fixture.nativeElement.textContent).toContain('<b>Synthetic private note</b>'); expect(fixture.nativeElement.querySelector('article b')).toBeNull();
     const p = view.older('notes'); const r = http.expectOne(q => q.url === path); expect(r.request.params.get('cursor')).toBe('note_cursor'); expect(r.request.params.get('limit')).toBe('20'); r.flush({ ...notes, entries: [], nextCursor: null }); await p;

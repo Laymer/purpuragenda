@@ -21,8 +21,9 @@ import { reauthenticate } from './admin-reauth';
       @if (id() && loaded()) {
         <h2>Private notes</h2><p>Notes are visible only to the administrator. Adding a note does not notify the customer.</p>
         <form [formGroup]="form" (ngSubmit)="submit()">
+          <p id="note-privacy-guidance">This is a non-medical service. Do not enter medical information or other sensitive personal information. Include only details needed for this consultation. Do not record unnecessary information about other people. Customer-related notes may need to be included in a customer data export after review.</p>
           <label for="private-note">New private note (up to 4000 characters)</label>
-          <textarea id="private-note" formControlName="text" maxlength="8000" autocomplete="off" [readOnly]="busy() || uncertain()"></textarea>
+          <textarea aria-describedby="note-privacy-guidance" id="private-note" formControlName="text" maxlength="8000" autocomplete="off" [readOnly]="busy() || uncertain()"></textarea>
           <button mat-flat-button type="submit" [disabled]="busy() || uncertain()">Add private note</button>
         </form>
         @if (uncertain()) { <button mat-stroked-button type="button" (click)="retry()" [disabled]="busy()">Retry the same note</button> }

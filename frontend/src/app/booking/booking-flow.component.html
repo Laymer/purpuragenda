@@ -20,7 +20,8 @@
   @if (phase() === 'intake') {
     <h2 tabindex="-1">Your consultation details</h2>
     <p>Birth date and time are the civil values you provide. We do not infer a birth time zone.</p>
-    <form [formGroup]="intake" (ngSubmit)="reviewRequest()">
+    <p id="intake-privacy-guidance">This is a non-medical service. Do not enter medical information or other sensitive personal information. Include only details needed for this consultation.</p>
+    <form [formGroup]="intake" (ngSubmit)="reviewRequest()" aria-describedby="intake-privacy-guidance">
       <div class="fields">
         <label>First name <input formControlName="firstName" autocomplete="given-name" maxlength="100" required [attr.aria-invalid]="intake.controls.firstName.touched && intake.controls.firstName.invalid"></label>
         <label>Last name <input formControlName="lastName" autocomplete="family-name" maxlength="100" required [attr.aria-invalid]="intake.controls.lastName.touched && intake.controls.lastName.invalid"></label>
@@ -29,7 +30,7 @@
         <label>Birth time <input type="time" step="1" formControlName="birthTime" required [attr.aria-invalid]="intake.controls.birthTime.touched && intake.controls.birthTime.invalid"></label>
         <label>Birthplace <input formControlName="birthplace" maxlength="200" required [attr.aria-invalid]="intake.controls.birthplace.touched && intake.controls.birthplace.invalid"></label>
       </div>
-      <label>Message (optional) <textarea formControlName="message" maxlength="1000" rows="4" [attr.aria-invalid]="intake.controls.message.touched && intake.controls.message.invalid"></textarea></label>
+      <label>Message (optional) <textarea aria-describedby="intake-privacy-guidance" formControlName="message" maxlength="1000" rows="4" [attr.aria-invalid]="intake.controls.message.touched && intake.controls.message.invalid"></textarea></label>
       <p>Details stay in this page until submitted. A refresh or expired session clears the form.</p>
       <button mat-flat-button type="submit" [disabled]="busy() || retrySeconds() > 0">Review request</button>
     </form>
