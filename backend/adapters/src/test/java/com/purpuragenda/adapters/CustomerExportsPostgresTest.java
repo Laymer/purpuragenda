@@ -111,5 +111,10 @@ class CustomerExportsPostgresTest {
         for(int n=0;n<3;n++)c.jdbc.update("INSERT INTO privacy_export(id,encrypted_document,expires_at) VALUES(?,'legacy',clock_timestamp()+interval '1 hour')",UUID.randomUUID());
         UUID id=prepare().entityId();assertEquals(2,store.purge(2));assertEquals(1,store.purge(2));assertEquals(0,store.purge(2));assertNotNull(preview(id));
         assertThrows(IllegalArgumentException.class,()->store.purge(0));assertThrows(IllegalArgumentException.class,()->store.purge(501));
+        var unavailable=new org.springframework.jdbc.datasource.DelegatingDataSource(c.f.source){
+            @Override public java.sql.Connection getConnection() throws java.sql.SQLException {throw new java.sql.SQLException("SYNTHETIC_PRIVATE_PROVIDER");}
+        };
+        var failure=b.fail(()->new PostgresCustomerExports(unavailable,secrets,Set.of("zoom.us")).purge(1));
+        assertEquals(Failure.Kind.STORAGE_FAILURE,failure.kind());assertNull(failure.getCause());
     }
 }

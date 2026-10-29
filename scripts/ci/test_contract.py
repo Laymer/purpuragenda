@@ -12,6 +12,21 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_model_normalization_is_idempotent_and_preserves_values_and_other_outputs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'model').mkdir()
+            model = root / 'model/example.ts'
+            model.write_text("/**\n * \n */\nexport interface Example { \n    value?: ' keep spaces \u2028\u2029 ';\n}\n\n")
+            runtime = root / 'client.ts'
+            runtime.write_text('const text = `literal  \n`;\n\n')
+            GATE.normalize_models(root)
+            self.assertEqual("/**\n *\n */\nexport interface Example {\n    value?: ' keep spaces \u2028\u2029 ';\n}\n", model.read_text())
+            self.assertEqual('const text = `literal  \n`;\n\n', runtime.read_text())
+            normalized = GATE.contents(root)
+            GATE.normalize_models(root)
+            self.assertEqual(normalized, GATE.contents(root))
+
     def test_contact_confirmation_requires_booking_scope_version_and_proof_without_identity_fields(self):
         proof = self.document['paths']['/bookings/{bookingId}/contact-proofs']['post']
         confirm = self.document['paths']['/bookings/{bookingId}/contact']['post']

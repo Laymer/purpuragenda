@@ -36,6 +36,17 @@ def generate(destination):
                     '-f', str(ROOT / 'contracts/pom.xml'),
                     '-Dgenerated.output=' + str(destination), 'generate-sources'],
                    cwd=ROOT, check=True)
+    normalize_models(destination)
+
+
+def normalize_models(destination):
+    # The pinned generator emits trailing spaces and blank EOF lines in models.
+    # Restrict this to its type-only model output, never executable templates.
+    contents(destination)
+    for file in (destination / 'model').glob('*.ts'):
+        source = file.read_text(encoding='utf-8')
+        file.write_text('\n'.join(line.rstrip(' \t') for line in source.split('\n')).rstrip('\n') + '\n',
+                        encoding='utf-8')
 
 
 def replace_generated(fresh, destination, root):

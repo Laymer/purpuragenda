@@ -99,7 +99,9 @@ public final class PostgresCustomerExports implements CustomerExportStore {
     }
     @Override public int purge(int limit){
         if(limit<1||limit>500)throw new IllegalArgumentException("INVALID_EXPORT_PURGE_LIMIT");
-        return safe(()->jdbc.update("WITH cutoff AS MATERIALIZED (SELECT clock_timestamp() AS now) DELETE FROM privacy_export WHERE id IN (SELECT e.id FROM privacy_export e CROSS JOIN cutoff WHERE e.expires_at<=cutoff.now OR e.customer_id IS NULL ORDER BY e.id LIMIT ? FOR UPDATE OF e SKIP LOCKED)",limit));
+        // Maintenance deletion has its own boundary; no request/read callback invokes it.
+        try{return jdbc.update("WITH cutoff AS MATERIALIZED (SELECT clock_timestamp() AS now) DELETE FROM privacy_export WHERE id IN (SELECT e.id FROM privacy_export e CROSS JOIN cutoff WHERE e.expires_at<=cutoff.now OR e.customer_id IS NULL ORDER BY e.id LIMIT ? FOR UPDATE OF e SKIP LOCKED)",limit);}
+        catch(RuntimeException failure){throw storage();}
     }
     private String snapshot(UUID customer){
         // One statement gives one PostgreSQL snapshot even when independent account-profile writers run concurrently.
