@@ -77,7 +77,8 @@ public final class PostgresScheduling implements SchedulingUnitOfWork, Schedulin
         return locked(tx->work.applyAsInt(tx));
     }
     /** Commands and maintenance cannot diverge in lock order, authoritative time, retry or rollback behavior. */
-    private <T>T locked(Function<Transaction,T> work) {
+    // Package-private for privacy operations sharing the same lock/time/maintenance boundary.
+    <T>T locked(Function<Transaction,T> work) {
         for(int attempt=0;;attempt++) {
             try {
                 return transaction.execute(status->{

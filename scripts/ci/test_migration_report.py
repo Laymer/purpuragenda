@@ -742,5 +742,19 @@ class MigrationReportTest(unittest.TestCase):
         GATE.validate(self.root)
 
 
+    def test_privacy_exports_require_complete_database_and_http_reports(self):
+        self.write()
+        for package, source_name, suite, minimum in [('out/postgres', 'PostgresCustomerExports', 'CustomerExportsPostgresTest', 14), ('in/rest', 'AdministratorExportController', 'AdministratorExportHttpPostgresTest', 4)]:
+            source = self.root / ('backend/adapters/src/main/java/com/purpuragenda/adapters/' + package + '/' + source_name + '.java')
+            source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic export source')
+            with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + suite + '.xml')
+            for count, actual, nested in [(minimum-1, minimum-1, ''), (minimum, minimum-1, ''), (minimum, minimum, '<failure/>'), (minimum, minimum, '<error/>'), (minimum, minimum, '<skipped/>')]:
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{suite}" tests="{count}">' + '<testcase/>' * (actual-1) + f'<testcase>{nested}</testcase></testsuite>')
+                with self.assertRaises(ValueError): GATE.validate(self.root)
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{suite}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+            GATE.validate(self.root)
+
+
 if __name__ == '__main__':
     unittest.main()

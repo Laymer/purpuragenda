@@ -49,6 +49,10 @@ model/administratorCustomerBookings.ts
 model/administratorCustomerPage.ts
 model/administratorDateException.ts
 model/administratorDateExceptionRequest.ts
+model/administratorExportPreview.ts
+model/administratorExportReceipt.ts
+model/administratorExportRequest.ts
+model/administratorExportReview.ts
 model/administratorIntakeSnapshot.ts
 model/administratorLoginRequest.ts
 model/administratorMeetingChangeRequest.ts

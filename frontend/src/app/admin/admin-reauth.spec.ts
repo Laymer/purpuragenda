@@ -11,7 +11,8 @@ describe('Administrator re-authentication hand-off', () => {
   afterEach(() => TestBed.resetTestingModule());
   it('accepts only administrator agenda and booking pages as return targets', () => {
     expect(safeReturn('/admin/reconciliation')).toBe('/admin/reconciliation'); expect(safeReturn('/admin/notifications')).toBe('/admin/notifications');
-    expect(safeReturn('/admin/customers')).toBe('/admin/customers');
+    expect(safeReturn('/admin/customers')).toBe('/admin/customers'); expect(safeReturn('/admin/customers/' + id + '/privacy')).toBe('/admin/customers/' + id + '/privacy');
+    expect(safeReturn('/admin/customers/' + id + '/privacy?data=private')).toBe('/admin');
     expect(safeReturn('/admin/audit')).toBe('/admin/audit'); expect(safeReturn('/admin/bookings/' + id + '/history')).toBe('/admin/bookings/' + id + '/history');
     expect(safeReturn('/admin/bookings/' + id + '/reschedule')).toBe('/admin/bookings/' + id + '/reschedule'); expect(safeReturn('/admin/bookings/' + id + '/finance')).toBe('/admin/bookings/' + id + '/finance'); expect(safeReturn('/admin/calendar')).toBe('/admin/calendar'); expect(safeReturn('/admin/policy')).toBe('/admin/policy'); expect(safeReturn('/admin/services')).toBe('/admin/services'); expect(safeReturn('/admin/bookings/new')).toBe('/admin/bookings/new'); expect(safeReturn('/admin')).toBe('/admin'); expect(safeReturn('/admin/bookings/' + id)).toBe('/admin/bookings/' + id);
     for (const bad of [null, undefined, '', 'https://evil.test/admin', '//evil.test', '/admin/login', '/admin/bookings/not-a-uuid', '/book', '/admin/bookings/' + id + '/x', '/admin?x=1', '/admin/audit?bookingId=x', '/admin/customers?query=private', '/admin/customers/extra', '/admin/notifications?state=FAILED', '/admin/notifications/extra', '/admin/reconciliation/extra', '/admin/bookings/' + id + '/history/extra'])
