@@ -23,7 +23,7 @@ public final class PostgresNotes implements NotesUnitOfWork {
             return new PostgresScheduling.Resolved(key,receipt->{
                 if(receipt.success()) {
                     var stored=jdbc.query("SELECT note FROM booking_note WHERE id=? AND booking_id=? AND actor_id=?",(r,n)->r.getString(1),receipt.entityId(),command.bookingId(),admin);
-                    if(receipt.version()!=1 || stored.size()!=1 || !CommandKey.fingerprint(stored).equals(command.fingerprint()))throw storage();
+                    if(receipt.version()!=1 || stored.size()!=1 || (!CommandKey.fingerprint(stored).equals(command.fingerprint()) && jdbc.queryForObject("SELECT count(*) FROM privacy_correction_fact WHERE kind='NOTE' AND target_id=? AND prior_fingerprint=?",Integer.class,receipt.entityId(),command.fingerprint())==0))throw storage();
                 } else if(receipt.code()!=Code.IDEMPOTENCY_KEY_REUSED)throw storage();
                 return receipt;
             },tx->{var state=new State(tx,command,admin);Receipt receipt=Objects.requireNonNull(work.apply(state));state.verify(receipt);return receipt;});

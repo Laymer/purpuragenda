@@ -9,3 +9,5 @@
 - Verification: initial new14 PostgreSQL+4 actual-MFA HTTP+18 Runtime cases,627 Angular and366 Python passed. Follow-up367 Python and generated SDK comparison pass. Targeted legacy migration/connection rerun passed; NotificationRetryPostgresTest remains in full rerun. Hosted b635 e2e/persistence pass, Java SAST failed two callback paths to purge; follow-up scan pending. Prior whitespace evidence corrected in docs/status.md. Independent initial source review clean except now-corrected generated whitespace; follow-up review pending.
 - Next concrete action: push tested follow-up; require full Java/hosted gates and exact independent review before squash merge, then claim audited corrections.
 - Recovery: origin/recovery/2026-10-25-prototype at6f9405b; stacked PR dependencies: none.
+
+Closed: PR142 confirmed merged951c087 after all15 current-head checks40931861687, exact7decc555 independent review and zero alerts. Local focused157 tests pass; prior intermittent local connection failures remain limits, not ignored checks. Follow-up P34/corrections owns the next sequential feature.

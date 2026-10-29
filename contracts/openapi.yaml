@@ -1987,7 +1987,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1–100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
+        "description": "Requires a live persisted MFA administrator session. Enabled/enrolled/epoch/browser/liveness authority is rechecked in the same consistent read snapshot as data. No session touch, reservation or mutation. Replies are no-store; detail ETag is the booking command version and conditional headers never suppress the current independent-money projection. Exactly one from and through civil Brussels date are required, inclusive, at most31 dates. Optional limit1\u2013100 defaults50; cursor is copied unchanged from nextCursor. Reject duplicate, unknown, malformed or out-of-window parameters.",
         "security": [
           {
             "sessionCookie": []
@@ -7133,7 +7133,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Private administrator literal customer search by stable email, profile or booking name, delivery email or booking reference. Delivery matches do not transfer ownership. Read-only persisted authority; no session touch or fresh-MFA requirement. UUID ascending pages, limit 1–100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. No-store; conditional cache headers never suppress responses.",
+        "description": "Private administrator literal customer search by stable email, profile or booking name, delivery email or booking reference. Delivery matches do not transfer ownership. Read-only persisted authority; no session touch or fresh-MFA requirement. UUID ascending pages, limit 1\u2013100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. No-store; conditional cache headers never suppress responses.",
         "security": [
           {
             "sessionCookie": []
@@ -7235,7 +7235,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Private administrator history for the stable customer identity, independent of current delivery addresses. Minimal immutable booking summaries ordered newest start/id first. Read-only persisted authority; no session touch or fresh-MFA requirement. Limit 1–100 default 50; copy nextCursor unchanged. Reject unknown, duplicate and malformed query fields. No-store; conditional cache headers never suppress responses. Unknown customer returns CUSTOMER_NOT_FOUND only after authority checks.",
+        "description": "Private administrator history for the stable customer identity, independent of current delivery addresses. Minimal immutable booking summaries ordered newest start/id first. Read-only persisted authority; no session touch or fresh-MFA requirement. Limit 1\u2013100 default 50; copy nextCursor unchanged. Reject unknown, duplicate and malformed query fields. No-store; conditional cache headers never suppress responses. Unknown customer returns CUSTOMER_NOT_FOUND only after authority checks.",
         "security": [
           {
             "sessionCookie": []
@@ -7356,7 +7356,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1–100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Outstanding receipt refund obligations minus immutable linked refunds; full due and separate currencies are preserved.",
+        "description": "Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1\u2013100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Outstanding receipt refund obligations minus immutable linked refunds; full due and separate currencies are preserved.",
         "security": [
           {
             "sessionCookie": []
@@ -7460,7 +7460,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1–100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Booking notification follow-up only; excludes authentication jobs, recipients, envelopes and lease credentials. Omit state for all booking-job states.",
+        "description": "Private persisted administrator authority in a read-only snapshot; no session touch or fresh-MFA requirement. No-store even with conditional cache headers. Stable ascending UUID cursor pages, limit 1\u2013100 default 50; copy nextCursor unchanged. Unknown, duplicate and malformed query fields are rejected. Unknown booking filter returns BOOKING_NOT_FOUND only after authority checks. Booking notification follow-up only; excludes authentication jobs, recipients, envelopes and lease credentials. Omit state for all booking-job states.",
         "security": [
           {
             "sessionCookie": []
@@ -7579,7 +7579,7 @@
         "tags": [
           "Administrator"
         ],
-        "description": "Queues one explicit retry of a FAILED booking notification. Requires exact Origin/CSRF, idempotency, strong If-Match of the observed attempt count (1–2147483646), normalized reason and persisted fresh administrator MFA before receipt replay. Preserves original job identity, content revision and monotonic attempt history; ordinary worker still checks relevance/suppression before sending. Authentication/unscoped jobs return NOTIFICATION_NOT_FOUND. Operator suppression returns DELIVERY_SUPPRESSED; nonfailed jobs return NOTIFICATION_NOT_RETRYABLE. Receipt is an audit result, not proof of delivery. Responses are no-store.",
+        "description": "Queues one explicit retry of a FAILED booking notification. Requires exact Origin/CSRF, idempotency, strong If-Match of the observed attempt count (1\u20132147483646), normalized reason and persisted fresh administrator MFA before receipt replay. Preserves original job identity, content revision and monotonic attempt history; ordinary worker still checks relevance/suppression before sending. Authentication/unscoped jobs return NOTIFICATION_NOT_FOUND. Operator suppression returns DELIVERY_SUPPRESSED; nonfailed jobs return NOTIFICATION_NOT_RETRYABLE. Receipt is an audit result, not proof of delivery. Responses are no-store.",
         "security": [
           {
             "sessionCookie": []
@@ -7625,7 +7625,7 @@
               "type": "string",
               "pattern": "^\"[1-9][0-9]{0,18}\"$"
             },
-            "description": "One strong quoted observed attempt count (not the content revision), from notification follow-up. Missing428, stale412; weak/wildcard/multiple tags and counts outside1–2147483646 rejected400."
+            "description": "One strong quoted observed attempt count (not the content revision), from notification follow-up. Missing428, stale412; weak/wildcard/multiple tags and counts outside1\u20132147483646 rejected400."
           }
         ],
         "responses": {
@@ -8223,6 +8223,547 @@
           }
         }
       }
+    },
+    "/admin/customers/{customerId}/corrections/{kind}/{targetId}": {
+      "get": {
+        "operationId": "getAdministratorCorrectionTarget",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "profile",
+                "note",
+                "intake"
+              ]
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "targetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCorrectionTarget"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND after administrator authority checks",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "prepareAdministratorCorrection",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "profile",
+                "note",
+                "intake"
+              ]
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "targetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCorrectionReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorCorrectionRequest"
+              }
+            }
+          },
+          "description": "Normalized correction fields and reason, or explicit confirmation of the reviewed digest."
+        }
+      }
+    },
+    "/admin/corrections/{id}": {
+      "get": {
+        "operationId": "getAdministratorCorrection",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCorrectionPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND after administrator authority checks",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/corrections/{id}/confirm": {
+      "post": {
+        "operationId": "confirmAdministratorCorrection",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Canonical correction scope identifier or lower-case target kind."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            },
+            "description": "Quoted preview version."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorCorrectionReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorCorrectionReview"
+              }
+            }
+          },
+          "description": "Normalized correction fields and reason, or explicit confirmation of the reviewed digest."
+        }
+      }
     }
   },
   "components": {
@@ -8584,7 +9125,7 @@
             "minLength": 8,
             "maxLength": 40,
             "writeOnly": true,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",
@@ -9266,7 +9807,7 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 40,
-            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7–15 digits."
+            "description": "International + prefix; formatting spaces/parentheses/dots/hyphens normalize to7\u201315 digits."
           },
           "birthDate": {
             "type": "string",
@@ -9567,6 +10108,9 @@
           },
           "payment": {
             "$ref": "#/components/schemas/AdministratorBookingPayment"
+          },
+          "effectiveIntake": {
+            "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
           }
         },
         "required": [
@@ -9587,7 +10131,8 @@
           "confirmationBasis",
           "serverNow",
           "snapshot",
-          "payment"
+          "payment",
+          "effectiveIntake"
         ],
         "description": "Private administrator projection; no customer/admin authority identifiers. Read-only mapping; no generic domain serialization."
       },
@@ -11522,6 +12067,186 @@
             "description": "Private customer data JSON, including customer-related notes. Render as text, review third-party information, never persist in browser storage."
           }
         }
+      },
+      "AdministratorCorrectionValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "telephone": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "birthDate": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "birthTime": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "birthplace": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Non-medical correction value. Only fields for the selected kind are accepted."
+          }
+        },
+        "required": []
+      },
+      "AdministratorCorrectionTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PROFILE",
+              "NOTE",
+              "INTAKE"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "values": {
+            "$ref": "#/components/schemas/AdministratorCorrectionValues"
+          }
+        },
+        "required": [
+          "kind",
+          "targetId",
+          "version",
+          "values"
+        ]
+      },
+      "AdministratorCorrectionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "values": {
+            "$ref": "#/components/schemas/AdministratorCorrectionValues"
+          }
+        },
+        "required": [
+          "reason",
+          "values"
+        ]
+      },
+      "AdministratorCorrectionReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "description": "Must be true after reviewing the exact before/after preview."
+          }
+        },
+        "required": [
+          "digest",
+          "confirmed"
+        ]
+      },
+      "AdministratorCorrectionReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "correctionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "correctionId",
+          "version"
+        ]
+      },
+      "AdministratorCorrectionPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "before": {
+            "$ref": "#/components/schemas/AdministratorCorrectionTarget"
+          },
+          "after": {
+            "$ref": "#/components/schemas/AdministratorCorrectionValues"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "customerId",
+          "before",
+          "after",
+          "reason",
+          "digest",
+          "expiresAt",
+          "version"
+        ]
       }
     },
     "securitySchemes": {

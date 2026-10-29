@@ -80,8 +80,14 @@ Never run `docker compose down -v` and never delete `./.secrets`. Doing so destr
 
 ## Non-medical information only
 
-Keep the requested contact and birth details, but do not enter medical information or other sensitive personal information in the customer message or administrator notes. Include only information needed for the consultation and avoid unnecessary information about other people. Private notes are restricted to administrator access; they may still need to be included in a customer data export after review. The displayed guidance does not automatically detect or remove sensitive content. Exporting does not delete records. Audited corrections and reviewed erasure are still being implemented; review deadlines alone do not delete records.
+Keep the requested contact and birth details, but do not enter medical information or other sensitive personal information in the customer message or administrator notes. Include only information needed for the consultation and avoid unnecessary information about other people. Private notes are restricted to administrator access; they may still need to be included in a customer data export after review. The displayed guidance does not automatically detect or remove sensitive content. Exporting does not delete records. Audited corrections are available below; reviewed erasure is still being implemented; review deadlines alone do not delete records.
 
 ## Customer data exports
 
 In Customers, search for the original customer, open their bookings and choose Customer data export. Enter a short reason without sensitive details. Prepare the preview and review all included notes for information about other people. Confirm release only if the document is suitable for disclosure, then prepare the download and select Save reviewed customer export. A fresh administrator MFA sign-in may be required. The temporary snapshot expires after one hour; a saved copy remains your responsibility. If a response is uncertain, use Retry the same request. See privacy.md for the data scope and cleanup limits.
+
+## Customer corrections
+
+In Customers, open the customer's bookings. Choose Correct profile for an existing optional profile, Correct intake for a booking, or Correct private notes and then select the note. Edit the fields and enter a reason without personal details. Prepare correction preview, compare Before and After, tick the review confirmation and choose Confirm correction. If the record changed meanwhile, prepare and review a new preview. An uncertain response must use Retry the same request. The preview expires after one hour and a fresh MFA sign-in may be required.
+
+A confirmed correction revokes existing temporary customer exports. Downloaded copies remain under your control. Current notes/profile are replaced; intake corrections appear as current details while original intake remains historical. Corrections cannot change login identity, verified email, booking ownership or payment facts. Use the existing verified-contact procedure for delivery email changes. Do not enter medical or sensitive information.

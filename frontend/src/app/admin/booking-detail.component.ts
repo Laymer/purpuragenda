@@ -39,14 +39,14 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
         <p>Status {{ b.payment.status }}. Received {{ money(b.payment.receivedMinor) }}, refunded {{ money(b.payment.refundedMinor) }}, remaining {{ money(b.payment.remainingMinor) }} ({{ b.snapshot.service.currency }}). Approval does not imply payment.</p>
         <app-finance-summary [payment]="b.payment" />
         @if (!busy() && !uncertain()) { <p><a [routerLink]="'/admin/bookings/' + b.id + '/finance'">Record receipt or refund</a></p><p><a [routerLink]="'/admin/bookings/' + b.id + '/history'">Private notes and audit</a></p> }
-        <h2>Customer details</h2>
+        <h2>Customer details</h2><p>Current details include reviewed intake corrections. The original intake remains in the historical snapshot and reviewed export.</p>
         <dl>
-          <dt>Name</dt><dd>{{ b.snapshot.intake.firstName }} {{ b.snapshot.intake.lastName }}</dd>
-          <dt>Telephone</dt><dd>{{ b.snapshot.intake.telephone }}</dd>
-          <dt>Birth date</dt><dd>{{ b.snapshot.intake.birthDate }}</dd>
-          <dt>Birth time</dt><dd>{{ b.snapshot.intake.birthTime }}</dd>
-          <dt>Birthplace</dt><dd>{{ b.snapshot.intake.birthplace }}</dd>
-          <dt>Message</dt><dd class="text">{{ b.snapshot.intake.message }}</dd>
+          <dt>Name</dt><dd>{{ b.effectiveIntake.firstName }} {{ b.effectiveIntake.lastName }}</dd>
+          <dt>Telephone</dt><dd>{{ b.effectiveIntake.telephone }}</dd>
+          <dt>Birth date</dt><dd>{{ b.effectiveIntake.birthDate }}</dd>
+          <dt>Birth time</dt><dd>{{ b.effectiveIntake.birthTime }}</dd>
+          <dt>Birthplace</dt><dd>{{ b.effectiveIntake.birthplace }}</dd>
+          <dt>Message</dt><dd class="text">{{ b.effectiveIntake.message }}</dd>
         </dl>
         @if (canApprove()) {
           <h2>Approve</h2>

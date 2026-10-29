@@ -172,7 +172,7 @@ class AccountEnrollmentDatabaseTest {
         }
         c.f.database.migrate(0);c.f.database.migrate(0);
         assertEquals(org.springframework.boot.health.contributor.Status.UP,readiness.health().getStatus());
-        assertEquals(19,c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(20,c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(2,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account"));
         assertEquals(1,c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account WHERE login_email IS NULL AND password_hash IS NULL AND password_changed_at IS NULL"));
         try(var connection=c.f.database.connection(MigrationTest.APP);
