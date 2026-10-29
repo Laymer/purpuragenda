@@ -76,6 +76,7 @@ class CoreJourneyE2eTest {
                     Page agenda = administratorApproves(administrator, config, today, reference);
                     guestSeesConfirmation(guest, mail, guestEmail, received);
                     accountEnrollmentAndSettings(guest, origin, guestEmail, reference, mail);
+                    administratorExports(agenda, origin, guestEmail);
                     agenda.close();
                 }
             } catch (Throwable failure) {
@@ -287,6 +288,33 @@ class CoreJourneyE2eTest {
         at("account history and login identity remain unchanged after contact change",page);
         page.navigate(origin+"/account");assertThat(page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName(reference).setExact(true))).isVisible();
         page.navigate(origin+"/account/settings");assertThat(page.getByText("Login email: "+email+".",new Page.GetByTextOptions().setExact(false))).isVisible();
+    }
+
+    private void administratorExports(Page page,String origin,String email) throws Exception {
+        at("administrator adds a customer-related private note",page);
+        page.navigate(page.url()+"/history");
+        field(page,"New private note (up to 4000 characters)").fill("Synthetic export note.");
+        button(page,"Add private note").click();
+        assertThat(page.getByText("Private note added.",new Page.GetByTextOptions().setExact(false))).isVisible();
+        at("administrator locates the stable customer for a privacy export",page);
+        page.navigate(origin+"/admin/customers");
+        field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();
+        button(page,"View bookings for "+email).click();
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Customer data export").setExact(true)).click();
+        at("administrator previews customer notes and explicitly releases the export",page);
+        page.locator("#export-reason").fill("Synthetic customer export request");button(page,"Prepare export preview").click();
+        assertThat(page.locator("pre")).containsText("Synthetic export note.");
+        assertThat(page.locator("pre")).containsText("Synthetic profile");
+        assertThat(page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Save reviewed customer export"))).hasCount(0);
+        page.getByRole(AriaRole.CHECKBOX).check();button(page,"Confirm and release export").click();
+        assertThat(page.getByText("Export released after review.")).isVisible();button(page,"Prepare secure download").click();
+        at("administrator downloads only the reviewed JSON export",page);
+        var download=page.waitForDownload(()->page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Save reviewed customer export").setExact(true)).click());
+        assertEquals("customer-export.json",download.suggestedFilename());
+        String content=java.nio.file.Files.readString(download.path());
+        assertTrue(content.contains("Synthetic export note."));assertTrue(content.contains("Synthetic profile"));assertTrue(content.contains(email));
+        for(String forbidden:List.of("password_hash","totp_secret","csrf_hash","token_hash","encrypted_envelope"))assertFalse(content.contains(forbidden));
+        download.delete();
     }
 
     private void accountSignIn(Page page, String origin, String email, String password) {

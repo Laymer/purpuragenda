@@ -12,6 +12,21 @@ SPEC.loader.exec_module(GATE)
 
 
 class ContractTest(unittest.TestCase):
+    def test_model_normalization_is_idempotent_and_preserves_values_and_other_outputs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'model').mkdir()
+            model = root / 'model/example.ts'
+            model.write_text("/**\n * \n */\nexport interface Example { \n    value?: ' keep spaces \u2028\u2029 ';\n}\n\n")
+            runtime = root / 'client.ts'
+            runtime.write_text('const text = `literal  \n`;\n\n')
+            GATE.normalize_models(root)
+            self.assertEqual("/**\n *\n */\nexport interface Example {\n    value?: ' keep spaces \u2028\u2029 ';\n}\n", model.read_text())
+            self.assertEqual('const text = `literal  \n`;\n\n', runtime.read_text())
+            normalized = GATE.contents(root)
+            GATE.normalize_models(root)
+            self.assertEqual(normalized, GATE.contents(root))
+
     def test_contact_confirmation_requires_booking_scope_version_and_proof_without_identity_fields(self):
         proof = self.document['paths']['/bookings/{bookingId}/contact-proofs']['post']
         confirm = self.document['paths']['/bookings/{bookingId}/contact']['post']
@@ -237,6 +252,19 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(['COMPLETED', 'NO_SHOW'], schemas['AdministratorOutcomeRequest']['properties']['outcome']['enum'])
         self.assertEqual('#/components/schemas/AdministratorOverride', schemas['AdministratorRescheduleRequest']['properties']['override']['$ref'])
 
+    def test_privacy_exports_require_reason_review_and_private_binary_download(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        for path in ['/admin/customers/{customerId}/exports', '/admin/exports/{exportId}/release']:
+            operation = paths[path]['post']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertTrue({'X-CSRF-Token', 'Idempotency-Key'}.issubset({p['name'] for p in operation['parameters']}))
+            self.assertIn('fresh', operation['description'].lower())
+            self.assertEqual(['no-store'], operation['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+        self.assertEqual(['reason'], schemas['AdministratorExportRequest']['required'])
+        self.assertEqual({'digest', 'reviewedThirdPartyInformation'}, set(schemas['AdministratorExportReview']['required']))
+        self.assertEqual('binary', paths['/admin/exports/{exportId}/download']['get']['responses']['200']['content']['application/octet-stream']['schema']['format'])
+        self.assertEqual({'id', 'customerId', 'expiresAt', 'digest', 'released', 'document'}, set(schemas['AdministratorExportPreview']['required']))
+
     def test_public_operations_and_same_origin_base(self):
         self.assertEqual('3.1.0', self.document['openapi'])
         self.assertEqual([{'url': '/api/v1'}], self.document['servers'])
@@ -249,7 +277,7 @@ class ContractTest(unittest.TestCase):
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
                           'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
-                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings', 'getAdministratorReconciliation', 'getAdministratorNotifications', 'retryAdministratorNotification'},
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings', 'getAdministratorReconciliation', 'getAdministratorNotifications', 'retryAdministratorNotification', 'prepareAdministratorExport', 'releaseAdministratorExport', 'getAdministratorExport', 'downloadAdministratorExport'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

@@ -1,7 +1,7 @@
 import { Router } from '@angular/router';
 import { SessionAccess } from '../shared/access/session-access';
 
-const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
+const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/privacy)?|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
 
 /** Only same-origin administrator pages are valid return targets; anything else falls back to the agenda. */
 export function safeReturn(value: string | null | undefined): string { return typeof value === 'string' && RETURN.test(value) ? value : '/admin'; }

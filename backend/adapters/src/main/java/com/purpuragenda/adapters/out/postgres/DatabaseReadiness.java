@@ -24,7 +24,7 @@ public final class DatabaseReadiness implements HealthIndicator {
             statement.setQueryTimeout(2);
             // Parse the currently required application columns without reading any customer rows.
             try(var shape=statement.executeQuery("""
-                SELECT b.expiry_ceiling,o.released_at,n.lease_token,n.scheduled_at,n.grace_seconds,q.customer_id,
+                SELECT pe.customer_id,pe.actor_id,pe.created_at,pe.digest,pe.released_at,b.expiry_ceiling,o.released_at,n.lease_token,n.scheduled_at,n.grace_seconds,q.customer_id,
                   g.issued_at,g.browser_hash,g.parent_grant_id,r.security_version,r.request_hash,u.security_version,c.revoked_at,
                   s.id,s.token_hash,s.browser_hash,s.csrf_hash,s.kind,s.grant_id,s.customer_id,s.account_id,s.admin_id,
                   s.admin_security_version,s.account_credential_version,s.issued_at,s.last_seen_at,s.absolute_expires_at,s.authenticated_at,s.revoked_at,
@@ -34,7 +34,7 @@ public final class DatabaseReadiness implements HealthIndicator {
                   ca.login_email,ca.password_hash,ca.credential_version,ca.password_changed_at,
                   ap.account_id,ap.token_hash,ap.purpose,ap.browser_hash,ap.request_hash,ap.credential_version,
                   ap.issued_at,ap.expires_at,ap.consumed_at,ap.revoked_at
-                FROM booking b,booking_occupancy o,notification_job n,request_charge q,
+                FROM privacy_export pe,booking b,booking_occupancy o,notification_job n,request_charge q,
                   access_grant g,admin_reenrollment_grant r,admin_user u,admin_recovery_code c,
                   app_session s,admin_authentication_proof a,rate_limit_bucket t,customer_account ca,account_authentication_proof ap LIMIT 0
                 """)) { if(shape.next()) throw new IllegalStateException(); }

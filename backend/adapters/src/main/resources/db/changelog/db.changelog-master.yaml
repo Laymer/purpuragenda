@@ -143,3 +143,11 @@ databaseChangeLog:
             path: 018-account-enrollment-budget.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 019-customer-exports
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 019-customer-exports.sql
+            relativeToChangelogFile: true
+            splitStatements: false

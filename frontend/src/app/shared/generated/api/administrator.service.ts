@@ -47,6 +47,14 @@ import { AdministratorCustomerPage } from '../model/administratorCustomerPage';
 // @ts-ignore
 import { AdministratorDateExceptionRequest } from '../model/administratorDateExceptionRequest';
 // @ts-ignore
+import { AdministratorExportPreview } from '../model/administratorExportPreview';
+// @ts-ignore
+import { AdministratorExportReceipt } from '../model/administratorExportReceipt';
+// @ts-ignore
+import { AdministratorExportRequest } from '../model/administratorExportRequest';
+// @ts-ignore
+import { AdministratorExportReview } from '../model/administratorExportReview';
+// @ts-ignore
 import { AdministratorLoginRequest } from '../model/administratorLoginRequest';
 // @ts-ignore
 import { AdministratorMeetingChangeRequest } from '../model/administratorMeetingChangeRequest';
@@ -1013,6 +1021,54 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Private fresh-MFA-authorized export. No query parameters; expires at exact one-hour boundary; no-store and no conditional cache response. Preview is for third-party review; download requires explicit release. Download is UTF-8 JSON with fixed attachment filename customer-export.json. Application-held encrypted copies are purged automatically; operator downloads remain operator-controlled.
+     * @endpoint get /admin/exports/{exportId}/download
+     * @param exportId Temporary export identifier; never authority.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public downloadAdministratorExport(exportId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/octet-stream' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<Blob>;
+    public downloadAdministratorExport(exportId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/octet-stream' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Blob>>;
+    public downloadAdministratorExport(exportId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/octet-stream' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Blob>>;
+    public downloadAdministratorExport(exportId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/octet-stream' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (exportId === null || exportId === undefined) {
+            throw new Error('Required parameter exportId was null or undefined when calling downloadAdministratorExport.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/octet-stream',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let localVarPath = `/admin/exports/${this.configuration.encodeParam({name: "exportId", value: exportId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/download`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: "blob",
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Private persisted administrator history in a consistent read-only snapshot; no session touch or fresh-MFA step-up. No-store; conditional cache headers never suppress the response. Newest-first time/id cursor pages, limit1-100 default50. Copy nextCursor unchanged. Reject unknown, duplicate or malformed query fields. Unknown booking returns404 only after authority checks.
      * @endpoint get /admin/audit
      * @param bookingId Omit for global audit including non-booking events.
@@ -1286,6 +1342,65 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private fresh-MFA-authorized export. No query parameters; expires at exact one-hour boundary; no-store and no conditional cache response. Preview is for third-party review; download requires explicit release. Download is UTF-8 JSON with fixed attachment filename customer-export.json. Application-held encrypted copies are purged automatically; operator downloads remain operator-controlled.
+     * @endpoint get /admin/exports/{exportId}
+     * @param exportId Temporary export identifier; never authority.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorExport(exportId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorExportPreview>;
+    public getAdministratorExport(exportId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorExportPreview>>;
+    public getAdministratorExport(exportId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorExportPreview>>;
+    public getAdministratorExport(exportId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (exportId === null || exportId === undefined) {
+            throw new Error('Required parameter exportId was null or undefined when calling getAdministratorExport.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/exports/${this.configuration.encodeParam({name: "exportId", value: exportId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorExportPreview>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -1734,6 +1849,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorLoginRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Fresh persisted administrator MFA, exact Origin/CSRF and Idempotency-Key required before every attempt/replay. Unknown/expired exports return404. If-Match and query parameters rejected. Encrypted temporary snapshot expires one elapsed hour after preparation; release never extends it. Explicit digest-bound third-party review is required for release. No authentication secrets included; no-store.
+     * @endpoint post /admin/customers/{customerId}/exports
+     * @param customerId Stable verified customer identity.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorExportRequest Exact reason or digest-bound explicit review request.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public prepareAdministratorExport(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorExportRequest: AdministratorExportRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorExportReceipt>;
+    public prepareAdministratorExport(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorExportRequest: AdministratorExportRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorExportReceipt>>;
+    public prepareAdministratorExport(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorExportRequest: AdministratorExportRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorExportReceipt>>;
+    public prepareAdministratorExport(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorExportRequest: AdministratorExportRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling prepareAdministratorExport.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling prepareAdministratorExport.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling prepareAdministratorExport.');
+        }
+        if (administratorExportRequest === null || administratorExportRequest === undefined) {
+            throw new Error('Required parameter administratorExportRequest was null or undefined when calling prepareAdministratorExport.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/exports`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorExportReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorExportRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -2248,6 +2450,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorRejectionRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Fresh persisted administrator MFA, exact Origin/CSRF and Idempotency-Key required before every attempt/replay. Unknown/expired exports return404. If-Match and query parameters rejected. Encrypted temporary snapshot expires one elapsed hour after preparation; release never extends it. Explicit digest-bound third-party review is required for release. No authentication secrets included; no-store.
+     * @endpoint post /admin/exports/{exportId}/release
+     * @param exportId Temporary export identifier; never authority.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorExportReview Exact reason or digest-bound explicit review request.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public releaseAdministratorExport(exportId: string, xCSRFToken: string, idempotencyKey: string, administratorExportReview: AdministratorExportReview, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorExportReceipt>;
+    public releaseAdministratorExport(exportId: string, xCSRFToken: string, idempotencyKey: string, administratorExportReview: AdministratorExportReview, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorExportReceipt>>;
+    public releaseAdministratorExport(exportId: string, xCSRFToken: string, idempotencyKey: string, administratorExportReview: AdministratorExportReview, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorExportReceipt>>;
+    public releaseAdministratorExport(exportId: string, xCSRFToken: string, idempotencyKey: string, administratorExportReview: AdministratorExportReview, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (exportId === null || exportId === undefined) {
+            throw new Error('Required parameter exportId was null or undefined when calling releaseAdministratorExport.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling releaseAdministratorExport.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling releaseAdministratorExport.');
+        }
+        if (administratorExportReview === null || administratorExportReview === undefined) {
+            throw new Error('Required parameter administratorExportReview was null or undefined when calling releaseAdministratorExport.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/exports/${this.configuration.encodeParam({name: "exportId", value: exportId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/release`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorExportReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorExportReview,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
