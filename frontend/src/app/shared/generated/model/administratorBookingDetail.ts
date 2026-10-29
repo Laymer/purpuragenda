@@ -7,6 +7,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { AdministratorIntakeSnapshot } from './administratorIntakeSnapshot';
 import { AdministratorBookingSnapshot } from './administratorBookingSnapshot';
 import { AdministratorBookingPayment } from './administratorBookingPayment';
 
@@ -36,6 +37,7 @@ export interface AdministratorBookingDetail {
     serverNow: string;
     snapshot: AdministratorBookingSnapshot;
     payment: AdministratorBookingPayment;
+    effectiveIntake: AdministratorIntakeSnapshot;
 }
 export enum AdministratorBookingDetailStateEnum {
     PendingConfirmation = 'PENDING_CONFIRMATION',

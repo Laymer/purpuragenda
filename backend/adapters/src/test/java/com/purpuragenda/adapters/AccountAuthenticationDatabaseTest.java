@@ -252,7 +252,7 @@ class AccountAuthenticationDatabaseTest {
         var ready=new DatabaseReadiness(e.c.f.source,new PostgresScheduling(e.c.f.source));
         assertEquals(org.springframework.boot.health.contributor.Status.DOWN,ready.health().getStatus());
         e.c.f.database.migrate(0);e.c.f.database.migrate(0);assertEquals(org.springframework.boot.health.contributor.Status.UP,ready.health().getStatus());
-        assertEquals(19,e.c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(20,e.c.f.database.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,e.c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM customer_account"));
         assertEquals(1,e.c.f.database.scalar(MigrationTest.APP,"SELECT count(*) FROM app_session WHERE revoked_at IS NOT NULL AND account_credential_version=1"));
         assertTrue(sessions.inspect(token.toCharArray()).isEmpty());

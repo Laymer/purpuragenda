@@ -30,14 +30,14 @@ import { reauthenticate } from './admin-reauth';
         @if (customerCursor()) { <button mat-stroked-button type="button" (click)="moreCustomers()" [disabled]="busy()">Next customer page</button> }
       }
       @if (selected(); as customer) {
-        <p><a [routerLink]="'/admin/customers/' + customer.id + '/privacy'">Customer data export</a></p><h2>Bookings for {{ customer.email }}</h2><p>Times shown in Europe/Brussels, newest scheduled time first.</p>
+        <p><a [routerLink]="'/admin/customers/' + customer.id + '/privacy'">Customer data export</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/corrections'">Correct profile</a></p><h2>Bookings for {{ customer.email }}</h2><p>Times shown in Europe/Brussels, newest scheduled time first.</p>
         <button mat-stroked-button type="button" (click)="open(customer.id)" [disabled]="busy()">Show newest bookings</button>
         <ul>@for (booking of bookings(); track booking.id) {
           <li><a [routerLink]="'/admin/bookings/' + booking.id">{{ booking.reference }}</a>
             <p>{{ booking.serviceName }} — {{ display(booking.startInstant) }}</p>
             <p>{{ booking.state.replaceAll('_', ' ') }} — {{ (booking.priceMinor / 100).toFixed(2) }} {{ booking.currency }}</p>
             @if (booking.pendingExpired) { <p>The hold has expired and is awaiting processing.</p> }
-            <a [routerLink]="'/admin/bookings/' + booking.id + '/history'">Private notes and audit</a></li>
+            <a [routerLink]="'/admin/bookings/' + booking.id + '/history'">Private notes and audit</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/corrections'" [queryParams]="{ kind: 'INTAKE', booking: booking.id }">Correct intake</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/corrections'" [queryParams]="{ kind: 'NOTE', booking: booking.id }">Correct private notes</a></li>
         } @empty { <li>No bookings on this page.</li> }</ul>
         @if (bookingCursor()) { <button mat-stroked-button type="button" (click)="moreBookings()" [disabled]="busy()">Older bookings</button> }
       }

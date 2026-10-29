@@ -44,6 +44,12 @@ model/administratorConfirmationRequest.ts
 model/administratorConflictPreview.ts
 model/administratorConflictPreviewRequest.ts
 model/administratorConflictPreviewRequestProposal.ts
+model/administratorCorrectionPreview.ts
+model/administratorCorrectionReceipt.ts
+model/administratorCorrectionRequest.ts
+model/administratorCorrectionReview.ts
+model/administratorCorrectionTarget.ts
+model/administratorCorrectionValues.ts
 model/administratorCustomer.ts
 model/administratorCustomerBookings.ts
 model/administratorCustomerPage.ts

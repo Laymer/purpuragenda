@@ -151,3 +151,11 @@ databaseChangeLog:
             path: 019-customer-exports.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 020-customer-corrections
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 020-customer-corrections.sql
+            relativeToChangelogFile: true
+            splitStatements: false

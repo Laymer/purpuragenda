@@ -40,7 +40,7 @@ public final class PostgresAdministratorCustomers implements AdministratorCustom
                 WHERE (position(lower(?) in lower(c.email_key))>0
                   OR EXISTS(SELECT 1 FROM customer_profile p WHERE p.customer_id=c.id AND position(lower(?) in lower(concat_ws(' ',p.document->>'firstName',p.document->>'lastName')))>0)
                   OR EXISTS(SELECT 1 FROM booking b JOIN booking_snapshot s ON s.booking_id=b.id WHERE b.customer_id=c.id AND
-                    (position(lower(?) in lower(concat_ws(' ',s.document->'intake'->>'firstName',s.document->'intake'->>'lastName')))>0
+                    (position(lower(?) in lower(concat_ws(' ',s.document->'intake'->>'firstName',s.document->'intake'->>'lastName',(SELECT concat_ws(' ',m.document->'intake'->>'firstName',m.document->'intake'->>'lastName') FROM booking_amendment m WHERE m.booking_id=b.id AND m.document->>'kind'='INTAKE_CORRECTION' ORDER BY (m.document->>'revision')::bigint DESC LIMIT 1))))>0
                       OR position(lower(?) in lower(b.delivery_email))>0 OR position(lower(?) in lower(b.reference))>0)))
                 """+after+" ORDER BY c.id LIMIT ?",(r,n)->new Customer(r.getObject(1,UUID.class),r.getString(2),r.getBoolean(3)),args.toArray());
             boolean more=rows.size()>request.limit();var visible=more?rows.subList(0,request.limit()):rows;return new Page(visible,more?visible.getLast().id():null,now);

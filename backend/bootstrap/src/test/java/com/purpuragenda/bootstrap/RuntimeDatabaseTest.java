@@ -562,6 +562,12 @@ class RuntimeDatabaseTest {
             var auditPage=call(port,"GET","/api/v1/admin/audit?bookingId="+id,"Cookie",cookie);assertEquals(200,auditPage.statusCode());assertTrue(auditPage.body().contains("NOTE_ADDED"));assertFalse(auditPage.body().contains("Synthetic runtime private note"));
             var customers=call(port,"GET","/api/v1/admin/customers?query=runtime","Cookie",cookie);assertEquals(200,customers.statusCode());
             String owner=text("SELECT customer_id::text FROM booking WHERE id='"+id+"'");var customerBookings=call(port,"GET","/api/v1/admin/customers/"+owner+"/bookings","Cookie",cookie);assertEquals(200,customerBookings.statusCode());assertTrue(customerBookings.body().contains(id));assertFalse(customerBookings.body().contains("Synthetic runtime private note"));
+            String correctionTarget="/api/v1/admin/customers/"+owner+"/corrections/note/"+field(privateNote.body(),"noteId");
+            assertEquals(200,call(port,"GET",correctionTarget,"Cookie",cookie).statusCode());
+            var correction=json(port,correctionTarget,"{\"reason\":\"Synthetic runtime correction\",\"values\":{\"text\":\"Corrected runtime note\"}}",cookie,csrf,"Idempotency-Key","runtime-correction");assertEquals(200,correction.statusCode());
+            String correctionPath="/api/v1/admin/corrections/"+field(correction.body(),"correctionId");var correctionPreview=call(port,"GET",correctionPath,"Cookie",cookie);assertEquals(200,correctionPreview.statusCode());
+            assertEquals(200,json(port,correctionPath+"/confirm","{\"digest\":\""+field(correctionPreview.body(),"digest")+"\",\"confirmed\":true}",cookie,csrf,"Idempotency-Key","runtime-confirm","If-Match","\"1\"").statusCode());
+            assertTrue(call(port,"GET",base+"/notes","Cookie",cookie).body().contains("Corrected runtime note"));
             var approved=json(port,base+"/approve","{\"meetingUrl\":\"https://zoom.us/j/582749163\"}",cookie,csrf,"Idempotency-Key","runtime-finance-approve","If-Match","\"1\"");assertEquals(200,approved.statusCode());
             var unpaid=new com.fasterxml.jackson.databind.ObjectMapper().readTree(call(port,"GET",base,"Cookie",cookie).body());assertEquals("UNPAID",unpaid.at("/payment/status").asText());
             String verified=text("SELECT to_char((clock_timestamp()-interval '1 second') AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')");

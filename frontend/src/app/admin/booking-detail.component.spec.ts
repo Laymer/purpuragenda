@@ -16,6 +16,7 @@ const detail = (over: Record<string, unknown> = {}) => ({
   pendingExpiresAt: '2026-10-27T10:00:00Z', pendingExpired: false, deliveryEmail: 'synthetic@example.test', meetingUrl: null, calendarRevision: 0, confirmationBasis: null, serverNow: new Date(now).toISOString(),
   snapshot: { creationEmail: 'synthetic@example.test', displayZone: 'Europe/Brussels', noticeVersion: 'local-v1', service, policy: { version: 1, gridMinutes: 30, dailyCapacity: 3, minimumNoticeSeconds: 0, pendingLifetimeSeconds: 86400, expiryBufferSeconds: 0, customerCutoffSeconds: 0 },
     intake: { firstName: 'Synthetic', lastName: 'Customer', telephone: '+32400123456', birthDate: '1990-01-01', birthTime: '12:00', birthplace: 'Synthetic city', message: '<b>Private synthetic message</b>' } },
+  effectiveIntake: { firstName: 'Synthetic', lastName: 'Customer', telephone: '+32400123456', birthDate: '1990-01-01', birthTime: '12:00', birthplace: 'Synthetic city', message: '<b>Private synthetic message</b>' },
   payment: { status: 'UNPAID', receivedMinor: 0, refundedMinor: 0, remainingMinor: 10000, refundDueByCurrency: {}, receivedByCurrency: {}, entries: [], refundObligations: [] }, ...over,
 });
 const settle = async () => { for (let i = 0; i < 24; i++) await Promise.resolve(); };
@@ -50,6 +51,10 @@ describe('Administrator booking detail and approval', () => {
     expect(text).toContain('B-synthetic'); expect(text).toContain('UTC+1'); expect(text).toContain('remaining 100.00 (EUR)'); expect(text).toContain('Approval does not imply payment');
     expect(text).toContain('<b>Private synthetic message</b>'); expect(fixture.nativeElement.querySelector('dd b')).toBeNull(); expect(text).toContain('Request expires');
     expect(storage).not.toHaveBeenCalled(); expect(fixture.nativeElement.querySelector('#meeting-url')).not.toBeNull();
+  });
+  it('shows reviewed effective intake while explaining the retained original', async () => {
+    await loaded(detail({ effectiveIntake: { ...detail().effectiveIntake, firstName: 'Reviewed', message: '<b>Corrected</b>' } }));
+    expect(fixture.nativeElement.textContent).toContain('Reviewed Customer'); expect(fixture.nativeElement.textContent).toContain('<b>Corrected</b>'); expect(fixture.nativeElement.textContent).toContain('original intake remains'); expect(fixture.nativeElement.querySelector('dd b')).toBeNull();
   });
   it('rejects a malformed identifier without any request and reports a missing booking', async () => {
     create('not-a-uuid'); expect(view.message()).toContain('could not be found'); http.expectNone(r => r.url.includes('/admin/bookings'));

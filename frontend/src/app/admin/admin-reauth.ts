@@ -1,10 +1,12 @@
 import { Router } from '@angular/router';
 import { SessionAccess } from '../shared/access/session-access';
 
-const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/privacy)?|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
+const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(privacy|corrections))?|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
+
+const CORRECTION_RETURN = /^\/admin\/customers\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/corrections\?kind=(NOTE|INTAKE)&booking=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Only same-origin administrator pages are valid return targets; anything else falls back to the agenda. */
-export function safeReturn(value: string | null | undefined): string { return typeof value === 'string' && RETURN.test(value) ? value : '/admin'; }
+export function safeReturn(value: string | null | undefined): string { return typeof value === 'string' && (RETURN.test(value) || CORRECTION_RETURN.test(value)) ? value : '/admin'; }
 
 /**
  * A 403 means the server no longer accepts this session for administrator work (for example the fresh-authenticator

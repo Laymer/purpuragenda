@@ -300,11 +300,22 @@ class CoreJourneyE2eTest {
         page.navigate(origin+"/admin/customers");
         field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();
         button(page,"View bookings for "+email).click();
+        String customerPage=page.url();
+        at("administrator reviews and confirms a profile correction",page);
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Correct profile").setExact(true)).click();
+        page.locator("#correction-firstName").fill("Reviewed profile");page.locator("#correction-reason").fill("Synthetic profile correction request");button(page,"Prepare correction preview").click();
+        assertThat(page.locator("table")).containsText("Reviewed profile");page.getByRole(AriaRole.CHECKBOX).check();button(page,"Confirm correction").click();assertThat(page.getByText("Correction applied.",new Page.GetByTextOptions().setExact(false))).isVisible();
+        page.navigate(customerPage);field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();button(page,"View bookings for "+email).click();
+        at("administrator reviews and corrects the private note",page);
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Correct private notes").setExact(true)).first().click();button(page,"Correct this note").click();
+        page.locator("#correction-text").fill("Reviewed synthetic export note.");page.locator("#correction-reason").fill("Synthetic note correction request");button(page,"Prepare correction preview").click();
+        assertThat(page.locator("table")).containsText("Reviewed synthetic export note.");assertThat(page.locator("table")).containsText("Reviewed synthetic export note.");page.getByRole(AriaRole.CHECKBOX).check();button(page,"Confirm correction").click();assertThat(page.getByText("Correction applied.",new Page.GetByTextOptions().setExact(false))).isVisible();
+        page.navigate(customerPage);field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();button(page,"View bookings for "+email).click();
         page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Customer data export").setExact(true)).click();
         at("administrator previews customer notes and explicitly releases the export",page);
         page.locator("#export-reason").fill("Synthetic customer export request");button(page,"Prepare export preview").click();
-        assertThat(page.locator("pre")).containsText("Synthetic export note.");
-        assertThat(page.locator("pre")).containsText("Synthetic profile");
+        assertThat(page.locator("pre")).containsText("Reviewed synthetic export note.");
+        assertThat(page.locator("pre")).containsText("Reviewed profile");
         assertThat(page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Save reviewed customer export"))).hasCount(0);
         page.getByRole(AriaRole.CHECKBOX).check();button(page,"Confirm and release export").click();
         assertThat(page.getByText("Export released after review.")).isVisible();button(page,"Prepare secure download").click();
@@ -312,7 +323,7 @@ class CoreJourneyE2eTest {
         var download=page.waitForDownload(()->page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Save reviewed customer export").setExact(true)).click());
         assertEquals("customer-export.json",download.suggestedFilename());
         String content=java.nio.file.Files.readString(download.path());
-        assertTrue(content.contains("Synthetic export note."));assertTrue(content.contains("Synthetic profile"));assertTrue(content.contains(email));
+        assertTrue(content.contains("Reviewed synthetic export note."));assertTrue(content.contains("Reviewed profile"));assertTrue(content.contains(email));
         for(String forbidden:List.of("password_hash","totp_secret","csrf_hash","token_hash","encrypted_envelope"))assertFalse(content.contains(forbidden));
         download.delete();
     }

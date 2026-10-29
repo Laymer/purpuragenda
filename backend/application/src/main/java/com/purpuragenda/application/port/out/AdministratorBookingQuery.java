@@ -27,8 +27,9 @@ public interface AdministratorBookingQuery {
         @Override public String toString() { return "AdministratorAgendaPage[REDACTED]"; }
     }
     /** Full immutable booking and independent payment facts for the private owner detail projection. */
-    record Detail(Booking booking,PaymentLedger ledger,Instant observedAt) {
-        public Detail { Objects.requireNonNull(booking);Objects.requireNonNull(ledger);Objects.requireNonNull(observedAt); }
+    record Detail(Booking booking,PaymentLedger ledger,Instant observedAt,com.purpuragenda.domain.customer.Intake effectiveIntake) {
+        public Detail(Booking booking,PaymentLedger ledger,Instant observedAt){this(booking,ledger,observedAt,booking.snapshot().intake());}
+        public Detail { Objects.requireNonNull(booking);Objects.requireNonNull(ledger);Objects.requireNonNull(observedAt);Objects.requireNonNull(effectiveIntake); }
         @Override public String toString() { return "AdministratorBookingDetail[REDACTED]"; }
     }
 }

@@ -91,9 +91,15 @@ public class RuntimeApplication {
     @Bean AdministratorExportController administratorExportController(com.purpuragenda.application.port.out.CustomerExportStore store,SessionAccess access,SessionCookies cookies) {
         return new AdministratorExportController(new com.purpuragenda.application.privacy.AdministratorExports(store),access,cookies);
     }
+    @Bean com.purpuragenda.application.port.out.CustomerCorrectionStore customerCorrectionStore(DataSource source,RuntimeSettings settings) {
+        return new com.purpuragenda.adapters.out.postgres.PostgresCustomerCorrections(source,settings.delivery(),settings.meetingHosts());
+    }
+    @Bean AdministratorCorrectionController administratorCorrectionController(com.purpuragenda.application.port.out.CustomerCorrectionStore store,SessionAccess access,SessionCookies cookies) {
+        return new AdministratorCorrectionController(new com.purpuragenda.application.privacy.AdministratorCorrections(store),access,cookies);
+    }
     @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,DueBookingExpiry expiry,OutboxExpander outbox,BookingNotificationWorker booking,
-                                       DatabaseReadiness readiness,RuntimeSettings settings,com.purpuragenda.application.port.out.CustomerExportStore exports) {
-        return new RuntimeWorkers(delivery::tick,()->{maintenance.tick();exports.purge(500);},expiry::tick,()->outbox.drain(100),booking::tick,
+                                       DatabaseReadiness readiness,RuntimeSettings settings,com.purpuragenda.application.port.out.CustomerExportStore exports,com.purpuragenda.application.port.out.CustomerCorrectionStore corrections) {
+        return new RuntimeWorkers(delivery::tick,()->{maintenance.tick();exports.purge(500);corrections.purge(500);},expiry::tick,()->outbox.drain(100),booking::tick,
                 () -> org.springframework.boot.health.contributor.Status.UP.equals(readiness.health().getStatus()),settings.suppressed());
     }
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }

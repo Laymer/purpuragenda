@@ -113,6 +113,7 @@ public final class PostgresCustomerExports implements CustomerExportStore {
               'bookings',COALESCE((SELECT jsonb_agg(jsonb_build_object(
                 'id',b.id,'reference',b.reference,'state',b.state,'createdAt',b.created_at,'start',b.start_at,'end',b.session_end,
                 'deliveryEmail',b.delivery_email,'snapshot',s.document,
+                'effectiveIntake',COALESCE((SELECT m.document->'intake' FROM booking_amendment m WHERE m.booking_id=b.id AND m.document->>'kind'='INTAKE_CORRECTION' ORDER BY (m.document->>'revision')::bigint DESC LIMIT 1),s.document->'intake'),
                 'contactChanges',COALESCE((SELECT jsonb_agg(jsonb_build_object('oldEmail',h.old_email,'newEmail',h.new_email,'changedAt',h.changed_at) ORDER BY h.changed_at,h.id) FROM booking_contact_change h WHERE h.booking_id=b.id),'[]'::jsonb),
                 'overrides',COALESCE((SELECT jsonb_agg(jsonb_build_object('rules',o.rules,'reason',o.reason,'createdAt',o.created_at) ORDER BY o.created_at,o.id) FROM booking_override o WHERE o.booking_id=b.id),'[]'::jsonb),
                 'refundObligations',COALESCE((SELECT jsonb_agg(jsonb_build_object('receiptId',r.receipt_id,'dueMinor',r.due_minor,'reason',r.reason) ORDER BY r.receipt_id) FROM refund_obligation r JOIN payment_entry p ON p.id=r.receipt_id WHERE p.booking_id=b.id),'[]'::jsonb),

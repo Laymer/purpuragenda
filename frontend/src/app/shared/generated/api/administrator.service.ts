@@ -41,6 +41,16 @@ import { AdministratorConflictPreview } from '../model/administratorConflictPrev
 // @ts-ignore
 import { AdministratorConflictPreviewRequest } from '../model/administratorConflictPreviewRequest';
 // @ts-ignore
+import { AdministratorCorrectionPreview } from '../model/administratorCorrectionPreview';
+// @ts-ignore
+import { AdministratorCorrectionReceipt } from '../model/administratorCorrectionReceipt';
+// @ts-ignore
+import { AdministratorCorrectionRequest } from '../model/administratorCorrectionRequest';
+// @ts-ignore
+import { AdministratorCorrectionReview } from '../model/administratorCorrectionReview';
+// @ts-ignore
+import { AdministratorCorrectionTarget } from '../model/administratorCorrectionTarget';
+// @ts-ignore
 import { AdministratorCustomerBookings } from '../model/administratorCustomerBookings';
 // @ts-ignore
 import { AdministratorCustomerPage } from '../model/administratorCustomerPage';
@@ -761,6 +771,100 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.
+     * @endpoint post /admin/corrections/{id}/confirm
+     * @param id Canonical correction scope identifier or lower-case target kind.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch Quoted preview version.
+     * @param administratorCorrectionReview Normalized correction fields and reason, or explicit confirmation of the reviewed digest.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public confirmAdministratorCorrection(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorCorrectionReview: AdministratorCorrectionReview, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCorrectionReceipt>;
+    public confirmAdministratorCorrection(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorCorrectionReview: AdministratorCorrectionReview, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCorrectionReceipt>>;
+    public confirmAdministratorCorrection(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorCorrectionReview: AdministratorCorrectionReview, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCorrectionReceipt>>;
+    public confirmAdministratorCorrection(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorCorrectionReview: AdministratorCorrectionReview, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling confirmAdministratorCorrection.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling confirmAdministratorCorrection.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling confirmAdministratorCorrection.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling confirmAdministratorCorrection.');
+        }
+        if (administratorCorrectionReview === null || administratorCorrectionReview === undefined) {
+            throw new Error('Required parameter administratorCorrectionReview was null or undefined when calling confirmAdministratorCorrection.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/corrections/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/confirm`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCorrectionReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorCorrectionReview,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.
      * @endpoint post /admin/bookings/{bookingId}/confirm-external-payment
      * @param bookingId 
@@ -1258,6 +1362,132 @@ export class AdministratorService extends BaseService {
         let localVarPath = `/admin/configuration`;
         const { basePath, withCredentials } = this.configuration;
         return this.httpClient.request<AdministratorConfiguration>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.
+     * @endpoint get /admin/corrections/{id}
+     * @param id Canonical correction scope identifier or lower-case target kind.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorCorrection(id: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCorrectionPreview>;
+    public getAdministratorCorrection(id: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCorrectionPreview>>;
+    public getAdministratorCorrection(id: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCorrectionPreview>>;
+    public getAdministratorCorrection(id: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling getAdministratorCorrection.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/corrections/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCorrectionPreview>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.
+     * @endpoint get /admin/customers/{customerId}/corrections/{kind}/{targetId}
+     * @param customerId Canonical correction scope identifier or lower-case target kind.
+     * @param kind Canonical correction scope identifier or lower-case target kind.
+     * @param targetId Canonical correction scope identifier or lower-case target kind.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorCorrectionTarget(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCorrectionTarget>;
+    public getAdministratorCorrectionTarget(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCorrectionTarget>>;
+    public getAdministratorCorrectionTarget(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCorrectionTarget>>;
+    public getAdministratorCorrectionTarget(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling getAdministratorCorrectionTarget.');
+        }
+        if (kind === null || kind === undefined) {
+            throw new Error('Required parameter kind was null or undefined when calling getAdministratorCorrectionTarget.');
+        }
+        if (targetId === null || targetId === undefined) {
+            throw new Error('Required parameter targetId was null or undefined when calling getAdministratorCorrectionTarget.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/corrections/${this.configuration.encodeParam({name: "kind", value: kind, in: "path", style: "simple", explode: false, dataType: "'profile' | 'note' | 'intake'", dataFormat: undefined})}/${this.configuration.encodeParam({name: "targetId", value: targetId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCorrectionTarget>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -1849,6 +2079,101 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorLoginRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Fresh persisted administrator MFA required for every target, preview, confirmation and replay. Actor-bound encrypted previews expire after one hour. Confirmation requires exact digest, explicit true and preview version1; stale target changes require a new preview. Corrections atomically revoke affected temporary exports; immutable original snapshots and independent financial facts remain. Identity/ownership/contact are excluded. Responses are no-store; query parameters rejected.
+     * @endpoint post /admin/customers/{customerId}/corrections/{kind}/{targetId}
+     * @param customerId Canonical correction scope identifier or lower-case target kind.
+     * @param kind Canonical correction scope identifier or lower-case target kind.
+     * @param targetId Canonical correction scope identifier or lower-case target kind.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorCorrectionRequest Normalized correction fields and reason, or explicit confirmation of the reviewed digest.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public prepareAdministratorCorrection(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, xCSRFToken: string, idempotencyKey: string, administratorCorrectionRequest: AdministratorCorrectionRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorCorrectionReceipt>;
+    public prepareAdministratorCorrection(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, xCSRFToken: string, idempotencyKey: string, administratorCorrectionRequest: AdministratorCorrectionRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorCorrectionReceipt>>;
+    public prepareAdministratorCorrection(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, xCSRFToken: string, idempotencyKey: string, administratorCorrectionRequest: AdministratorCorrectionRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorCorrectionReceipt>>;
+    public prepareAdministratorCorrection(customerId: string, kind: 'profile' | 'note' | 'intake', targetId: string, xCSRFToken: string, idempotencyKey: string, administratorCorrectionRequest: AdministratorCorrectionRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling prepareAdministratorCorrection.');
+        }
+        if (kind === null || kind === undefined) {
+            throw new Error('Required parameter kind was null or undefined when calling prepareAdministratorCorrection.');
+        }
+        if (targetId === null || targetId === undefined) {
+            throw new Error('Required parameter targetId was null or undefined when calling prepareAdministratorCorrection.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling prepareAdministratorCorrection.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling prepareAdministratorCorrection.');
+        }
+        if (administratorCorrectionRequest === null || administratorCorrectionRequest === undefined) {
+            throw new Error('Required parameter administratorCorrectionRequest was null or undefined when calling prepareAdministratorCorrection.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/corrections/${this.configuration.encodeParam({name: "kind", value: kind, in: "path", style: "simple", explode: false, dataType: "'profile' | 'note' | 'intake'", dataFormat: undefined})}/${this.configuration.encodeParam({name: "targetId", value: targetId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorCorrectionReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorCorrectionRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

@@ -54,6 +54,7 @@ final class AdministratorBookingHttp {
                 .put("pendingLifetimeSeconds",policy.pendingLifetime().getSeconds()).put("expiryBufferSeconds",policy.expiryBuffer().getSeconds()).put("customerCutoffSeconds",policy.customerCutoff().getSeconds());
         frozen.putObject("intake").put("firstName",intake.firstName()).put("lastName",intake.lastName()).put("telephone",intake.telephone()).put("birthDate",intake.birthDate().toString())
                 .put("birthTime",intake.birthTime().toString()).put("birthplace",intake.birthplace()).put("message",intake.message());
+        var effective=detail.effectiveIntake();body.putObject("effectiveIntake").put("firstName",effective.firstName()).put("lastName",effective.lastName()).put("telephone",effective.telephone()).put("birthDate",effective.birthDate().toString()).put("birthTime",effective.birthTime().toString()).put("birthplace",effective.birthplace()).put("message",effective.message());
         var payment=body.putObject("payment");var summary=detail.ledger().summary(service.price());
         payment.put("status",summary.status().name()).put("receivedMinor",summary.receivedMinor()).put("refundedMinor",summary.refundedMinor()).put("remainingMinor",summary.remainingMinor());
         var due=payment.putObject("refundDueByCurrency");new TreeMap<>(summary.refundDueByCurrency()).forEach(due::put);

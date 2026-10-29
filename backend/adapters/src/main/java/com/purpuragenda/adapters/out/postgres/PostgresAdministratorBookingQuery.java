@@ -68,7 +68,8 @@ public final class PostgresAdministratorBookingQuery implements AdministratorBoo
                             PersistedSession.time(row,"verified_at"),row.getObject(8,UUID.class)),bookingId);
             var obligations=jdbc.query("SELECT o.receipt_id,o.due_minor,o.reason FROM refund_obligation o JOIN payment_entry p ON p.id=o.receipt_id WHERE p.booking_id=? ORDER BY o.receipt_id",
                     (row,n)->new PaymentLedger.Obligation(row.getObject(1,UUID.class),row.getLong(2),row.getString(3)),bookingId);
-            return new Detail(booking,new PaymentLedger(entries,obligations),now);
+            var corrected=jdbc.query("SELECT document->'intake' FROM booking_amendment WHERE booking_id=? AND document->>'kind'='INTAKE_CORRECTION' ORDER BY (document->>'revision')::bigint DESC LIMIT 1",(r,n)->PersistedJson.read(r.getString(1),com.purpuragenda.domain.customer.Intake.class),bookingId);
+            return new Detail(booking,new PaymentLedger(entries,obligations),now,corrected.isEmpty()?booking.snapshot().intake():corrected.getFirst());
         }));
     }
 }
