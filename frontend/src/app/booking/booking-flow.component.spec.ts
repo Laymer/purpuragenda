@@ -41,6 +41,14 @@ describe('Real typed booking flow and private state', () => {
     const request = http.expectOne('/api/v1/bookings'); request.flush({ bookingId: booking.id, version: 1 }); await settle();
     http.expectOne('/api/v1/bookings/' + booking.id).flush(booking); await pending;
   }
+  it('associates the free-text field with non-medical privacy guidance before entry', async () => {
+    await enter(); fixture.detectChanges();
+    const field = fixture.nativeElement.querySelector('textarea[formControlName="message"]');
+    expect(field).not.toBeNull(); expect(field.getAttribute('aria-describedby')).toBe('intake-privacy-guidance');
+    const guidance = fixture.nativeElement.querySelector('#intake-privacy-guidance');
+    expect(guidance.textContent).toContain('Do not enter medical information or other sensitive personal information');
+    expect(guidance.textContent).toContain('only details needed');
+  });
   it('does not advance without a time, coalesces busy actions and refuses administrator customer creation', async () => {
     flow.choose(null); await flow.begin(); http.expectNone('/api/v1/session/bootstrap');
     flow.choose(choice); const pending = flow.begin(); await flow.begin(); await settle(); http.expectOne('/api/v1/session/bootstrap').flush(session('ADMIN')); await pending;

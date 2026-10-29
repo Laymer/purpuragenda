@@ -34,7 +34,8 @@ const text = (max: number) => new FormControl('', { nonNullable: true, validator
               <select id="occurrence" formControlName="startInstant"><option value="">Choose an occurrence</option>@for (instant of instants(); track instant) { <option [value]="instant">{{ display(instant) }}</option> }</select> }
             <label for="email">Customer email</label><input id="email" type="email" formControlName="customerEmail" autocomplete="off">
             @for (field of intakeFields; track field.key) { <label [for]="field.key">{{ field.label }}</label><input [id]="field.key" [type]="field.type" [formControlName]="field.key" autocomplete="off"> }
-            <label for="intake-message">Customer message (optional)</label><textarea id="intake-message" formControlName="message" maxlength="1000"></textarea>
+            <p id="manual-privacy-guidance">This is a non-medical service. Do not enter medical information or other sensitive personal information. Include only details needed for this consultation. Do not record unnecessary information about other people.</p>
+            <label for="intake-message">Customer message (optional)</label><textarea aria-describedby="manual-privacy-guidance" id="intake-message" formControlName="message" maxlength="1000"></textarea>
             <label for="mode">Initial state</label><select id="mode" formControlName="mode"><option value="pending">Pending confirmation</option><option value="confirmed">Confirmed manually</option></select>
             @if (form.controls.mode.value === 'confirmed') { <label for="manual-meeting">Zoom meeting link</label><input id="manual-meeting" type="url" formControlName="meetingUrl" autocomplete="off"> }
             <p>Confirmation does not record payment. Every booking reserves 120 minutes; overlaps cannot be overridden.</p>

@@ -34,6 +34,14 @@ describe('Administrator manual booking creation', () => {
   });
   afterEach(() => { try { http.verify(); } finally { TestBed.resetTestingModule(); vi.useRealTimers(); } });
 
+  it('associates the free-text field with non-medical privacy guidance before entry', async () => {
+    await loaded();
+    const field = fixture.nativeElement.querySelector('textarea#intake-message');
+    expect(field).not.toBeNull(); expect(field.getAttribute('aria-describedby')).toBe('manual-privacy-guidance');
+    const guidance = fixture.nativeElement.querySelector('#manual-privacy-guidance');
+    expect(guidance.textContent).toContain('Do not enter medical information or other sensitive personal information');
+    expect(guidance.textContent).toContain('only details needed');
+  });
   it('reviews exact versions, shows terms and submits a pending booking without payment or overrides', async () => {
     const storage = vi.spyOn(Storage.prototype, 'setItem'); const nav = vi.spyOn(router, 'navigateByUrl'); await reviewed();
     expect(fixture.nativeElement.textContent).toContain('Synthetic notice text'); expect(fixture.nativeElement.textContent).toContain('synthetic');

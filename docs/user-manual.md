@@ -77,3 +77,7 @@ Not available in 1.0.0: rejecting a request from the interface, recording paymen
 - Sign-in keeps failing: Check the device clock that runs the authenticator app, and wait for a new code before trying again.
 
 Never run `docker compose down -v` and never delete `./.secrets`. Doing so destroys the bookings and the keys that protect them.
+
+## Non-medical information only
+
+Keep the requested contact and birth details, but do not enter medical information or other sensitive personal information in the customer message or administrator notes. Include only information needed for the consultation and avoid unnecessary information about other people. Private notes are restricted to administrator access; they may still need to be included in a customer data export after review. The displayed guidance does not automatically detect or remove sensitive content. Controlled exports, corrections and erasure are still being implemented; their review deadlines alone do not delete records.

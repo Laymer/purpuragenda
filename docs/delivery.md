@@ -73,3 +73,7 @@ Release requires P07–P49 merged with every slice and full exact-revision gates
 English, single practitioner, external payment facts and manual Zoom remain v1 scope. Checkout and automatic Zoom remain excluded.
 
 Owner platform update permits P49/macOS-bootstrap as an early independent host-prerequisite slice. Target is Intel/macOSSequoia15.7.8 with existingDockerDesktop, local bootstrap preferred; retain native acceptance and full runbooks as pending. Publicmedinavie.com ingress connects throughTailscale; the Linux computer is the proposed off-host backup.
+
+## Local 1.1.0 delivery override
+
+The 2026-10-29 owner plan supersedes the earlier full-public-release prerequisite for the local1.1.0 tag only. Continue one sequential implementation lane with coherent feature PRs and independent review. P34/P35 privacy, P36 notification audit, P37 private calendar actions, P46/P47 local encrypted recovery and the specified core browser/privacy/calendar/race/accessibility-smoke/recovery verification remain local blockers. Existing implemented CI categories and coverage thresholds remain mandatory for every PR. Deferred full browser/viewport, comprehensive accessibility, performance/load, remaining security/ZAP and external operational/legal/owner acceptance remain explicit public-use blockers. Their ledger states must not become Merged from the local tag. P48 image publication is not authorized by this local release.
