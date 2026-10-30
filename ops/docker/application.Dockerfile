@@ -24,6 +24,7 @@ FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f57
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && useradd --uid 10001 --create-home app
 COPY --from=toolchain /build/.toolchain/jdk /opt/java
 COPY --from=backend-build /build/backend/bootstrap/target/bootstrap-0.1.0-SNAPSHOT.jar /app/application.jar
+RUN mkdir -p /privacy-journal && chown 10001:10001 /privacy-journal
 USER 10001:10001
 WORKDIR /app
 EXPOSE 8081

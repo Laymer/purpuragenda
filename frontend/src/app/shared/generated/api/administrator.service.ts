@@ -57,6 +57,14 @@ import { AdministratorCustomerPage } from '../model/administratorCustomerPage';
 // @ts-ignore
 import { AdministratorDateExceptionRequest } from '../model/administratorDateExceptionRequest';
 // @ts-ignore
+import { AdministratorErasurePreview } from '../model/administratorErasurePreview';
+// @ts-ignore
+import { AdministratorErasureReceipt } from '../model/administratorErasureReceipt';
+// @ts-ignore
+import { AdministratorErasureRequest } from '../model/administratorErasureRequest';
+// @ts-ignore
+import { AdministratorErasureReview } from '../model/administratorErasureReview';
+// @ts-ignore
 import { AdministratorExportPreview } from '../model/administratorExportPreview';
 // @ts-ignore
 import { AdministratorExportReceipt } from '../model/administratorExportReceipt';
@@ -88,6 +96,12 @@ import { AdministratorOutcomeRequest } from '../model/administratorOutcomeReques
 import { AdministratorPolicyChangeRequest } from '../model/administratorPolicyChangeRequest';
 // @ts-ignore
 import { AdministratorPolicyReceipt } from '../model/administratorPolicyReceipt';
+// @ts-ignore
+import { AdministratorPrivacyHoldRelease } from '../model/administratorPrivacyHoldRelease';
+// @ts-ignore
+import { AdministratorPrivacyHoldRequest } from '../model/administratorPrivacyHoldRequest';
+// @ts-ignore
+import { AdministratorPrivacyOverview } from '../model/administratorPrivacyOverview';
 // @ts-ignore
 import { AdministratorReceiptRequest } from '../model/administratorReceiptRequest';
 // @ts-ignore
@@ -865,6 +879,100 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint post /admin/erasures/{id}/confirm
+     * @param id Exact privacy request or customer identifier.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param ifMatch Quoted preview version.
+     * @param administratorErasureReview Exact reviewed scope, reason or digest; explicit confirmation is mandatory.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public confirmAdministratorErasure(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorErasureReview: AdministratorErasureReview, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorErasureReceipt>;
+    public confirmAdministratorErasure(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorErasureReview: AdministratorErasureReview, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorErasureReceipt>>;
+    public confirmAdministratorErasure(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorErasureReview: AdministratorErasureReview, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorErasureReceipt>>;
+    public confirmAdministratorErasure(id: string, xCSRFToken: string, idempotencyKey: string, ifMatch: string, administratorErasureReview: AdministratorErasureReview, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling confirmAdministratorErasure.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling confirmAdministratorErasure.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling confirmAdministratorErasure.');
+        }
+        if (ifMatch === null || ifMatch === undefined) {
+            throw new Error('Required parameter ifMatch was null or undefined when calling confirmAdministratorErasure.');
+        }
+        if (administratorErasureReview === null || administratorErasureReview === undefined) {
+            throw new Error('Required parameter administratorErasureReview was null or undefined when calling confirmAdministratorErasure.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+        if (ifMatch !== undefined && ifMatch !== null) {
+            localVarHeaders = localVarHeaders.set('If-Match', String(ifMatch));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/erasures/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/confirm`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorErasureReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorErasureReview,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Requires exact Origin/CSRF, idempotency and persisted enabled/enrolled/current-epoch administrator with fresh MFA within ten minutes, rechecked under the resource lock before replay. Replies are no-store. Strong If-Match required. Manual approval leaves payment unchanged; external-payment confirmation separately requires sufficient matching-currency net funds, a live pending hold and valid allowed meeting.
      * @endpoint post /admin/bookings/{bookingId}/confirm-external-payment
      * @param bookingId 
@@ -1031,6 +1139,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorBookingCreateRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint post /admin/customers/{customerId}/privacy-holds
+     * @param customerId Exact privacy request or customer identifier.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorPrivacyHoldRequest Exact reviewed scope, reason or digest; explicit confirmation is mandatory.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public createAdministratorPrivacyHold(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRequest: AdministratorPrivacyHoldRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorErasureReceipt>;
+    public createAdministratorPrivacyHold(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRequest: AdministratorPrivacyHoldRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorErasureReceipt>>;
+    public createAdministratorPrivacyHold(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRequest: AdministratorPrivacyHoldRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorErasureReceipt>>;
+    public createAdministratorPrivacyHold(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRequest: AdministratorPrivacyHoldRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling createAdministratorPrivacyHold.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling createAdministratorPrivacyHold.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling createAdministratorPrivacyHold.');
+        }
+        if (administratorPrivacyHoldRequest === null || administratorPrivacyHoldRequest === undefined) {
+            throw new Error('Required parameter administratorPrivacyHoldRequest was null or undefined when calling createAdministratorPrivacyHold.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/privacy-holds`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorErasureReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorPrivacyHoldRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -1583,6 +1778,65 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint get /admin/erasures/{id}
+     * @param id Exact privacy request or customer identifier.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorErasure(id: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorErasurePreview>;
+    public getAdministratorErasure(id: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorErasurePreview>>;
+    public getAdministratorErasure(id: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorErasurePreview>>;
+    public getAdministratorErasure(id: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling getAdministratorErasure.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/erasures/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorErasurePreview>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Private fresh-MFA-authorized export. No query parameters; expires at exact one-hour boundary; no-store and no conditional cache response. Preview is for third-party review; download requires explicit release. Download is UTF-8 JSON with fixed attachment filename customer-export.json. Application-held encrypted copies are purged automatically; operator downloads remain operator-controlled.
      * @endpoint get /admin/exports/{exportId}
      * @param exportId Temporary export identifier; never authority.
@@ -1811,6 +2065,65 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint get /admin/customers/{customerId}/privacy-review
+     * @param customerId Exact privacy request or customer identifier.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getAdministratorPrivacyReview(customerId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorPrivacyOverview>;
+    public getAdministratorPrivacyReview(customerId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorPrivacyOverview>>;
+    public getAdministratorPrivacyReview(customerId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorPrivacyOverview>>;
+    public getAdministratorPrivacyReview(customerId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling getAdministratorPrivacyReview.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/privacy-review`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorPrivacyOverview>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -2174,6 +2487,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorCorrectionRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint post /admin/customers/{customerId}/erasures
+     * @param customerId Exact privacy request or customer identifier.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorErasureRequest Exact reviewed scope, reason or digest; explicit confirmation is mandatory.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public prepareAdministratorErasure(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorErasureRequest: AdministratorErasureRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorErasureReceipt>;
+    public prepareAdministratorErasure(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorErasureRequest: AdministratorErasureRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorErasureReceipt>>;
+    public prepareAdministratorErasure(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorErasureRequest: AdministratorErasureRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorErasureReceipt>>;
+    public prepareAdministratorErasure(customerId: string, xCSRFToken: string, idempotencyKey: string, administratorErasureRequest: AdministratorErasureRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (customerId === null || customerId === undefined) {
+            throw new Error('Required parameter customerId was null or undefined when calling prepareAdministratorErasure.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling prepareAdministratorErasure.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling prepareAdministratorErasure.');
+        }
+        if (administratorErasureRequest === null || administratorErasureRequest === undefined) {
+            throw new Error('Required parameter administratorErasureRequest was null or undefined when calling prepareAdministratorErasure.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/customers/${this.configuration.encodeParam({name: "customerId", value: customerId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/erasures`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorErasureReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorErasureRequest,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
@@ -2862,6 +3262,93 @@ export class AdministratorService extends BaseService {
             {
                 context: localVarHttpContext,
                 body: administratorExportReview,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.
+     * @endpoint post /admin/privacy-holds/{id}/release
+     * @param id Exact privacy request or customer identifier.
+     * @param xCSRFToken Current same-origin session CSRF proof.
+     * @param idempotencyKey Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects.
+     * @param administratorPrivacyHoldRelease Exact reviewed scope, reason or digest; explicit confirmation is mandatory.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public releaseAdministratorPrivacyHold(id: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRelease: AdministratorPrivacyHoldRelease, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdministratorErasureReceipt>;
+    public releaseAdministratorPrivacyHold(id: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRelease: AdministratorPrivacyHoldRelease, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdministratorErasureReceipt>>;
+    public releaseAdministratorPrivacyHold(id: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRelease: AdministratorPrivacyHoldRelease, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdministratorErasureReceipt>>;
+    public releaseAdministratorPrivacyHold(id: string, xCSRFToken: string, idempotencyKey: string, administratorPrivacyHoldRelease: AdministratorPrivacyHoldRelease, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/problem+json' | 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling releaseAdministratorPrivacyHold.');
+        }
+        if (xCSRFToken === null || xCSRFToken === undefined) {
+            throw new Error('Required parameter xCSRFToken was null or undefined when calling releaseAdministratorPrivacyHold.');
+        }
+        if (idempotencyKey === null || idempotencyKey === undefined) {
+            throw new Error('Required parameter idempotencyKey was null or undefined when calling releaseAdministratorPrivacyHold.');
+        }
+        if (administratorPrivacyHoldRelease === null || administratorPrivacyHoldRelease === undefined) {
+            throw new Error('Required parameter administratorPrivacyHoldRelease was null or undefined when calling releaseAdministratorPrivacyHold.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+        if (xCSRFToken !== undefined && xCSRFToken !== null) {
+            localVarHeaders = localVarHeaders.set('X-CSRF-Token', String(xCSRFToken));
+        }
+        if (idempotencyKey !== undefined && idempotencyKey !== null) {
+            localVarHeaders = localVarHeaders.set('Idempotency-Key', String(idempotencyKey));
+        }
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/problem+json',
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/admin/privacy-holds/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/release`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdministratorErasureReceipt>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: administratorPrivacyHoldRelease,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,

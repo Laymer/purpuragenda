@@ -45,16 +45,16 @@ final class AdministratorBookingHttp {
         ObjectNode body=JSON.createObjectNode().put("id",b.id().toString()).put("reference",b.reference()).put("version",b.version()).put("state",b.state().name()).put("origin",b.origin().name())
                 .put("createdAt",b.createdAt().toString()).put("startInstant",b.start().toString()).put("sessionEndInstant",b.sessionEnd().toString()).put("reservationEndInstant",b.reservedEnd().toString())
                 .put("pendingExpiresAt",b.expiresAt()==null?null:b.expiresAt().toString()).put("pendingExpired",b.state()==com.purpuragenda.domain.booking.Booking.State.PENDING_CONFIRMATION && !b.livePending(detail.observedAt()))
-                .put("deliveryEmail",b.deliveryEmail()).put("meetingUrl",b.meeting()==null?null:b.meeting().participantUrl()).put("calendarRevision",b.calendarRevision())
+                .put("identityErased",b.meetingErased()).put("deliveryEmail",b.deliveryEmail()).put("meetingUrl",b.meeting()==null?null:b.meeting().participantUrl()).put("calendarRevision",b.calendarRevision())
                 .put("confirmationBasis",b.confirmationBasis()==null?null:b.confirmationBasis().name()).put("serverNow",detail.observedAt().toString());
         var frozen=body.putObject("snapshot").put("creationEmail",snapshot.creationEmail()).put("displayZone",snapshot.displayZone()).put("noticeVersion",snapshot.privacyNoticeVersion());
         frozen.putObject("service").put("id",service.id().toString()).put("version",service.version()).put("name",service.name()).put("durationMinutes",service.durationMinutes())
                 .put("priceMinor",service.price().minor()).put("currency",service.price().currency()).put("active",service.active());
         frozen.putObject("policy").put("version",policy.version()).put("gridMinutes",policy.gridMinutes()).put("dailyCapacity",policy.dailyCapacity()).put("minimumNoticeSeconds",policy.minimumNotice().getSeconds())
                 .put("pendingLifetimeSeconds",policy.pendingLifetime().getSeconds()).put("expiryBufferSeconds",policy.expiryBuffer().getSeconds()).put("customerCutoffSeconds",policy.customerCutoff().getSeconds());
-        frozen.putObject("intake").put("firstName",intake.firstName()).put("lastName",intake.lastName()).put("telephone",intake.telephone()).put("birthDate",intake.birthDate().toString())
+        if(intake==null)frozen.putNull("intake"); else frozen.putObject("intake").put("firstName",intake.firstName()).put("lastName",intake.lastName()).put("telephone",intake.telephone()).put("birthDate",intake.birthDate().toString())
                 .put("birthTime",intake.birthTime().toString()).put("birthplace",intake.birthplace()).put("message",intake.message());
-        var effective=detail.effectiveIntake();body.putObject("effectiveIntake").put("firstName",effective.firstName()).put("lastName",effective.lastName()).put("telephone",effective.telephone()).put("birthDate",effective.birthDate().toString()).put("birthTime",effective.birthTime().toString()).put("birthplace",effective.birthplace()).put("message",effective.message());
+        var effective=detail.effectiveIntake();if(effective==null)body.putNull("effectiveIntake");else body.putObject("effectiveIntake").put("firstName",effective.firstName()).put("lastName",effective.lastName()).put("telephone",effective.telephone()).put("birthDate",effective.birthDate().toString()).put("birthTime",effective.birthTime().toString()).put("birthplace",effective.birthplace()).put("message",effective.message());
         var payment=body.putObject("payment");var summary=detail.ledger().summary(service.price());
         payment.put("status",summary.status().name()).put("receivedMinor",summary.receivedMinor()).put("refundedMinor",summary.refundedMinor()).put("remainingMinor",summary.remainingMinor());
         var due=payment.putObject("refundDueByCurrency");new TreeMap<>(summary.refundDueByCurrency()).forEach(due::put);

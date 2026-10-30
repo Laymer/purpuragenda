@@ -42,6 +42,7 @@ class RuntimeDatabaseTest {
                     "app.public-origin","http://localhost:8080","app.totp-key-file",directory.resolve("totp").toString(),
                     "app.delivery-key-file",directory.resolve("delivery").toString(),"app.totp-key-id","totp-test-v1",
                     "app.delivery-key-id","delivery-test-v1","SERVER_PORT","0"));
+            properties.put("app.privacy-journal-directory",directory.resolve("journal").toString());
             properties.putAll(Map.of("app.security.rate-key-file",directory.resolve("rate").toString(),"app.security.rate-key-id","rate-test-v1"));
             properties.putAll(Map.of("app.smtp-host","127.0.0.1","app.smtp-port","1","app.mail-from","synthetic@example.test"));
         } catch(Exception failure) { throw new AssertionError("RUNTIME_POSTGRES_START_FAILED"); }
@@ -60,10 +61,7 @@ class RuntimeDatabaseTest {
         try(var c=DriverManager.getConnection(postgres.getJdbcUrl(),"postgres",postgres.getPassword());var s=c.createStatement()){s.execute(sql);}
     }
     @Test @Order(1) void unmigratedDatabaseIsNeverReady() throws Exception {
-        try(var context=Purpuragenda.launch(new String[0],properties)) {
-            var health=get(port(context),"/actuator/health/readiness");
-            assertEquals(503,health.statusCode());assertEquals("{\"status\":\"DOWN\"}",health.body());
-        }
+        assertEquals("APPLICATION_START_FAILED",assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[0],properties)).getMessage());
     }
     @Test @Order(2) void separateMigrationIsNonWebAndRepeatable() throws Exception {
         var migration=new HashMap<>(properties);migration.put("app.database-user","purpuragenda_migrator");
@@ -103,12 +101,14 @@ class RuntimeDatabaseTest {
             sql("INSERT INTO operation_control(id) VALUES(1)");
         }
     }
-    @Test @Order(4) void restoreCompositionSuppressesAllDeliveryAndRuntimeRejectsDdlRole() {
+    @Test @Order(4) void restoreCompositionSuppressesAllDeliveryAndRuntimeRejectsDdlRole() throws Exception {
         var restore=new HashMap<>(properties);restore.put("app.mode","restore");
         try(var context=Purpuragenda.launch(new String[0],restore)) {
             assertEquals(MailDelivery.Result.SUPPRESSED,context.getBean(MailDelivery.class).send(null));
             assertEquals(AuthDeliveryWorker.Outcome.SUPPRESSED,context.getBean(AuthDeliveryWorker.class).tick());
         }
+        // Explicit synthetic-fixture release after the restore-only suppression check.
+        sql("UPDATE operation_control SET maintenance=false,delivery_suppressed=false WHERE id=1 AND privacy_owner IS NULL");
         var wrong=new HashMap<>(properties);wrong.put("app.database-user","purpuragenda_migrator");
         var failure=assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[0],wrong));
         assertEquals("APPLICATION_START_FAILED",failure.getMessage());assertNull(failure.getCause());
@@ -287,6 +287,7 @@ class RuntimeDatabaseTest {
                 assertFalse(context.getBean(RuntimeWorkers.class).isRunning());
                 assertEquals(1,count("SELECT count(*) FROM notification_job WHERE state='QUEUED' AND template='AUTH' AND attempts=0"));
             }
+            sql("UPDATE operation_control SET maintenance=false,delivery_suppressed=false WHERE id=1 AND privacy_owner IS NULL");
         }
     }
     @Test @Order(11) void realHttpGuestCreationReadMoveAndCancellationUseTheComposedBackend() throws Exception {
@@ -442,6 +443,7 @@ class RuntimeDatabaseTest {
                 assertEquals(1,count("SELECT count(*) FROM outbox_event WHERE booking_id='"+restore+"' AND expanded_at IS NULL"));
                 assertEquals(0,count("SELECT count(*) FROM notification_job WHERE booking_id='"+restore+"'"));
             }
+            sql("UPDATE operation_control SET maintenance=false,delivery_suppressed=false WHERE id=1 AND privacy_owner IS NULL");
         }
     }
     @Test @Order(13) void recoveryOverRealHttpReturnsOnlyRestrictedReenrollmentAndLeavesAnonymousSession() throws Exception {
@@ -628,9 +630,17 @@ class RuntimeDatabaseTest {
         try(var first=Purpuragenda.launch(new String[0],isolated);
             var second=Purpuragenda.launch(new String[0],isolated)) {
             assertNotEquals(port(first),port(second));
-            assertEquals(200,get(port(first),"/actuator/health/readiness").statusCode());
-            assertEquals(200,get(port(second),"/actuator/health/readiness").statusCode());
+            assertEquals(503,get(port(first),"/actuator/health/readiness").statusCode());
+            assertEquals(503,get(port(second),"/actuator/health/readiness").statusCode());
         }
+    }
+    @Test @Order(19) void startupAndPrivateReplayRefuseMissingJournalAndKeepRestoreBarriers() throws Exception {
+        var missing=new HashMap<>(properties);missing.put("app.privacy-journal-directory",directory.resolve("missing-journal").toString());
+        assertEquals("APPLICATION_START_FAILED",assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[0],missing)).getMessage());
+        var restore=new HashMap<>(properties);restore.put("app.mode","restore");
+        var replay=Purpuragenda.launch(new String[]{"erasure-replay"},restore);assertFalse(replay.isActive());
+        assertEquals(1,count("SELECT count(*) FROM operation_control WHERE maintenance AND delivery_suppressed"));
+        assertThrows(IllegalStateException.class,()->Purpuragenda.launch(new String[]{"erasure-replay"},properties));
     }
     // Synthetic durable-work fixtures use the real resource-locked persistence port; no HTTP authorization bypass.
     static UUID syntheticWorkerBooking(org.springframework.context.ConfigurableApplicationContext context,boolean due,int days) throws Exception {

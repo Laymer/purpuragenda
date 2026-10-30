@@ -17,6 +17,7 @@ x-application-environment: &application-environment
   APP_TOTP_KEY_ID: local-totp-v1
   APP_DELIVERY_KEY_FILE: /run/secrets/delivery_key
   APP_DELIVERY_KEY_ID: local-delivery-v1
+  APP_PRIVACY_JOURNAL_DIRECTORY: /privacy-journal
   APP_SECURITY_RATE_KEY_FILE: /run/secrets/rate_key
   APP_SECURITY_RATE_KEY_ID: local-rate-v1
   APP_SECURITY_TRUSTED_PROXY_PEERS: ${PURPURAGENDA_PROXY_ADDRESS:-172.30.78.2}
@@ -69,6 +70,7 @@ services:
       <<: *application-environment
       SERVER_ADDRESS: 0.0.0.0
     secrets: [app_password, totp_key, delivery_key, rate_key]
+    volumes: [privacy_journal:/privacy-journal]
     depends_on:
       migrate: {condition: service_completed_successfully}
       mailpit: {condition: service_healthy}
@@ -84,6 +86,7 @@ services:
     command: [admin-setup]
     environment: *application-environment
     secrets: [app_password, totp_key, delivery_key]
+    volumes: [privacy_journal:/privacy-journal]
     stdin_open: true
     tty: true
     depends_on:
@@ -128,6 +131,7 @@ networks:
     ipam: {config: [{subnet: "${PURPURAGENDA_PROXY_SUBNET:-172.30.78.0/28}", ip_range: "${PURPURAGENDA_PROXY_POOL:-172.30.78.8/29}"}]}
   edge: {}
 volumes:
+  privacy_journal:
   database: {}
   mailbox: {}
   caddy_data: {}

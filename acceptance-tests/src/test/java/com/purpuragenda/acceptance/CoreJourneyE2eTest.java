@@ -44,6 +44,17 @@ class CoreJourneyE2eTest {
         focus = page;
     }
 
+    /** Opt-in documentation captures from this isolated synthetic-data journey; never authentication screens. */
+    private static void manualScreenshot(Page page,String name) {
+        if(!"1".equals(System.getenv("PURPURAGENDA_MANUAL_SCREENSHOTS")))return;
+        if(!name.matches("[0-9]{2}-[a-z-]+"))throw new IllegalArgumentException("INVALID_MANUAL_SCREENSHOT_NAME");
+        var directory=java.nio.file.Path.of(System.getProperty("basedir"),"../artifacts/manual-screenshots").toAbsolutePath().normalize();
+        try{java.nio.file.Files.createDirectories(directory);}catch(java.io.IOException failure){throw new IllegalStateException("MANUAL_SCREENSHOT_DIRECTORY_UNAVAILABLE");}
+        page.screenshot(new Page.ScreenshotOptions().setPath(directory.resolve(name+".png")).setFullPage(true)
+                .setAnimations(com.microsoft.playwright.options.ScreenshotAnimations.DISABLED)
+                .setMask(List.of(page.locator("input[type=password]"),page.locator("input[autocomplete=one-time-code]"))));
+    }
+
     private static Locator button(Page page, String name) {
         return page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(name).setExact(true));
     }
@@ -95,11 +106,13 @@ class CoreJourneyE2eTest {
         at("guest selects a service and an available time", page);
         Locator services = page.locator("input[name=consultation]");
         assertThat(services.first()).isVisible();
+        manualScreenshot(page,"01-choose-consultation");
         services.first().check();
         field(page, "Through").fill(today.plusDays(27).toString());
         button(page, "Show available times").click();
         Locator times = page.locator("input[name=time]");
         assertThat(times.first()).isVisible();
+        manualScreenshot(page,"02-available-times");
         times.first().check();
         assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Your selection"))).isVisible();
         button(page, "Continue").click();
@@ -138,6 +151,7 @@ class CoreJourneyE2eTest {
 
         at("guest reviews and submits", page);
         assertThat(heading(page, "Review your request")).isVisible();
+        manualScreenshot(page,"03-review-request");
         page.locator(".agreement input").check();
         button(page, "Submit booking request").click();
 
@@ -174,10 +188,12 @@ class CoreJourneyE2eTest {
         assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName(Pattern.compile("^Awaiting confirmation \\(1\\)$")))).isVisible();
         Locator row = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(reference)).first();
         assertThat(row).isVisible();
+        manualScreenshot(page,"04-administrator-agenda");
         row.click();
 
         at("administrator approves with a manual Zoom link", page);
         assertThat(page.locator("dd").filter(new Locator.FilterOptions().setHasText(Pattern.compile("^PENDING_CONFIRMATION$")))).isVisible();
+        manualScreenshot(page,"05-booking-detail");
         page.locator("#meeting-url").fill(ZOOM);
         button(page, "Approve booking").click();
         assertThat(page.getByText("Booking approved.")).isVisible();
@@ -249,6 +265,7 @@ class CoreJourneyE2eTest {
         button(page, "Save profile").click();
         assertThat(page.getByText("Your optional profile was saved.")).isVisible();
         page.reload(); assertThat(page.locator("#profile-first")).hasValue("Synthetic profile");
+        manualScreenshot(page,"06-account-settings");
         at("account changes password and signs in again", page);
         page.locator("#current-password").fill(password);
         page.locator("#replacement-password").fill(replacement);
@@ -316,6 +333,7 @@ class CoreJourneyE2eTest {
         page.locator("#export-reason").fill("Synthetic customer export request");button(page,"Prepare export preview").click();
         assertThat(page.locator("pre")).containsText("Reviewed synthetic export note.");
         assertThat(page.locator("pre")).containsText("Reviewed profile");
+        manualScreenshot(page,"07-reviewed-export");
         assertThat(page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Save reviewed customer export"))).hasCount(0);
         page.getByRole(AriaRole.CHECKBOX).check();button(page,"Confirm and release export").click();
         assertThat(page.getByText("Export released after review.")).isVisible();button(page,"Prepare secure download").click();
@@ -326,6 +344,20 @@ class CoreJourneyE2eTest {
         assertTrue(content.contains("Reviewed synthetic export note."));assertTrue(content.contains("Reviewed profile"));assertTrue(content.contains(email));
         for(String forbidden:List.of("password_hash","totp_secret","csrf_hash","token_hash","encrypted_envelope"))assertFalse(content.contains(forbidden));
         download.delete();
+        at("administrator previews and confirms exact personal erasure",page);
+        page.navigate(customerPage);field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();button(page,"View bookings for "+email).click();
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Review retention and erasure").setExact(true)).click();
+        assertThat(heading(page,"Review retained customer records")).isVisible();
+        page.locator("li").filter(new Locator.FilterOptions().setHasText("NOTE ·")).locator("input[type=checkbox]").first().check();
+        page.locator("#erasure-reason").fill("Synthetic reviewed note erasure request");button(page,"Prepare erasure preview").click();
+        assertThat(heading(page,"Review this exact erasure")).isVisible();assertThat(heading(page,"Retained")).isVisible();
+        manualScreenshot(page,"08-reviewed-erasure");
+        page.getByLabel("I reviewed every selected and retained record and confirm this exact erasure.").check();button(page,"Confirm reviewed erasure").click();
+        assertThat(page.getByText("Reviewed erasure applied. Temporary exports revoked.",new Page.GetByTextOptions().setExact(true))).isVisible();
+        at("erased private note is absent from the current administrator view",page);
+        page.navigate(customerPage);field(page,"Search by name, email or booking reference").fill(email);button(page,"Search customers").click();button(page,"View bookings for "+email).click();
+        page.getByRole(AriaRole.LINK,new Page.GetByRoleOptions().setName("Correct private notes").setExact(true)).first().click();
+        assertThat(page.getByText("No notes on this page.",new Page.GetByTextOptions().setExact(true))).isVisible();
     }
 
     private void accountSignIn(Page page, String origin, String email, String password) {

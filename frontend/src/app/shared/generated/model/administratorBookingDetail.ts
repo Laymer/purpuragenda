@@ -37,7 +37,11 @@ export interface AdministratorBookingDetail {
     serverNow: string;
     snapshot: AdministratorBookingSnapshot;
     payment: AdministratorBookingPayment;
-    effectiveIntake: AdministratorIntakeSnapshot;
+    effectiveIntake: AdministratorIntakeSnapshot | null;
+    /**
+     * True when reviewed identity erasure removed delivery identifiers and historic meeting credentials.
+     */
+    identityErased?: boolean;
 }
 export enum AdministratorBookingDetailStateEnum {
     PendingConfirmation = 'PENDING_CONFIRMATION',

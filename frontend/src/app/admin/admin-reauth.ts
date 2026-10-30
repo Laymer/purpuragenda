@@ -1,7 +1,7 @@
 import { Router } from '@angular/router';
 import { SessionAccess } from '../shared/access/session-access';
 
-const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(privacy|corrections))?|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
+const RETURN = /^\/admin(\/reconciliation|\/notifications|\/customers(\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(privacy|corrections|erasure))?|\/audit|\/calendar|\/policy|\/services|\/bookings\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(reschedule|finance|history))?))?$/;
 
 const CORRECTION_RETURN = /^\/admin\/customers\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/corrections\?kind=(NOTE|INTAKE)&booking=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

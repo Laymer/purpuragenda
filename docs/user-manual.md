@@ -1,8 +1,8 @@
 # Purpuragenda user's manual
 
-This manual explains how to use Purpuragenda 1.0.0 as a guest, a customer with a booking, and the administrator. To install, start and stop the application, see the [README](../README.md).
+This text-only guide covers the current local development version. The [README user manual](../README.md) provides the illustrated walkthrough, setup and current feature details. STATUS.md records merge and verification status.
 
-1.0.0 is a local release. The application runs at http://localhost:8080 and sends no real email. Every message (verification links, booking updates) is captured by Mailpit at http://localhost:8025, where you open it as if it were your inbox. All times are business times in Europe/Brussels unless a page shows another time zone.
+The local stack uses synthetic demonstration data and captured email. The application runs at http://localhost:8080 and sends no real email. Every message (verification links, booking updates) is captured by Mailpit at http://localhost:8025, where you open it as if it were your inbox. All times are business times in Europe/Brussels unless a page shows another time zone.
 
 ## Booking a consultation (guests)
 
@@ -67,7 +67,7 @@ The **Agenda** page shows bookings between two Brussels dates (at most 31 dates)
 
 Approval only works while the request's hold is still live and the consultation is in the future. If the result of an approval is uncertain, use **Retry the same approval**.
 
-Not available in 1.0.0: rejecting a request from the interface, recording payments, editing services or schedules, customer accounts, privacy tools and calendar exports. See STATUS.md for what is planned.
+The current interface also provides rejection, cancellation, rescheduling, outcomes, external receipts/refunds, service and schedule management, optional accounts and reviewed privacy operations. See the illustrated README for those workflows. Private iCalendar and Google Calendar actions remain separate planned work; see STATUS.md for remaining gates.
 
 ## Troubleshooting
 
@@ -80,7 +80,7 @@ Never run `docker compose down -v` and never delete `./.secrets`. Doing so destr
 
 ## Non-medical information only
 
-Keep the requested contact and birth details, but do not enter medical information or other sensitive personal information in the customer message or administrator notes. Include only information needed for the consultation and avoid unnecessary information about other people. Private notes are restricted to administrator access; they may still need to be included in a customer data export after review. The displayed guidance does not automatically detect or remove sensitive content. Exporting does not delete records. Audited corrections are available below; reviewed erasure is still being implemented; review deadlines alone do not delete records.
+Keep the requested contact and birth details, but do not enter medical information or other sensitive personal information in the customer message or administrator notes. Include only information needed for the consultation and avoid unnecessary information about other people. Private notes are restricted to administrator access; they may still need to be included in a customer data export after review. The displayed guidance does not automatically detect or remove sensitive content. Exporting does not delete records. Audited corrections are available below; reviewed erasure uses an explicit selected/retained preview and confirmation; review deadlines alone do not delete records.
 
 ## Customer data exports
 
@@ -91,3 +91,9 @@ In Customers, search for the original customer, open their bookings and choose C
 In Customers, open the customer's bookings. Choose Correct profile for an existing optional profile, Correct intake for a booking, or Correct private notes and then select the note. Edit the fields and enter a reason without personal details. Prepare correction preview, compare Before and After, tick the review confirmation and choose Confirm correction. If the record changed meanwhile, prepare and review a new preview. An uncertain response must use Retry the same request. The preview expires after one hour and a fresh MFA sign-in may be required.
 
 A confirmed correction revokes existing temporary customer exports. Downloaded copies remain under your control. Current notes/profile are replaced; intake corrections appear as current details while original intake remains historical. Corrections cannot change login identity, verified email, booking ownership or payment facts. Use the existing verified-contact procedure for delivery email changes. Do not enter medical or sensitive information.
+
+## Reviewed erasure
+
+From Customers, open the customer's bookings and choose Review retention and erasure. Select exact unheld personal records, supply a reason and prepare the preview. Review Selected and Retained, acknowledge the exact operation and confirm. Financial records cannot be selected. Intake/notes prompt review after12months; identity/history/ordinary audit after24months; these dates never execute deletion. Record-specific holds require an explicit reviewed reason and can have an inclusive Brussels end date. Previews expire after one hour; fresh MFA is required.
+
+An interrupted erasure or unresolved restore reconciliation blocks ordinary access. Preserve the external journal, data volumes and encryption keys. Use the same confirmation retry where available; otherwise follow the private operator procedure in privacy.md. Never clear unresolved barriers to make the application appear ready. See the README for screenshots and the full user workflow.

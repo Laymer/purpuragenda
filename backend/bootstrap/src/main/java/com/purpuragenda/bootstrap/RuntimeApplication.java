@@ -91,6 +91,14 @@ public class RuntimeApplication {
     @Bean AdministratorExportController administratorExportController(com.purpuragenda.application.port.out.CustomerExportStore store,SessionAccess access,SessionCookies cookies) {
         return new AdministratorExportController(new com.purpuragenda.application.privacy.AdministratorExports(store),access,cookies);
     }
+    @Bean com.purpuragenda.adapters.out.postgres.PostgresCustomerErasure customerErasureStore(DataSource source,RuntimeSettings settings,org.springframework.core.env.Environment environment) {
+        var journal=new com.purpuragenda.adapters.out.postgres.EncryptedErasureJournal(java.nio.file.Path.of(environment.getRequiredProperty("app.privacy-journal-directory")),settings.delivery());
+        var store=new com.purpuragenda.adapters.out.postgres.PostgresCustomerErasure(source,settings.delivery(),journal,settings.meetingHosts());
+        store.recover(settings.suppressed());return store;
+    }
+    @Bean AdministratorErasureController administratorErasureController(com.purpuragenda.adapters.out.postgres.PostgresCustomerErasure store,SessionAccess access,SessionCookies cookies) {
+        return new AdministratorErasureController(store,access,cookies);
+    }
     @Bean com.purpuragenda.application.port.out.CustomerCorrectionStore customerCorrectionStore(DataSource source,RuntimeSettings settings) {
         return new com.purpuragenda.adapters.out.postgres.PostgresCustomerCorrections(source,settings.delivery(),settings.meetingHosts());
     }
@@ -98,8 +106,8 @@ public class RuntimeApplication {
         return new AdministratorCorrectionController(new com.purpuragenda.application.privacy.AdministratorCorrections(store),access,cookies);
     }
     @Bean RuntimeWorkers runtimeWorkers(AuthDeliveryWorker delivery,SecurityMaintenance maintenance,DueBookingExpiry expiry,OutboxExpander outbox,BookingNotificationWorker booking,
-                                       DatabaseReadiness readiness,RuntimeSettings settings,com.purpuragenda.application.port.out.CustomerExportStore exports,com.purpuragenda.application.port.out.CustomerCorrectionStore corrections) {
-        return new RuntimeWorkers(delivery::tick,()->{maintenance.tick();exports.purge(500);corrections.purge(500);},expiry::tick,()->outbox.drain(100),booking::tick,
+                                       DatabaseReadiness readiness,RuntimeSettings settings,com.purpuragenda.application.port.out.CustomerExportStore exports,com.purpuragenda.application.port.out.CustomerCorrectionStore corrections,com.purpuragenda.adapters.out.postgres.PostgresCustomerErasure erasure) {
+        return new RuntimeWorkers(delivery::tick,()->{maintenance.tick();exports.purge(500);corrections.purge(500);erasure.purge(500);},expiry::tick,()->outbox.drain(100),booking::tick,
                 () -> org.springframework.boot.health.contributor.Status.UP.equals(readiness.health().getStatus()),settings.suppressed());
     }
     @Bean MailDelivery mail(RuntimeSettings settings) { return settings.mail(); }
@@ -201,6 +209,10 @@ public class RuntimeApplication {
     }
     @Bean AdministratorBookingChangeController administratorBookingChanges(DataSource source,RuntimeSettings settings) {
         return new AdministratorBookingChangeController(new AdministratorBookingChanges(new PostgresAdminChanges(source,settings.meetingHosts()),settings.meetingHosts()));
+    }
+    @Bean FilterRegistrationBean<PrivacyBarrierFilter> privacyBarrier(com.purpuragenda.adapters.out.postgres.PostgresCustomerErasure store) {
+        var registration=new FilterRegistrationBean<>(new PrivacyBarrierFilter(store::blocked));
+        registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE+15);registration.addUrlPatterns("/*");return registration;
     }
     @Bean FilterRegistrationBean<AvailabilityThrottleFilter> availabilityThrottle(RequestThrottle throttle) {
         var registration=new FilterRegistrationBean<>(new AvailabilityThrottleFilter(throttle));

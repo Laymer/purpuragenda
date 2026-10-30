@@ -149,9 +149,12 @@ class CustomerQuotaPostgresTest {
         assertEquals(3,quota().requests());assertEquals(1,quota().active());assertEquals(3,f.count("booking"));assertEquals(3,f.count("request_charge"));
     }
     @Test void validUpgradePreservesExistingChargesAndUnchargedHistoricalBookings() {
-        legacy();Booking b=create(0,Booking.Origin.CUSTOMER,true,false);create(1,Booking.Origin.CUSTOMER,false,false);
+        legacy();Booking b=create(0,Booking.Origin.CUSTOMER,false,false);create(1,Booking.Origin.CUSTOMER,false,false);
+        // Seed the pre-021 charge shape directly; current adapters require the erased-state column when reading bookings.
+        LocalDate submitted=CustomerQuota.dayAt(b.createdAt());rawCharge(b,f.customer,submitted);
+        f.jdbc.update("INSERT INTO customer_request_day VALUES(?,?,1)",f.customer,submitted);
         String snapshot=f.snapshotHash(b.id());f.fixture.migrate(0);f.fixture.migrate(0);
-        assertEquals(20,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(snapshot,f.snapshotHash(b.id()));assertEquals(2,f.count("booking"));assertEquals(1,quota().requests());
     }
     @Test void upgradeRejectsMalformedHistoricalChargeIdentityDateOriginAndCounters() {

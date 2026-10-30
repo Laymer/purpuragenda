@@ -159,3 +159,11 @@ databaseChangeLog:
             path: 020-customer-corrections.sql
             relativeToChangelogFile: true
             splitStatements: false
+  - changeSet:
+      id: 021-reviewed-erasure
+      author: purpuragenda
+      changes:
+        - sqlFile:
+            path: 021-reviewed-erasure.sql
+            relativeToChangelogFile: true
+            splitStatements: false

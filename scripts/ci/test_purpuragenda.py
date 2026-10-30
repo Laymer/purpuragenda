@@ -418,6 +418,27 @@ class ReadmeTest(unittest.TestCase):
         # The README must repeat the data-safety rule, never recommend volume removal.
         self.assertIn('Never run `docker compose down -v`', readme)
 
+    def test_illustrated_manual_uses_real_local_png_assets_and_current_workflows(self):
+        import struct
+        readme = (ROOT / 'README.md').read_text()
+        images = re.findall(r'!\[([^\]]+)\]\((docs/screenshots/[^)]+)\)', readme)
+        self.assertEqual(8, len(images))
+        for alt, relative in images:
+            with self.subTest(image=relative):
+                self.assertGreater(len(alt), 15)
+                path = ROOT / relative
+                self.assertFalse(path.is_symlink())
+                image = path.read_bytes()
+                self.assertEqual(b'\x89PNG\r\n\x1a\n', image[:8])
+                width, height = struct.unpack('>II', image[16:24])
+                self.assertGreaterEqual(width, 1000)
+                self.assertGreaterEqual(height, 600)
+        for workflow in ('## Request a consultation', '## Manage a booking', '## Use an optional customer account',
+                         '## Record receipts and refunds', '### Review retention, holds and erasure'):
+            self.assertIn(workflow, readme)
+        self.assertIn('synthetic demonstration data', readme)
+        self.assertIn('does not announce a new release', readme)
+
 
 
 class UserManualTest(unittest.TestCase):
