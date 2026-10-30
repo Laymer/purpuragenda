@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 def validate(root):
     suites = [('MigrationTest', 11)]
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerErasure.java').is_file():
-        suites.append(('CustomerErasurePostgresTest', 14))
+        suites.append(('CustomerErasurePostgresTest', 15))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/AdministratorErasureController.java').is_file():
         suites.append(('AdministratorErasureHttpPostgresTest', 5))
     if (root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/out/postgres/PostgresCustomerCorrections.java').is_file():

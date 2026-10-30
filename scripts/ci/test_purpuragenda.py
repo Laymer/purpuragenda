@@ -418,6 +418,21 @@ class ReadmeTest(unittest.TestCase):
         # The README must repeat the data-safety rule, never recommend volume removal.
         self.assertIn('Never run `docker compose down -v`', readme)
 
+    def test_manual_navigation_and_local_document_links_resolve(self):
+        from urllib.parse import unquote, urlsplit
+        readme = ROOT / 'README.md'
+        for target in re.findall(r'(?<!!)\[[^\]]+\]\(([^)]+)\)', readme.read_text()):
+            url = urlsplit(target)
+            if url.scheme or url.netloc:
+                continue
+            with self.subTest(link=target):
+                destination = ROOT / unquote(url.path) if url.path else readme
+                self.assertTrue(destination.is_file(), 'Manual link target must exist')
+                if url.fragment:
+                    headings = re.findall(r'^#{1,6} (.+)$', destination.read_text(), re.MULTILINE)
+                    anchors = {re.sub(r'[^\w -]', '', h.lower()).replace(' ', '-') for h in headings}
+                    self.assertIn(unquote(url.fragment), anchors, 'Manual section link must resolve')
+
     def test_illustrated_manual_uses_real_local_png_assets_and_current_workflows(self):
         import struct
         readme = (ROOT / 'README.md').read_text()

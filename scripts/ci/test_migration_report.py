@@ -744,7 +744,7 @@ class MigrationReportTest(unittest.TestCase):
 
     def test_privacy_exports_require_complete_database_and_http_reports(self):
         self.write()
-        for package, source_name, suite, minimum in [('out/postgres', 'PostgresCustomerErasure', 'CustomerErasurePostgresTest', 14), ('in/rest', 'AdministratorErasureController', 'AdministratorErasureHttpPostgresTest', 5), ('out/postgres', 'PostgresCustomerCorrections', 'CustomerCorrectionsPostgresTest', 14), ('in/rest', 'AdministratorCorrectionController', 'AdministratorCorrectionHttpPostgresTest', 4), ('out/postgres', 'PostgresCustomerExports', 'CustomerExportsPostgresTest', 14), ('in/rest', 'AdministratorExportController', 'AdministratorExportHttpPostgresTest', 4)]:
+        for package, source_name, suite, minimum in [('out/postgres', 'PostgresCustomerErasure', 'CustomerErasurePostgresTest', 15), ('in/rest', 'AdministratorErasureController', 'AdministratorErasureHttpPostgresTest', 5), ('out/postgres', 'PostgresCustomerCorrections', 'CustomerCorrectionsPostgresTest', 14), ('in/rest', 'AdministratorCorrectionController', 'AdministratorCorrectionHttpPostgresTest', 4), ('out/postgres', 'PostgresCustomerExports', 'CustomerExportsPostgresTest', 14), ('in/rest', 'AdministratorExportController', 'AdministratorExportHttpPostgresTest', 4)]:
             source = self.root / ('backend/adapters/src/main/java/com/purpuragenda/adapters/' + package + '/' + source_name + '.java')
             source.parent.mkdir(parents=True, exist_ok=True); source.write_text('synthetic export source')
             with self.assertRaisesRegex(ValueError, 'Missing mandatory'): GATE.validate(self.root)

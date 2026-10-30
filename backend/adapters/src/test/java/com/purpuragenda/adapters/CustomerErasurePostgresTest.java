@@ -137,4 +137,20 @@ class CustomerErasurePostgresTest {
   corrupt("audit_event","DELETE FROM audit_event WHERE id=?",audit);
   store.recover(true);assertEquals(1,f.c.count("erasure_tombstone"));assertEquals(0,f.c.count("audit_event WHERE id='"+audit+"'"));assertEquals(1,f.c.count("booking_note"));
  }
+ @Test void durableJournalSurvivesDatabaseApplyFailureAndRedactionsRollBackTogether() throws Exception {
+  String original="{\"firstName\":\"Synthetic original\",\"lastName\":\"Customer\",\"telephone\":\"\"}";
+  f.c.jdbc.update("INSERT INTO customer_profile(customer_id,document) VALUES(?,?::jsonb)",f.customer,original);
+  var p=prepare(new Scope(Kind.PROFILE,f.customer),new Scope(Kind.NOTE,note));
+  try(var c=f.c.f.database.connection(MigrationTest.MIGRATOR)){
+   MigrationTest.execute(c,"CREATE FUNCTION refuse_synthetic_erasure() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''SYNTHETIC_FAILURE''; END'");
+   MigrationTest.execute(c,"CREATE TRIGGER refuse_synthetic_erasure BEFORE DELETE ON booking_note FOR EACH ROW EXECUTE FUNCTION refuse_synthetic_erasure()");
+  }
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));
+  assertTrue(store.blocked());assertEquals(1,journal.entries().size());assertEquals(0,f.c.count("erasure_tombstone"));assertEquals(1,f.c.count("booking_note"));
+  assertEquals("Synthetic original",f.c.jdbc.queryForObject("SELECT document->>'firstName' FROM customer_profile WHERE customer_id=?",String.class,f.customer));
+  try(var c=f.c.f.database.connection(MigrationTest.MIGRATOR)){MigrationTest.execute(c,"DROP TRIGGER refuse_synthetic_erasure ON booking_note");}
+  assertTrue(store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)).success());assertFalse(store.blocked());
+  assertEquals(1,journal.entries().size());assertEquals(1,f.c.count("erasure_tombstone"));assertEquals(0,f.c.count("booking_note"));
+  assertEquals("",f.c.jdbc.queryForObject("SELECT document->>'firstName' FROM customer_profile WHERE customer_id=?",String.class,f.customer));
+ }
 }

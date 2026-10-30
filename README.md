@@ -142,7 +142,7 @@ A request must still have a live hold and a future appointment time. Confirmatio
 
 | Task | Where and how |
 | --- | --- |
-| Create a booking manually | Use the administrator's new-booking page. Select the service and time, enter the details, review, then create. A meeting link determines the creation flow shown by the page. |
+| Create a booking manually | Use the administrator's new-booking page. Select the service and time, enter the details, review, then create. Leave the meeting link empty for a pending request, or supply a valid link for a confirmed booking. |
 | Reject or cancel | Open the booking and enter a reason. For cancellation, choose who cancelled; the classification affects refund follow-up. |
 | Reschedule | Open **Reschedule booking**, choose a replacement and review the change. Explicit overrides require their own reason and acknowledgments. |
 | Change a meeting link | Enter a replacement Zoom participant link on an eligible booking. |
