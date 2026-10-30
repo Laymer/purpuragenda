@@ -143,7 +143,10 @@ public final class PostgresCustomerErasure implements CustomerErasureStore {
         var pending=jdbc.query("SELECT id,encrypted_proposal,journal_digest FROM privacy_erasure WHERE state='APPROVED' ORDER BY approved_at,id",(r,n)->{
             UUID id=r.getObject(1,UUID.class);UUID actor=jdbc.queryForObject("SELECT actor_id FROM privacy_erasure WHERE id=?",UUID.class,id);return approved(row(id,actor,Instant.EPOCH,false));});
         pending.forEach(this::append);
-        for(var entry:journal.entries()){
+        var entries=journal.entries();var witnessed=entries.stream().map(EncryptedErasureJournal.Entry::id).collect(java.util.stream.Collectors.toSet());
+        var completed=jdbc.query("SELECT id FROM privacy_erasure WHERE state='APPLIED' UNION SELECT id FROM erasure_tombstone WHERE applied_at IS NOT NULL",(r,n)->r.getObject(1,UUID.class));
+        if(completed.stream().anyMatch(id->!witnessed.contains(id)))throw storage();
+        for(var entry:entries){
             Recipe recipe=PersistedJson.read(entry.recipe(),Recipe.class);if(!recipe.id().equals(entry.id())||!"PURPURAGENDA_ERASURE_V1".equals(recipe.purpose()))throw storage();new Request(recipe.scopes(),"Approved restore replay");apply(recipe,restoreMode);
         }
     }
@@ -197,7 +200,7 @@ public final class PostgresCustomerErasure implements CustomerErasureStore {
                     }
                     case NOTE->jdbc.update("DELETE FROM booking_note WHERE id=? AND booking_id IN(SELECT id FROM booking WHERE customer_id=?)",scope.id(),recipe.customer());
                     case PROFILE->jdbc.update("UPDATE customer_profile SET document=' {\"firstName\":\"\",\"lastName\":\"\",\"telephone\":\"\"}'::jsonb,version=version+1 WHERE customer_id=? AND customer_id=?",scope.id(),recipe.customer());
-                    case IDENTITY->identity(recipe.customer());
+                    case IDENTITY->identity(recipe.customer(),now);
                     case AUDIT->jdbc.update("UPDATE audit_event SET reason='',metadata='{}'::jsonb WHERE id=?",scope.id());
                     case REQUEST->jdbc.update("UPDATE privacy_request SET reason='[erased]' WHERE id=? AND customer_id=?",scope.id(),recipe.customer());
                     case FINANCIAL->throw storage();
@@ -253,7 +256,7 @@ public final class PostgresCustomerErasure implements CustomerErasureStore {
             }
         }
     }
-    private void identity(UUID customer){
+    private void identity(UUID customer,Instant now){
         if(jdbc.queryForObject("SELECT count(*) FROM booking WHERE customer_id=? AND state IN ('PENDING_CONFIRMATION','CONFIRMED')",Integer.class,customer)!=0)throw storage();
         // Capture related authentication jobs before removing the identity's old mailbox.
         jdbc.update("DELETE FROM delivery_attempt WHERE job_id IN(SELECT n.id FROM notification_job n JOIN email_challenge c ON c.id=n.challenge_id WHERE c.booking_id IN(SELECT id FROM booking WHERE customer_id=?) OR c.email_key=(SELECT email_key FROM customer_identity WHERE id=?))",customer,customer);
@@ -264,7 +267,7 @@ public final class PostgresCustomerErasure implements CustomerErasureStore {
         jdbc.update("DELETE FROM email_challenge WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?) OR email_key=(SELECT email_key FROM customer_identity WHERE id=?)",customer,customer);
         jdbc.update("DELETE FROM customer_account WHERE customer_id=?",customer);
         jdbc.update("UPDATE notification_job SET state='SUPPRESSED',lease_until=NULL,lease_token=NULL,encrypted_envelope=NULL,safe_error='PRIVACY_ERASED' WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?)",customer);
-        jdbc.update("UPDATE outbox_event SET expanded_at=COALESCE(expanded_at,clock_timestamp()),payload='{}'::jsonb WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?)",customer);
+        jdbc.update("UPDATE outbox_event SET expanded_at=COALESCE(expanded_at,?),payload='{}'::jsonb WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?)",stamp(now),customer);
         jdbc.update("UPDATE booking_contact_change SET old_email='erased@privacy.invalid',new_email='erased@privacy.invalid' WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?)",customer);
         jdbc.update("UPDATE booking_snapshot SET document=jsonb_set(jsonb_set(document,'{creationEmail}','\"erased@privacy.invalid\"'::jsonb),'{displayZone}','\"Europe/Brussels\"'::jsonb) WHERE booking_id IN(SELECT id FROM booking WHERE customer_id=?)",customer);
         jdbc.update("UPDATE booking SET delivery_email='erased@privacy.invalid',meeting_id=NULL,meeting_url=NULL,meeting_erased=true,version=version+1,calendar_revision=calendar_revision+1 WHERE customer_id=?",customer);

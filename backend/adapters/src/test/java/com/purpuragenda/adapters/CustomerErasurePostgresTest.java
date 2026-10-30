@@ -6,6 +6,8 @@ import com.purpuragenda.application.scheduling.*;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,6 +63,7 @@ class CustomerErasurePostgresTest {
   f.c.jdbc.update("INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at,reason,metadata) VALUES(?,?,'ACCOUNT','ACCOUNT_PROFILE_CHANGED',clock_timestamp(),'Synthetic account reason','{}')",audit,account);
   var p=prepare(new Scope(Kind.IDENTITY,f.customer),new Scope(Kind.AUDIT,audit));store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true));
   assertEquals("",f.c.jdbc.queryForObject("SELECT reason FROM audit_event WHERE id=?",String.class,audit));assertEquals(0,f.c.count("customer_account"));assertFalse(store.blocked());
+  assertTrue(f.c.jdbc.queryForObject("SELECT bool_and(expanded_at=(SELECT applied_at FROM privacy_erasure WHERE id=?)) FROM outbox_event WHERE booking_id=?",Boolean.class,p.id(),f.booking));
  }
  @Test void earlierActiveBackupRetainsBarrierUntilTerminalEvidenceIsReconciled() throws Exception {
   f.c.scheduling.execute(f.c.internal(),tx->tx.attempt(()->{var b=tx.booking(f.booking).orElseThrow().reject();tx.save(b);return new com.purpuragenda.application.port.out.SchedulingUnitOfWork.Receipt(Code.OK,b.id(),b.version());}));
@@ -152,5 +155,103 @@ class CustomerErasurePostgresTest {
   assertTrue(store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)).success());assertFalse(store.blocked());
   assertEquals(1,journal.entries().size());assertEquals(1,f.c.count("erasure_tombstone"));assertEquals(0,f.c.count("booking_note"));
   assertEquals("",f.c.jdbc.queryForObject("SELECT document->>'firstName' FROM customer_profile WHERE customer_id=?",String.class,f.customer));
+ }
+ static final com.fasterxml.jackson.databind.json.JsonMapper JSON=com.fasterxml.jackson.databind.json.JsonMapper.builder().build();
+ @ParameterizedTest @ValueSource(strings={"id","actor","customer","created","expires","digest","request"})
+ void corruptedPreviewBindingsAndCachedPrepareRequestsAreRejected(String field) throws Exception {
+  var p=prepare(new Scope(Kind.NOTE,note));var payload=(com.fasterxml.jackson.databind.node.ObjectNode)JSON.readTree(f.secrets.decrypt(f.c.jdbc.queryForObject("SELECT encrypted_proposal FROM privacy_erasure WHERE id=?",String.class,p.id())));
+  if(field.equals("digest"))f.c.jdbc.update("UPDATE privacy_erasure SET digest=repeat('0',64) WHERE id=?",p.id());
+  else{
+   if(Set.of("id","actor","customer").contains(field))payload.put(field,UUID.randomUUID().toString());
+   else if(field.equals("request"))((com.fasterxml.jackson.databind.node.ObjectNode)payload.get("request")).put("reason","Different synthetic request reason");
+   else payload.put(field,java.time.Instant.EPOCH.toString());
+   String plain=payload.toString();f.c.jdbc.update("UPDATE privacy_erasure SET encrypted_proposal=?,digest=? WHERE id=?",f.secrets.encrypt(plain),com.purpuragenda.adapters.out.security.Secrets.hash(plain),p.id());
+  }
+  if(field.equals("request"))assertThrows(RuntimeException.class,()->store.prepare(f.b.session,f.customer,"prepare",new Request(List.of(new Scope(Kind.NOTE,note)),"Synthetic erasure request")));
+  else assertThrows(RuntimeException.class,()->store.preview(f.b.session,p.id()));
+  assertEquals(1,f.c.count("booking_note"));assertEquals(0,journal.entries().size());
+ }
+ @ParameterizedTest @ValueSource(strings={"id","customer","actor","proposalDigest","confirmKey","approved","journalDigest","targets","purpose","null-digest","invalid-digest","null-key","blank-key","null-terminal","active-terminal","duplicate-terminals"})
+ void authenticatedApprovedRecipeCorruptionCannotPublishOrApply(String field) throws Exception {
+  var p=prepare(new Scope(Kind.NOTE,note));Path head=directory.resolve("journal/head.enc");String saved=Files.readString(head);Files.delete(head);
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));Files.writeString(head,saved);
+  String encrypted=f.c.jdbc.queryForObject("SELECT encrypted_proposal FROM privacy_erasure WHERE id=?",String.class,p.id());var recipe=(com.fasterxml.jackson.databind.node.ObjectNode)JSON.readTree(f.secrets.decrypt(encrypted));
+  switch(field){
+   case "id","customer","actor"->recipe.put(field,UUID.randomUUID().toString());
+   case "proposalDigest"->recipe.put(field,"0".repeat(64));case "confirmKey"->recipe.put(field,"different-key");case "approved"->recipe.put(field,java.time.Instant.EPOCH.toString());
+   case "purpose"->recipe.put(field,"OTHER_PURPOSE");case "null-digest"->recipe.putNull("proposalDigest");case "invalid-digest"->recipe.put("proposalDigest","invalid");case "null-key"->recipe.putNull("confirmKey");case "blank-key"->recipe.put("confirmKey"," ");
+   case "null-terminal"->recipe.putArray("terminals").addObject().putNull("booking").put("state","REJECTED");
+   case "active-terminal"->recipe.putArray("terminals").addObject().put("booking",f.booking.toString()).put("state","CONFIRMED");
+   case "duplicate-terminals"->{var terms=recipe.putArray("terminals");for(int n=0;n<2;n++)terms.addObject().put("booking",f.booking.toString()).put("state","REJECTED");}
+   case "journalDigest","targets"->{}default->throw new AssertionError();
+  }
+  String plain=recipe.toString();f.c.jdbc.update("UPDATE privacy_erasure SET encrypted_proposal=?,journal_digest=? WHERE id=?",f.secrets.encrypt(plain),com.purpuragenda.adapters.out.security.Secrets.hash(plain),p.id());
+  if(field.equals("journalDigest"))f.c.jdbc.update("UPDATE privacy_erasure SET journal_digest=repeat('0',64) WHERE id=?",p.id());
+  if(field.equals("targets"))f.c.jdbc.update("DELETE FROM privacy_erasure_target WHERE request_id=?",p.id());
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));assertTrue(store.blocked());assertEquals(0,journal.entries().size());assertEquals(1,f.c.count("booking_note"));
+ }
+ @ParameterizedTest @ValueSource(strings={"missing","customer","document","created","applied-row"})
+ void completedReplayRequiresEveryAppliedEvidenceComponent(String defect){
+  var p=prepare(new Scope(Kind.NOTE,note));store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true));
+  switch(defect){
+   case "missing"->f.c.jdbc.update("DELETE FROM erasure_tombstone WHERE id=?",p.id());
+   case "customer"->f.c.jdbc.update("UPDATE erasure_tombstone SET customer_id=? WHERE id=?",UUID.randomUUID(),p.id());
+   case "document"->f.c.jdbc.update("UPDATE erasure_tombstone SET encrypted_document=? WHERE id=?",f.secrets.encrypt("Different synthetic evidence"),p.id());
+   case "created"->f.c.jdbc.update("UPDATE erasure_tombstone SET created_at=created_at-interval '1 second' WHERE id=?",p.id());
+   case "applied-row"->f.c.jdbc.update("UPDATE privacy_erasure SET state='APPROVED',encrypted_proposal=? WHERE id=?",f.secrets.encrypt(journal.entries().getFirst().recipe()),p.id());
+   default->throw new AssertionError();
+  }
+  assertThrows(RuntimeException.class,()->store.recover(true));assertTrue(store.blocked());assertEquals(0,f.c.count("booking_note"));
+ }
+ @Test void exactPreparationRetriesDenyChangedContentAndSubstitutedCustomerReceipts(){
+  var scope=new Scope(Kind.NOTE,note);var request=new Request(List.of(scope),"Synthetic erasure request");var p=prepare(scope);
+  assertEquals(p.id(),store.prepare(f.b.session,f.customer,"prepare",request).entityId());
+  assertEquals(Code.IDEMPOTENCY_KEY_REUSED,store.prepare(f.b.session,f.customer,"prepare",new Request(List.of(scope),"Changed synthetic reason")).code());
+  UUID other=UUID.randomUUID();f.c.jdbc.update("INSERT INTO customer_identity(id,email_key,verified_at) VALUES(?,?,clock_timestamp())",other,"other@example.test");
+  var different=new Request(List.of(new Scope(Kind.IDENTITY,other)),"Synthetic other customer request");UUID second=store.prepare(f.b.session,other,"other",different).entityId();
+  f.c.jdbc.update("UPDATE idempotency_record SET receipt=jsonb_set(receipt,'{entityId}',to_jsonb(?::text)) WHERE receipt->>'entityId'=?::text",p.id(),second);
+  assertThrows(RuntimeException.class,()->store.prepare(f.b.session,other,"other",different));assertEquals(1,f.c.count("booking_note"));
+ }
+ @Test void staleExpiredFutureAndWrongConfirmationInputsNeverErase(){
+  var p=prepare(new Scope(Kind.NOTE,note));
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",2,new Review(p.digest(),true)));
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review("0".repeat(64),true)));
+  f.c.jdbc.update("UPDATE customer_identity SET verified_at=verified_at+interval '1 microsecond' WHERE id=?",f.customer);
+  assertThrows(RuntimeException.class,()->store.preview(f.b.session,p.id()));assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));
+  f.c.jdbc.update("UPDATE privacy_erasure SET created_at=t,expires_at=t+interval '1 hour' FROM(SELECT clock_timestamp()-interval '2 hours' t) captured WHERE id=?",p.id());
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));
+  f.c.jdbc.update("UPDATE privacy_erasure SET created_at=t,expires_at=t+interval '1 hour' FROM(SELECT clock_timestamp()+interval '1 hour' t) captured WHERE id=?",p.id());
+  assertThrows(RuntimeException.class,()->store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true)));assertEquals(1,f.c.count("booking_note"));
+ }
+ @Test void reviewHoldDateBoundariesMissingTargetsAndBoundedPurgeStayFailClosed(){
+  assertThrows(RuntimeException.class,()->store.overview(f.b.session,UUID.randomUUID()));assertThrows(RuntimeException.class,()->prepare(new Scope(Kind.NOTE,UUID.randomUUID())));
+  assertThrows(RuntimeException.class,()->prepare(new Scope(Kind.IDENTITY,f.customer)));
+  assertThrows(RuntimeException.class,()->store.hold(f.b.session,f.customer,"missing",new Hold(new Scope(Kind.NOTE,UUID.randomUUID()),"Synthetic reason",null,true)));
+  assertThrows(IllegalArgumentException.class,()->store.releaseHold(f.b.session,UUID.randomUUID(),"release","Synthetic reason",false));
+  var today=java.time.LocalDate.now(java.time.ZoneId.of("Europe/Brussels"));var scope=new Scope(Kind.NOTE,note);
+  UUID hold=store.hold(f.b.session,f.customer,"hold",new Hold(scope,"Synthetic exact-date hold",today,true)).entityId();assertThrows(RuntimeException.class,()->prepare(scope));
+  f.c.jdbc.update("UPDATE privacy_hold SET starts_on=?,through=? WHERE id=?",today.minusDays(2),today.minusDays(1),hold);assertNotNull(prepare(scope));
+  f.c.jdbc.update("UPDATE privacy_hold SET starts_on=?,through=? WHERE id=?",today.plusDays(1),today.plusDays(2),hold);assertTrue(store.overview(f.b.session,f.customer).items().stream().filter(i->i.scope().equals(scope)).findFirst().orElseThrow().holds().isEmpty());
+  assertThrows(IllegalArgumentException.class,()->store.purge(0));assertThrows(IllegalArgumentException.class,()->store.purge(501));
+  f.c.jdbc.update("UPDATE privacy_erasure SET created_at=t,expires_at=t+interval '1 hour' FROM(SELECT clock_timestamp()-interval '2 hours' t) captured WHERE state='PREVIEW'");assertEquals(1,store.purge(500));assertEquals(0,store.purge(500));
+ }
+ @Test void aRolledBackJournalHeadCannotHideAlreadyAppliedDatabaseEvidence() throws Exception {
+  Path head=directory.resolve("journal/head.enc");String empty=Files.readString(head);var p=prepare(new Scope(Kind.NOTE,note));store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true));
+  Files.delete(directory.resolve("journal/1.enc"));Files.writeString(head,empty);assertThrows(RuntimeException.class,()->store.recover(true));assertTrue(store.blocked());assertEquals(1,f.c.count("erasure_tombstone"));
+ }
+ @Test void backupsPredatingSelectedRecordsOrTheIdentityNeverInventThem() throws Exception {
+  UUID exported=f.service.prepare(f.b.session,f.customer,"export","Synthetic export reason").entityId();var identity=f.c.jdbc.queryForMap("SELECT email_key,verified_at FROM customer_identity WHERE id=?",f.customer);
+  var p=prepare(new Scope(Kind.INTAKE,f.booking),new Scope(Kind.NOTE,note),new Scope(Kind.REQUEST,exported));store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true));
+  f.c.f.database.fresh();f.c.f.source.setCurrentSchema(f.c.f.database.schema+",public");
+  f.c.jdbc.update("INSERT INTO customer_identity(id,email_key,verified_at) VALUES(?,?,?)",f.customer,identity.get("email_key"),identity.get("verified_at"));
+  store.recover(true);store.recover(true);assertEquals(0,f.c.count("booking"));assertEquals(0,f.c.count("booking_note"));assertEquals(0,f.c.count("payment_entry"));assertEquals(1,f.c.count("erasure_tombstone"));
+  // An even earlier backup predates the identity itself; replay records only the no-op tombstone.
+  f.c.f.database.fresh();f.c.f.source.setCurrentSchema(f.c.f.database.schema+",public");store.recover(true);store.recover(true);
+  assertEquals(0,f.c.count("customer_identity"));assertEquals(0,f.c.count("booking"));assertEquals(0,f.c.count("privacy_erasure"));assertEquals(1,f.c.count("erasure_tombstone"));
+ }
+ @Test void oversizedInventoryAndUnavailableEvidenceFailWithoutSilentTruncation(){
+  f.c.jdbc.update("INSERT INTO booking_note(id,booking_id,actor_id,note,created_at) SELECT gen_random_uuid(),?,?,'Synthetic bounded-review note',clock_timestamp() FROM generate_series(1,501)",f.booking,f.b.adminId);
+  assertThrows(RuntimeException.class,()->store.overview(f.b.session,f.customer));assertEquals(0,journal.entries().size());assertFalse(store.blocked());
+  f.c.jdbc.update("DELETE FROM operation_control WHERE id=1");assertTrue(store.blocked());
  }
 }
