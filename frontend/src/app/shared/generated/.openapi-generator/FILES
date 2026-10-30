@@ -55,6 +55,11 @@ model/administratorCustomerBookings.ts
 model/administratorCustomerPage.ts
 model/administratorDateException.ts
 model/administratorDateExceptionRequest.ts
+model/administratorErasurePreview.ts
+model/administratorErasureReceipt.ts
+model/administratorErasureRequest.ts
+model/administratorErasureReview.ts
+model/administratorErasureScope.ts
 model/administratorExportPreview.ts
 model/administratorExportReceipt.ts
 model/administratorExportRequest.ts
@@ -76,6 +81,10 @@ model/administratorPaymentEntry.ts
 model/administratorPolicy.ts
 model/administratorPolicyChangeRequest.ts
 model/administratorPolicyReceipt.ts
+model/administratorPrivacyHoldRelease.ts
+model/administratorPrivacyHoldRequest.ts
+model/administratorPrivacyItem.ts
+model/administratorPrivacyOverview.ts
 model/administratorPrivateNote.ts
 model/administratorReceiptRequest.ts
 model/administratorReconciliationPage.ts

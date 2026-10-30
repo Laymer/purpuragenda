@@ -29,6 +29,20 @@ class ContractTest(unittest.TestCase):
             self.assertEqual(['no-store'], op['responses']['200']['headers']['Cache-Control']['schema']['enum'])
 
 
+    def test_erasure_requires_exact_records_review_and_nullable_erased_intake(self):
+        paths = self.document['paths']; schemas = self.document['components']['schemas']
+        confirm = paths['/admin/erasures/{id}/confirm']['post']
+        self.assertEqual({'id', 'X-CSRF-Token', 'Idempotency-Key', 'If-Match'}, {p['name'] for p in confirm['parameters']})
+        self.assertEqual({'digest', 'confirmed'}, set(schemas['AdministratorErasureReview']['required']))
+        self.assertEqual({'scopes', 'reason'}, set(schemas['AdministratorErasureRequest']['required']))
+        self.assertFalse(schemas['AdministratorErasureRequest']['additionalProperties'])
+        for owner, key in [('AdministratorBookingDetail', 'effectiveIntake'), ('AdministratorBookingSnapshot', 'intake')]:
+            self.assertIn({'type': 'null'}, schemas[owner]['properties'][key]['oneOf'])
+        for path in ('/admin/customers/{customerId}/privacy-review', '/admin/erasures/{id}'):
+            op = paths[path]['get']
+            self.assertEqual([{'sessionCookie': []}], op['security'])
+            self.assertEqual(['no-store'], op['responses']['200']['headers']['Cache-Control']['schema']['enum'])
+
     def test_model_normalization_is_idempotent_and_preserves_values_and_other_outputs(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -294,7 +308,7 @@ class ContractTest(unittest.TestCase):
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
                           'createAdministratorService', 'updateAdministratorService', 'archiveAdministratorService', 'restoreAdministratorService',
-                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings', 'getAdministratorReconciliation', 'getAdministratorNotifications', 'retryAdministratorNotification', 'prepareAdministratorExport', 'releaseAdministratorExport', 'getAdministratorExport', 'downloadAdministratorExport', 'getAdministratorCorrectionTarget', 'getAdministratorCorrection', 'prepareAdministratorCorrection', 'confirmAdministratorCorrection'},
+                          'getAccountProfile', 'updateAccountProfile', 'getAccountHistory', 'requestAccountEnrollmentProof', 'enrollAccount', 'requestContactProof', 'confirmContactChange', 'getAdministratorNotes', 'getAdministratorAudit', 'appendAdministratorNote', 'searchAdministratorCustomers', 'getAdministratorCustomerBookings', 'getAdministratorReconciliation', 'getAdministratorNotifications', 'retryAdministratorNotification', 'prepareAdministratorExport', 'releaseAdministratorExport', 'getAdministratorExport', 'downloadAdministratorExport', 'getAdministratorCorrectionTarget', 'getAdministratorCorrection', 'prepareAdministratorCorrection', 'confirmAdministratorCorrection', 'getAdministratorPrivacyReview', 'prepareAdministratorErasure', 'getAdministratorErasure', 'confirmAdministratorErasure', 'createAdministratorPrivacyHold', 'releaseAdministratorPrivacyHold'},
                          {op['operationId'] for op in operations})
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)

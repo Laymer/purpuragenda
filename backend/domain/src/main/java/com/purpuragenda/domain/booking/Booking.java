@@ -9,14 +9,18 @@ import java.util.UUID;
 public record Booking(UUID id, String reference, UUID customerId, Snapshot snapshot, String deliveryEmail,
                       State state, Origin origin, Instant createdAt, Instant start, Instant expiresAt,
                       Meeting meeting, ConfirmationBasis confirmationBasis, long version, int calendarRevision,
-                      boolean previouslyConfirmed) {
+                      boolean previouslyConfirmed, boolean meetingErased) {
+    public Booking(UUID id,String reference,UUID customerId,Snapshot snapshot,String deliveryEmail,State state,Origin origin,Instant createdAt,Instant start,Instant expiresAt,Meeting meeting,ConfirmationBasis confirmationBasis,long version,int calendarRevision,boolean previouslyConfirmed) {
+        this(id,reference,customerId,snapshot,deliveryEmail,state,origin,createdAt,start,expiresAt,meeting,confirmationBasis,version,calendarRevision,previouslyConfirmed,false);
+    }
     public enum State { PENDING_CONFIRMATION, CONFIRMED, CANCELLED, REJECTED, EXPIRED, COMPLETED, NO_SHOW }
     public enum Origin { CUSTOMER, ADMINISTRATOR }
     public enum ConfirmationBasis { MANUAL_APPROVAL, EXTERNAL_PAYMENT }
     public record Snapshot(ServiceDefinition service, SchedulingPolicy policy, Intake intake, String creationEmail,
-                           String displayZone, String privacyNoticeVersion) {
+                           String displayZone, String privacyNoticeVersion, boolean intakeErased) {
+        public Snapshot(ServiceDefinition service,SchedulingPolicy policy,Intake intake,String creationEmail,String displayZone,String privacyNoticeVersion) {this(service,policy,intake,creationEmail,displayZone,privacyNoticeVersion,false);}
         public Snapshot {
-            require(service != null && policy != null && intake != null, "INVALID_SNAPSHOT");
+            require(service != null && policy != null && (intakeErased ? intake == null : intake != null), "INVALID_SNAPSHOT");
             creationEmail = Input.email(creationEmail); Input.zone(displayZone); privacyNoticeVersion = Input.text(privacyNoticeVersion, 1, 120);
         }
     }
@@ -27,7 +31,8 @@ public record Booking(UUID id, String reference, UUID customerId, Snapshot snaps
         ReservationInterval.reserve(start);
         reference = Input.text(reference, 8, 80); deliveryEmail = Input.email(deliveryEmail);
         require(state != State.PENDING_CONFIRMATION || (expiresAt != null && expiresAt.isAfter(createdAt)), "IMPOSSIBLE_PENDING_HOLD");
-        require(!previouslyConfirmed || (meeting != null && confirmationBasis != null), "MEETING_REQUIRED");
+        require(!meetingErased || (meeting == null && state != State.CONFIRMED && state != State.PENDING_CONFIRMATION), "INVALID_ERASED_MEETING");
+        require(!previouslyConfirmed || ((meeting != null || meetingErased) && confirmationBasis != null), "MEETING_REQUIRED");
         require(previouslyConfirmed == (confirmationBasis != null), "INVALID_CONFIRMATION_HISTORY");
         require(switch (state) {
             case PENDING_CONFIRMATION, REJECTED, EXPIRED -> !previouslyConfirmed;
@@ -40,12 +45,12 @@ public record Booking(UUID id, String reference, UUID customerId, Snapshot snaps
         }
     }
     public static Booking pending(UUID id, String reference, UUID customer, Snapshot snapshot, Origin origin, Instant now, Instant start) {
-        snapshot.intake.validateAt(now);
+        require(!snapshot.intakeErased, "ERASED_INTAKE"); snapshot.intake.validateAt(now);
         return new Booking(id,reference,customer,snapshot,snapshot.creationEmail,State.PENDING_CONFIRMATION,origin,now,start,
                 snapshot.policy.expiresAt(now,start),null,null,1,0,false);
     }
     public static Booking confirmed(UUID id, String reference, UUID customer, Snapshot snapshot, Origin origin, Instant now, Instant start, Meeting meeting) {
-        snapshot.intake.validateAt(now); require(start.isAfter(now), "START_NOT_FUTURE"); require(meeting != null, "MEETING_REQUIRED");
+        require(!snapshot.intakeErased, "ERASED_INTAKE"); snapshot.intake.validateAt(now); require(start.isAfter(now), "START_NOT_FUTURE"); require(meeting != null, "MEETING_REQUIRED");
         return new Booking(id,reference,customer,snapshot,snapshot.creationEmail,State.CONFIRMED,origin,now,start,null,meeting,ConfirmationBasis.MANUAL_APPROVAL,1,0,true);
     }
     public Instant sessionEnd() { return start.plus(Duration.ofMinutes(snapshot.service.durationMinutes())); }
@@ -90,7 +95,7 @@ public record Booking(UUID id, String reference, UUID customerId, Snapshot snaps
         require(state == State.CONFIRMED || state == State.PENDING_CONFIRMATION, "INVALID_TRANSITION"); require(details != null, "INVALID_MEETING");
         return copy(state,start,expiresAt,details,confirmationBasis,calendarRevision+(previouslyConfirmed?1:0),previouslyConfirmed);
     }
-    public Booking deliveryContact(String verifiedEmail){return new Booking(id,reference,customerId,snapshot,Input.email(verifiedEmail),state,origin,createdAt,start,expiresAt,meeting,confirmationBasis,version+1,calendarRevision,previouslyConfirmed);}
+    public Booking deliveryContact(String verifiedEmail){return new Booking(id,reference,customerId,snapshot,Input.email(verifiedEmail),state,origin,createdAt,start,expiresAt,meeting,confirmationBasis,version+1,calendarRevision,previouslyConfirmed,meetingErased);}
     public Booking outcome(Instant now, State outcome, String earlyReason) {
         require(state == State.CONFIRMED && (outcome == State.COMPLETED || outcome == State.NO_SHOW), "INVALID_TRANSITION");
         require(!now.isBefore(start), "SESSION_NOT_STARTED");
@@ -98,6 +103,6 @@ public record Booking(UUID id, String reference, UUID customerId, Snapshot snaps
         return copy(outcome,start,expiresAt,meeting,confirmationBasis,calendarRevision,previouslyConfirmed);
     }
     private Booking copy(State next, Instant when, Instant expiry, Meeting details, ConfirmationBasis basis, int revision, boolean confirmed) {
-        return new Booking(id,reference,customerId,snapshot,deliveryEmail,next,origin,createdAt,when,expiry,details,basis,version+1,revision,confirmed);
+        return new Booking(id,reference,customerId,snapshot,deliveryEmail,next,origin,createdAt,when,expiry,details,basis,version+1,revision,confirmed,meetingErased);
     }
 }

@@ -19,7 +19,13 @@ final class PersistedJson {
         catch(Exception failure) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
     }
     static <T> T read(String json,Class<T> type) {
-        try { return Objects.requireNonNull(MAPPER.readValue(json,type)); }
+        try {
+            if(type==com.purpuragenda.domain.booking.Booking.Snapshot.class){
+                var node=MAPPER.readTree(json);
+                if(node instanceof com.fasterxml.jackson.databind.node.ObjectNode object && !object.has("intakeErased")){object.put("intakeErased",false);json=object.toString();}
+            }
+            return Objects.requireNonNull(MAPPER.readValue(json,type));
+        }
         catch(Exception failure) { throw new Failure(Failure.Kind.STORAGE_FAILURE); }
     }
 }

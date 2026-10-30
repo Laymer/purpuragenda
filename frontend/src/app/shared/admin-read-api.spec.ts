@@ -22,7 +22,7 @@ describe('Private administrator read typed HTTP boundary', () => {
     const http = TestBed.inject(HttpTestingController); const id = '11111111-1111-4111-8111-111111111111';
     let version: number | undefined; let etag: string | null = null; let birthTime: string | undefined; let payment: string | undefined;
     TestBed.inject(AdministratorService).getAdministratorBooking(id, 'response').subscribe(value => {
-      version = value.body?.version; etag = value.headers.get('ETag'); birthTime = value.body?.snapshot.intake.birthTime; payment = value.body?.payment.status;
+      version = value.body?.version; etag = value.headers.get('ETag'); birthTime = value.body?.snapshot.intake?.birthTime; payment = value.body?.payment.status;
     });
     const request = http.expectOne('/api/v1/admin/bookings/' + id);
     expect(request.request.method).toBe('GET'); expect(request.request.headers.has('If-None-Match')).toBe(false);

@@ -8764,6 +8764,790 @@
           "description": "Normalized correction fields and reason, or explicit confirmation of the reviewed digest."
         }
       }
+    },
+    "/admin/customers/{customerId}/privacy-review": {
+      "get": {
+        "operationId": "getAdministratorPrivacyReview",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorPrivacyOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND after administrator authority checks",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/customers/{customerId}/erasures": {
+      "post": {
+        "operationId": "prepareAdministratorErasure",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorErasureReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorErasureRequest"
+              }
+            }
+          },
+          "description": "Exact reviewed scope, reason or digest; explicit confirmation is mandatory."
+        }
+      }
+    },
+    "/admin/erasures/{id}": {
+      "get": {
+        "operationId": "getAdministratorErasure",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current administrator read projection",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorErasurePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND after administrator authority checks",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/erasures/{id}/confirm": {
+      "post": {
+        "operationId": "confirmAdministratorErasure",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            },
+            "description": "Quoted preview version."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorErasureReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorErasureReview"
+              }
+            }
+          },
+          "description": "Exact reviewed scope, reason or digest; explicit confirmation is mandatory."
+        }
+      }
+    },
+    "/admin/customers/{customerId}/privacy-holds": {
+      "post": {
+        "operationId": "createAdministratorPrivacyHold",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorErasureReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorPrivacyHoldRequest"
+              }
+            }
+          },
+          "description": "Exact reviewed scope, reason or digest; explicit confirmation is mandatory."
+        }
+      }
+    },
+    "/admin/privacy-holds/{id}/release": {
+      "post": {
+        "operationId": "releaseAdministratorPrivacyHold",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private administrator review. Fresh persisted MFA required on every read and retry. Review dates never delete data. Exact selected records and digest require explicit confirmation; encrypted preview expires after one elapsed hour. Financial, service and policy facts remain. Holds apply only to the selected record. No-store; query parameters rejected.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exact privacy request or customer identifier."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 43,
+              "maxLength": 43,
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Current same-origin session CSRF proof."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Retain the same key and normalized body after an uncertain response. Changed content with the same key returns409; successful retries do not duplicate occupancy, quota or effects."
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "403": {
+            "description": "ADMIN_ACCESS_REQUIRED or AUTHENTICATION_REQUIRED; a new successful MFA login is needed for stale factors.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/BookingConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Committed idempotent result; retrieve current private detail after replay.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdministratorErasureReceipt"
+                }
+              }
+            }
+          },
+          "412": {
+            "$ref": "#/components/responses/BookingStaleVersion"
+          },
+          "428": {
+            "$ref": "#/components/responses/BookingVersionRequired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdministratorPrivacyHoldRelease"
+              }
+            }
+          },
+          "description": "Exact reviewed scope, reason or digest; explicit confirmation is mandatory."
+        }
+      }
     }
   },
   "components": {
@@ -9851,7 +10635,14 @@
             "$ref": "#/components/schemas/BookingReviewPolicy"
           },
           "intake": {
-            "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -10110,7 +10901,18 @@
             "$ref": "#/components/schemas/AdministratorBookingPayment"
           },
           "effectiveIntake": {
-            "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdministratorIntakeSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identityErased": {
+            "type": "boolean",
+            "description": "True when reviewed identity erasure removed delivery identifiers and historic meeting credentials."
           }
         },
         "required": [
@@ -12247,6 +13049,287 @@
           "expiresAt",
           "version"
         ]
+      },
+      "AdministratorErasureScope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INTAKE",
+              "NOTE",
+              "PROFILE",
+              "IDENTITY",
+              "AUDIT",
+              "REQUEST",
+              "FINANCIAL"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorPrivacyItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/AdministratorErasureScope"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_DUE",
+              "REVIEW_DUE",
+              "HELD",
+              "FINANCIAL_REVIEW_REQUIRED"
+            ]
+          },
+          "reviewOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "activityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "holds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "scope",
+          "status",
+          "reviewOn",
+          "activityAt",
+          "effect",
+          "holds"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorPrivacyOverview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorPrivacyItem"
+            }
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "customerId",
+          "items",
+          "observedAt"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorErasureRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorErasureScope"
+            },
+            "minItems": 1,
+            "maxItems": 500,
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "scopes",
+          "reason"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorErasurePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "selected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorPrivacyItem"
+            }
+          },
+          "retained": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdministratorPrivacyItem"
+            }
+          },
+          "reason": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "customerId",
+          "selected",
+          "retained",
+          "reason",
+          "digest",
+          "expiresAt",
+          "version"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorErasureReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "erasureId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "erasureId",
+          "version"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorErasureReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "description": "Must be true after reviewing the exact before/after preview."
+          }
+        },
+        "required": [
+          "digest",
+          "confirmed"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorPrivacyHoldRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INTAKE",
+              "NOTE",
+              "PROFILE",
+              "IDENTITY",
+              "AUDIT",
+              "REQUEST",
+              "FINANCIAL"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "through": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "confirmed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "targetId",
+          "reason",
+          "through",
+          "confirmed"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
+      },
+      "AdministratorPrivacyHoldRelease": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "confirmed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reason",
+          "confirmed"
+        ],
+        "description": "Exact reviewed privacy operation; personal values must remain memory-local."
       }
     },
     "securitySchemes": {

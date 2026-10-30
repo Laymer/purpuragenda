@@ -30,7 +30,7 @@ import { reauthenticate } from './admin-reauth';
         @if (customerCursor()) { <button mat-stroked-button type="button" (click)="moreCustomers()" [disabled]="busy()">Next customer page</button> }
       }
       @if (selected(); as customer) {
-        <p><a [routerLink]="'/admin/customers/' + customer.id + '/privacy'">Customer data export</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/corrections'">Correct profile</a></p><h2>Bookings for {{ customer.email }}</h2><p>Times shown in Europe/Brussels, newest scheduled time first.</p>
+        <p><a [routerLink]="'/admin/customers/' + customer.id + '/privacy'">Customer data export</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/corrections'">Correct profile</a> · <a [routerLink]="'/admin/customers/' + customer.id + '/erasure'">Review retention and erasure</a></p><h2>Bookings for {{ customer.email }}</h2><p>Times shown in Europe/Brussels, newest scheduled time first.</p>
         <button mat-stroked-button type="button" (click)="open(customer.id)" [disabled]="busy()">Show newest bookings</button>
         <ul>@for (booking of bookings(); track booking.id) {
           <li><a [routerLink]="'/admin/bookings/' + booking.id">{{ booking.reference }}</a>

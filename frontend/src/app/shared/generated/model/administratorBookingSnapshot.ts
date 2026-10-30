@@ -21,5 +21,5 @@ export interface AdministratorBookingSnapshot {
     noticeVersion: string;
     service: Service;
     policy: BookingReviewPolicy;
-    intake: AdministratorIntakeSnapshot;
+    intake: AdministratorIntakeSnapshot | null;
 }

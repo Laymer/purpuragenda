@@ -271,7 +271,7 @@ class RateLimitDatabaseTest {
         fixture.migration.migrate(0);fixture.migration.migrate(0);
         assertEquals(org.springframework.boot.health.contributor.Status.UP,readiness.health().getStatus());
         assertEquals(1,count(Kind.ACCOUNT_ATTEMPT));
-        assertEquals(20,fixture.migration.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,fixture.migration.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         var admission=new RequestThrottle(limits).accountEnrollment("203.0.113.7");
         assertTrue(admission.allowed());assertEquals(1,count(Kind.ACCOUNT_ENROLLMENT_IP));
         clock.set(T0.plusSeconds(900));

@@ -51,6 +51,22 @@ class MigrationTest {
             postgres.copyFileToContainer(MountableFile.forHostPath(script),"/tmp/init-database.sh");
             phase="ROLE_BOOTSTRAP";
             assertEquals(0,postgres.execInContainer("bash","/tmp/init-database.sh").getExitCode(),"ROLE_BOOTSTRAP_FAILED");
+            // Container log readiness does not certify the current published host port.
+            // Use a fresh Docker inspection and require a real application-role connection.
+            phase="HOST_CONNECTION";
+            long deadline=System.nanoTime()+Duration.ofSeconds(10).toNanos();boolean ready=false;
+            while(System.nanoTime()<deadline){
+                var inspect=postgres.getDockerClient().inspectContainerCmd(postgres.getContainerId()).exec();
+                var bindings=inspect.getNetworkSettings().getPorts().getBindings().get(ExposedPort.tcp(5432));
+                if(bindings!=null&&bindings.length>0){
+                    jdbcUrl="jdbc:postgresql://"+postgres.getHost()+":"+bindings[0].getHostPortSpec()+"/purpuragenda_test";
+                    try(var connection=DriverManager.getConnection(jdbcUrl,APP,appPassword);var statement=connection.createStatement();var result=statement.executeQuery("SELECT 1")){
+                        ready=result.next()&&result.getInt(1)==1;if(ready)break;
+                    }catch(SQLException unavailable){/* Bounded startup polling; no provider diagnostics or secrets. */}
+                }
+                Thread.sleep(100);
+            }
+            assertTrue(ready,"POSTGRES_HOST_CONNECTION_UNAVAILABLE");
         } catch(Exception failure) {
             throw new AssertionError("POSTGRES_TEST_START_FAILED:"+phase+":"+failure.getClass().getSimpleName());
         }
@@ -152,7 +168,7 @@ class MigrationTest {
     @Test void freshSchemaHasAllChangesAndSeeds() {
         assertEquals(180006,scalar(APP,"SELECT current_setting('server_version_num')::integer"));
         assertEquals(1,scalar(APP,"SELECT (current_setting('fsync')='on')::integer"));
-        assertEquals(20,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(2,scalar(APP,"SELECT count(*) FROM service"));
         assertEquals(1500,scalar(APP,"SELECT price_minor FROM service WHERE duration_minutes=30"));
         assertEquals(3000,scalar(APP,"SELECT price_minor FROM service WHERE duration_minutes=60"));
@@ -163,7 +179,7 @@ class MigrationTest {
         try(Connection c=connection(APP)) { execute(c,"UPDATE service SET name='Synthetic owner edit' WHERE id=?::uuid",SERVICE); }
         catch(SQLException failure) { throw safe(failure); }
         migrate(0); migrate(0);
-        assertEquals(20,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         assertEquals(1,scalar(APP,"SELECT count(*) FROM service WHERE name='Synthetic owner edit'"));
         assertEquals(1,scalar(APP,"SELECT count(*) FROM booking WHERE id='"+id+"'"));
     }
@@ -284,6 +300,6 @@ class MigrationTest {
         }
         assertTrue(ready,"POSTGRES_RESTART_FAILED");
         assertEquals(1,scalar(APP,"SELECT count(*) FROM booking"));
-        assertEquals(20,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,scalar(MIGRATOR,"SELECT count(*) FROM databasechangelog"));
     }
 }

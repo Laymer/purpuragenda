@@ -32,6 +32,7 @@ export const routes: Routes = [
       { path: 'bookings/:id/history', loadComponent: () => import('./admin/history.component').then(module => module.HistoryComponent), title: 'Private booking history · Purpuragenda' },
       { path: 'reconciliation', data: { mode: 'reconciliation' }, loadComponent: () => import('./admin/operations.component').then(module => module.OperationsComponent), title: 'Outstanding refunds · Purpuragenda' },
       { path: 'notifications', data: { mode: 'notifications' }, loadComponent: () => import('./admin/operations.component').then(module => module.OperationsComponent), title: 'Notification follow-up · Purpuragenda' },
+      { path: 'customers/:id/erasure', loadComponent: () => import('./admin/erasure.component').then(module => module.ErasureComponent), title: 'Customer privacy review · Purpuragenda' },
       { path: 'customers/:id/corrections', loadComponent: () => import('./admin/corrections.component').then(module => module.CorrectionsComponent), title: 'Customer corrections · Purpuragenda' },
       { path: 'customers/:id/privacy', loadComponent: () => import('./admin/privacy.component').then(module => module.PrivacyComponent), title: 'Customer privacy · Purpuragenda' },
       { path: 'customers', loadComponent: () => import('./admin/customers.component').then(module => module.CustomersComponent), title: 'Customers · Purpuragenda' },

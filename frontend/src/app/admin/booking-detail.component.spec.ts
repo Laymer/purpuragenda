@@ -45,6 +45,12 @@ describe('Administrator booking detail and approval', () => {
   });
   afterEach(() => { try { http.verify(); } finally { TestBed.resetTestingModule(); vi.useRealTimers(); } });
 
+  it('shows erased intake explicitly while preserving service and payment details', async () => {
+    await loaded(detail({ identityErased: true, effectiveIntake: null, snapshot: { ...detail().snapshot, intake: null } }));
+    expect(fixture.nativeElement.textContent).toContain('Personal intake fields erased after administrator review.');
+    expect(fixture.nativeElement.textContent).toContain('Payment');
+    expect(fixture.nativeElement.textContent).toContain('Erased after administrator review');
+  });
   it('renders detail, finance and intake as text only, never as markup or storage', async () => {
     const storage = vi.spyOn(Storage.prototype, 'setItem'); await loaded();
     const text = fixture.nativeElement.textContent as string;

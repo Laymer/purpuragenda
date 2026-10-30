@@ -53,8 +53,8 @@ final class PostgresBookingStore {
                     PersistedJson.read(row.getString("snapshot"),Booking.Snapshot.class),row.getString("delivery_email"),
                     Booking.State.valueOf(row.getString("state")),Booking.Origin.valueOf(row.getString("origin")),
                     instant(row,"created_at"),instant(row,"start_at"),instant(row,"expires_at"),meeting,
-                    basis==null?null:Booking.ConfirmationBasis.valueOf(basis),row.getLong("version"),row.getInt("calendar_revision"),row.getBoolean("previously_confirmed"));
-            value.snapshot().intake().validateAt(value.createdAt());
+                    basis==null?null:Booking.ConfirmationBasis.valueOf(basis),row.getLong("version"),row.getInt("calendar_revision"),row.getBoolean("previously_confirmed"),row.getBoolean("meeting_erased"));
+            if(!value.snapshot().intakeErased())value.snapshot().intake().validateAt(value.createdAt());
             require(new StoredShape(value.snapshot().service().id(),value.snapshot().service().durationMinutes(),value.sessionEnd(),value.reservedEnd(),value.businessDate())
                     .equals(new StoredShape(row.getObject("service_id",UUID.class),row.getInt("session_minutes"),instant(row,"session_end"),instant(row,"reserved_end"),row.getObject("business_date",LocalDate.class))));
             require(new Occupancy(value.id(),row.getInt("resource_id"),value.start(),value.reservedEnd(),true,false,!occupied(value))
@@ -65,7 +65,7 @@ final class PostgresBookingStore {
         } catch(RuntimeException failure) { throw invalid(); }
     }
     void save(Booking value,Instant now) {
-        value.snapshot().intake().validateAt(value.createdAt());
+        if(!value.snapshot().intakeErased())value.snapshot().intake().validateAt(value.createdAt());
         if(value.meeting()!=null) require(Meeting.parse(value.meeting().participantUrl(),meetingHosts).meetingId().equals(value.meeting().meetingId()));
         require(value.createdAt().equals(value.createdAt().truncatedTo(ChronoUnit.MICROS))
                 && value.start().equals(value.start().truncatedTo(ChronoUnit.MICROS))

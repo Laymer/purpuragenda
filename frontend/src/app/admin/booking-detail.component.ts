@@ -32,22 +32,23 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
           <dt>Starts</dt><dd>{{ display(b.startInstant) }}</dd>
           <dt>Session ends</dt><dd>{{ display(b.sessionEndInstant) }}</dd>
           @if (b.pendingExpiresAt) { <dt>Request expires</dt><dd>{{ display(b.pendingExpiresAt) }}</dd> }
-          <dt>Delivery email</dt><dd>{{ b.deliveryEmail }}</dd>
-          <dt>Meeting link</dt><dd>{{ b.meetingUrl ?? 'Not set' }}</dd>
+          <dt>Delivery email</dt><dd>{{ b.identityErased ? 'Erased after administrator review' : b.deliveryEmail }}</dd>
+          <dt>Meeting link</dt><dd>{{ b.identityErased ? 'Erased after administrator review' : (b.meetingUrl ?? 'Not set') }}</dd>
         </dl>
         <h2>Payment</h2>
         <p>Status {{ b.payment.status }}. Received {{ money(b.payment.receivedMinor) }}, refunded {{ money(b.payment.refundedMinor) }}, remaining {{ money(b.payment.remainingMinor) }} ({{ b.snapshot.service.currency }}). Approval does not imply payment.</p>
         <app-finance-summary [payment]="b.payment" />
         @if (!busy() && !uncertain()) { <p><a [routerLink]="'/admin/bookings/' + b.id + '/finance'">Record receipt or refund</a></p><p><a [routerLink]="'/admin/bookings/' + b.id + '/history'">Private notes and audit</a></p> }
         <h2>Customer details</h2><p>Current details include reviewed intake corrections. The original intake remains in the historical snapshot and reviewed export.</p>
-        <dl>
-          <dt>Name</dt><dd>{{ b.effectiveIntake.firstName }} {{ b.effectiveIntake.lastName }}</dd>
-          <dt>Telephone</dt><dd>{{ b.effectiveIntake.telephone }}</dd>
-          <dt>Birth date</dt><dd>{{ b.effectiveIntake.birthDate }}</dd>
-          <dt>Birth time</dt><dd>{{ b.effectiveIntake.birthTime }}</dd>
-          <dt>Birthplace</dt><dd>{{ b.effectiveIntake.birthplace }}</dd>
-          <dt>Message</dt><dd class="text">{{ b.effectiveIntake.message }}</dd>
+        @if (b.effectiveIntake; as intake) { <dl>
+          <dt>Name</dt><dd>{{ intake.firstName }} {{ intake.lastName }}</dd>
+          <dt>Telephone</dt><dd>{{ intake.telephone }}</dd>
+          <dt>Birth date</dt><dd>{{ intake.birthDate }}</dd>
+          <dt>Birth time</dt><dd>{{ intake.birthTime }}</dd>
+          <dt>Birthplace</dt><dd>{{ intake.birthplace }}</dd>
+          <dt>Message</dt><dd class="text">{{ intake.message }}</dd>
         </dl>
+        } @else { <p>Personal intake fields erased after administrator review.</p> }
         @if (canApprove()) {
           <h2>Approve</h2>
           <form (submit)="$event.preventDefault(); approve()">

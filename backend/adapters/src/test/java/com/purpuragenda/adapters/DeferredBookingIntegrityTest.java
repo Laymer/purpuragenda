@@ -82,7 +82,7 @@ class DeferredBookingIntegrityTest {
             SQLException failure=assertThrows(SQLException.class,c::commit);assertEquals("23514",failure.getSQLState());c.rollback();
         }
         f.fixture.migrate(0);f.fixture.migrate(0);
-        assertEquals(20,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
+        assertEquals(21,f.fixture.scalar(MigrationTest.MIGRATOR,"SELECT count(*) FROM databasechangelog"));
         try(Connection c=f.fixture.connection(MigrationTest.APP)) {
             c.setAutoCommit(false);move(c,id,MigrationTest.START.plusSeconds(86400));move(c,id,MigrationTest.START.plusSeconds(172800));c.commit();
         }
