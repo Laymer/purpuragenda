@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import subprocess
@@ -60,11 +61,15 @@ def scan(binary, mode, target, report, config, ignore, runner=subprocess.run):
 
 
 def tracked_copy(root, destination):
-    paths = git(root, 'ls-files', '-z').decode().split('\0')
+    paths = git(root, 'ls-files', '--stage', '-z').decode().split('\0')
     count = 0
-    for name in paths:
-        if not name:
+    for record in paths:
+        if not record:
             continue
+        match = re.fullmatch(r'(100644|100755|120000|160000) ([0-9a-f]{40}) 0\t(.+)', record)
+        if not match:
+            raise ValueError('Invalid tracked index entry')
+        mode, revision, name = match.groups()
         relative = Path(name)
         if relative.is_absolute() or '..' in relative.parts:
             raise ValueError('Invalid tracked source path')
@@ -75,8 +80,14 @@ def tracked_copy(root, destination):
                 raise ValueError('Tracked source ancestors must not be symlinks')
         source, target = root / relative, destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        # Scan the link text, never external private contents or ignored local secrets.
-        data = os.readlink(source).encode() if source.is_symlink() else source.read_bytes()
+        # A gitlink tracks a repository revision, not files in the other repository.
+        # Scan its immutable reference without reading an absent/private checkout.
+        # Each repository must scan its own tracked tree and complete history.
+        if mode == '160000':
+            data = ('gitlink ' + revision + '\n').encode()
+        else:
+            # Scan link text, never external private contents or ignored local secrets.
+            data = os.readlink(source).encode() if source.is_symlink() else source.read_bytes()
         target.write_bytes(data)
         count += 1
     if not count:

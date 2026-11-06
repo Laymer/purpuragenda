@@ -143,13 +143,35 @@ class SecurityGateTest(unittest.TestCase):
         self.assertFalse((destination / 'tracked/source.txt').exists())
         self.assertFalse(any(file.is_file() for file in destination.rglob('*')))
 
+    def test_gitlink_scans_revision_without_private_checkout_or_untracked_contents(self):
+        GATE.git(self.root, 'init', '-q')
+        revision = '1' * 40
+        GATE.git(self.root, 'update-index', '--add', '--cacheinfo', '160000', revision, 'desktop')
+        for initialized in (False, True):
+            with self.subTest(initialized=initialized):
+                if initialized:
+                    (self.root / 'desktop').mkdir()
+                    (self.root / 'desktop/private.txt').write_text('synthetic-private-marker')
+                destination = self.root / ('initialized' if initialized else 'absent')
+                destination.mkdir()
+                self.assertEqual(1, GATE.tracked_copy(self.root, destination))
+                self.assertEqual('gitlink ' + revision + '\n', (destination / 'desktop').read_text())
+                self.assertFalse(any(p.name == 'private.txt' for p in destination.rglob('*')))
+
+    def test_unmerged_or_unknown_index_entries_fail(self):
+        for mode, stage in (('100644', '1'), ('unknown', '0')):
+            entry = f'{mode} {"0" * 40} {stage}\tfile\0'.encode()
+            with self.subTest(mode=mode, stage=stage), patch.object(GATE, 'git', return_value=entry):
+                with self.assertRaisesRegex(ValueError, 'Invalid tracked index'):
+                    GATE.tracked_copy(self.root, self.root / 'copy')
+
     def test_no_tracked_files_is_a_failure(self):
         GATE.git(self.root, 'init', '-q')
         with self.assertRaisesRegex(ValueError, 'No tracked sources'):
             GATE.tracked_copy(self.root, self.root / 'copy')
 
     def test_invalid_tracked_path_fails(self):
-        with patch.object(GATE, 'git', return_value=b'../outside\0'):
+        with patch.object(GATE, 'git', return_value=b'100644 ' + b'0' * 40 + b' 0\t../outside\0'):
             with self.assertRaisesRegex(ValueError, 'Invalid tracked'):
                 GATE.tracked_copy(self.root, self.root / 'copy')
 
