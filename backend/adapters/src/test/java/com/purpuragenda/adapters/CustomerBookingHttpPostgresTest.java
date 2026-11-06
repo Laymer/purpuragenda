@@ -37,7 +37,7 @@ class CustomerBookingHttpPostgresTest {
         byte[] bytes=new byte[32];Arrays.fill(bytes,(byte)9);
         var throttle=new RequestThrottle(new PostgresRateLimits(c.f.source,new RateKey(Files.write(directory.resolve("http-rate.key"),bytes),"http-test-v1")));
         var proofs=new GuestProofs(throttle,c.f.delivery,new GuestRecovery(new PostgresGuestRecoveryLookup(c.f.source),c.f.delivery));
-        g.mvc=MockMvcBuilders.standaloneSetup(new SessionController(access,cookies),new GuestAuthController(proofs,access,cookies,Duration.ZERO),
+        g.mvc=MockMvcBuilders.standaloneSetup(CalendarCustomerHttpPostgresTest.controller(c.f.source,access,cookies),new SessionController(access,cookies),new GuestAuthController(proofs,access,cookies,Duration.ZERO),
                 new CustomerAvailabilityController(new CustomerReschedulingAvailability(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new GuestBookingController(new GuestBookingView(new PostgresCustomerBookingQuery(c.f.source,Set.of("zoom.us"))),access,cookies),
                 new CustomerContactController(new CustomerContactChanges(new PostgresContactChanges(c.f.source,c.f.delivery),throttle)),

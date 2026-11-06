@@ -28,7 +28,7 @@ class AccountDataHttpPostgresTest {
     @AfterAll static void stop() { AccountHttpPostgresTest.stop(); }
     @BeforeEach void setup() throws Exception {
         h.directory=directory;h.setup();var data=new AccountData(new PostgresAccountData(h.a.e.c.f.source));
-        h.mvc=MockMvcBuilders.standaloneSetup(new SessionController(h.access,h.cookies),new AccountController(h.login,h.passwords,h.cookies,Duration.ZERO),new AccountDataController(data,h.access,h.cookies),new AccountProfileController(data))
+        h.mvc=MockMvcBuilders.standaloneSetup(CalendarCustomerHttpPostgresTest.controller(h.a.e.c.f.source,h.access,h.cookies),new SessionController(h.access,h.cookies),new AccountController(h.login,h.passwords,h.cookies,Duration.ZERO),new AccountDataController(data,h.access,h.cookies),new AccountProfileController(data))
                 .addFilters(new ApiGuardFilter(AccountHttpPostgresTest.ORIGIN,h.access,h.cookies,new ClientAddress(List.of()))).build();
     }
     @AfterEach void cleanup() { h.cleanup(); }

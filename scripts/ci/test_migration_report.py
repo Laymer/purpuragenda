@@ -20,6 +20,27 @@ class MigrationReportTest(unittest.TestCase):
         attrs = ' '.join(f'{key}="{value}"' for key, value in counts.items())
         self.report.write_text(f'<testsuite name="com.purpuragenda.adapters.MigrationTest" tests="{tests}" {attrs}/>')
 
+    def test_calendar_downloads_require_each_real_authority_suite(self):
+        self.write()
+        source = self.root / 'backend/adapters/src/main/java/com/purpuragenda/adapters/in/rest/CalendarDownloadController.java'
+        source.parent.mkdir(parents=True)
+        source.write_text('synthetic implemented download')
+        suites = [('CalendarCustomerHttpPostgresTest', 4), ('CalendarOwnerHttpPostgresTest', 3), ('CalendarAccountHttpPostgresTest', 1)]
+        for name, minimum in suites:
+            with self.assertRaisesRegex(ValueError, 'Missing mandatory'):
+                GATE.validate(self.root)
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{minimum}">' + '<testcase/>' * minimum + '</testsuite>')
+        GATE.validate(self.root)
+        for name, minimum in suites:
+            report = self.report.with_name('TEST-com.purpuragenda.adapters.' + name + '.xml')
+            original = report.read_text()
+            for count, cases, nested in [(minimum-1, minimum-1, ''), (minimum, minimum-1, ''), (minimum, minimum, '<failure/>'), (minimum, minimum, '<error/>'), (minimum, minimum, '<skipped/>')]:
+                report.write_text(f'<testsuite name="com.purpuragenda.adapters.{name}" tests="{count}">' + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
+                with self.assertRaises(ValueError):
+                    GATE.validate(self.root)
+            report.write_text(original)
+
     def test_real_complete_suite_passes(self):
         self.write()
         GATE.validate(self.root)

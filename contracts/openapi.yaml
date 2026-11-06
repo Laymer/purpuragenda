@@ -9548,6 +9548,220 @@
           "description": "Exact reviewed scope, reason or digest; explicit confirmation is mandatory."
         }
       }
+    },
+    "/bookings/{bookingId}/calendar": {
+      "get": {
+        "operationId": "downloadBookingCalendar",
+        "tags": [
+          "Bookings"
+        ],
+        "description": "Private UTF-8 iCalendar attachment for the currently authorized booking. Requires account ownership or the exact guest management grant; the route fixes the CUSTOMER audience. Authority and current booking facts share one read-only snapshot. No query parameters or bearer links. No session touch, scheduling mutation or expiry reclamation. Elapsed pending holds export CANCELLED without changing stored state/revision. UTC actual-session times, stable audience UID and persisted SEQUENCE. All replies are no-store; conditional and Range headers never produce 304 or partial responses. No ETag/Last-Modified. Imports may require manual updates or removal.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Booking UUID; identifier only, never authorization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current iCalendar snapshot; fixed attachment filename consultation.ics.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "attachment; filename=\"consultation.ics\""
+                  ]
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-referrer"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/bookings/{bookingId}/calendar": {
+      "get": {
+        "operationId": "downloadAdministratorBookingCalendar",
+        "tags": [
+          "Administrator"
+        ],
+        "description": "Private UTF-8 iCalendar attachment for the currently authorized booking. Requires persisted MFA administrator authority; the route fixes the OWNER audience. Authority and current booking facts share one read-only snapshot. No query parameters or bearer links. No session touch, scheduling mutation or expiry reclamation. Elapsed pending holds export CANCELLED without changing stored state/revision. UTC actual-session times, stable audience UID and persisted SEQUENCE. All replies are no-store; conditional and Range headers never produce 304 or partial responses. No ETag/Last-Modified. Imports may require manual updates or removal.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Booking UUID; identifier only, never authorization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private current iCalendar snapshot; fixed attachment filename consultation.ics.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "attachment; filename=\"consultation.ics\""
+                  ]
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-referrer"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BookingInvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/BookingSessionRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/BookingUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/BookingNotFound"
+          },
+          "default": {
+            "description": "Safe private problem; never raw errors",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/BookingAccessRejected",
+            "description": "ADMIN_ACCESS_REQUIRED; anonymous, guest or account session cannot read owner data"
+          }
+        }
+      }
     }
   },
   "components": {

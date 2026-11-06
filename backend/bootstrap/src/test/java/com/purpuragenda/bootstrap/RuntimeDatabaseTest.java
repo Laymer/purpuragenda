@@ -519,6 +519,14 @@ class RuntimeDatabaseTest {
             var detail=call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",cookie,"If-None-Match","\"1\"");assertEquals(200,detail.statusCode());assertEquals("no-store",detail.headers().firstValue("Cache-Control").orElseThrow());assertEquals("\"1\"",detail.headers().firstValue("ETag").orElseThrow());
             var projection=new com.fasterxml.jackson.databind.ObjectMapper().readTree(detail.body());assertTrue("Synthetic private city".equals(projection.at("/snapshot/intake/birthplace").asText()),"Owner detail must retain the immutable private intake");assertEquals("UNPAID",projection.at("/payment/status").asText());
             assertEquals(403,call(port,"GET","/api/v1/admin/bookings/"+id,"Cookie",guestCookie).statusCode());
+            var ownerCalendar=call(port,"GET","/api/v1/admin/bookings/"+id+"/calendar","Cookie",cookie,"If-None-Match","*");
+            assertEquals(200,ownerCalendar.statusCode());assertEquals("no-store",ownerCalendar.headers().firstValue("Cache-Control").orElseThrow());
+            assertTrue(ownerCalendar.body().contains(id+"-owner@purpuragenda"));assertFalse(ownerCalendar.body().contains("Synthetic private city"));
+            var customerCalendar=call(port,"GET","/api/v1/bookings/"+id+"/calendar","Cookie",guestCookie);
+            assertEquals(200,customerCalendar.statusCode());assertTrue(customerCalendar.body().contains(id+"-customer@purpuragenda"));
+            assertEquals("attachment; filename=\"consultation.ics\"",customerCalendar.headers().firstValue("Content-Disposition").orElseThrow());
+            assertEquals(401,call(port,"GET","/api/v1/bookings/"+id+"/calendar").statusCode());
+
         } finally { Arrays.fill(password,'\0');if(secret!=null)Arrays.fill(secret,(byte)0); }
     }
 
