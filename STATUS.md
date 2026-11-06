@@ -39,8 +39,8 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P33 — Complete verified delivery-contact changes without ownership transfer | Merged; application PR125, persistence PR126, HTTP PR127 and UI/browser https://github.com/Laymer/purpuragenda/pull/128 confirmed merged 2db7eba after 15 hosted checks and independent review; both historical recipients notified, original account ownership preserved |
 | P34 — Complete controlled customer exports and audited corrections | Merged; privacy groundwork https://github.com/Laymer/purpuragenda/pull/141 confirmed merged4daab6b after15 hosted checks and independent exact3c5f192 review; controlled exports PR142 confirmed merged951c087 after15 checks and independent review; corrections PR143 confirmed merged39522f6 after15 hosted checks and independent exact-head review |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Merged; https://github.com/Laymer/purpuragenda/pull/144 confirmed merged8735d0a after all15 hosted checks41109189433, independent exact254a403 review, clean77.87s Chromium journey and zero scanning alerts; reviewed execution/holds/restore-safe journal and private reconciliation/HTTP/UI complete |
-| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | In progress; foundation https://github.com/Laymer/purpuragenda/pull/64 merged669bc5b; reminders https://github.com/Laymer/purpuragenda/pull/82 confirmed merged d2d4dfe; remaining-scenario audit (docs/notification-audit.md, lifecycle matrix, erasure suppression proof) on task/p36-notification-audit, hosted checks pending |
-| P37 — Complete private iCalendar exports and safe Google Calendar actions | Recovered WIP; dependencies in docs/delivery.md;  |
+| P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Merged; foundation PR64 669bc5b and reminders PR82 d2d4dfe; audit https://github.com/Laymer/purpuragenda/pull/145 confirmed merged74d4d9f, all15 hosted checks42189671495 passed; independent review owner-reported in approved P37 handoff |
+| P37 — Complete private iCalendar exports and safe Google Calendar actions | In progress; slice1 private model/writer claimed on task/p37-calendar-model; protected downloads/UI/report integration remain;  |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | In progress; core-journey slice (Chromium guest-to-approval journey on an isolated real Compose stack, mandatory e2e-core job) https://github.com/Laymer/purpuragenda/pull/101 confirmed merged 700c966 after 15 hosted checks (run 40532171627) and independent review of a328604; superseded #100 closed and its branch deleted because its history failed the all-branch secret scan; API traceability, two-process races and customer cancel/reschedule steps remain; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
@@ -61,16 +61,17 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P36/notification-audit: agent=claude_p36; branch=task/p36-notification-audit; base=main; handoff=docs/handoffs/claude-p36-notification-audit.md
+- P37/calendar-model: agent=codex; branch=task/p37-calendar-model; base=main; handoff=docs/handoffs/codex-p37-calendar.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: claude_p36, 2026-11-06T08:42:42Z.
-- Current task: P36/notification-audit (remaining-scenario audit); branch: task/p36-notification-audit; base: main 8735d0a; PR URL: pending first push.
-- Last pushed implementation commit: none yet; uncommitted changes: audit document, lifecycle matrix and erasure suppression assertions, guard raised to 35 cases, P35 closure notes consolidated.
-- What works: docs/notification-audit.md maps every emitted outbox type and delivery requirement to code and tests. New 9-case real-PostgreSQL lifecycle matrix (REJECTED, EXPIRED, CANCELLED, APPROVED, CONFIRMED_EXTERNAL_PAYMENT, MEETING_CHANGED, PAYMENT_RECORDED, PAYMENT_RECONCILIATION_REQUIRED, REFUND_REQUIRED). Identity erasure case now proves queued mail is suppressed for both audiences. Adapter tests compile; queue report guard tests pass; check-docs passes.
-- What remains: hosted PostgreSQL execution of the new cases (no local Docker), independent review, green squash merge. Then P37 private calendars.
-- Decisions: no production change; implementation already meets the plan. Observation recorded for the owner: identity erasure rewrites already SENT/FAILED job states to SUPPRESSED. Calendar attachments remain deferred by the 2026-10-29 scope.
-- Verification: ./mvnw -o -pl backend/adapters -am test-compile; python3 -m unittest scripts/ci/test_queue_report.py (5 OK); scripts/ci/check-docs.py. PostgreSQL cases verified only by hosted CI.
-- Next concrete action: push, open draft PR, watch hosted checks, request independent review.
-- Recovery: origin/recovery/2026-10-25-prototype at 6f9405b; stacked PR dependencies: none.
+- Agent and UTC checkpoint: codex, 2026-11-06T10:15:21Z.
+- Current task: P37/calendar-model slice1; branch: task/p37-calendar-model; base: main 74d4d9f; PR URL: pending first push.
+- Last pushed implementation commit: none (first tested implementation checkpoint prepared); uncommitted changes: model, writer,12 new calendar tests, iCal4j4.4.0 dependency and documentation.
+- What works: typed minimal projection, persisted revision, supplied DTSTAMP, UTC actual sessions, stable audience UIDs, generic private content, iCal4j validation/escaping and75-octet UTF-8 folding.
+- Decisions: no migration, HTTP, UI or attachments; preserve erasure behavior and PR31. Four audit wording corrections reconstructed from implementation and independently corroborated; exact earlier list unavailable.
+- Verification: focused25 tests (13 domain,4 projection,8 writer) pass; pinned Python371 and delivery-policy31 pass; check-docs passes. Working-source independent calendar_review found no blocker; suggested distinct-booking UID regression added. Full local build and all hosted categories pending; unchanged coverage gates remain mandatory.
+- Limits and failures: first focused filter selected no domain tests and failed closed; fixed by including BookingTest. First parse-back assertion compared Instant with iCal4j ZonedDateTime; corrected to Instant.from. Unpinned system Python failed a preexisting archive-link fixture; all371 pass with repository-pinned Python3.12.15. No skipped dependency or weakened gate.
+- What remains: full verification, final committed-head independent review and green merge. Parent P37 remains incomplete; protected downloads/UI/calendar report integration and real calendar imports remain separate gates.
+- Next concrete action: push tested draft PR, execute full verification, independently review final head and squash only after all checks pass.
+- Recovery: origin/recovery/2026-10-25-prototype at6f9405b reference only; stacked PR dependencies: none.
