@@ -40,7 +40,7 @@ STEPS = {
                                     (PYTHON, 'scripts/ci/check-docs.py'))),
     'build': Step(commands=(('bash', 'scripts/ci/verify-build.sh'),), tools=('bash', 'git', 'docker-daemon'),
                   reports=('frontend/coverage/junit.xml', 'frontend/coverage/coverage-final.json',
-                           'backend/*/target/site/jacoco/jacoco.xml')),
+                           'backend/*/target/site/jacoco/jacoco.xml', 'artifacts/calendar/verification.json')),
     'delivery-policy': Step(tools=('git', 'gh'), dynamic=('delivery',)),
     'contracts': Step(commands=((PYTHON, 'scripts/ci/check-contract.py'),), tools=('java', 'node')),
     'secrets': Step(commands=((PYTHON, 'scripts/dev/install-security-tools.py'),
@@ -66,7 +66,7 @@ STEPS = {
 SUITE_STEPS = {
     'documentation': 'documentation',
     'java': 'build', 'architecture': 'build', 'coverage': 'build', 'postgres-migrations': 'build',
-    'outbox': 'build', 'angular': 'build',
+    'outbox': 'build', 'angular': 'build', 'calendar': 'build',
     'delivery-policy': 'delivery-policy',
     'contracts': 'contracts',
     'secrets': 'secrets',

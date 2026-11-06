@@ -140,6 +140,11 @@
       "owner": "P38",
       "state": "implemented",
       "job": "e2e-core"
+    },
+    "calendar": {
+      "owner": "P37",
+      "state": "implemented",
+      "job": "build"
     }
   }
 }

@@ -38,6 +38,8 @@ class CoreJourneyE2eTest {
     private String step = "start";
     private Page focus;
     private Instant guestProofRequestedAt;
+    private String customerCalendarUid;
+    private String ownerCalendarUid;
 
     private void at(String name, Page page) {
         step = name;
@@ -160,10 +162,11 @@ class CoreJourneyE2eTest {
         assertThat(page.getByText("Status: pending confirmation.")).isVisible();
         String reference = page.locator("p:has-text('Reference:') strong").innerText().trim();
         assertTrue(reference.matches("\\S{8,80}"), "unexpected booking reference shape");
+        customerCalendarUid = calendarCopy(page, "TENTATIVE", "customer", false);
         return reference;
     }
 
-    private Page administratorApproves(BrowserContext administrator, E2eConfig config, LocalDate today, String reference) {
+    private Page administratorApproves(BrowserContext administrator, E2eConfig config, LocalDate today, String reference) throws Exception {
         String origin = config.baseUrl().toString();
         Page page = administrator.newPage();
         at("administrator opens the private sign-in", page);
@@ -199,6 +202,8 @@ class CoreJourneyE2eTest {
         assertThat(page.getByText("Booking approved.")).isVisible();
         assertThat(page.locator("dd").filter(new Locator.FilterOptions().setHasText(Pattern.compile("^CONFIRMED$")))).isVisible();
         assertThat(page.locator("dd").filter(new Locator.FilterOptions().setHasText(ZOOM))).isVisible();
+        ownerCalendarUid = calendarCopy(page, "CONFIRMED", "owner", true);
+        assertNotEquals(customerCalendarUid, ownerCalendarUid);
         return page;
     }
 
@@ -221,6 +226,7 @@ class CoreJourneyE2eTest {
         button(page, "Refresh booking status").click();
         assertThat(page.getByText("Status: confirmed.")).isVisible();
         assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Open meeting link"))).hasAttribute("href", ZOOM);
+        assertEquals(customerCalendarUid, calendarCopy(page, "CONFIRMED", "customer", true));
 
         at("confirmation mail is in Mailpit", page);
         MailpitClient.Mail confirmed = mail.await(email, candidate -> candidate.subject().equals("Booking confirmed"),
@@ -228,6 +234,49 @@ class CoreJourneyE2eTest {
         assertTrue(confirmed.text().contains("Meeting link: " + ZOOM), "confirmation mail carries the approved meeting link");
         assertNotEquals(received.id(), confirmed.id());
         assertEquals(List.of(email), confirmed.recipients());
+    }
+
+    /** Real private download and browser save; only the external Google page is intercepted. */
+    private String calendarCopy(Page page, String status, String audience, boolean google) throws Exception {
+        at("authorized " + audience + " calendar file and explicit action", page);
+        String googlePattern = "https://calendar.google.com/**";
+        var external = new java.util.concurrent.atomic.AtomicInteger();
+        page.context().route(googlePattern, route -> {
+            external.incrementAndGet();
+            assertFalse(route.request().headers().containsKey("referer"), "Google must receive no referrer");
+            route.fulfill(new com.microsoft.playwright.Route.FulfillOptions().setContentType("text/html").setBody("<title>Synthetic calendar destination</title>"));
+        });
+        button(page, "Download calendar file").click();
+        var save = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Save calendar file").setExact(true));
+        assertThat(save).isVisible();
+        var download = page.waitForDownload(save::click);
+        assertEquals("consultation.ics", download.suggestedFilename());
+        String content;
+        try { content = java.nio.file.Files.readString(download.path()); } finally { download.delete(); }
+        assertTrue(content.contains("\r\n"), "calendar uses CRLF");
+        var properties = new java.util.HashMap<String, String>();
+        for (String line : content.replace("\r\n ", "").split("\r\n")) {
+            int separator = line.indexOf(':');
+            if (separator > 0) properties.put(line.substring(0, separator), line.substring(separator + 1));
+        }
+        assertEquals(status, properties.get("STATUS"));
+        assertEquals("Consultation", properties.get("SUMMARY"));
+        assertTrue(properties.get("UID").endsWith("-" + audience + "@purpuragenda"));
+        assertFalse(content.contains("METHOD:") || content.contains("ATTENDEE") || content.contains("Synthetic") || content.contains("example.test") || content.contains("Exampleville"), "calendar excludes private fields");
+        assertEquals(google, properties.get("DESCRIPTION").contains(ZOOM));
+        var formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(java.time.ZoneOffset.UTC);
+        long minutes = Duration.between(Instant.from(formatter.parse(properties.get("DTSTART"))), Instant.from(formatter.parse(properties.get("DTEND")))).toMinutes();
+        assertTrue(minutes == 30 || minutes == 60, "actual session duration, never reservation duration");
+        var link = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Add to Google Calendar").setExact(true));
+        assertEquals(0, external.get(), "no external request before explicit action");
+        if (google) {
+            String expected = "https://calendar.google.com/calendar/r/eventedit?action=TEMPLATE&text=Consultation&dates=" + properties.get("DTSTART") + "%2F" + properties.get("DTEND");
+            assertThat(link).hasAttribute("href", expected);
+            Page popup = page.waitForPopup(link::click); popup.waitForLoadState();
+            assertEquals(expected, popup.url()); assertEquals(1, external.get()); popup.close();
+        } else { assertThat(link).hasCount(0); }
+        page.context().unroute(googlePattern);
+        return properties.get("UID");
     }
 
     private void accountEnrollmentAndSettings(BrowserContext guest, String origin, String email, String reference, MailpitClient mail) throws Exception {
@@ -256,6 +305,7 @@ class CoreJourneyE2eTest {
         assertThat(booking).isVisible(); booking.click();
         assertThat(page.getByText("Status: confirmed.")).isVisible();
         assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Open meeting link"))).hasAttribute("href", ZOOM);
+        assertEquals(customerCalendarUid, calendarCopy(page, "CONFIRMED", "customer", true));
         at("account saves an optional profile without changing booking snapshots", page);
         page.navigate(origin + "/account/settings");
         assertThat(heading(page, "Account settings")).isVisible();

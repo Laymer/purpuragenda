@@ -60,7 +60,7 @@
   }
   @if (phase() === 'status') {
     <h2 tabindex="-1">Your booking</h2>
-    @if (status(); as booking) { <app-booking-status [booking]="booking" /> }
+    @if (status(); as booking) { <app-booking-status [booking]="booking" [disabled]="busy()" /> }
     <button mat-stroked-button (click)="loadStatus()" [disabled]="busy()">Refresh booking status</button>
   }
 </section>
