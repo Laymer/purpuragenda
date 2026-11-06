@@ -45,7 +45,7 @@ class AdministratorBookingHttpPostgresTest {
     }
     @AfterEach void cleanup() { login.cleanup(); }
     void build(AdministratorBookingQuery reads) {
-        mvc=MockMvcBuilders.standaloneSetup(new SessionController(login.access,login.cookies),new AdministratorLoginController(
+        mvc=MockMvcBuilders.standaloneSetup(new CalendarDownloadController(new com.purpuragenda.application.calendar.CalendarDownloads(new com.purpuragenda.adapters.out.postgres.PostgresCustomerBookingQuery(f.source,Set.of("zoom.us")),reads,new com.purpuragenda.adapters.out.calendar.ICalendarWriter()),login.access,login.cookies),new SessionController(login.access,login.cookies),new AdministratorLoginController(
                 new AdministratorLogin(new RequestThrottle(login.limits),f.mfa,login.sessions,new AdminCrypto()),login.cookies,Duration.ZERO),
                 new AdministratorBookingController(new AdministratorBookingView(reads),login.access,login.cookies))
                 .addFilters(new ApiGuardFilter(AdministratorLoginPostgresTest.ORIGIN,login.access,login.cookies,new ClientAddress(List.of()))).build();login.mvc=mvc;

@@ -21,7 +21,7 @@ class PrivacyBarrierFilterTest {
         for(var route:allowed){check(true,route,null,true,false);check(false,route,null,true,false);}
         String retry="/api/v1/admin/erasures/30000000-0000-4000-8000-000000000001/confirm";
         check(true,new Route("POST",retry),Kind.ADMIN,true,false);check(true,new Route("POST",retry),Kind.GUEST,false,false);check(true,new Route("POST",retry),null,false,false);
-        for(var route:List.of(new Route("GET","/api/v1/admin/bookings"),new Route("HEAD","/api/v1/account/profile"),new Route("PUT","/api/v1/account/profile"),new Route("POST",retry+"/extra"),new Route("GET","/%61pi/v1/account/profile"))){check(true,route,Kind.ADMIN,false,false);check(false,route,null,true,false);}
+        for(var route:List.of(new Route("GET","/api/v1/bookings/30000000-0000-4000-8000-000000000001/calendar"),new Route("HEAD","/api/v1/admin/bookings/30000000-0000-4000-8000-000000000001/calendar"),new Route("GET","/api/v1/admin/bookings"),new Route("HEAD","/api/v1/account/profile"),new Route("PUT","/api/v1/account/profile"),new Route("POST",retry+"/extra"),new Route("GET","/%61pi/v1/account/profile"))){check(true,route,Kind.ADMIN,false,false);check(false,route,null,true,false);}
         check(false,new Route("GET","/api/v1/account/profile"),null,false,true);
     }
 }

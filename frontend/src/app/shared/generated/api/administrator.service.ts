@@ -1320,6 +1320,54 @@ export class AdministratorService extends BaseService {
     }
 
     /**
+     * Private UTF-8 iCalendar attachment for the currently authorized booking. Requires persisted MFA administrator authority; the route fixes the OWNER audience. Authority and current booking facts share one read-only snapshot. No query parameters or bearer links. No session touch, scheduling mutation or expiry reclamation. Elapsed pending holds export CANCELLED without changing stored state/revision. UTC actual-session times, stable audience UID and persisted SEQUENCE. All replies are no-store; conditional and Range headers never produce 304 or partial responses. No ETag/Last-Modified. Imports may require manual updates or removal.
+     * @endpoint get /admin/bookings/{bookingId}/calendar
+     * @param bookingId Booking UUID; identifier only, never authorization.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public downloadAdministratorBookingCalendar(bookingId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<Blob>;
+    public downloadAdministratorBookingCalendar(bookingId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Blob>>;
+    public downloadAdministratorBookingCalendar(bookingId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Blob>>;
+    public downloadAdministratorBookingCalendar(bookingId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling downloadAdministratorBookingCalendar.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'text/calendar',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let localVarPath = `/admin/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/calendar`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: "blob",
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Private fresh-MFA-authorized export. No query parameters; expires at exact one-hour boundary; no-store and no conditional cache response. Preview is for third-party review; download requires explicit release. Download is UTF-8 JSON with fixed attachment filename customer-export.json. Application-held encrypted copies are purged automatically; operator downloads remain operator-controlled.
      * @endpoint get /admin/exports/{exportId}/download
      * @param exportId Temporary export identifier; never authority.

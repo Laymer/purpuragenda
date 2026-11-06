@@ -425,6 +425,54 @@ export class BookingsService extends BaseService {
     }
 
     /**
+     * Private UTF-8 iCalendar attachment for the currently authorized booking. Requires account ownership or the exact guest management grant; the route fixes the CUSTOMER audience. Authority and current booking facts share one read-only snapshot. No query parameters or bearer links. No session touch, scheduling mutation or expiry reclamation. Elapsed pending holds export CANCELLED without changing stored state/revision. UTC actual-session times, stable audience UID and persisted SEQUENCE. All replies are no-store; conditional and Range headers never produce 304 or partial responses. No ETag/Last-Modified. Imports may require manual updates or removal.
+     * @endpoint get /bookings/{bookingId}/calendar
+     * @param bookingId Booking UUID; identifier only, never authorization.
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public downloadBookingCalendar(bookingId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<Blob>;
+    public downloadBookingCalendar(bookingId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<Blob>>;
+    public downloadBookingCalendar(bookingId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<Blob>>;
+    public downloadBookingCalendar(bookingId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'text/calendar' | 'application/problem+json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (bookingId === null || bookingId === undefined) {
+            throw new Error('Required parameter bookingId was null or undefined when calling downloadBookingCalendar.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (sessionCookie) required
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'text/calendar',
+            'application/problem+json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let localVarPath = `/bookings/${this.configuration.encodeParam({name: "bookingId", value: bookingId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/calendar`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: "blob",
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * Read only the booking owned by the account or exact guest grant. Does not touch idle lifetime, acquire scheduling locks or reclaim expiry. All replies are no-store; conditional304 is not used. Always returns the current private no-store body, ignoring conditional cache validators: the numeric ETag identifies the booking command version, while independent financial facts may change without advancing it.
      * @endpoint get /bookings/{bookingId}
      * @param bookingId 

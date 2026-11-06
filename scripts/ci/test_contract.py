@@ -303,7 +303,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getSession', 'logoutSession',
                           'requestCreateProof', 'requestManagementProof', 'redeemGuestProof', 'loginAdministrator', 'beginAdministratorRecovery', 'reenrollAdministrator', 'listAdministratorBookings', 'getAdministratorBooking', 'loginAccount', 'changeAccountPassword',
                           'recordAdministratorReceipt', 'approveAdministratorBooking', 'confirmAdministratorExternalPayment', 'recordAdministratorRefund', 'requireAdministratorRefund',
-                          'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
+                          'downloadBookingCalendar', 'downloadAdministratorBookingCalendar', 'createBooking', 'getBooking', 'getGuestBooking', 'bookingReschedulingAvailability', 'cancelBooking', 'rescheduleBooking', 'getBookingContext',
                           'getAdministratorConfiguration', 'previewAdministratorConfigurationConflicts', 'replaceAdministratorWeeklySchedule', 'setAdministratorDateException',
                           'removeAdministratorDateException', 'addAdministratorBlackout', 'removeAdministratorBlackout', 'updateAdministratorPolicy', 'createAdministratorBooking',
                           'rejectAdministratorBooking', 'cancelAdministratorBooking', 'rescheduleAdministratorBooking', 'recordAdministratorOutcome', 'changeAdministratorMeeting',
@@ -313,6 +313,22 @@ class ContractTest(unittest.TestCase):
         public = {op['operationId'] for op in operations if op['security'] == []}
         self.assertEqual({'listServices', 'availability', 'bootstrapSession', 'getBookingContext'}, public)
         self.assertEqual(len(operations), len({op['operationId'] for op in operations}))
+
+    def test_calendar_downloads_are_private_binary_fixed_attachments_without_cache_validators(self):
+        for prefix in ('/bookings', '/admin/bookings'):
+            operation = self.document['paths'][prefix + '/{bookingId}/calendar']['get']
+            self.assertEqual([{'sessionCookie': []}], operation['security'])
+            self.assertEqual(['bookingId'], [p['name'] for p in operation['parameters']])
+            self.assertEqual('path', operation['parameters'][0]['in'])
+            reply = operation['responses']['200']
+            self.assertEqual({'text/calendar': {'schema': {'type': 'string', 'format': 'binary'}}}, reply['content'])
+            self.assertEqual(['no-store'], reply['headers']['Cache-Control']['schema']['enum'])
+            self.assertEqual(['attachment; filename="consultation.ics"'], reply['headers']['Content-Disposition']['schema']['enum'])
+            self.assertEqual(['no-referrer'], reply['headers']['Referrer-Policy']['schema']['enum'])
+            self.assertEqual(['nosniff'], reply['headers']['X-Content-Type-Options']['schema']['enum'])
+            self.assertNotIn('ETag', reply['headers'])
+            self.assertNotIn('Last-Modified', reply['headers'])
+            self.assertTrue({'400', '401', '404', '503'} <= operation['responses'].keys())
 
     def test_public_review_context_has_exact_current_versions_and_plaintext_notice(self):
         operation = self.document['paths']['/booking-context']['get']

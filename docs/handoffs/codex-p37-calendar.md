@@ -1,12 +1,12 @@
 # P37/calendar-model
 
-- Agent and UTC checkpoint: codex, 2026-11-06T10:15:21Z.
-- Current task: P37/calendar-model slice1; branch: task/p37-calendar-model; base: main 74d4d9f; PR URL: pending first push.
-- Last pushed implementation commit: none (first tested implementation checkpoint prepared); uncommitted changes: model, writer,12 new calendar tests, iCal4j4.4.0 dependency and documentation.
-- What works: typed minimal projection, persisted revision, supplied DTSTAMP, UTC actual sessions, stable audience UIDs, generic private content, iCal4j validation/escaping and75-octet UTF-8 folding.
-- Decisions: no migration, HTTP, UI or attachments; preserve erasure behavior and PR31. Four audit wording corrections reconstructed from implementation and independently corroborated; exact earlier list unavailable.
-- Verification: focused25 tests (13 domain,4 projection,8 writer) pass; pinned Python371 and delivery-policy31 pass; check-docs passes. Working-source independent calendar_review found no blocker; suggested distinct-booking UID regression added. Full local build and all hosted categories pending; unchanged coverage gates remain mandatory.
-- Limits and failures: first focused filter selected no domain tests and failed closed; fixed by including BookingTest. First parse-back assertion compared Instant with iCal4j ZonedDateTime; corrected to Instant.from. Unpinned system Python failed a preexisting archive-link fixture; all371 pass with repository-pinned Python3.12.15. No skipped dependency or weakened gate.
-- What remains: full verification, final committed-head independent review and green merge. Parent P37 remains incomplete; protected downloads/UI/calendar report integration and real calendar imports remain separate gates.
-- Next concrete action: push tested draft PR, execute full verification, independently review final head and squash only after all checks pass.
-- Recovery: origin/recovery/2026-10-25-prototype at6f9405b reference only; stacked PR dependencies: none.
+- Agent and UTC checkpoint: codex, 2026-11-06T10:34:21Z.
+- Current task: P37/calendar-model slice1 completed and merged; branch: main; base: main 6ad38f00a8d2b72c6538b2f467abe8f86917ad10; PR URL: https://github.com/Laymer/purpuragenda/pull/146.
+- Last pushed implementation commit: 03da16bb67a26cca392214515293228090c1e32a, squash-merged as 6ad38f00a8d2b72c6538b2f467abe8f86917ad10; uncommitted changes: closure evidence in STATUS.md, docs/status.md and this handoff only, retained for the next test-bearing commit.
+- What works: typed private projection/port, exact persisted revision, supplied DTSTAMP, UTC actual sessions, stable distinct booking/audience UIDs, generic private content, iCal4j validation/escaping and75-octet UTF-8 folding. P36 PR145 merged74d4d9f and four source-reconstructed audit corrections recorded.
+- Decisions: slice1 is complete, parent P37 remains In progress. No migration, HTTP, UI or attachments; erasure notification behavior and PR31 untouched. No deployment, tag, purchases or live communication.
+- Verification: GitHub confirms PR146 merged2026-11-06T10:33:34Z as6ad38f0. All15 checks in42201343401 passed at exact03da16b, including1666 Java/architecture cases, full module/Angular coverage,371 Python helpers, security/contracts, native platforms, Compose persistence and real core Chromium. Independent calendar_review accepted exact03da16bb67a26cca392214515293228090c1e32a with no findings. Source and test changes are merged; root workspace fast-forwarded to main6ad38f0.
+- Limits and failures: full local build failed six preexisting PostgreSQL startup probes; focused132 tests including all six suites and calendars/domain subsequently passed without skips. Failed reports /tmp/p37-local-failed-reports and logs /tmp/p37-build.log, /tmp/p37-setup-rerun.log retained. No local full-green claim or weakened gate.
+- What remains: sequential P37 protected downloads, safe Google/Angular actions and mandatory fail-closed calendar report integration; real Apple/iPhone/Google import checks remain manual launch gates. No active task claim remains for this completed slice.
+- Next concrete action: reconcile main/GitHub and claim the next authorized P37 protected-download slice before changes; consolidate these local closure notes with that meaningful test-bearing commit.
+- Recovery: original task branch task/p37-calendar-model at03da16b; origin/recovery/2026-10-25-prototype at6f9405b reference only; closure backup /tmp/p37-ledger-before-sync; stacked PR dependencies: none.

@@ -197,6 +197,11 @@ public class RuntimeApplication {
     @Bean BookingContextController bookingContext(SchedulingUnitOfWork work,BookingNotice notice) {
         return new BookingContextController(new PublicBookingContext(work,notice));
     }
+    @Bean CalendarDownloadController calendarDownloads(DataSource source,RuntimeSettings settings,SessionAccess access,SessionCookies cookies) {
+        return new CalendarDownloadController(new com.purpuragenda.application.calendar.CalendarDownloads(
+                new PostgresCustomerBookingQuery(source,settings.meetingHosts()),new PostgresAdministratorBookingQuery(source,settings.meetingHosts()),
+                new com.purpuragenda.adapters.out.calendar.ICalendarWriter()),access,cookies);
+    }
     @Bean CustomerBookingController customerBookings(DataSource source,RuntimeSettings settings,BookingNotice notice,SessionAccess access,SessionCookies cookies) {
         // Review and submission share the same immutable configured notice.
         var create=new CustomerBooking(new PostgresCustomerBooking(source,settings.meetingHosts()),notice.version());
