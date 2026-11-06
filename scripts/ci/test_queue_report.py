@@ -40,13 +40,13 @@ class QueueReportTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Missing mandatory booking notification'):
                 GATE.validate(root)
             report = root / 'backend/adapters/target/surefire-reports/TEST-com.purpuragenda.adapters.BookingNotificationDatabaseTest.xml'
-            for count, cases, nested in ((25,25,''), (26,25,''), (27,26,''),
-                                         (26,26,'<failure/>'), (26,26,'<error/>'), (26,26,'<skipped/>')):
+            for count, cases, nested in ((34,34,''), (35,34,''), (36,35,''),
+                                         (35,35,'<failure/>'), (35,35,'<error/>'), (35,35,'<skipped/>')):
                 report.write_text(f'<testsuite name="com.purpuragenda.adapters.BookingNotificationDatabaseTest" tests="{count}">'
                                   + f'<testcase>{nested}</testcase>' * cases + '</testsuite>')
                 with self.assertRaises(ValueError): GATE.validate(root)
-            report.write_text('<testsuite name="com.purpuragenda.adapters.BookingNotificationDatabaseTest" tests="26">'
-                              + '<testcase/>' * 26 + '</testsuite>')
+            report.write_text('<testsuite name="com.purpuragenda.adapters.BookingNotificationDatabaseTest" tests="35">'
+                              + '<testcase/>' * 35 + '</testsuite>')
             GATE.validate(root)
 
     def test_reminders_require_actual_deadline_grace_revision_and_upgrade_cases(self):
