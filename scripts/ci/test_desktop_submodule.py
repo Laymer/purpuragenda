@@ -37,6 +37,12 @@ class DesktopSubmoduleTest(unittest.TestCase):
             with self.subTest(extra=extra), self.assertRaises(ValueError):
                 module.validate(self.configuration + extra, self.index)
 
+    def test_inherited_default_configuration_cannot_supply_submodule_values(self):
+        inherited = ('[DEFAULT]\nurl = https://github.com/Laymer/purpuragenda-desktop.git\n'
+                     '[submodule "desktop"]\npath = desktop\n')
+        with self.assertRaises(ValueError):
+            module.validate(inherited, self.index)
+
     def test_conflicting_index_entries_rejected(self):
         with self.assertRaises(ValueError):
             module.validate(self.configuration, self.index + self.index)
