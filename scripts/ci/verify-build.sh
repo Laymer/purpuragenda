@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 source scripts/dev/toolchain-env.sh
+python3 -c "from pathlib import Path; Path('artifacts/calendar/verification.json').unlink(missing_ok=True)"
 python3 scripts/ci/check-docs.py
 python3 scripts/ci/check-toolchain.py
 bash scripts/ci/verify-frontend.sh
@@ -35,6 +36,7 @@ for module in modules:
     print(f'Reports verified: {module}, {count} tests')
 PY
 python3 scripts/ci/check-migration-report.py
+python3 scripts/ci/check-calendar-report.py
 python3 scripts/ci/check-queue-report.py
 python3 scripts/ci/check-smtp-report.py
 python3 scripts/ci/check-auth-delivery-report.py

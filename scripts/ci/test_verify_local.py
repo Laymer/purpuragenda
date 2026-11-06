@@ -34,7 +34,7 @@ class PlanTest(unittest.TestCase):
         implemented = {name for name, suite in document['suites'].items() if suite['state'] == 'implemented'}
         planned = VERIFY.plan(document)
         self.assertEqual(implemented, {suite for _, suites in planned for suite in suites})
-        self.assertEqual(['java', 'architecture', 'coverage', 'postgres-migrations', 'outbox', 'angular'],
+        self.assertEqual(['java', 'architecture', 'coverage', 'postgres-migrations', 'outbox', 'angular', 'calendar'],
                          dict(planned)['build'])
 
     def test_core_journey_suite_runs_the_isolated_orchestrator_and_requires_its_fresh_receipt(self):
@@ -228,7 +228,7 @@ class WrapperTest(unittest.TestCase):
             self.assertEqual(2, self.run_wrapper(*arguments).returncode)
         result = self.run_wrapper('list')
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertIn('build [java, architecture, coverage, postgres-migrations, outbox, angular]: bash scripts/ci/verify-build.sh',
+        self.assertIn('build [java, architecture, coverage, postgres-migrations, outbox, angular, calendar]: bash scripts/ci/verify-build.sh',
                       result.stdout)
         self.assertIn('sast [sast]: hosted only', result.stdout)
 

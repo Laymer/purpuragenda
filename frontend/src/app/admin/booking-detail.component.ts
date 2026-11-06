@@ -8,6 +8,7 @@ import { CommandAccess, FrozenCommand } from '../shared/access/command-access';
 import { SessionAccess } from '../shared/access/session-access';
 import { AccessFailure, safeFailure } from '../shared/access/access-failure';
 import { reauthenticate } from './admin-reauth';
+import { CalendarActionsComponent } from '../shared/calendar-actions.component';
 import { FinanceSummaryComponent } from './finance-summary.component';
 import { brusselsDisplay, zoomHint } from './admin-time';
 
@@ -18,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, FinanceSummaryComponent],
+  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, FinanceSummaryComponent, CalendarActionsComponent],
   template: `
     <section aria-labelledby="detail-title" [attr.aria-busy]="busy()">
       <p><a routerLink="/admin">Back to agenda</a></p>
@@ -35,6 +36,7 @@ const STRONG_ETAG = /^"[1-9]\d{0,18}"$/;
           <dt>Delivery email</dt><dd>{{ b.identityErased ? 'Erased after administrator review' : b.deliveryEmail }}</dd>
           <dt>Meeting link</dt><dd>{{ b.identityErased ? 'Erased after administrator review' : (b.meetingUrl ?? 'Not set') }}</dd>
         </dl>
+        <app-calendar-actions [booking]="b" [owner]="true" [disabled]="busy() || uncertain()" />
         <h2>Payment</h2>
         <p>Status {{ b.payment.status }}. Received {{ money(b.payment.receivedMinor) }}, refunded {{ money(b.payment.refundedMinor) }}, remaining {{ money(b.payment.remainingMinor) }} ({{ b.snapshot.service.currency }}). Approval does not imply payment.</p>
         <app-finance-summary [payment]="b.payment" />
@@ -117,7 +119,7 @@ export class BookingDetailComponent {
 
   constructor() {
     this.id = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
-    const remove = this.sessions.onInvalidated(() => { this.generation++; this.clear(); });
+    const remove = this.sessions.onInvalidated(() => { this.generation++; this.clear(); this.message.set('Your session ended. Sign in again.'); });
     inject(DestroyRef).onDestroy(() => { this.active = false; this.generation++; remove(); this.clear(); });
     void this.load();
   }

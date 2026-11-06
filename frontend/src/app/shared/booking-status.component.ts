@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { CalendarActionsComponent } from './calendar-actions.component';
 import { CustomerBookingStatus } from './generated';
 
 /** Display zone wall time with an explicit UTC offset label. */
@@ -8,9 +9,10 @@ export function zonedInstant(instant: string, zone: string): string {
   return new Intl.DateTimeFormat('en', { dateStyle: 'full', timeStyle: 'short', timeZone: zone }).format(date) + ' · ' + offset;
 }
 
-/** Presentational customer booking status; every value is rendered as text. */
+/** Customer booking status and private calendar actions; every value is rendered as text. */
 @Component({
   selector: 'app-booking-status',
+  imports: [CalendarActionsComponent],
   template: `
     @let b = booking();
     <p>Reference: <strong>{{ b.reference }}</strong></p>
@@ -22,9 +24,11 @@ export function zonedInstant(instant: string, zone: string): string {
     @if (b.allowedActions.length > 0) { <p>Customer changes close: {{ at(b.customerChangesUntil) }} · {{ b.displayZone }}.</p> }
     <p>Payment: {{ b.payment.status.replaceAll('_', ' ').toLowerCase() }}. Confirmation does not imply payment.</p>
     <p>Updates are sent to {{ b.deliveryEmail }}.</p>
-    @if (b.meetingUrl) { <a [href]="b.meetingUrl" target="_blank" rel="noopener noreferrer">Open meeting link</a> }`,
+    @if (b.meetingUrl) { <a [href]="b.meetingUrl" target="_blank" rel="noopener noreferrer">Open meeting link</a> }
+    <app-calendar-actions [booking]="b" [disabled]="disabled()" />`,
 })
 export class BookingStatusComponent {
+  readonly disabled = input(false);
   readonly booking = input.required<CustomerBookingStatus>();
   at(instant: string): string { return zonedInstant(instant, this.booking().displayZone); }
 }

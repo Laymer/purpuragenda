@@ -20,7 +20,7 @@ type Action = 'cancel' | 'reschedule';
       <h1 id="booking-title" tabindex="-1">Your booking</h1>
       <p id="booking-message" role="status" tabindex="-1">{{ message() }}</p>
       @if (booking(); as b) {
-        <app-booking-status [booking]="b" />
+        <app-booking-status [booking]="b" [disabled]="busy() || uncertain()" />
         @if (phase() === 'view') {
           <button mat-stroked-button type="button" (click)="load()" [disabled]="busy()">Refresh booking status</button>
           @if (canReschedule()) { <button mat-stroked-button type="button" (click)="askReschedule()" [disabled]="busy()">Change time</button> }
