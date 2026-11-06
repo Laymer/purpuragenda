@@ -77,5 +77,7 @@ class CalendarCustomerHttpPostgresTest {
         var controller=new CalendarDownloadController(new CalendarDownloads(revoked,new PostgresAdministratorBookingQuery(h.c.f.source,Set.of("zoom.us")),new ICalendarWriter()),new SessionAccess(h.c.sessions),SessionCookies.operational());
         var mvc=MockMvcBuilders.standaloneSetup(controller).build();var response=mvc.perform(read(browser,id)).andReturn().getResponse();
         assertEquals(404,response.getStatus());assertEquals("no-store",response.getHeader("Cache-Control"));assertNull(response.getHeader("Content-Disposition"));
+        var next=mvc.perform(read(browser,id)).andReturn().getResponse();
+        assertEquals(401,next.getStatus());assertEquals("no-store",next.getHeader("Cache-Control"));assertNull(next.getHeader("Content-Disposition"));
     }
 }
