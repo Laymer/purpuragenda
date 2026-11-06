@@ -40,7 +40,7 @@ This is the single task-status authority. Read alongside the working tree and Gi
 | P34 — Complete controlled customer exports and audited corrections | Merged; privacy groundwork https://github.com/Laymer/purpuragenda/pull/141 confirmed merged4daab6b after15 hosted checks and independent exact3c5f192 review; controlled exports PR142 confirmed merged951c087 after15 checks and independent review; corrections PR143 confirmed merged39522f6 after15 hosted checks and independent exact-head review |
 | P35 — Complete reviewed erasure/anonymization and restore-safe tombstones | Merged; https://github.com/Laymer/purpuragenda/pull/144 confirmed merged8735d0a after all15 hosted checks41109189433, independent exact254a403 review, clean77.87s Chromium journey and zero scanning alerts; reviewed execution/holds/restore-safe journal and private reconciliation/HTTP/UI complete |
 | P36 — Complete notification audiences, revisions, reminders, suppression and retry scenarios | Merged; foundation PR64 669bc5b and reminders PR82 d2d4dfe; audit https://github.com/Laymer/purpuragenda/pull/145 confirmed merged74d4d9f, all15 hosted checks42189671495 passed; independent review owner-reported in approved P37 handoff |
-| P37 — Complete private iCalendar exports and safe Google Calendar actions | In progress; slice1 private model/writer https://github.com/Laymer/purpuragenda/pull/146 confirmed merged6ad38f0 after all15 checks42201343401 and independent exact03da16b review; slice2 protected downloads https://github.com/Laymer/purpuragenda/pull/147 confirmed mergedf3d38a4 after all15 checks42204862573 and independent exactd58bf31 review; UI/report integration remain |
+| P37 — Complete private iCalendar exports and safe Google Calendar actions | Merged; model/writer PR146 at6ad38f0; protected downloads PR147 atf3d38a4; UI/Google and mandatory calendar reports https://github.com/Laymer/purpuragenda/pull/148 confirmed merged05ba6b4 after all15 hosted checks42208434027 and independent exact912470d review; real Apple/iPhone/Google imports remain manual launch gates |
 | P38 — Complete API acceptance traceability and two-process integrity/quota races | In progress; core-journey slice (Chromium guest-to-approval journey on an isolated real Compose stack, mandatory e2e-core job) https://github.com/Laymer/purpuragenda/pull/101 confirmed merged 700c966 after 15 hosted checks (run 40532171627) and independent review of a328604; superseded #100 closed and its branch deleted because its history failed the all-branch secret scan; API traceability, two-process races and customer cancel/reschedule steps remain; historical partial evidence; coverage incomplete |
 | P39 — Complete all 15 browser/viewport cells, accessibility scans and keyboard checks | Recovered WIP; dependencies in docs/delivery.md; historical selected Chromium/Firefox journeys only |
 | P40 — Complete backend and Angular coverage enforcement with meaningful tests | Recovered WIP; foundation merged https://github.com/Laymer/purpuragenda/pull/10 at bb7d4cf; final application-wide acceptance pending |
@@ -61,17 +61,33 @@ Online payments are deferred and are not unfinished version 1 implementation.
 
 ## Active task claims
 
-- P37/calendar-actions: agent=codex; branch=task/p37-calendar-actions; base=main; handoff=docs/handoffs/codex-p37-calendar-actions.md
+- P49/desktop-foundation: agent=codex; branch=task/p49-desktop-baseline; base=main; handoff=docs/handoffs/codex-desktop-foundation.md
 
 ## Active handoff
 
-- Agent and UTC checkpoint: codex, 2026-11-06T11:11:38Z.
-- Current task: P37/calendar-actions slice3; branch: task/p37-calendar-actions; base: main f3d38a4; PR URL: not yet created.
-- Last pushed implementation commit: none on this slice; uncommitted changes: UI, browser checks, mandatory calendar report gate, tests and slice2 closure.
-- What works: slice1 model/writer and slice2 authorized private downloads are merged.
-- Decisions: add shared customer/owner calendar controls, explicit generic-title/UTC-only Google prefill, real browser checks and fail-closed unified calendar reporting. No email attachments or schema changes.
-- Verification: slice2 final d58bf31 independently reviewed; all15 hosted checks42204862573 passed. Slice3 local696 Angular tests (28 calendar), production build/CSP/coverage2725/2730lines and3186/3351branches,378 pinned Python helpers and16 acceptance helper tests pass. Browser journey compiles; actual execution pending. Calendar guard validates52 cases using prior slice2 backend reports plus current frontend; this guard smoke is not a fresh full-build claim.
-- Limits: real Apple/iPhone/Google imports remain manual launch gates; P37 is not complete.
-- What remains: commit tested checkpoint, push draft PR, run actual browser journey, independent exact-head review, all hosted gates and expected-head squash merge.
-- Next concrete action: push draft checkpoint and run scripts/ci/verify-e2e.py against its clean revision.
-- Recovery: task/p37-calendar-downloads atd58bf31, mergedf3d38a4; prototype6f9405b reference only; stacked PR dependencies: none.
+- Agent and UTC checkpoint: codex, 2026-11-06T12:45:00Z.
+- Current task: P49/desktop-foundation; branch: task/p49-desktop-baseline; base: main; PR URL: not yet created.
+- Last pushed implementation commit: desktop4b751567e011744fff0bc86bd1265fcb9b870b2e; parent changes local. uncommitted changes: submodule registration, relevant integration tests and ledger/evidence, retaining prior three documentation edits.
+- What works: private desktop repository initialized; source baseline verified against GitHub;963-file inventory and490 byte-exact retained files;16 verifier tests and hosted baseline/verify pass; exact4b75156 independent review accepted without unresolved findings.
+- Decisions: initial empty desktop repository has no PR base; independently reviewed green bootstrap establishes main without a merge. All later slices use PRs. Source reference files are generated/verbatim evidence, distinct from handwritten code. No C++ parity or milestone completion claim.
+- Verification: python3 -m unittest discover -s desktop/tests -v passed16; python3 desktop/scripts/baseline.py verify --source . passed; incomplete parity rejected; gitleaks scanned4.58MB with0 findings. Handwritten whitespace passed; full snapshot whitespace reports inherited generated source whitespace, retained for exact hashing.
+- What remains: parent integration checks/PR/all mandatory categories and review; desktop scenario-level mappings, dependency pins, CMake/native/service build, all persistence/features/platform/release gates.
+- Next concrete action: run parent integration tests and documentation validation, then push a draft parent task PR.
+- Recovery: desktop origin main/task/d01-foundation4b75156; source05ba6b4; parent task/p49-desktop-baseline and local docs. stacked PR dependencies: none.
+
+### Retained previous closure checkpoint
+
+- Agent and UTC checkpoint: codex, 2026-11-06T11:29:54Z.
+- Current task: none; P37/calendar-actions slice3 closed; branch: main at05ba6b4; implementation branch task/p37-calendar-actions; base: mainf3d38a4; PR URL: https://github.com/Laymer/purpuragenda/pull/148.
+- Last pushed implementation commit: 912470d770a3c5d84e1cd188e400862b728bb11c; GitHub confirms squash merge05ba6b4b3f27fda3a79149cc11551a010ddf6343 at2026-11-06T11:29:02Z. uncommitted changes: post-merge ledger/handoff/evidence notes only, retained for the next relevant test-bearing commit.
+- What works: complete local P37 projection/writer, protected downloads, customer/owner UI, generic-title/UTC-only Google prefill and mandatory calendar report enforcement. P37 slices1/2/3 are merged asPR146/147/148.
+- Decisions: no schema/notification change or email attachment; no deployment, purchase, release tag or live communication. PR31 untouched.
+- Verification: independent calendar_download_review accepted exact912470d with no findings and independently passed20 Python checks plus suite inventory. All15 hosted checks42208434027 passed, including1678 backend/architecture cases,696 Angular cases,378 Python helpers, unchanged per-module coverage,52 required calendar cases, real Chromium journey and Compose persistence. Local clean exact912470d Chromium journey passed77.03s; fresh37 focused backend cases and16 acceptance helper cases passed.
+- Limits: no full local-build claim. Hosted calendar receipt records the clean PR merge-test revision62fe8745878674e8cd95acb45e4cca9940911c12; real Apple/iPhone/Google imports remain unverified manual launch gates. Main push CI is distinct from passing PR verification; no release-readiness claim.
+- What remains: manual real-client initial/revised/duplicate/cancel/timezone/Zoom import checks; later local release work includes encrypted backup/restore and other explicit gates in docs/delivery.md.
+- Next concrete action: claim the next approved sequential task before code changes; consolidate these closure notes with its meaningful tests.
+- Recovery: task/p37-calendar-actions at912470d, main05ba6b4; prototype6f9405b reference only; stacked PR dependencies: none.
+
+Desktop integration checkpoint 2026-11-06T12:50:00Z: all384 pinned Python helpers pass outside the sandbox. Initial sandbox run failed14 socket/PTY fixture cases due to enforced sandbox restrictions; no suite was skipped and the unrestricted rerun passed. Six new submodule guard cases pass; documentation/submodule checks pass. Desktop hosted runs42218488503 and42218624761 passed at exact4b75156.
+
+Desktop protected-merge gate: GitHub rejects PUT branches/main/protection with403, requiring GitHub Pro or a public repository. The approved desktop repository remains private. No purchase or visibility change was made. Branch protection is not enabled and cannot be claimed complete; future desktop implementation may proceed in draft PRs, but protected merges remain blocked pending owner-provided account capability.
