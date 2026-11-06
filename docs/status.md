@@ -1348,3 +1348,15 @@ The README user manual and8 actual synthetic browser screenshots are on merged m
 ### 2026-11-06 — P36 notification-completeness audit
 
 Audit against main 8735d0a found the implementation complete for every emitted outbox type and delivery requirement (docs/notification-audit.md). Two proof gaps were closed: a 9-case real-PostgreSQL lifecycle matrix in BookingNotificationDatabaseTest for types previously proven only by the planner unit test, and identity-erasure assertions that queued mail is suppressed for both audiences. The mandatory booking notification guard now requires 35 cases. Local evidence: adapter test compilation, 5 queue-report guard tests and check-docs pass. No local Docker, so the PostgreSQL cases rely on hosted CI. No production code changed.
+
+### 2026-11-06 — P36 reconciliation and P37 slice1 claim
+
+GitHub confirms PR145 merged74d4d9f24494948647b1b9a449ae4edde3590bb6 at09:52:30UTC with all15 checks in42189671495 passing. Independent review is owner-reported in the approved P37 plan; GitHub has no submitted review record. P36 is merged. P37 slice1 owns the private application model and adapter serialization; HTTP/UI/report integration and real calendar-client acceptance remain pending. No erasure notification behavior changes are authorized in this slice.
+
+### 2026-11-06 — P37 model and writer tested checkpoint
+
+Application projection/port and iCal4j4.4.0 adapter implemented with no schema/API/UI/email change.12 new calendar tests cover typed audiences, all states, persisted revisions, explicit timestamps, stable/distinct UIDs,30/60-minute sessions across both Brussels DST transitions, private property allowlists, optional meeting text, injection escaping and ASCII/multibyte/supplementary Unicode folding. The adapter uses iCal4j syntax/validation and folds by UTF-8 octets because its output writer counts Java characters. Imports carry an honest manual update/removal caveat.
+
+Focused25 Java tests (13 BookingTest,4 CalendarEventTest,8 ICalendarWriterTest), pinned371 Python helpers,31 delivery-policy tests and check-docs pass. Initial focused selection failed closed for no domain tests; the corrected selection includes BookingTest. An initial parser assertion compared Instant to ZonedDateTime and was fixed with Instant.from. System Python failed a preexisting archive-link fixture; the pinned3.12.15 interpreter passes all371. Independent calendar_review found no source blocker and suggested the now-added distinct-booking UID regression. Full verification/coverage, final-head review and hosted checks remain pending.
+
+Four notification-audit corrections were reconstructed from source and independently corroborated: conditional customer reminder eligibility, confirmed-only meeting links, contact notice reference disclosure and booking-mail token exclusions distinguished from AUTH mail. Erasure job behavior remains unchanged. P37 remains in progress and real calendar-client imports remain manual launch gates.
