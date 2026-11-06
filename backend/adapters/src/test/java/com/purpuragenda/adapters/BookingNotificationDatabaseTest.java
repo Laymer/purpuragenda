@@ -100,6 +100,60 @@ class BookingNotificationDatabaseTest {
         assertEquals(1,mail.sent.stream().filter(m->m.subject().equals("Booking created")).count());
     }
 
+    /** Moves the synthetic booking to the state its event reports, in one transaction so the deferred occupancy checks hold. */
+    void settle(UUID id,String state) {
+        new TransactionTemplate(new DataSourceTransactionManager(c.f.source)).executeWithoutResult(status->{
+            if(state.equals("CONFIRMED"))c.jdbc.update("UPDATE booking SET state='CONFIRMED',version=2,expires_at=NULL,previously_confirmed=true,meeting_id='123456789',meeting_url='https://zoom.us/j/123456789',confirmation_basis='MANUAL_APPROVAL' WHERE id=?",id);
+            else if(!state.equals("PENDING_CONFIRMATION")) {
+                c.jdbc.update("UPDATE booking SET state=?,version=2 WHERE id=?",state,id);
+                c.jdbc.update("UPDATE booking_occupancy SET released_at=clock_timestamp() WHERE booking_id=?",id);
+            }
+        });
+    }
+
+    /**
+     * Notification-completeness audit (docs/notification-audit.md): every lifecycle event the persistence adapters emit expands
+     * to its planned audiences and delivers current facts. Customer mail carries the meeting link only while confirmed; owner
+     * mail never carries it; no message carries intake data.
+     */
+    @ParameterizedTest(name="{0}")
+    @org.junit.jupiter.params.provider.CsvSource({
+        "REJECTED,REJECTED,Booking request declined,Booking request declined,0",
+        "EXPIRED,EXPIRED,Booking request expired,Booking request expired,0",
+        "CANCELLED,CANCELLED,Booking cancelled,Booking cancelled,0",
+        "APPROVED,CONFIRMED,Booking confirmed,Booking confirmed,2",
+        "CONFIRMED_EXTERNAL_PAYMENT,CONFIRMED,Booking confirmed,Booking confirmed,2",
+        "MEETING_CHANGED,CONFIRMED,Meeting link changed,Meeting link changed,0",
+        "PAYMENT_RECORDED,PENDING_CONFIRMATION,Payment recorded,Payment recorded,0",
+        "PAYMENT_RECONCILIATION_REQUIRED,PENDING_CONFIRMATION,,Action needed: payment reconciliation,0",
+        "REFUND_REQUIRED,CANCELLED,,Action needed: refund,0"})
+    void everyEmittedLifecycleEventDeliversItsPlannedAudiencesWithCurrentFacts(String type,String state,String customerSubject,String ownerSubject,int reminders) {
+        UUID id=book("customer@example.test",3,9);
+        c.jdbc.update("DELETE FROM outbox_event WHERE type='REQUESTED'");
+        settle(id,state);event(id,type,2);
+        assertEquals(1,expander.drain(10));
+        assertEquals(reminders,count("notification_job WHERE booking_id='"+id+"' AND template LIKE 'REMINDER_%' AND state='QUEUED' AND due_at>clock_timestamp()"));
+        var outcomes=drainWorker();
+        int expected=customerSubject==null?1:2;
+        assertEquals(Collections.nCopies(expected,BookingNotificationWorker.Outcome.SENT),outcomes);
+        Map<String,MailDelivery.Message> byRecipient=new HashMap<>();
+        for(var m:mail.sent)assertNull(byRecipient.put(m.recipient(),m),"one message per audience");
+        assertEquals(ownerSubject,byRecipient.get("owner@example.test").subject());
+        assertFalse(byRecipient.get("owner@example.test").text().contains("zoom.us"));
+        var customer=byRecipient.get("customer@example.test");
+        if(customerSubject==null)assertNull(customer);
+        else {
+            assertEquals(customerSubject,customer.subject());
+            assertEquals(state.equals("CONFIRMED"),customer.text().contains("Meeting link: https://zoom.us/j/123456789"));
+        }
+        for(var m:mail.sent) {
+            assertTrue(m.text().contains(c.load(id).reference()));
+            for(String forbidden:List.of("Synthetic","+32400123456","1990","token"))assertFalse((m.subject()+m.text()).contains(forbidden),forbidden);
+        }
+        assertEquals(expected,attempts("a.success"));
+        assertEquals(0,count("notification_job WHERE template<>'AUTH' AND state IN ('SUPPRESSED','FAILED')"));
+    }
+
     @ParameterizedTest @ValueSource(strings={"REQUESTED","ADMIN_CREATED"})
     void reschedulingBeforeDispatchSuppressesOriginalRequestNotices(String originalEvent) {
         var session=c.guest("customer@example.test");UUID id=c.create(session,"create",c.request(3,9)).entityId();

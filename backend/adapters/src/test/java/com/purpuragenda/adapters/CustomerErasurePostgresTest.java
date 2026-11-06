@@ -61,7 +61,11 @@ class CustomerErasurePostgresTest {
   UUID account=UUID.randomUUID(),audit=UUID.randomUUID();
   f.c.jdbc.update("INSERT INTO customer_account(id,customer_id,enrolled_at) VALUES(?,?,clock_timestamp())",account,f.customer);
   f.c.jdbc.update("INSERT INTO audit_event(id,actor_id,actor_kind,type,occurred_at,reason,metadata) VALUES(?,?,'ACCOUNT','ACCOUNT_PROFILE_CHANGED',clock_timestamp(),'Synthetic account reason','{}')",audit,account);
+  // Mail still queued for the erased customer's booking must never be sent afterwards, to either audience.
+  for(String audience:List.of("CUSTOMER","OWNER"))f.c.jdbc.update("INSERT INTO notification_job(id,booking_id,audience,template,version,due_at) VALUES(?,?,?,'BOOKING_REJECTED',2,clock_timestamp())",UUID.randomUUID(),f.booking,audience);
   var p=prepare(new Scope(Kind.IDENTITY,f.customer),new Scope(Kind.AUDIT,audit));store.confirm(f.b.session,p.id(),"confirm",1,new Review(p.digest(),true));
+  assertEquals(0,f.c.count("notification_job WHERE booking_id='"+f.booking+"' AND state IN ('QUEUED','LEASED')"));
+  assertEquals(2,f.c.count("notification_job WHERE booking_id='"+f.booking+"' AND template='BOOKING_REJECTED' AND state='SUPPRESSED' AND safe_error='PRIVACY_ERASED' AND lease_token IS NULL AND encrypted_envelope IS NULL"));
   assertEquals("",f.c.jdbc.queryForObject("SELECT reason FROM audit_event WHERE id=?",String.class,audit));assertEquals(0,f.c.count("customer_account"));assertFalse(store.blocked());
   assertTrue(f.c.jdbc.queryForObject("SELECT bool_and(expanded_at=(SELECT applied_at FROM privacy_erasure WHERE id=?)) FROM outbox_event WHERE booking_id=?",Boolean.class,p.id(),f.booking));
  }
